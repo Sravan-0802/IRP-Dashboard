@@ -104,11 +104,7 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full blur-xl -mr-8 -mt-8 pointer-events-none"></div>
               <div className="flex items-center gap-3 mb-3 relative z-10">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg overflow-hidden border border-primary/20">
-                  {student.avatar ? (
-                    <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" />
-                  ) : (
-                    student.name.charAt(0)
-                  )}
+                  <img src="/avatar.png" alt={student.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm leading-tight text-foreground">{student.name}</h3>
