@@ -222,6 +222,47 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Journey Stepper */}
+          <div className="bg-white border border-gray-100 shadow-sm rounded-2xl px-8 py-6">
+            <div className="flex items-start justify-between relative">
+              {/* Dotted connector line */}
+              <div className="absolute top-7 left-[16.7%] right-[16.7%] h-px border-t-2 border-dashed border-gray-200 z-0" />
+
+              {/* Step 1 — In Progress */}
+              <div className="flex flex-col items-center text-center w-1/3 relative z-10">
+                <div className="w-14 h-14 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center mb-3 shadow-sm">
+                  <span className="text-xl">📋</span>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-400 text-white text-[10px] font-black flex items-center justify-center">1</span>
+                </div>
+                <p className="font-bold text-gray-900 text-sm">An Online Assessment</p>
+                <span className="mt-1.5 inline-block px-3 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-600">In Progress</span>
+                <p className="text-xs text-gray-400 mt-2 leading-relaxed">Attempt the online assessment and qualify for Level 2 access.</p>
+              </div>
+
+              {/* Step 2 — Not Started */}
+              <div className="flex flex-col items-center text-center w-1/3 relative z-10">
+                <div className="w-14 h-14 rounded-full bg-white border-2 border-indigo-400 flex items-center justify-center mb-3 shadow-sm">
+                  <span className="text-xl">👥</span>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-indigo-400 text-white text-[10px] font-black flex items-center justify-center">2</span>
+                </div>
+                <p className="font-bold text-gray-900 text-sm">Post-Assessment (Level 1)</p>
+                <span className="mt-1.5 inline-block px-3 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-500">Not Started</span>
+                <p className="text-xs text-gray-400 mt-2 leading-relaxed">Complete projects and mock interviews to unlock Level 2 access.</p>
+              </div>
+
+              {/* Step 3 — Locked */}
+              <div className="flex flex-col items-center text-center w-1/3 relative z-10">
+                <div className="w-14 h-14 rounded-full bg-gray-50 border-2 border-gray-300 flex items-center justify-center mb-3 shadow-sm">
+                  <span className="text-xl">🔒</span>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 text-white text-[10px] font-black flex items-center justify-center">3</span>
+                </div>
+                <p className="font-bold text-gray-400 text-sm">Level 2 Access</p>
+                <span className="mt-1.5 inline-block px-3 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">Locked</span>
+                <p className="text-xs text-gray-400 mt-2 leading-relaxed">Unlock advanced tracks, internships and exclusive benefits.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Combined Overall IRP Progress */}
           <Card className="p-6 bg-white border border-gray-100 shadow-sm">
             {/* Header */}
