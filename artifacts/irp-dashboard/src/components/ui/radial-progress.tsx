@@ -7,6 +7,7 @@ interface RadialProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   strokeWidth?: number;
   colorClass?: string;
   trackColorClass?: string;
+  label?: string;
 }
 
 export function RadialProgress({
@@ -15,10 +16,10 @@ export function RadialProgress({
   strokeWidth = 6,
   colorClass = "text-primary",
   trackColorClass = "text-secondary",
+  label,
   className,
   ...props
 }: RadialProgressProps) {
-  // Ensure value is between 0 and 100
   const normalizedValue = Math.min(100, Math.max(0, value || 0));
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -49,8 +50,9 @@ export function RadialProgress({
           cy={size / 2}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold font-mono">{Math.round(normalizedValue)}%</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none gap-0.5">
+        <span className="font-black font-mono text-gray-900" style={{ fontSize: size * 0.18 }}>{Math.round(normalizedValue)}%</span>
+        {label && <span className="text-gray-400 font-semibold" style={{ fontSize: size * 0.11 }}>{label}</span>}
       </div>
     </div>
   );

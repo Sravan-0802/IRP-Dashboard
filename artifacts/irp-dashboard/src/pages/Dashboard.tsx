@@ -244,12 +244,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-4 mb-5">
-                <div className="relative shrink-0">
-                  <RadialProgress value={progress?.overallMcqPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-blue-500" trackColorClass="text-blue-100" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-black text-gray-900">{progress?.overallMcqPercentage ?? 0}%</span>
-                    <span className="text-[9px] text-gray-400 font-semibold">Completed</span>
-                  </div>
+                <div className="shrink-0">
+                  <RadialProgress value={progress?.overallMcqPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-blue-500" trackColorClass="text-blue-100" label="Completed" />
                 </div>
                 <div className="flex-1 space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -286,12 +282,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-4 mb-5">
-                <div className="relative shrink-0">
-                  <RadialProgress value={progress?.overallCodingPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-green-500" trackColorClass="text-green-100" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-black text-gray-900">{progress?.overallCodingPercentage ?? 0}%</span>
-                    <span className="text-[9px] text-gray-400 font-semibold">Completed</span>
-                  </div>
+                <div className="shrink-0">
+                  <RadialProgress value={progress?.overallCodingPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-green-500" trackColorClass="text-green-100" label="Completed" />
                 </div>
                 <div className="flex-1 space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -325,12 +317,8 @@ export default function Dashboard() {
                 </h3>
               </div>
               <div className="flex items-center gap-4 mb-4">
-                <div className="relative shrink-0">
-                  <RadialProgress value={overallPct} size={80} strokeWidth={8} colorClass="text-purple-500" trackColorClass="text-purple-100" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-black text-gray-900">{overallPct}%</span>
-                    <span className="text-[9px] text-gray-400 font-semibold">Overall</span>
-                  </div>
+                <div className="shrink-0">
+                  <RadialProgress value={overallPct} size={80} strokeWidth={8} colorClass="text-purple-500" trackColorClass="text-purple-100" label="Overall" />
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-purple-600 text-sm">You're doing great!</p>
