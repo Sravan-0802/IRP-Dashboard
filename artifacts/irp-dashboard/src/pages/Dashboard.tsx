@@ -340,53 +340,49 @@ export default function Dashboard() {
               <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
                 <Trophy className="w-4 h-4 text-amber-500" /> Your Marks Overview
               </h3>
-              <div className="space-y-4">
-                <div className="p-3 bg-blue-50 rounded-xl">
-                  <p className="text-xs font-bold text-blue-600 mb-1">MCQ Marks</p>
-                  <p className="text-xl font-black text-gray-900">{Math.round(mcqScore)} <span className="text-sm font-medium text-gray-400">/ {Math.round(mcqMax)}</span></p>
-                  <p className="text-xs font-bold text-blue-500 mt-0.5">{mcqPct}%</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-xl">
-                  <p className="text-xs font-bold text-green-600 mb-1">Coding Marks</p>
-                  <p className="text-xl font-black text-gray-900">{Math.round(codingScore)} <span className="text-sm font-medium text-gray-400">/ {Math.round(codingMax)}</span></p>
-                  <p className="text-xs font-bold text-green-500 mt-0.5">{codingPct}%</p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-xl">
-                  <p className="text-xs font-bold text-amber-600 mb-1">Total Marks</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xl font-black text-gray-900">{Math.round(totalScore)} <span className="text-sm font-medium text-gray-400">/ {Math.round(totalMax)}</span></p>
-                    <span className="text-lg">🏆</span>
-                  </div>
-                  <p className="text-xs font-bold text-amber-500 mt-0.5">{totalPct}%</p>
-                </div>
+              <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl mb-3">🔒</div>
+                <p className="font-bold text-gray-700 text-sm">Scores Locked</p>
+                <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                  Your marks will be unlocked<br />after the assessment on
+                </p>
+                <span className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-full">
+                  📅 14th June 2026
+                </span>
               </div>
             </Card>
 
-            {/* Recent Scores */}
+            {/* Recent Scores — locked */}
             <Card className="p-5 bg-white border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900">Recent Scores</h3>
-                <button className="text-xs font-bold text-primary hover:text-primary/70 transition-colors">View All</button>
               </div>
-              <div className="text-xs text-gray-400 font-semibold grid grid-cols-[1fr_auto_auto_auto] gap-x-2 pb-2 border-b border-gray-100 mb-2">
-                <span>Subject</span><span>Type</span><span>Score</span><span>%</span>
-              </div>
-              <div className="space-y-2">
-                {marks?.slice(0, 5).map((mark) => (
-                  <div key={mark.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center py-1.5 text-sm border-b border-gray-50">
-                    <span className="font-semibold text-gray-800 truncate text-xs">{mark.subject}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      mark.category === 'MCQ'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-green-100 text-green-600'
-                    }`}>{mark.category}</span>
-                    <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{mark.score}/{mark.maxScore}</span>
-                    <span className={`text-xs font-bold ${
-                      mark.percentage >= 80 ? 'text-green-600' :
-                      mark.percentage >= 60 ? 'text-amber-600' : 'text-red-500'
-                    }`}>{mark.percentage}%</span>
-                  </div>
-                ))}
+              {/* Blurred preview rows */}
+              <div className="relative">
+                <div className="text-xs text-gray-400 font-semibold grid grid-cols-[1fr_auto_auto_auto] gap-x-2 pb-2 border-b border-gray-100 mb-2">
+                  <span>Subject</span><span>Type</span><span>Score</span><span>%</span>
+                </div>
+                <div className="space-y-2 select-none blur-sm pointer-events-none" aria-hidden="true">
+                  {[
+                    { subject: 'HTML & CSS', type: 'MCQ', score: '26/30', pct: '86.7%', mcq: true },
+                    { subject: 'HTML & CSS', type: 'Coding', score: '38/50', pct: '76%', mcq: false },
+                    { subject: 'JavaScript Essentials', type: 'MCQ', score: '18/25', pct: '72%', mcq: true },
+                    { subject: 'JavaScript Essentials', type: 'Coding', score: '32/50', pct: '64%', mcq: false },
+                    { subject: 'Python Fundamentals', type: 'MCQ', score: '20/25', pct: '80%', mcq: true },
+                  ].map((row, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center py-1.5 border-b border-gray-50">
+                      <span className="font-semibold text-gray-800 truncate text-xs">{row.subject}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${row.mcq ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>{row.type}</span>
+                      <span className="text-xs font-bold text-gray-700">{row.score}</span>
+                      <span className="text-xs font-bold text-green-600">{row.pct}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Lock overlay */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-lg">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl mb-2">🔒</div>
+                  <p className="font-bold text-gray-700 text-xs text-center">Unlocks after 14th June</p>
+                </div>
               </div>
             </Card>
 
