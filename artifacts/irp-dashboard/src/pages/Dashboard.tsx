@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useGetStudent, getGetStudentQueryKey, useGetStudentProgress, getGetStudentProgressQueryKey, useGetStudentMarks, getGetStudentMarksQueryKey, useGetStudentActivity, getGetStudentActivityQueryKey } from '@workspace/api-client-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Target, TrendingUp, Code, BookOpen, Clock, Activity, Trophy, Calendar, CheckCircle2 } from 'lucide-react';
+import { Target, TrendingUp, Code, BookOpen, Clock, Activity, Trophy, Calendar, LogOut } from 'lucide-react';
 import { RadialProgress } from '@/components/ui/radial-progress';
 
 export default function Dashboard() {
@@ -135,24 +135,10 @@ export default function Dashboard() {
             </a>
           </nav>
 
-          <div>
-            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3 px-3 flex items-center gap-2">
-              <CheckCircle2 className="w-3 h-3" /> Pre-Assessment
-            </h4>
-            <div className="flex flex-col gap-1">
-              <label className="flex items-start gap-3 px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer transition-colors group">
-                <input type="checkbox" defaultChecked className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary bg-background" />
-                <span className="text-sm font-medium group-hover:text-foreground text-muted-foreground leading-tight">Complete HTML/CSS MCQs</span>
-              </label>
-              <label className="flex items-start gap-3 px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer transition-colors group">
-                <input type="checkbox" defaultChecked className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary bg-background" />
-                <span className="text-sm font-medium group-hover:text-foreground text-muted-foreground leading-tight">Python Loops Coding</span>
-              </label>
-              <label className="flex items-start gap-3 px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer transition-colors group">
-                <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary bg-background" />
-                <span className="text-sm font-medium group-hover:text-foreground text-foreground leading-tight">Mock Assessment 1</span>
-              </label>
-            </div>
+          <div className="mt-auto pt-4 border-t border-border">
+            <button className="flex items-center gap-3 w-full px-3 py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg font-medium text-sm transition-colors">
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
           </div>
         </div>
       </aside>
