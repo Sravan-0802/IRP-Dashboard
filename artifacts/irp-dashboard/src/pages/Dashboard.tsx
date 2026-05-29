@@ -16,14 +16,6 @@ import { RadialProgress } from '@/components/ui/radial-progress';
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: BookOpen, label: 'MCQs' },
-  { icon: Code, label: 'Coding Practice' },
-  { icon: ClipboardList, label: 'Assessments' },
-  { icon: TrendingUp, label: 'Performance' },
-  { icon: Award, label: 'Badges' },
-  { icon: Calendar, label: 'Calendar' },
-  { icon: FolderOpen, label: 'Resources' },
-  { icon: Settings, label: 'Settings' },
 ];
 
 function CountdownBox({ value, label }: { value: number; label: string }) {
