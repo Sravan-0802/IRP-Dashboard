@@ -150,9 +150,8 @@ export default function Dashboard() {
       {/* ── Sidebar ── */}
       <aside className="w-60 bg-white/75 backdrop-blur-xl border-r border-white/60 flex flex-col shrink-0 hidden md:flex shadow-xl">
         {/* Logo */}
-        <div className="px-5 pt-5 pb-4 flex items-center gap-2.5 border-b border-white/50">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-black text-sm shadow">N</div>
-          <span className="font-black text-lg tracking-tight">NxtWave <span className="text-primary">IRP</span></span>
+        <div className="px-5 pt-4 pb-4 flex items-center border-b border-white/50">
+          <img src="/nxtwave-logo.png" alt="NxtWave Academy" className="h-9 w-auto object-contain" />
         </div>
 
         {/* Student profile */}
