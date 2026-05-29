@@ -20,8 +20,8 @@ const NAV_ITEMS = [
 
 function CircularCountdown({ days }: { days: number }) {
   const totalDays = 61;
-  const radius = 38;
-  const size = 104;
+  const radius = 46;
+  const size = 120;
   const circumference = 2 * Math.PI * radius;
   const elapsed = Math.max(0, totalDays - days);
   const arcLength = circumference * Math.min(elapsed / totalDays, 1);
