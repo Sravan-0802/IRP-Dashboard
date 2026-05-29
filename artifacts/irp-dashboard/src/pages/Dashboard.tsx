@@ -18,13 +18,43 @@ const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', active: true },
 ];
 
-function CountdownBox({ value, label }: { value: number; label: string }) {
+function CircularCountdown({ days }: { days: number }) {
+  const totalDays = 61;
+  const radius = 50;
+  const size = 136;
+  const circumference = 2 * Math.PI * radius;
+  const elapsed = Math.max(0, totalDays - days);
+  const arcLength = circumference * Math.min(elapsed / totalDays, 1);
+
   return (
-    <div className="flex flex-col items-center">
-      <div className="bg-white/15 backdrop-blur-sm rounded-xl w-16 h-16 flex items-center justify-center text-2xl font-black font-mono text-white shadow-inner border border-white/20">
-        {value.toString().padStart(2, '0')}
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      {/* Dark background */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{ background: 'radial-gradient(circle at 40% 35%, #252545, #13132a)' }}
+      />
+      {/* SVG arc */}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#2e2e4a" strokeWidth="9" />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - arcLength}
+          style={{ filter: 'drop-shadow(0 0 6px #f59e0baa)' }}
+        />
+      </svg>
+      {/* Center text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/50">Starts In</span>
+        <span className="text-4xl font-black leading-none text-amber-400" style={{ textShadow: '0 0 16px #f59e0b88' }}>
+          {days}
+        </span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/50">Days</span>
       </div>
-      <span className="text-[10px] font-bold mt-1.5 uppercase tracking-widest text-white/70">{label}</span>
     </div>
   );
 }
@@ -206,18 +236,10 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Right: countdown */}
-              <div className="shrink-0">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 text-center mb-3">Assessment Countdown</p>
-                <div className="flex items-end gap-2">
-                  <CountdownBox value={timeLeft.days} label="Days" />
-                  <span className="text-white/50 text-xl font-bold pb-5">:</span>
-                  <CountdownBox value={timeLeft.hours} label="Hrs" />
-                  <span className="text-white/50 text-xl font-bold pb-5">:</span>
-                  <CountdownBox value={timeLeft.minutes} label="Mins" />
-                  <span className="text-white/50 text-xl font-bold pb-5">:</span>
-                  <CountdownBox value={timeLeft.seconds} label="Secs" />
-                </div>
+              {/* Right: circular countdown */}
+              <div className="shrink-0 flex flex-col items-center gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 text-center">Assessment Countdown</p>
+                <CircularCountdown days={timeLeft.days} />
               </div>
             </div>
           </div>
