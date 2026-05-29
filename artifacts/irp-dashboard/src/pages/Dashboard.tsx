@@ -115,20 +115,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-[#f7f8fc] text-foreground overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-[#ede9fe] via-[#f5f3ff] to-[#dde8ff] text-foreground overflow-hidden">
 
       {/* ── Sidebar ── */}
-      <aside className="w-60 bg-white border-r border-gray-100 flex flex-col shrink-0 hidden md:flex shadow-sm">
+      <aside className="w-60 bg-white/75 backdrop-blur-xl border-r border-white/60 flex flex-col shrink-0 hidden md:flex shadow-xl">
         {/* Logo */}
-        <div className="px-5 pt-5 pb-4 flex items-center gap-2.5 border-b border-gray-100">
+        <div className="px-5 pt-5 pb-4 flex items-center gap-2.5 border-b border-white/50">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-black text-sm shadow">N</div>
           <span className="font-black text-lg tracking-tight">NxtWave <span className="text-primary">IRP</span></span>
         </div>
 
         {/* Student profile */}
         {student && (
-          <div className="px-4 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors">
+          <div className="px-4 py-4 border-b border-white/50">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-white/60 cursor-pointer hover:bg-white/70 transition-colors">
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20 shrink-0">
                 <img src="/avatar.png" alt={student.name} className="w-full h-full object-cover" />
               </div>
@@ -164,8 +164,8 @@ export default function Dashboard() {
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-3 border-t border-gray-100">
-          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+        <div className="px-3 py-3 border-t border-white/50">
+          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-colors">
             <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
           </div>
 
           {/* Journey Stepper */}
-          <div className="bg-white border border-gray-100 shadow-sm rounded-2xl px-8 py-6">
+          <div className="bg-white/70 backdrop-blur-sm border border-white/80 shadow-lg rounded-2xl px-8 py-6">
             <div className="flex items-start justify-between relative">
               {/* Dotted connector line */}
               <div className="absolute top-7 left-[16.7%] right-[16.7%] h-px border-t-2 border-dashed border-gray-200 z-0" />
@@ -264,7 +264,7 @@ export default function Dashboard() {
           </div>
 
           {/* Combined Overall IRP Progress */}
-          <Card className="p-6 bg-white border border-gray-100 shadow-sm">
+          <Card className="p-6 bg-white/70 backdrop-blur-sm border border-white/80 shadow-lg">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -282,7 +282,7 @@ export default function Dashboard() {
             {/* Summary row */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               {/* Overall ring */}
-              <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-2xl border border-purple-100">
+              <div className="flex items-center gap-4 p-4 bg-purple-100/50 backdrop-blur-sm rounded-2xl border border-purple-200/50">
                 <RadialProgress value={overallPct} size={72} strokeWidth={7} colorClass="text-purple-500" trackColorClass="text-purple-100" label="Overall" />
                 <div>
                   <p className="font-bold text-purple-600 text-sm">You're doing great!</p>
@@ -294,7 +294,7 @@ export default function Dashboard() {
                 </div>
               </div>
               {/* MCQ summary */}
-              <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+              <div className="flex items-center gap-4 p-4 bg-blue-100/50 backdrop-blur-sm rounded-2xl border border-blue-200/50">
                 <RadialProgress value={progress?.overallMcqPercentage ?? 0} size={72} strokeWidth={7} colorClass="text-blue-500" trackColorClass="text-blue-100" label="MCQs" />
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Questions Done</p>
@@ -306,7 +306,7 @@ export default function Dashboard() {
                 </div>
               </div>
               {/* Coding summary */}
-              <div className="flex items-center gap-4 p-4 bg-green-50 rounded-2xl border border-green-100">
+              <div className="flex items-center gap-4 p-4 bg-green-100/50 backdrop-blur-sm rounded-2xl border border-green-200/50">
                 <RadialProgress value={progress?.overallCodingPercentage ?? 0} size={72} strokeWidth={7} colorClass="text-green-500" trackColorClass="text-green-100" label="Coding" />
                 <div>
                   <p className="text-xs text-gray-500 font-medium">Problems Solved</p>
@@ -324,7 +324,7 @@ export default function Dashboard() {
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Subject-wise Breakdown</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {progress?.subjects.map(sub => (
-                  <div key={sub.subject} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <div key={sub.subject} className="bg-white/50 rounded-xl p-3 border border-white/60">
                     <p className="text-xs font-bold text-gray-700 mb-2">{sub.subject}</p>
                     {/* MCQ row */}
                     <div className="flex items-center gap-2 mb-1.5">
@@ -354,7 +354,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
             {/* Your Marks Overview */}
-            <Card className="p-5 bg-white border border-gray-100 shadow-sm">
+            <Card className="p-5 bg-white/70 backdrop-blur-sm border border-white/80 shadow-lg">
               <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-4">
                 <Trophy className="w-4 h-4 text-amber-500" /> Your Marks Overview
               </h3>
@@ -371,7 +371,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Recent Scores — locked */}
-            <Card className="p-5 bg-white border border-gray-100 shadow-sm">
+            <Card className="p-5 bg-white/70 backdrop-blur-sm border border-white/80 shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900">Recent Scores</h3>
               </div>
@@ -405,7 +405,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Weekly Activity bar chart */}
-            <Card className="p-5 bg-white border border-gray-100 shadow-sm">
+            <Card className="p-5 bg-white/70 backdrop-blur-sm border border-white/80 shadow-lg">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-bold text-gray-900">Weekly Activity</h3>
                 <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400">
@@ -441,7 +441,7 @@ export default function Dashboard() {
           </div>
 
           {/* Bottom target banner */}
-          <div className="flex items-center justify-between bg-white rounded-2xl px-6 py-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/80 shadow-lg">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-xl shrink-0">🎯</div>
               <p className="text-sm font-semibold text-gray-700">
