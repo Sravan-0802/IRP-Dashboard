@@ -235,28 +235,29 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400 mt-0.5">Concept mastery across subjects</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 mb-5">
+              <div className="flex items-center gap-4 mb-4">
                 <div className="shrink-0">
-                  <RadialProgress value={progress?.overallMcqPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-blue-500" trackColorClass="text-blue-100" label="Completed" />
+                  <RadialProgress value={progress?.overallMcqPercentage ?? 0} size={72} strokeWidth={7} colorClass="text-blue-500" trackColorClass="text-blue-100" label="Overall" />
                 </div>
-                <div className="flex-1 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>Total Questions</span>
-                    <span className="font-bold text-gray-700">{totalMcqQuestions}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Attempted</span>
-                    <span className="font-bold text-gray-700">{totalMcqAttempted}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Correct</span>
-                    <span className="font-bold text-gray-700">{Math.round(totalMcqAttempted * 0.78)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"></span>Remaining</span>
-                    <span className="font-bold text-red-500">{totalMcqRemaining}</span>
-                  </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 font-medium">Total Questions</p>
+                  <p className="text-xl font-black text-gray-900">{totalMcqAttempted}<span className="text-sm font-medium text-gray-400">/{totalMcqQuestions}</span></p>
+                  <p className="text-xs text-red-400 font-semibold mt-0.5">{totalMcqRemaining} remaining</p>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {progress?.subjects.map(sub => (
+                  <div key={sub.subject} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-500 truncate mb-1">{sub.subject}</p>
+                    <p className="text-sm font-black text-gray-900">
+                      {sub.mcqCompleted}<span className="text-gray-400 font-medium text-xs">/{sub.mcqTotal}</span>
+                    </p>
+                    <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full transition-all duration-700" style={{ width: `${sub.mcqPercentage}%` }} />
+                    </div>
+                    <p className="text-[10px] font-bold text-blue-500 mt-1">{sub.mcqPercentage}%</p>
+                  </div>
+                ))}
               </div>
               <button className="w-full flex items-center justify-center gap-2 text-sm font-bold text-blue-600 border border-blue-200 hover:bg-blue-50 rounded-lg py-2 transition-colors">
                 Continue MCQs <ArrowRight className="w-4 h-4" />
@@ -273,28 +274,29 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400 mt-0.5">Hands-on problem solving</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 mb-5">
+              <div className="flex items-center gap-4 mb-4">
                 <div className="shrink-0">
-                  <RadialProgress value={progress?.overallCodingPercentage ?? 0} size={80} strokeWidth={8} colorClass="text-green-500" trackColorClass="text-green-100" label="Completed" />
+                  <RadialProgress value={progress?.overallCodingPercentage ?? 0} size={72} strokeWidth={7} colorClass="text-green-500" trackColorClass="text-green-100" label="Overall" />
                 </div>
-                <div className="flex-1 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-300 inline-block"></span>Total Problems</span>
-                    <span className="font-bold text-gray-700">{totalCodingProblems}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Solved</span>
-                    <span className="font-bold text-gray-700">{totalCodingSolved}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Attempted</span>
-                    <span className="font-bold text-gray-700">{Math.round(totalCodingSolved * 1.2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"></span>Remaining</span>
-                    <span className="font-bold text-red-500">{totalCodingRemaining}</span>
-                  </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 font-medium">Total Problems</p>
+                  <p className="text-xl font-black text-gray-900">{totalCodingSolved}<span className="text-sm font-medium text-gray-400">/{totalCodingProblems}</span></p>
+                  <p className="text-xs text-red-400 font-semibold mt-0.5">{totalCodingRemaining} remaining</p>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {progress?.subjects.map(sub => (
+                  <div key={sub.subject} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-500 truncate mb-1">{sub.subject}</p>
+                    <p className="text-sm font-black text-gray-900">
+                      {sub.codingCompleted}<span className="text-gray-400 font-medium text-xs">/{sub.codingTotal}</span>
+                    </p>
+                    <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full transition-all duration-700" style={{ width: `${sub.codingPercentage}%` }} />
+                    </div>
+                    <p className="text-[10px] font-bold text-green-500 mt-1">{sub.codingPercentage}%</p>
+                  </div>
+                ))}
               </div>
               <button className="w-full flex items-center justify-center gap-2 text-sm font-bold text-green-600 border border-green-200 hover:bg-green-50 rounded-lg py-2 transition-colors">
                 Continue Coding <ArrowRight className="w-4 h-4" />
