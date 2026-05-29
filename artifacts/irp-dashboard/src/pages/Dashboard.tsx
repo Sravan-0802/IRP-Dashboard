@@ -150,8 +150,8 @@ export default function Dashboard() {
       {/* ── Sidebar ── */}
       <aside className="w-60 bg-white/75 backdrop-blur-xl border-r border-white/60 flex flex-col shrink-0 hidden md:flex shadow-xl">
         {/* Logo */}
-        <div className="px-5 pt-4 pb-4 flex items-center border-b border-white/50">
-          <img src="/nxtwave-logo.png" alt="NxtWave Academy" className="h-9 w-auto object-contain" />
+        <div className="px-4 pt-4 pb-4 flex items-center border-b border-white/50">
+          <img src="/nxtwave-logo.png" alt="NxtWave Academy" className="h-14 w-auto object-contain" style={{ mixBlendMode: 'multiply' }} />
         </div>
 
         {/* Student profile */}
