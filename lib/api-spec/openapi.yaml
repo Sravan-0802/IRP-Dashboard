@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IRP 2.0 Student Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: student
+    description: Student profile and progress
 paths:
   /healthz:
     get:
@@ -24,6 +26,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /student:
+    get:
+      operationId: getStudent
+      tags: [student]
+      summary: Get student profile
+      description: Returns the current student's profile information
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /student/progress:
+    get:
+      operationId: getStudentProgress
+      tags: [student]
+      summary: Get student progress
+      description: Returns MCQ and coding completion percentages per subject
+      responses:
+        "200":
+          description: Student progress data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProgress"
+
+  /student/marks:
+    get:
+      operationId: getStudentMarks
+      tags: [student]
+      summary: Get student marks
+      description: Returns student marks and scores across subjects
+      responses:
+        "200":
+          description: Student marks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectMark"
+
+  /student/activity:
+    get:
+      operationId: getStudentActivity
+      tags: [student]
+      summary: Get recent student activity
+      description: Returns recent practice activity and streaks
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentActivity"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +95,173 @@ components:
       required:
         - status
 
+    Student:
+      type: object
+      required:
+        - id
+        - name
+        - yog
+        - level
+        - email
+        - avatar
+        - registrationStatus
+        - currentLevel
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        yog:
+          type: integer
+          description: Year of graduation (2028 or 2029)
+        level:
+          type: string
+          description: Current IRP level (Level 1, Level 2, Level 3)
+        email:
+          type: string
+        avatar:
+          type: string
+        registrationStatus:
+          type: string
+          description: registered or pending
+        currentLevel:
+          type: integer
+          description: Current level number (1, 2, or 3)
+
+    SubjectProgress:
+      type: object
+      required:
+        - subject
+        - mcqCompleted
+        - mcqTotal
+        - codingCompleted
+        - codingTotal
+        - mcqPercentage
+        - codingPercentage
+      properties:
+        subject:
+          type: string
+        mcqCompleted:
+          type: integer
+        mcqTotal:
+          type: integer
+        codingCompleted:
+          type: integer
+        codingTotal:
+          type: integer
+        mcqPercentage:
+          type: number
+        codingPercentage:
+          type: number
+
+    StudentProgress:
+      type: object
+      required:
+        - overallMcqPercentage
+        - overallCodingPercentage
+        - subjects
+        - streakDays
+        - lastActiveDate
+      properties:
+        overallMcqPercentage:
+          type: number
+        overallCodingPercentage:
+          type: number
+        streakDays:
+          type: integer
+        lastActiveDate:
+          type: string
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectProgress"
+
+    SubjectMark:
+      type: object
+      required:
+        - id
+        - subject
+        - category
+        - score
+        - maxScore
+        - percentage
+        - assessmentType
+        - date
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        category:
+          type: string
+          description: MCQ or Coding
+        score:
+          type: number
+        maxScore:
+          type: number
+        percentage:
+          type: number
+        assessmentType:
+          type: string
+          description: Practice or Mock Assessment
+        date:
+          type: string
+
+    StudentActivity:
+      type: object
+      required:
+        - totalMcqSolved
+        - totalCodingSolved
+        - weeklyActivity
+        - recentSessions
+      properties:
+        totalMcqSolved:
+          type: integer
+        totalCodingSolved:
+          type: integer
+        weeklyActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayActivity"
+        recentSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+
+    DayActivity:
+      type: object
+      required:
+        - day
+        - mcq
+        - coding
+      properties:
+        day:
+          type: string
+        mcq:
+          type: integer
+        coding:
+          type: integer
+
+    Session:
+      type: object
+      required:
+        - id
+        - subject
+        - type
+        - duration
+        - date
+        - questionsAttempted
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        type:
+          type: string
+        duration:
+          type: integer
+          description: Duration in minutes
+        date:
+          type: string
+        questionsAttempted:
+          type: integer
