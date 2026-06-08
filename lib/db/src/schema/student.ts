@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -66,6 +66,62 @@ export const weeklyActivityTable = pgTable("weekly_activity", {
   mcq: integer("mcq").notNull().default(0),
   coding: integer("coding").notNull().default(0),
 });
+
+export const formsAuthTokensTable = pgTable("forms_auth_tokens", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  userId: text("user_id").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: integer("used").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Mirror of BigQuery `academy_users_basic_details_for_irp_portal`
+export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details", {
+  userId: text("user_id").primaryKey(),
+  userName: text("user_name"),
+  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Mirror of BigQuery `academy_users_course_progress_data_for_irp_portal`
+export const academyUserCourseProgressTable = pgTable(
+  "academy_user_course_progress",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    courseId: text("course_id").notNull(),
+    courseTitle: text("course_title"),
+    mcqsCompleted: integer("mcqs_completed"),
+    totalMcqs: integer("total_mcqs"),
+    mcqCompletionPct: real("mcq_completion_pct"),
+    codingProblemsCompleted: integer("coding_problems_completed"),
+    totalCodingProblems: integer("total_coding_problems"),
+    codingCompletionPct: real("coding_completion_pct"),
+    overallCompleted: integer("overall_completed"),
+    overallTotal: integer("overall_total"),
+    overallCompletionPct: real("overall_completion_pct"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCourseUnique: unique("academy_user_course_unique").on(t.userId, t.courseId),
+  })
+);
+
+// Tracks the status of each BigQuery -> Postgres sync run
+export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
+  id: serial("id").primaryKey(),
+  tableName: text("table_name").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending | success | error
+  rowCount: integer("row_count").notNull().default(0),
+  durationMs: integer("duration_ms").notNull().default(0),
+  error: text("error"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
+export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;
+export type BigquerySyncStatus = typeof bigquerySyncStatusTable.$inferSelect;
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

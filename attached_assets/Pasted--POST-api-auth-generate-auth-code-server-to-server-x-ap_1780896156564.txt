@@ -1,0 +1,137 @@
+// POST /api/auth/generate-auth-code  (server-to-server; x-api-key required)
+router.post("/generate-auth-code", async (req, res) => {
+  try {
+    const bearer =
+      typeof req.headers.authorization === "string" && req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.slice(7).trim()
+        : "";
+    const apiKey = req.headers["x-api-key"] || bearer;
+    const secret = process.env.TOKEN_SECRET;
+    if (!secret || apiKey !== secret) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+ 
+    const userId = resolveUserIdFromFormsBody(req.body);
+    if (!userId) {
+      return res.status(400).json({
+        message: "user_id or phone is required",
+        hint: "Send JSON with user_id, userId, or phone / mobile / phone_number",
+      });
+    }
+ 
+    // Cold-start safe: if DB isn't ready, mint a stateless JWT token instead of failing.
+    if (mongoose.connection.readyState !== 1) {
+      const fallback = mintStatelessFormsToken(userId);
+      if (!fallback) {
+        return res.status(503).json({
+          message: "Database not ready",
+          hint: "Retry after a few seconds (cold start).",
+        });
+      }
+      const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+      return res.json({
+        auth_token: fallback,
+        expires_at: expiresAt.toISOString(),
+        user_id: userId,
+        token_type: "stateless_jwt",
+      });
+    }
+ 
+    const authToken = crypto.randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+ 
+    await FormsAuthToken.create({
+      token: authToken,
+      userId: userId,
+      expiresAt,
+      used: false,
+    });
+ 
+    res.json({ auth_token: authToken, expires_at: expiresAt.toISOString(), user_id: userId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+ 
+// POST /api/auth/generate-auth-code-with-redirect (server-to-server; x-api-key required)
+// Convenience endpoint for SSO/Form apps: returns both auth_token and a redirect_url.
+router.post("/generate-auth-code-with-redirect", async (req, res) => {
+  try {
+    const bearer =
+      typeof req.headers.authorization === "string" && req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.slice(7).trim()
+        : "";
+    const apiKey = req.headers["x-api-key"] || bearer;
+    const secret = process.env.TOKEN_SECRET;
+    if (!secret || apiKey !== secret) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+ 
+    const userId = resolveUserIdFromFormsBody(req.body);
+    if (!userId) {
+      return res.status(400).json({
+        message: "user_id or phone is required",
+        hint: "Send JSON with user_id, userId, or phone / mobile / phone_number",
+      });
+    }
+ 
+    if (mongoose.connection.readyState !== 1) {
+      const fallback = mintStatelessFormsToken(userId);
+      if (!fallback) {
+        return res.status(503).json({
+          message: "Database not ready",
+          hint: "Retry after a few seconds (cold start).",
+        });
+      }
+      const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+      const redirect_url = buildRedirectUrlForForms(fallback);
+      if (!redirect_url) {
+        return res.status(500).json({
+          message: "Missing or invalid FORMS_REDIRECT_ORIGIN / LEGACY_APP_ORIGIN",
+          auth_token: fallback,
+          expires_at: expiresAt.toISOString(),
+          user_id: userId,
+          token_type: "stateless_jwt",
+        });
+      }
+      return res.json({
+        auth_token: fallback,
+        expires_at: expiresAt.toISOString(),
+        user_id: userId,
+        redirect_url,
+        token_type: "stateless_jwt",
+      });
+    }
+ 
+    const authToken = crypto.randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+ 
+    await FormsAuthToken.create({
+      token: authToken,
+      userId: userId,
+      expiresAt,
+      used: false,
+    });
+ 
+    const redirect_url = buildRedirectUrlForForms(authToken);
+    if (!redirect_url) {
+      return res.status(500).json({
+        message: "Missing or invalid FORMS_REDIRECT_ORIGIN / LEGACY_APP_ORIGIN",
+        auth_token: authToken,
+        expires_at: expiresAt.toISOString(),
+        user_id: userId,
+      });
+    }
+ 
+    res.json({
+      auth_token: authToken,
+      expires_at: expiresAt.toISOString(),
+      user_id: userId,
+      redirect_url,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
