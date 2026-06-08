@@ -67,6 +67,15 @@ export const weeklyActivityTable = pgTable("weekly_activity", {
   coding: integer("coding").notNull().default(0),
 });
 
+export const formsAuthTokensTable = pgTable("forms_auth_tokens", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  userId: text("user_id").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: integer("used").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof studentsTable.$inferSelect;
