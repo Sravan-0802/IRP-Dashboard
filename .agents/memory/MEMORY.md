@@ -1,0 +1,1 @@
+- [BigQuery VPC blocker](bigquery-vpc-blocker.md) — IRP BigQuery access from Replit is hard-blocked by org VPC Service Controls (403); data is synced into Postgres instead.
