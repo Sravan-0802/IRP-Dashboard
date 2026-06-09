@@ -167,7 +167,7 @@ export function Hero({
   const soon = days <= 7;
   return (
     <div
-      className="relative overflow-hidden rounded-3xl border border-[rgba(103,65,217,0.16)] p-6 shadow-soft-md animate-pop-in sm:p-8"
+      className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.16)] p-4 shadow-soft-md animate-pop-in sm:p-5"
       style={{ background: "linear-gradient(125deg, #eef2ff 0%, #f3ecff 45%, #ffeef7 100%)" }}
     >
       {/* glowing aura orbs */}
@@ -176,22 +176,22 @@ export function Hero({
         className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(230,73,128,0.2),transparent_70%)] blur-2xl animate-glow-pulse"
         style={{ animationDelay: "1.4s" }}
       />
-      <div className="relative flex flex-col items-center gap-7 lg:flex-row lg:justify-between">
-        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-          <div className="select-none text-6xl drop-shadow-sm animate-float-soft sm:text-7xl">
+      <div className="relative flex flex-col items-center gap-4 lg:flex-row lg:justify-between">
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+          <div className="select-none text-5xl drop-shadow-sm animate-float-soft">
             {isReattemptActive ? "🔁" : "🚀"}
           </div>
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(59,91,219,0.22)] bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-l1 backdrop-blur">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[rgba(59,91,219,0.22)] bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-l1 backdrop-blur">
               <PulsingDot color="#3b5bdb" /> {isReattemptActive ? "Round 2 — You've got this" : "Your next mission"}
             </div>
-            <p className="mb-0.5 text-xs font-bold uppercase tracking-[0.2em] text-muted2">
+            <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted2">
               {meta.name} {LEVEL_EMOJI[level]}
             </p>
-            <h2 className="font-display text-3xl font-extrabold leading-[1.05] sm:text-4xl">
+            <h2 className="font-display text-2xl font-extrabold leading-[1.05] sm:text-3xl">
               <span className="shimmer-text">{meta.tag}</span>
             </h2>
-            <p className="mt-2 max-w-sm text-sm font-medium text-muted2">
+            <p className="mt-1.5 max-w-sm text-xs font-medium text-muted2">
               {nextLevel ? (
                 <>
                   Clear this assessment to unlock{" "}
@@ -204,11 +204,11 @@ export function Hero({
           </div>
         </div>
         {/* Right: date chip → ring → days → stats */}
-        <div className="flex shrink-0 flex-col items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-1.5 text-xs font-bold text-brand backdrop-blur">
-            <CalendarClock className="h-3.5 w-3.5" /> {examDateLabel}
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-1 text-[11px] font-bold text-brand backdrop-blur">
+            <CalendarClock className="h-3 w-3" /> {examDateLabel}
           </span>
-          <CountdownRing value={days} unit="Days" tone="blue" />
+          <CountdownRing value={days} unit="Days" tone="blue" size={90} />
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Days</p>
           <div className="flex items-center gap-3 rounded-xl border border-[rgba(103,65,217,0.14)] bg-white/70 px-3 py-2 backdrop-blur">
             <div className="text-center">
