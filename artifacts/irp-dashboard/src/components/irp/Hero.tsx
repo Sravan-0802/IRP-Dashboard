@@ -206,11 +206,8 @@ export function Hero({
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 flex-col items-center gap-2">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">
-            {soon ? "🔥 Lock in" : "Countdown"}
-          </p>
-          <CountdownRing value={days} unit="Days" tone="blue" />
+        <div className="shrink-0">
+          <CountdownRing value={days} unit="Days" tone="blue" label={soon ? "🔥 Lock in" : "Starts In"} />
         </div>
       </div>
     </div>

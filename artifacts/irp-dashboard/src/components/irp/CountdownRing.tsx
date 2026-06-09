@@ -10,12 +10,14 @@ export function CountdownRing({
   size = 120,
   total = 61,
   tone = "blue",
+  label = "Starts In",
 }: {
   value: number;
   unit: string;
   size?: number;
   total?: number;
   tone?: keyof typeof TONES;
+  label?: string;
 }) {
   const radius = size * 0.383;
   const circ = 2 * Math.PI * radius;
@@ -47,7 +49,7 @@ export function CountdownRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Starts In</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">{label}</span>
         <span
           className="font-display font-black leading-none"
           style={{ fontSize: size * 0.3, color: t.text }}
