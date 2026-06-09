@@ -21,7 +21,6 @@ export function ProgressSummary({
   codingTotal,
   points,
   maxPoints,
-  subjects,
 }: {
   overallPct: number;
   mcqPct: number;
@@ -32,7 +31,6 @@ export function ProgressSummary({
   codingTotal: number;
   points: number;
   maxPoints: number;
-  subjects: SubjectRow[];
 }) {
   return (
     <div className="irp-card p-5 sm:p-6">
@@ -103,19 +101,23 @@ export function ProgressSummary({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="-mx-1 mt-2 rounded-2xl border border-[rgba(103,65,217,0.06)] bg-[rgba(248,247,255,0.8)] px-4 py-5">
-        <p className="section-label mb-4 text-muted2">Subject-wise breakdown</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((sub) => (
-            <div key={sub.subject} className="rounded-2xl border border-[rgba(103,65,217,0.07)] bg-white p-4 shadow-soft">
-              <p className="mb-3 truncate text-sm font-bold text-ink">{sub.subject}</p>
-              <Bar tone="blue" label="MCQ" done={sub.mcqCompleted} total={sub.mcqTotal} pct={sub.mcqPercentage} />
-              <div className="h-2.5" />
-              <Bar tone="green" label="Code" done={sub.codingCompleted} total={sub.codingTotal} pct={sub.codingPercentage} />
-            </div>
-          ))}
-        </div>
+export function SubjectBreakdown({ subjects }: { subjects: SubjectRow[] }) {
+  return (
+    <div className="irp-card p-5 sm:p-6">
+      <p className="section-label mb-4 text-muted2">Subject-wise breakdown</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {subjects.map((sub) => (
+          <div key={sub.subject} className="rounded-2xl border border-[rgba(103,65,217,0.07)] bg-white p-4 shadow-soft">
+            <p className="mb-3 truncate text-sm font-bold text-ink">{sub.subject}</p>
+            <Bar tone="blue" label="MCQ" done={sub.mcqCompleted} total={sub.mcqTotal} pct={sub.mcqPercentage} />
+            <div className="h-2.5" />
+            <Bar tone="green" label="Code" done={sub.codingCompleted} total={sub.codingTotal} pct={sub.codingPercentage} />
+          </div>
+        ))}
       </div>
     </div>
   );

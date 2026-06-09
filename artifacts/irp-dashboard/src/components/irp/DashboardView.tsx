@@ -4,6 +4,7 @@ import { getLevel, getPhase } from "@/lib/journey";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
+import { AssessmentScores } from "./AssessmentScores";
 
 function journeySteps(journey: Journey): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -100,6 +101,8 @@ export function DashboardView({
 
       {showRings(journey) && <ProgressSummary {...progress} />}
 
+      <AssessmentScores journey={journey} examDateLabel={examDateLabel} />
+
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -184,25 +187,6 @@ export function DashboardView({
             </button>
           </div>
         </>
-      )}
-
-      {/* Bottom strip: marks locked */}
-      {(phase === "PREP" || phase === "EXAM_OPEN" || phase === "REATTEMPT_ACTIVE") && (
-        <div className="flex items-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(255,255,255,0.88)] px-5 py-4 shadow-soft">
-          <span className="text-xl">🔒</span>
-          <p className="text-sm font-medium text-muted2">
-            Marks locked — your scores unlock after the assessment on{" "}
-            <span className="font-bold text-ink">{examDateLabel}</span>.
-          </p>
-        </div>
-      )}
-      {phase === "REATTEMPT_WAITING" && (
-        <div className="flex items-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(255,255,255,0.88)] px-5 py-4 shadow-soft">
-          <span className="text-xl">🔒</span>
-          <p className="text-sm font-medium text-muted2">
-            Assessment scores locked until the reattempt window closes.
-          </p>
-        </div>
       )}
     </div>
   );

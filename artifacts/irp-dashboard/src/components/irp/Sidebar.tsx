@@ -13,7 +13,7 @@ export type PageKey = "dashboard" | "learning" | "slot";
 
 const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { key: "learning", icon: BookOpen, label: "My Learning" },
+  { key: "learning", icon: BookOpen, label: "Practice Hub" },
   { key: "slot", icon: CalendarClock, label: "Book a Slot" },
 ];
 

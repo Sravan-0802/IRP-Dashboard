@@ -45,7 +45,7 @@ export function Hero({
             <p className="mt-1 text-sm font-medium text-muted2">{examDateLabel} • L3 Assessment</p>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-dim">Assessment Countdown</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Assessment Countdown</p>
             <CountdownRing value={days} unit="Days" tone="pink" />
           </div>
         </div>
@@ -145,7 +145,7 @@ export function Hero({
             </button>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-dim">Closes In</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Closes In</p>
             <CountdownRing value={hours} unit="Hours" total={48} tone="teal" />
           </div>
         </div>
@@ -174,7 +174,7 @@ export function Hero({
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-dim">Assessment Countdown</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Assessment Countdown</p>
           <CountdownRing value={days} unit="Days" tone="blue" />
         </div>
       </div>

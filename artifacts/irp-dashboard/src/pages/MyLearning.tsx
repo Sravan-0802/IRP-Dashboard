@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { TRACKS } from "@/lib/courses";
 import { IrpCard, ProgressRing } from "@/components/irp/ui";
-import type { SubjectRow } from "@/components/irp/ProgressSummary";
+import { SubjectBreakdown, type SubjectRow } from "@/components/irp/ProgressSummary";
 import { cn } from "@/lib/utils";
 
 function StatCard({
@@ -71,7 +71,7 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">My Learning</h1>
+        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Practice Hub</h1>
         <p className="mt-1 text-sm text-muted2">Track your courses, subjects and practice progress.</p>
       </div>
 
@@ -136,6 +136,8 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
           );
         })}
       </div>
+
+      <SubjectBreakdown subjects={subjects} />
     </div>
   );
 }
