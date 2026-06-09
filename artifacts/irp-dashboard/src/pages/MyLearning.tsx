@@ -85,16 +85,35 @@ export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; le
     return matched.length > 0 ? matched : subjects;
   }
 
-  // Build subject → track name mapping for the table
-  const subjectTrackMap = new Map<string, string>();
-  for (const track of TRACKS) {
-    const tSubjects = subjectsForTrack(track.courses);
-    for (const s of tSubjects) {
-      if (!subjectTrackMap.has(s.subject)) {
-        subjectTrackMap.set(s.subject, track.name);
-      }
+  // Find best-matching SubjectRow for a single course name (or null)
+  function matchSubject(course: string): SubjectRow | null {
+    const cLow = course.toLowerCase();
+    const cFirst = cLow.split(" ")[0];
+    // exact / substring match first
+    let hit = subjects.find(
+      (s) => cLow.includes(s.subject.toLowerCase()) || s.subject.toLowerCase().includes(cFirst),
+    );
+    // fallback: any word overlap
+    if (!hit) {
+      const cWords = new Set(cLow.split(/\s+/).filter((w) => w.length > 3));
+      hit = subjects.find((s) =>
+        s.subject
+          .toLowerCase()
+          .split(/\s+/)
+          .some((w) => cWords.has(w)),
+      );
     }
+    return hit ?? null;
   }
+
+  // Build flat rows: one per course across all level tracks
+  const tableRows = TRACKS.filter((t) => t.level === level).flatMap((track) =>
+    track.courses.map((course) => ({
+      course,
+      trackName: track.name,
+      data: matchSubject(course),
+    })),
+  );
 
   return (
     <div className="space-y-6">
@@ -151,28 +170,28 @@ export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; le
               </tr>
             </thead>
             <tbody>
-              {subjects.map((sub, i) => {
-                const trackName = subjectTrackMap.get(sub.subject) ?? "—";
+              {tableRows.map(({ course, trackName, data }, i) => {
                 const tc = TRACK_COLORS[trackName] ?? { bg: "rgba(103,65,217,0.1)", text: "#6741d9" };
+                const shortTrack = trackName.replace(" Track", "").replace(" Platforms", "");
                 return (
                   <tr
-                    key={sub.subject}
+                    key={course}
                     className={`border-b border-[rgba(103,65,217,0.05)] ${i % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}
                   >
-                    <td className="py-2.5 pr-4 text-xs font-semibold text-ink">{sub.subject}</td>
+                    <td className="py-2.5 pr-4 text-xs font-semibold text-ink">{course}</td>
                     <td className="py-2.5 pr-4">
                       <span
                         className="inline-block rounded-md px-2 py-0.5 text-[10px] font-bold"
                         style={{ background: tc.bg, color: tc.text }}
                       >
-                        {trackName.replace(" Track", "").replace(" Platforms", "")}
+                        {shortTrack}
                       </span>
                     </td>
                     <td className="py-2.5 pr-4">
-                      <Bar pct={sub.mcqPercentage} tone="blue" />
+                      <Bar pct={data?.mcqPercentage ?? 0} tone="blue" />
                     </td>
                     <td className="py-2.5">
-                      <Bar pct={sub.codingPercentage} tone="green" />
+                      <Bar pct={data?.codingPercentage ?? 0} tone="green" />
                     </td>
                   </tr>
                 );
