@@ -80,7 +80,11 @@ function LevelCard({ journey, n }: { journey: Journey; n: 1 | 2 | 3 }) {
   const muted = status === "locked" || status === "skipped";
 
   return (
-    <div className={`rounded-2xl border ${m.cardClass} p-4 shadow-soft`}>
+    <div
+      className={`hover-lift relative rounded-2xl border ${m.cardClass} p-4 shadow-soft ${
+        status === "pending" ? "ring-2 ring-[rgba(59,91,219,0.22)]" : ""
+      }`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <span
           className={`text-[11px] font-bold uppercase tracking-wider ${muted ? "text-muted2" : "text-ink2"}`}

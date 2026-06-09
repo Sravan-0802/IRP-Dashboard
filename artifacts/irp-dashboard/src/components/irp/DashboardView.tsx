@@ -80,15 +80,33 @@ export function DashboardView({
 }) {
   const phase = getPhase(journey.journeyState);
 
+  const motivation = (() => {
+    switch (phase) {
+      case "EXAM_OPEN":
+        return "It's go time. Give it everything — this is your moment. 🔥";
+      case "POST_ASSESSMENT":
+        return "Assessment cleared. Finish your tasks and keep the momentum rolling. 💪";
+      case "PLACED":
+        return "You did it. Take it in — you've earned this. 🎉";
+      case "REATTEMPT_WAITING":
+      case "REATTEMPT_ACTIVE":
+        return "One setback doesn't define you. Round 2 is where comebacks happen. 💥";
+      case "WILDCARD":
+        return "You're on the fast track. Big risk, bigger reward — let's go. ⚡";
+      default:
+        return days > 0
+          ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${progress.points.toLocaleString()} pts — keep stacking. 🔥`
+          : "Your next mission is loading. Time to lock in. 🔥";
+    }
+  })();
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="animate-pop-in">
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-          Welcome back, {firstName}! 👋
+          Welcome back, {firstName}! <span className="inline-block animate-float-soft">👋</span>
         </h1>
-        <p className="mt-1 text-sm text-muted2">
-          Here's exactly where you are in the IRP 2.0 journey.
-        </p>
+        <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
       </div>
 
       <Hero journey={journey} days={days} hours={hours} examDateLabel={examDateLabel} />

@@ -32,6 +32,14 @@ export function ProgressSummary({
   points: number;
   maxPoints: number;
 }) {
+  const momentum =
+    overallPct >= 75
+      ? "🔥 On fire"
+      : overallPct >= 50
+        ? "⚡ In the zone"
+        : overallPct >= 25
+          ? "📈 Building momentum"
+          : "🚀 Just getting started";
   return (
     <div className="irp-card p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -49,7 +57,7 @@ export function ProgressSummary({
 
       <div className="mb-6 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
         {/* Overall — blue→purple */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
+        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
           <ProgressRing value={overallPct} tone="purple" label="Overall" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted2">Total points</p>
@@ -60,13 +68,13 @@ export function ProgressSummary({
               of {maxPoints.toLocaleString()} pts
             </p>
             <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
-              🏅 You're doing great
+              {momentum}
             </span>
           </div>
         </div>
 
         {/* MCQs — blue */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
+        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
           <ProgressRing value={mcqPct} tone="blue" label="MCQs" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted2">Questions done</p>
@@ -84,7 +92,7 @@ export function ProgressSummary({
         </div>
 
         {/* Coding — teal */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-teal bg-white p-4 shadow-soft">
+        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-teal bg-white p-4 shadow-soft">
           <ProgressRing value={codingPct} tone="green" label="Coding" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted2">Problems solved</p>
