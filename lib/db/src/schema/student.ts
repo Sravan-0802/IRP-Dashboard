@@ -11,6 +11,17 @@ export const studentsTable = pgTable("students", {
   avatar: text("avatar").notNull().default(""),
   registrationStatus: text("registration_status").notNull().default("registered"),
   currentLevel: integer("current_level").notNull().default(1),
+  // ── IRP 2.0 journey state machine ──
+  journeyState: text("journey_state").notNull().default("L1_PREP"),
+  isWildcard: integer("is_wildcard").notNull().default(0),
+  hasCompletedOnboarding: integer("has_completed_onboarding").notNull().default(0),
+  // True once the student has attempted an L1 exam — blocks Standard -> Wildcard.
+  hasAttemptedL1: integer("has_attempted_l1").notNull().default(0),
+  // True once an L3 exam has started — blocks Wildcard -> Standard.
+  l3ExamStarted: integer("l3_exam_started").notNull().default(0),
+  reattemptDate: text("reattempt_date"),
+  projectSubmitted: integer("project_submitted").notNull().default(0),
+  projectDueDate: text("project_due_date"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -73,6 +84,39 @@ export const formsAuthTokensTable = pgTable("forms_auth_tokens", {
   userId: text("user_id").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   used: integer("used").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assessmentSlotsTable = pgTable("assessment_slots", {
+  id: serial("id").primaryKey(),
+  level: integer("level").notNull().default(1),
+  round: integer("round").notNull().default(1),
+  date: text("date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  capacity: integer("capacity").notNull().default(0),
+  released: integer("released").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const slotBookingsTable = pgTable(
+  "slot_bookings",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("student_id").notNull().references(() => studentsTable.id),
+    slotId: integer("slot_id").notNull().references(() => assessmentSlotsTable.id),
+    round: integer("round").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    oneBookingPerRound: unique("slot_booking_student_round_unique").on(t.studentId, t.round),
+  })
+);
+
+export const slotNotifyRequestsTable = pgTable("slot_notify_requests", {
+  id: serial("id").primaryKey(),
+  studentId: integer("student_id").notNull().references(() => studentsTable.id),
+  whatsappNumber: text("whatsapp_number").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
