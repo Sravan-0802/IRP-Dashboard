@@ -176,11 +176,6 @@ export function Hero({
         className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(230,73,128,0.2),transparent_70%)] blur-2xl animate-glow-pulse"
         style={{ animationDelay: "1.4s" }}
       />
-      {/* Date chip — top-right corner */}
-      <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-1.5 text-xs font-bold text-brand backdrop-blur">
-        <CalendarClock className="h-3.5 w-3.5" /> {examDateLabel}
-      </span>
-
       <div className="relative flex flex-col items-center gap-7 lg:flex-row lg:justify-between">
         <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
           <div className="select-none text-6xl drop-shadow-sm animate-float-soft sm:text-7xl">
@@ -208,8 +203,11 @@ export function Hero({
             </p>
           </div>
         </div>
-        {/* Right: ring + stats */}
+        {/* Right: date chip → ring → days → stats */}
         <div className="flex shrink-0 flex-col items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-1.5 text-xs font-bold text-brand backdrop-blur">
+            <CalendarClock className="h-3.5 w-3.5" /> {examDateLabel}
+          </span>
           <CountdownRing value={days} unit="Days" tone="blue" />
           <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Days</p>
           <div className="flex items-center gap-3 rounded-xl border border-[rgba(103,65,217,0.14)] bg-white/70 px-3 py-2 backdrop-blur">
