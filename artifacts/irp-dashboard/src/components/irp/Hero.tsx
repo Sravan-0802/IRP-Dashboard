@@ -201,9 +201,6 @@ export function Hero({
               )}
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#3b5bdb] to-[#6741d9] px-5 py-2.5 text-sm font-bold text-white shadow-soft transition-transform hover:-translate-y-0.5">
-                {isReattemptActive ? "Prep for Round 2" : "Start prepping"} <ArrowRight className="h-4 w-4" />
-              </button>
               <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-2 text-xs font-bold text-brand backdrop-blur">
                 <CalendarClock className="h-3.5 w-3.5" /> {examDateLabel}
               </span>
