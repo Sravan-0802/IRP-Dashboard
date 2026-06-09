@@ -109,7 +109,7 @@ export function DashboardView({
         <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
       </div>
 
-      <Hero journey={journey} days={days} hours={hours} examDateLabel={examDateLabel} />
+      <Hero journey={journey} days={days} hours={hours} examDateLabel={examDateLabel} overallPct={progress.overallPct} points={progress.points} />
 
       {phase !== "PLACED" && (
         <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
