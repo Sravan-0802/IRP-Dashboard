@@ -5,6 +5,7 @@ import {
   useGetStudentProgress, getGetStudentProgressQueryKey,
 } from "@workspace/api-client-react";
 import { useJourney } from "@/lib/useJourney";
+import { getLevel } from "@/lib/journey";
 import { DEMO_STUDENT, DEMO_PROGRESS } from "@/lib/demoData";
 import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
@@ -147,7 +148,7 @@ export default function Dashboard() {
                 onSwitchToStandard={openSwitchToStandard}
               />
             )}
-            {page === "learning" && <MyLearning subjects={subjects} />}
+            {page === "learning" && <MyLearning subjects={subjects} level={getLevel(journey.journeyState)} />}
             {page === "slot" && <BookSlot />}
           </div>
         </main>

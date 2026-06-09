@@ -63,7 +63,7 @@ function Bar({ pct, tone }: { pct: number; tone: "blue" | "green" }) {
   );
 }
 
-export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
+export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; level?: 1 | 2 | 3 }) {
   const mcqDone = subjects.reduce((a, s) => a + s.mcqCompleted, 0);
   const mcqTotal = subjects.reduce((a, s) => a + s.mcqTotal, 0);
   const codeDone = subjects.reduce((a, s) => a + s.codingCompleted, 0);
@@ -110,17 +110,17 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
         <StatCard label="Problems solved" pct={codePct} tone="code" />
       </div>
 
-      {/* ── Section 1: Course Progress — 2-column grid ── */}
+      {/* ── Section 1: Course Progress — current level only, 2-column grid ── */}
       <div>
         <p className="section-label mb-3 text-brand">Course Progress</p>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {TRACKS.map((track) => {
+          {TRACKS.filter((t) => t.level === level).map((track) => {
             const tSubjects = subjectsForTrack(track.courses);
             const pct = trackPct(tSubjects);
             const tone = pct === 100 ? "green" : "purple";
             return (
               <IrpCard key={track.name} className="p-5">
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-4">
                   <ProgressRing value={pct} size={54} tone={tone} />
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-base font-extrabold text-ink">
@@ -129,16 +129,6 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
                     <p className="text-xs text-muted2">
                       Level {track.level} · {track.courses.length} courses
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {track.courses.map((c) => (
-                        <span
-                          key={c}
-                          className="rounded-md border border-[#dee2e6] bg-[#f1f3f5] px-2 py-1 text-[10px] font-medium text-muted2"
-                        >
-                          {c}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </IrpCard>
