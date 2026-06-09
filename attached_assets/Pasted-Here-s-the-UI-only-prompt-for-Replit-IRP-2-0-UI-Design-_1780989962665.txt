@@ -1,0 +1,408 @@
+Here's the UI-only prompt for Replit:
+
+---
+
+# IRP 2.0 — UI Design Brief
+
+This is purely a visual design brief. No logic changes, no backend changes. Only how the app looks.
+
+---
+
+## Reference
+
+The UI must match the **NxtWave Academy website visual language** exactly. The website uses:
+- A soft multicolour gradient mesh background (lavender → mint → warm cream → rose) — not flat, not a single colour, a radial gradient blend across all four corners
+- White frosted-glass cards with soft shadows
+- Bold chunky Syne display font mixed with DM Sans for body text
+- A strict level colour system: L1 = blue, L2 = amber/orange, L3 = pink/magenta
+- Very airy spacing, lots of breathing room, nothing cramped
+
+---
+
+## Colour Tokens
+
+```
+/* Background — multicolour mesh, fixed attachment */
+background: radial-gradient(ellipse 80% 60% at 0% 0%,   #e4ddff 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 100% 0%,  #d1f5ea 0%, transparent 50%),
+            radial-gradient(ellipse 70% 60% at 100% 100%, #fce4f0 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 0% 100%,  #fef4d0 0%, transparent 50%);
+background-color: #f0edff;
+background-attachment: fixed;
+
+/* Surfaces */
+--white:    #ffffff
+--surface:  #f8f7ff
+
+/* Level colours — strict, do not deviate */
+--l1:       #3b5bdb   (blue)
+--l1-bg:    #eef2ff
+--l2:       #f59f00   (amber)
+--l2-bg:    #fff9db
+--l2-text:  #e67700
+--l3:       #e64980   (pink)
+--l3-bg:    #fff0f6
+--l3-text:  #c2255c
+
+/* Accents */
+--purple:   #6741d9
+--purple2:  #9c36b5
+--teal:     #0ca678
+--amber:    #f59f00
+--red:      #fa5252
+
+/* Text */
+--ink:      #0d1117
+--ink2:     #3d3558
+--muted:    #6e6a8a
+--dim:      #aaa5c0
+
+/* Shadows */
+--shadow-sm: 0 1px 4px rgba(100,80,200,0.07), 0 4px 16px rgba(100,80,200,0.06);
+--shadow-md: 0 2px 8px rgba(100,80,200,0.08), 0 8px 32px rgba(100,80,200,0.09);
+```
+
+---
+
+## Typography
+
+```
+Display / headings:  Syne — weight 700, 800 (Google Fonts)
+Body / UI:           DM Sans — weight 400, 500, 600, 700 (Google Fonts)
+```
+
+Page titles: Syne 22–24px weight 800, colour `#0d1117`
+Card headings: Syne 14–16px weight 800
+Body text: DM Sans 12–13px weight 400–500, colour `#6e6a8a`
+Section labels: DM Sans 10px weight 700, letter-spacing 2px, text-transform uppercase
+
+---
+
+## Layout
+
+Fixed sidebar (220px wide) + scrollable main content area. Top bar for state/page switching fixed at top (48px tall). Sidebar and top bar use `backdrop-filter: blur(16–20px)` with white at 80–85% opacity so the gradient background bleeds through softly.
+
+Main content padding: 28px 32px. Gap between sections: 20px. Never let content feel cramped.
+
+---
+
+## Sidebar
+
+- Background: `rgba(255,255,255,0.82)` with `backdrop-filter: blur(20px)`
+- Right border: `1px solid rgba(103,65,217,0.1)`
+- Soft box shadow rightward: `2px 0 20px rgba(103,65,217,0.05)`
+
+**Logo area:**
+- Small square icon (32×32px, 8px border radius) with blue→purple gradient, "IRP" in Syne white text
+- "IRP 2.0" in Syne 14px weight 800
+- "INTERNSHIP READINESS" in 9px uppercase muted purple, letter-spacing 1.5px
+
+**User card:**
+- Background: `#eef2ff` (L1 blue tint), border `rgba(59,91,219,0.15)`
+- 10px border radius, 10px padding
+- Small avatar circle (32px) with blue→purple gradient, user initials
+- Name in DM Sans 12px weight 700, YOG in 10px muted
+
+**Level badge:**
+- Full width pill, 9px border radius
+- Standard path: solid `#3b5bdb` background (L1), or `#f59f00` (L2), or `#e64980` (L3)
+- Wildcard: gradient `#9c36b5 → #e64980`
+- White text, 12px DM Sans weight 700, emoji + level name
+
+**Nav items:**
+- Default: transparent bg, muted text, 9px border radius
+- Hover: `rgba(103,65,217,0.05)` background, ink text
+- Active: `#eef2ff` background, `#3b5bdb` text, `1.5px solid rgba(59,91,219,0.18)` border
+- 12px DM Sans weight 600
+- Small badge pills on right: "Active" in green tint, "Soon" in light grey
+
+**Wildcard opt-back box** (visible only when on Wildcard path):
+- `#fff0f6` background, `rgba(230,73,128,0.15)` border, 10px border radius
+- Small label "NOT SURE ABOUT L3?" in 9px uppercase pink
+- 10px muted body text
+- Ghost button, pink border and text, "Switch to standard path"
+
+---
+
+## Cards
+
+All cards:
+- Background: `rgba(255,255,255,0.88)` with `backdrop-filter: blur(12px)`
+- Border: `1.5px solid rgba(103,65,217,0.1)`
+- Border radius: 16px
+- Padding: 20px 22px
+- Shadow: `--shadow-sm`
+
+Level-specific card border colour overrides:
+- L1 card: `rgba(59,91,219,0.15)`
+- L2 card: `rgba(245,159,0,0.2)`
+- L3 card: `rgba(230,73,128,0.15)`
+- Wildcard card: `rgba(156,54,181,0.18)`
+
+---
+
+## Hero Banners
+
+Full-width banner inside the dashboard. Border radius 16px. `1.5px` border. Shadow `--shadow-sm`. Two columns: text left, visual element right.
+
+**Prep / Upcoming Assessment:**
+- Background: `linear-gradient(130deg, #eef2ff 0%, #f8f0ff 60%, #fff0f9 100%)`
+- Border: `rgba(59,91,219,0.18)`
+- Tag: "UPCOMING ASSESSMENT" in `#3b5bdb`, pulsing dot same colour
+- Title: Syne 22px weight 800, `#0d1117`
+- Sub: DM Sans 12px, muted
+- Right: countdown ring (SVG circle, blue→purple gradient stroke, days number in Syne 24px bold)
+
+**Assessment LIVE:**
+- Background: `linear-gradient(130deg, #e8faf0, #f0fff8)`
+- Border: `rgba(12,166,120,0.25)`
+- Tag: teal with pulsing dot
+- CTA button: "Attempt Now →" solid teal, white text
+
+**Reattempt Waiting:**
+- Background: `rgba(255,255,255,0.92)`
+- Border: `rgba(103,65,217,0.15)`
+- Tag: purple, no pulsing animation
+- Right: date card — `#eef2ff` background, blue border, "NEXT ATTEMPT" label in 9px uppercase blue, date in Syne 16px bold
+- **No red anywhere on this screen**
+
+**Post-Assessment Cleared:**
+- Background: `linear-gradient(130deg, #e8faf0, #f0fff8)`
+- Border: `rgba(12,166,120,0.25)`
+- Tag: "L1 ASSESSMENT — CLEARED" in teal with pulsing dot
+- Right: small badge card — `#d3f9d8` background, ✅ emoji, "L1 Cleared" in teal Syne
+
+**Wildcard Active:**
+- Background: `linear-gradient(130deg, #f8f0ff, #fff0f9)`
+- Border: `rgba(156,54,181,0.2)`
+- Tag: `#9c36b5` with pulsing dot
+- Right: countdown ring — pink→magenta gradient stroke, number in pink
+
+---
+
+## Journey Bar
+
+Three steps connected by a horizontal line. Centered content per step.
+
+**Connector line:**
+- Default: `rgba(103,65,217,0.1)`, 2px height
+- Completed step connector: `linear-gradient(90deg, #0ca678, rgba(12,166,120,0.15))`
+
+**Step orbs (40×40px circles):**
+- Active (current step): solid L1 blue fill, `0 0 0 4px rgba(59,91,219,0.15)` ring shadow
+- Done: `#d3f9d8` background, `2px solid #0ca678` border, ✅ inside
+- Reattempt: `#eef2ff` background, `2px dashed rgba(103,65,217,0.4)` border, ↩️ inside
+- Wildcard active: pink→magenta gradient, pink ring shadow
+- Wildcard pending: `#fff0f6` background, `2px solid rgba(230,73,128,0.25)` border
+- Locked: `#f1f3f5` background, `2px solid #dee2e6` border, 🔒 inside
+
+**Step labels:** DM Sans 11px weight 700, `#0d1117`
+**Step desc:** DM Sans 10px, muted, max-width 90px, centred
+**Badge pills:** 10px DM Sans weight 700, 2px 9px padding, 100px border radius
+- Active: `#eef2ff` bg, `#3b5bdb` text, blue border
+- Cleared: `#d3f9d8` bg, green text, green border
+- Locked/gray: `#f1f3f5` bg, dim text, `#dee2e6` border
+- Reattempt: same as active (blue)
+- Wildcard: `#fff0f6` bg, pink text, pink border
+
+---
+
+## Progress Rings (Dashboard)
+
+Three cards in a row. Each card: white background, `box-shadow: --shadow-sm`, 14px border radius, top border 3px in the card's accent colour (blue / blue / teal for overall/MCQ/code).
+
+**Ring (SVG, 72×72px, rotated -90deg):**
+- Track circle: very light tint of the accent colour (8–10% opacity)
+- Stroke: gradient — overall: blue→purple, MCQ: blue→indigo, code: teal→green
+- Stroke width: 6px, round linecap
+
+**Inside ring:**
+- Percentage: Syne 16px weight 800, `#0d1117`
+- Label: 9px uppercase muted, letter-spacing 1px
+
+**Below ring:**
+- Stat label: DM Sans 11px muted
+- Big number: Syne 19px weight 800, ink colour
+- Sub (remaining): DM Sans 10px muted
+- CTA button: `#eef2ff` bg, blue border, blue text, 7px border radius. Hover: solid blue bg, white text
+
+---
+
+## Track Cards (My Learning)
+
+Two-column grid. Each card: white with `backdrop-filter: blur(12px)`, `1.5px solid rgba(103,65,217,0.1)` border, 14px border radius, shadow. Hover: border deepens, shadow lifts slightly.
+
+**Card top section (padding 14px):**
+- Left: small ring (54×54px) showing track % — same SVG ring pattern, gradient stroke matching track theme
+- Right:
+  - Track name: DM Sans 12px weight 700, ink
+  - Course count: 10px dim text
+  - Course pills: `flex-wrap: wrap`, 3px gap
+
+**Course pills (10px DM Sans weight 500, 2px 8px padding, 100px border radius):**
+- Done ✓: `#d3f9d8` bg, `#2b8a3e` text, `rgba(12,166,120,0.2)` border
+- In progress: `#eef2ff` bg, `#3b5bdb` text, `rgba(59,91,219,0.18)` border
+- Not started: `#f1f3f5` bg, dim text, `#dee2e6` border
+- Amber (for external platforms): `#fff9db` bg, `#e67700` text, `rgba(245,159,0,0.2)` border
+
+**Expand toggle button (bottom of card):**
+- Full width, `rgba(103,65,217,0.03)` bg, `1px solid rgba(103,65,217,0.07)` top border
+- 7px 14px padding, 10px DM Sans weight 600, muted text
+- Left: "Subject-wise stats", right: chevron ⌄ that rotates 180° when open
+- Hover: `rgba(103,65,217,0.05)` bg, purple text
+
+**Expanded subject stats panel:**
+- Background: `rgba(248,247,255,0.8)`, `1px solid rgba(103,65,217,0.06)` top border
+- Padding: 12px 14px, flex column, 8px gap
+- Each subject row: white bg, `rgba(103,65,217,0.07)` border, 8px border radius, 7px 10px padding
+  - Subject name: DM Sans 11px weight 600, ink, fixed 88px width
+  - Bars: flex column, 4px gap
+  - Each bar line: label (9px dim, 24px fixed) + bar track (flex 1, 4px tall, `rgba(103,65,217,0.08)` track) + percentage (10px weight 700, 28px fixed right-aligned)
+  - MCQ bar fill: `linear-gradient(90deg, #3b82f6, #3b5bdb)`, MCQ % in `#3b5bdb`
+  - Code bar fill: `linear-gradient(90deg, #0ca678, #2f9e44)`, code % in `#0ca678`
+
+---
+
+## Learning Stats (My Learning header)
+
+Three equal cards. Each: white bg, `--shadow-sm`, `1.5px solid rgba(103,65,217,0.08)` border, 14px border radius, 16px 18px padding.
+
+- Label: DM Sans 10px weight 500, muted
+- Value: Syne 22px weight 800, coloured (blue / blue / teal)
+- Sub: DM Sans 10px dim
+- Progress bar: 4px tall, `rgba(103,65,217,0.08)` track, 10px margin-top, gradient fill matching the value colour
+
+---
+
+## Task Cards (Post-Assessment)
+
+Two-column grid. Each card: 14px border radius, `1.5px` border, `--shadow-sm`.
+
+**Active task:**
+- Background: `#eef2ff`, border `rgba(59,91,219,0.22)`
+- Step label: 10px uppercase blue, weight 700
+- Emoji icon: 24px
+- Title: Syne 15px weight 800, ink
+- Description: DM Sans 11px muted, 1.5 line height
+- Status badge: solid `#3b5bdb` bg, white text
+- Due date: DM Sans 10px weight 600, `#e67700`
+- CTA button: full width, solid `#3b5bdb`, white text, 9px border radius
+
+**Pending/locked task:**
+- Background: `#f8f9fa`, border `#dee2e6`
+- All text dimmed
+- Status badge: `#f1f3f5` bg, dim text, grey border
+- No CTA button
+
+---
+
+## Info Strips (bottom of dashboard sections)
+
+Full-width card: `rgba(255,255,255,0.88)` bg, `1.5px solid rgba(103,65,217,0.1)` border, 14px border radius, 14px 18px padding, shadow. Flex row: icon left + body text + pill right.
+
+- Icon: 22px emoji, flex-shrink 0
+- Title: DM Sans 13px weight 700, ink
+- Sub: DM Sans 11px muted
+- Pill right (blue): `#eef2ff` bg, `#3b5bdb` text, blue border
+- Pill right (amber): `#fff9db` bg, `#e67700` text, amber border
+- Pill right (pink): `#fff0f6` bg, `#c2255c` text, pink border
+
+---
+
+## Slot Booking Page
+
+**Coming soon hero card:**
+- Background: `linear-gradient(130deg, #eef2ff, #f8f0ff)`
+- Border: `rgba(103,65,217,0.15)`, border radius 16px, padding 32px, text centred, shadow
+- Large 🗓️ emoji (44px)
+- Title: Syne 20px weight 800, ink
+- Sub: DM Sans 13px muted
+- Coming soon pill: `#eef2ff` bg, blue text and border, flex inline pill
+
+**Preview slot cards (greyed out, not interactive):**
+Three-column grid. Each: white bg, `rgba(103,65,217,0.1)` border, 12px border radius, 16px padding, `opacity: 0.5`, `pointer-events: none`, shadow.
+- Date: Syne 15px weight 800
+- Time: DM Sans 12px muted
+- Spots: DM Sans 10px dim, spots number in teal weight 700
+- Button: transparent, grey border, not-allowed cursor
+
+**Notify-me card:**
+White bg, `rgba(59,91,219,0.15)` border, 14px border radius, 18px 20px padding, shadow.
+- Title: DM Sans 14px weight 700
+- Sub: DM Sans 11px muted
+- Input + button row:
+  - Input: `#f8f7ff` bg, `rgba(103,65,217,0.15)` border, 8px border radius, 9px 12px padding, focus border `#3b5bdb`
+  - Button: solid `#3b5bdb`, white text, 8px border radius, 9px 18px padding
+
+---
+
+## Onboarding Path Selection Screen
+
+Full-screen, centred layout. Same multicolour gradient mesh background as the main app.
+
+**Header (centred):**
+- IRP logo top-left
+- Headline: Syne 28px weight 800, `#0d1117` — "How do you want to take on IRP 2.0?"
+- Sub: DM Sans 14px muted — "Choose your path. You can switch later from your profile."
+
+**Two cards side by side (generous padding, white, shadow, 20px border radius):**
+
+**Card 1 — Standard Path:**
+- Background: white, `rgba(59,91,219,0.12)` border
+- Hover: border deepens to `rgba(59,91,219,0.3)`, slight lift shadow
+- Large 🏆 emoji (48px)
+- Title: Syne 18px weight 800 "The Builder's Path"
+- Description: DM Sans 13px muted
+- Level chips row: small pill tags "L1 · The Hustler" → "L2 · The AI Architect" → "L3 · Infinite Aura" — blue, amber, pink respectively with arrows between
+- CTA: full-width solid `#3b5bdb` button, white text, Syne 14px weight 700, 12px border radius
+
+**Card 2 — Wildcard:**
+- Background: white, `rgba(230,73,128,0.15)` border
+- Hover: border deepens to `rgba(230,73,128,0.3)`, lift shadow
+- Badge top-right: `#fff9db` bg, `#e67700` text — "Advanced students only"
+- Large ⚡ emoji (48px)
+- Title: Syne 18px weight 800 "Direct L3"
+- Description: DM Sans 13px muted
+- CTA: full-width gradient button `#9c36b5 → #e64980`, white text
+
+---
+
+## Wildcard Confirmation Screen
+
+Full-screen centred card. Same gradient bg. Card: white, 20px border radius, shadow, max-width 520px, generous padding.
+
+- ⚡ emoji large (52px), centred, margin-bottom 14px
+- Title: Syne 22px weight 800, `#0d1117` — "Before you go wildcard — read this."
+- Body block (DM Sans 14px, muted, 1.7 line height):
+
+> L3 is the hardest level. It covers everything from HTML/CSS to DSA Level 4 in one assessment.
+>
+> ✅ Pick Wildcard if you're already strong in frontend, backend, and DSA
+> ❌ Don't pick Wildcard if you're still learning the basics
+>
+> You can switch back to the standard path anytime before your exam — but once the exam starts, you're committed.
+
+- Divider line `rgba(103,65,217,0.08)`
+- Two buttons stacked (full width):
+  1. Primary: `#9c36b5 → #e64980` gradient, white text, Syne 14px weight 700 — "Yes, I'm ready — take me to L3"
+  2. Ghost: `rgba(103,65,217,0.08)` bg, `#6741d9` text, `rgba(103,65,217,0.2)` border — "Actually, start me on Standard Path"
+
+---
+
+## Admin Panel
+
+Same gradient background and card system as the rest of the app. Light mode throughout.
+
+- Table: white card, rows alternate between white and `#fafafa`, `1.5px solid rgba(103,65,217,0.08)` border
+- Table headers: DM Sans 10px uppercase weight 700, dim, letter-spacing 1.5px
+- Table cells: DM Sans 12px
+- State badges in table: styled like the journey bar badges — coloured pill per state
+- Dropdown selects: `#f8f7ff` bg, `rgba(103,65,217,0.15)` border, `#3b5bdb` focus ring
+- Primary action buttons: solid `#3b5bdb`, white text
+- Secondary buttons: outlined, `#3b5bdb` border and text
+- Export CSV button: `#0ca678` outlined
+- Date picker inputs: same style as the notify-me input above
+
+---
+
+**That's the complete UI spec. Everything described here maps to the NxtWave Academy visual language: multicolour gradient mesh background, white frosted-glass cards, L1 blue / L2 amber / L3 pink colour system, Syne + DM Sans typography, airy spacing and soft shadows. Apply this to every screen in the app — login, onboarding, dashboard, learning, slots, admin. No dark mode anywhere.**

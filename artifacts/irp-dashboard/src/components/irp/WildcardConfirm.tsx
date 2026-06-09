@@ -1,5 +1,3 @@
-import { Zap, Check, X } from "lucide-react";
-
 export function WildcardConfirm({
   onConfirm,
   onCancel,
@@ -14,38 +12,36 @@ export function WildcardConfirm({
   busy?: boolean;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <div className="irp-card irp-glow p-7 sm:p-9">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff6eb4] to-[#c45fff] text-white">
-            <Zap className="h-6 w-6" />
-          </div>
-          <h2 className="font-display text-2xl font-extrabold text-[#e8e6ff]">
-            Before you go wildcard — read this.
-          </h2>
-        </div>
+    <div className="mx-auto w-full max-w-[520px]">
+      <div className="rounded-[20px] border border-[rgba(103,65,217,0.1)] bg-white p-7 shadow-soft-md sm:p-9">
+        <div className="mb-4 text-center text-5xl">⚡</div>
+        <h2 className="text-center font-display text-2xl font-extrabold text-ink">
+          Before you go wildcard — read this.
+        </h2>
 
-        <p className="text-[15px] leading-relaxed text-[#b9a7ff]">
+        <p className="mt-5 text-[15px] leading-relaxed text-muted2">
           L3 is the hardest level. It covers everything from HTML/CSS to DSA Level 4 in one
           assessment.
         </p>
 
         <div className="mt-5 space-y-3">
-          <div className="flex items-start gap-3 rounded-xl border border-[#1d9e75]/30 bg-[#1d9e75]/10 p-3.5">
-            <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#5fe0ad]" />
-            <p className="text-sm text-[#cfe9df]">
+          <div className="flex items-start gap-3 rounded-xl border border-[rgba(12,166,120,0.25)] bg-[#d3f9d8] p-3.5">
+            <span className="mt-0.5 text-base leading-none">✅</span>
+            <p className="text-sm text-ink2">
               Pick Wildcard if you're already strong in frontend, backend, and DSA.
             </p>
           </div>
-          <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
-            <X className="mt-0.5 h-5 w-5 shrink-0 text-[#7a6eaa]" />
-            <p className="text-sm text-[#a99fce]">
+          <div className="flex items-start gap-3 rounded-xl border border-[#dee2e6] bg-[#f8f9fa] p-3.5">
+            <span className="mt-0.5 text-base leading-none">❌</span>
+            <p className="text-sm text-muted2">
               Don't pick Wildcard if you're still learning the basics.
             </p>
           </div>
         </div>
 
-        <p className="mt-5 rounded-xl border border-[#8a6eff]/25 bg-[#8a6eff]/10 p-3.5 text-sm text-[#b9a7ff]">
+        <div className="my-6 h-px bg-[rgba(103,65,217,0.08)]" />
+
+        <p className="rounded-xl border border-[rgba(103,65,217,0.15)] bg-[rgba(103,65,217,0.06)] p-3.5 text-sm text-ink2">
           You can switch back to the standard path anytime before your exam — but once the exam
           starts, you're committed.
         </p>
@@ -55,16 +51,16 @@ export function WildcardConfirm({
             type="button"
             disabled={busy}
             onClick={onConfirm}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8a6eff] to-[#c45fff] px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-xl px-5 py-3 font-display text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={{ background: "linear-gradient(90deg,#9c36b5,#e64980)" }}
           >
-            <Zap className="h-4 w-4" />
             {confirmLabel}
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={onCancel}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-bold text-[#b9a7ff] transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+            className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[rgba(103,65,217,0.08)] px-5 py-3 text-sm font-bold text-brand transition-colors hover:bg-[rgba(103,65,217,0.12)] disabled:opacity-50"
           >
             {cancelLabel}
           </button>

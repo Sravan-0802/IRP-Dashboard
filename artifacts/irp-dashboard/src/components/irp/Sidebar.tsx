@@ -1,7 +1,13 @@
 import { LayoutDashboard, BookOpen, CalendarClock, LogOut, Settings, Zap, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
-import { levelLabel } from "@/lib/journey";
+import { levelLabel, getLevel } from "@/lib/journey";
+
+const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
+  1: "#3b5bdb",
+  2: "#f59f00",
+  3: "#e64980",
+};
 
 export type PageKey = "dashboard" | "learning" | "slot";
 
@@ -29,30 +35,36 @@ export function SidebarContent({
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[#8a6eff1f] px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#8a6eff] to-[#c45fff] font-display text-sm font-extrabold text-white">
+      <div className="flex items-center gap-2.5 border-b border-[#6741d9]/10 px-5 py-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] font-display text-[11px] font-extrabold text-white">
           IRP
         </div>
-        <span className="font-display text-lg font-extrabold tracking-tight text-[#e8e6ff]">2.0</span>
+        <div className="leading-tight">
+          <p className="font-display text-sm font-extrabold tracking-tight text-[#0d1117]">IRP 2.0</p>
+          <p className="text-[9px] font-bold uppercase tracking-[1.5px] text-[#6741d9]/70">Internship Readiness</p>
+        </div>
       </div>
 
-      <div className="border-b border-[#8a6eff1f] px-4 py-4">
-        <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8a6eff] to-[#c45fff] text-sm font-bold text-white">
+      <div className="border-b border-[#6741d9]/10 px-4 py-4">
+        <div className="flex items-center gap-3 rounded-[10px] border border-[#3b5bdb]/15 bg-[#eef2ff] p-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] text-xs font-bold text-white">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-[#e8e6ff]">{name}</p>
-            <p className="text-xs font-medium text-[#7a6eaa]">YOG {yog}</p>
+            <p className="truncate text-xs font-bold text-[#0d1117]">{name}</p>
+            <p className="text-[10px] font-medium text-[#6e6a8a]">YOG {yog}</p>
           </div>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[#4a4060]" />
+          <ChevronDown className="h-4 w-4 shrink-0 text-[#aaa5c0]" />
         </div>
         {journey.isWildcard ? (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-gradient-to-r from-[#ff6eb4] to-[#c45fff] px-3 py-1.5 text-xs font-bold text-white">
+          <div className="mt-2 flex items-center justify-between rounded-[9px] bg-gradient-to-r from-[#9c36b5] to-[#e64980] px-3 py-1.5 text-xs font-bold text-white">
             <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" /> Wildcard · Direct L3</span>
           </div>
         ) : (
-          <div className="mt-2 rounded-lg bg-[#8a6eff]/15 px-3 py-1.5 text-xs font-bold text-[#b9a7ff]">
+          <div
+            className="mt-2 rounded-[9px] px-3 py-1.5 text-xs font-bold text-white"
+            style={{ backgroundColor: LEVEL_COLOR[getLevel(journey.journeyState)] }}
+          >
             {levelLabel(journey.journeyState)}
           </div>
         )}
@@ -65,10 +77,10 @@ export function SidebarContent({
             type="button"
             onClick={() => onNavigate(key)}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+              "flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold transition-all",
               active === key
-                ? "bg-[#8a6eff]/15 text-[#c9bdff]"
-                : "text-[#7a6eaa] hover:bg-white/[0.04] hover:text-[#cfc7ee]",
+                ? "border-[1.5px] border-[#3b5bdb]/[0.18] bg-[#eef2ff] text-[#3b5bdb]"
+                : "border-[1.5px] border-transparent text-[#6e6a8a] hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]",
             )}
           >
             <Icon className="h-4 w-4 shrink-0" />
@@ -77,17 +89,17 @@ export function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-[#8a6eff1f] px-3 py-3">
+      <div className="border-t border-[#6741d9]/10 px-3 py-3">
         <button
           type="button"
           onClick={onOpenSettings}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#7a6eaa] transition-colors hover:bg-white/[0.04] hover:text-[#cfc7ee]"
+          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]"
         >
           <Settings className="h-4 w-4" /> Settings
         </button>
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#ff7a9c] transition-colors hover:bg-[#ff6eb4]/10"
+          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#fa5252] transition-colors hover:bg-[#fa5252]/10"
         >
           <LogOut className="h-4 w-4" /> Logout
         </button>

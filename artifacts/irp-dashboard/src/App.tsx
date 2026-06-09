@@ -15,7 +15,7 @@ function Home() {
   if (isLoading) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
-        <p className="text-sm font-semibold text-[#7a6eaa]">Loading…</p>
+        <p className="text-sm font-semibold text-muted2">Loading…</p>
       </div>
     );
   }

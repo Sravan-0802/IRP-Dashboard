@@ -77,7 +77,7 @@ export default function Dashboard() {
   if (loadingJourney || !journey || !displayStudent) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
-        <p className="text-sm font-semibold text-[#7a6eaa]">Loading your dashboard…</p>
+        <p className="text-sm font-semibold text-muted2">Loading your dashboard…</p>
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">
-      <aside className="hidden w-64 shrink-0 border-r border-[#8a6eff1f] bg-[#0b0b16] md:flex">
+      <aside className="glass-panel hidden w-[220px] shrink-0 border-r border-[rgba(103,65,217,0.1)] shadow-[2px_0_20px_rgba(103,65,217,0.05)] md:flex">
         <SidebarContent
           name={displayStudent.name}
           yog={displayStudent.yog}
@@ -109,9 +109,9 @@ export default function Dashboard() {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[110] md:hidden">
-          <button type="button" aria-label="Close menu" className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-[min(280px,85vw)] border-r border-[#8a6eff1f] bg-[#0b0b16]">
-            <button type="button" onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-[#7a6eaa]">
+          <button type="button" aria-label="Close menu" className="absolute inset-0 bg-[rgba(13,17,23,0.35)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-[min(280px,85vw)] border-r border-[rgba(103,65,217,0.1)] bg-[rgba(255,255,255,0.96)] backdrop-blur-xl">
+            <button type="button" onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-muted2">
               <X className="h-5 w-5" />
             </button>
             <SidebarContent
@@ -127,11 +127,11 @@ export default function Dashboard() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-[#8a6eff1f] bg-[#0b0b16]/90 px-4 py-3 backdrop-blur md:hidden">
-          <button type="button" onClick={() => setMobileOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#cfc7ee]">
+        <header className="glass-bar sticky top-0 z-40 flex items-center gap-3 border-b border-[rgba(103,65,217,0.1)] px-4 py-3 md:hidden">
+          <button type="button" onClick={() => setMobileOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(59,91,219,0.18)] bg-l1-bg text-l1">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-display text-base font-extrabold text-[#e8e6ff]">IRP 2.0</span>
+          <span className="font-display text-base font-extrabold text-ink">IRP 2.0</span>
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16">

@@ -42,11 +42,11 @@ export function SettingsSheet({
 
   return (
     <div className="fixed inset-0 z-[120] flex justify-end">
-      <button type="button" aria-label="Close settings" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-      <div className="relative flex h-full w-[min(420px,92vw)] flex-col overflow-y-auto border-l border-[#8a6eff1f] bg-[#0b0b16] p-6">
+      <button type="button" aria-label="Close settings" className="absolute inset-0 bg-[rgba(13,17,23,0.35)] backdrop-blur-sm" onClick={close} />
+      <div className="relative flex h-full w-[min(420px,92vw)] flex-col overflow-y-auto border-l border-[rgba(103,65,217,0.1)] bg-[rgba(255,255,255,0.96)] p-6 backdrop-blur-xl">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-display text-xl font-extrabold text-[#e8e6ff]">Settings</h2>
-          <button type="button" onClick={close} className="rounded-lg p-1.5 text-[#7a6eaa] hover:bg-white/5">
+          <h2 className="font-display text-xl font-extrabold text-ink">Settings</h2>
+          <button type="button" onClick={close} className="rounded-lg p-1.5 text-muted2 hover:bg-[rgba(103,65,217,0.05)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -54,11 +54,11 @@ export function SettingsSheet({
         {mode === "menu" && (
           <div className="space-y-6">
             <section>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-[#7a6eaa]">Learning path</p>
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
-                <p className="text-sm text-[#a99fce]">
+              <p className="section-label mb-3 text-muted2">Learning path</p>
+              <div className="rounded-xl border border-[rgba(103,65,217,0.1)] bg-surface p-4">
+                <p className="text-sm text-muted2">
                   You're on the{" "}
-                  <span className="font-bold text-[#e8e6ff]">
+                  <span className="font-bold text-ink">
                     {journey.isWildcard ? "Wildcard (Direct L3)" : "Standard"}
                   </span>{" "}
                   path.
@@ -68,13 +68,13 @@ export function SettingsSheet({
                   <button
                     type="button"
                     onClick={() => setMode("to-standard")}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8a6eff] to-[#c45fff] px-4 py-2.5 text-sm font-bold text-white"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-l1 px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
                   >
                     <Trophy className="h-4 w-4" /> Switch to Standard Path
                   </button>
                 ) : standardToWildcardBlocked ? (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-[#a99fce]">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#ffc564]" />
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-[rgba(245,159,0,0.2)] bg-l2-bg p-3 text-xs text-l2-text">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-l2-text" />
                     You've already begun the standard path assessment. Switching to Wildcard is no
                     longer available.
                   </div>
@@ -82,7 +82,7 @@ export function SettingsSheet({
                   <button
                     type="button"
                     onClick={() => setMode("to-wildcard")}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#ff6eb4]/40 bg-[#ff6eb4]/10 px-4 py-2.5 text-sm font-bold text-[#ff9ccf]"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(230,73,128,0.4)] bg-l3-bg px-4 py-2.5 text-sm font-bold text-l3-text transition-colors hover:bg-[#ffe3ef]"
                   >
                     <Zap className="h-4 w-4" /> Switch to Wildcard
                   </button>
@@ -91,13 +91,13 @@ export function SettingsSheet({
             </section>
 
             <section>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-[#7a6eaa]">
+              <p className="section-label mb-3 text-muted2">
                 Preview state (demo)
               </p>
               <select
                 value={journey.journeyState}
                 onChange={(e) => setState.mutate(e.target.value as JourneyState)}
-                className="w-full rounded-xl border border-white/10 bg-[#11111f] px-3 py-2.5 text-sm font-semibold text-[#e8e6ff] outline-none focus:border-[#8a6eff]"
+                className="w-full rounded-lg border border-[rgba(103,65,217,0.15)] bg-surface px-3 py-2.5 text-sm font-semibold text-ink outline-none focus:border-l1"
               >
                 {states.map((s) => (
                   <option key={s} value={s}>
@@ -105,12 +105,12 @@ export function SettingsSheet({
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs text-[#4a4060]">
+              <p className="mt-2 text-xs text-dim">
                 Simulates the journey_state an admin/webhook would set.
               </p>
             </section>
 
-            {error && <p className="text-sm text-[#ff7a9c]">{error}</p>}
+            {error && <p className="text-sm text-red">{error}</p>}
           </div>
         )}
 
@@ -124,26 +124,26 @@ export function SettingsSheet({
         )}
 
         {mode === "to-standard" && (
-          <div className="rounded-xl border border-[#8a6eff]/25 bg-[#8a6eff]/10 p-5">
-            <h3 className="font-display text-lg font-extrabold text-[#e8e6ff]">Are you sure?</h3>
-            <p className="mt-2 text-sm text-[#a99fce]">
+          <div className="rounded-xl border border-[rgba(103,65,217,0.15)] bg-[rgba(103,65,217,0.06)] p-5">
+            <h3 className="font-display text-lg font-extrabold text-ink">Are you sure?</h3>
+            <p className="mt-2 text-sm text-muted2">
               You'll start from L1. This cannot be undone once your L3 exam has started. Your
               learning progress won't be lost.
             </p>
-            {error && <p className="mt-3 text-sm text-[#ff7a9c]">{error}</p>}
+            {error && <p className="mt-3 text-sm text-red">{error}</p>}
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
                 disabled={switchPath.isPending}
                 onClick={() => doSwitch("standard")}
-                className="rounded-xl bg-gradient-to-r from-[#8a6eff] to-[#c45fff] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                className="rounded-xl bg-l1 px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 Yes, switch to Standard Path
               </button>
               <button
                 type="button"
                 onClick={() => setMode("menu")}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-[#b9a7ff]"
+                className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[rgba(103,65,217,0.08)] px-4 py-2.5 text-sm font-bold text-brand transition-colors hover:bg-[rgba(103,65,217,0.12)]"
               >
                 Cancel
               </button>

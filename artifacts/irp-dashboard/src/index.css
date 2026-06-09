@@ -44,16 +44,27 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  /* IRP 2.0 brand palette (raw, for direct use in components) */
-  --color-ink: var(--c-bg);
-  --color-surface: var(--c-surface);
-  --color-surface-2: var(--c-surface-2);
-  --color-brand: var(--c-purple);
-  --color-brand-2: var(--c-purple2);
-  --color-pink: var(--c-pink);
-  --color-teal: var(--c-teal);
-  --color-amber: var(--c-amber);
-  --color-dim: var(--c-dim);
+  /* ── IRP 2.0 / NxtWave Academy palette (raw, for direct use in components) ── */
+  --color-ink: #0d1117;
+  --color-ink2: #3d3558;
+  --color-muted2: #6e6a8a;
+  --color-dim: #aaa5c0;
+  --color-surface: #f8f7ff;
+
+  --color-l1: #3b5bdb;
+  --color-l1-bg: #eef2ff;
+  --color-l2: #f59f00;
+  --color-l2-bg: #fff9db;
+  --color-l2-text: #e67700;
+  --color-l3: #e64980;
+  --color-l3-bg: #fff0f6;
+  --color-l3-text: #c2255c;
+
+  --color-brand: #6741d9;
+  --color-brand-2: #9c36b5;
+  --color-teal: #0ca678;
+  --color-amber: #f59f00;
+  --color-red: #fa5252;
 
   --font-sans: var(--app-font-sans);
   --font-display: var(--app-font-display);
@@ -66,65 +77,53 @@
 }
 
 :root {
-  /* ── IRP 2.0 dark design system ── */
-  --c-bg: #09090f;
-  --c-surface: #0f0f1a;
-  --c-surface-2: #14142370;
-  --c-purple: #8a6eff;
-  --c-purple2: #c45fff;
-  --c-pink: #ff6eb4;
-  --c-teal: #1d9e75;
-  --c-amber: #ffa500;
-  --c-gold: #ffc83d;
-  --c-gold-2: #ffa500;
-  --c-text: #e8e6ff;
-  --c-muted: #7a6eaa;
-  --c-dim: #4a4060;
-  --c-border: rgba(138, 110, 255, 0.14);
+  /* ── NxtWave Academy light design system ── */
+  --shadow-sm: 0 1px 4px rgba(100, 80, 200, 0.07), 0 4px 16px rgba(100, 80, 200, 0.06);
+  --shadow-md: 0 2px 8px rgba(100, 80, 200, 0.08), 0 8px 32px rgba(100, 80, 200, 0.09);
 
-  --background: 240 33% 5%;
-  --foreground: 246 100% 95%;
-  --border: 252 40% 22%;
+  --background: 250 100% 96%;
+  --foreground: 213 28% 7%;
+  --border: 252 52% 92%;
 
-  --card: 240 28% 8%;
-  --card-foreground: 246 100% 95%;
-  --card-border: 252 40% 22%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 28% 7%;
+  --card-border: 252 52% 92%;
 
-  --sidebar: 240 30% 7%;
-  --sidebar-foreground: 246 100% 95%;
-  --sidebar-border: 252 40% 18%;
-  --sidebar-primary: 252 100% 71%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 213 28% 7%;
+  --sidebar-border: 252 52% 92%;
+  --sidebar-primary: 228 69% 55%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 252 30% 16%;
-  --sidebar-accent-foreground: 246 100% 95%;
-  --sidebar-ring: 252 100% 71%;
+  --sidebar-accent: 226 100% 97%;
+  --sidebar-accent-foreground: 228 69% 55%;
+  --sidebar-ring: 228 69% 55%;
 
-  --popover: 240 28% 9%;
-  --popover-foreground: 246 100% 95%;
-  --popover-border: 252 40% 22%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 28% 7%;
+  --popover-border: 252 52% 92%;
 
-  --primary: 252 100% 71%;
+  --primary: 228 69% 55%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 252 30% 16%;
-  --secondary-foreground: 246 100% 95%;
+  --secondary: 250 100% 98%;
+  --secondary-foreground: 213 28% 7%;
 
-  --muted: 252 25% 14%;
-  --muted-foreground: 256 22% 60%;
+  --muted: 250 60% 97%;
+  --muted-foreground: 248 13% 48%;
 
-  --accent: 252 30% 16%;
-  --accent-foreground: 246 100% 95%;
+  --accent: 226 100% 97%;
+  --accent-foreground: 228 69% 55%;
 
-  --destructive: 0 72% 56%;
+  --destructive: 0 94% 64%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 252 30% 18%;
-  --ring: 252 100% 71%;
+  --input: 252 52% 92%;
+  --ring: 228 69% 55%;
 
   --app-font-sans: 'DM Sans', system-ui, sans-serif;
   --app-font-display: 'Syne', 'DM Sans', sans-serif;
   --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --radius: 0.875rem;
+  --radius: 1rem;
 }
 
 @layer base {
@@ -136,11 +135,12 @@
   }
   body {
     @apply font-sans antialiased text-foreground;
-    background-color: var(--c-bg);
+    background-color: #f0edff;
     background-image:
-      radial-gradient(55rem 55rem at 88% -12%, rgba(196, 95, 255, 0.12), transparent 58%),
-      radial-gradient(45rem 45rem at 105% 8%, rgba(255, 200, 61, 0.07), transparent 55%),
-      radial-gradient(50rem 50rem at -12% 112%, rgba(138, 110, 255, 0.10), transparent 60%);
+      radial-gradient(ellipse 80% 60% at 0% 0%, #e4ddff 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 100% 0%, #d1f5ea 0%, transparent 50%),
+      radial-gradient(ellipse 70% 60% at 100% 100%, #fce4f0 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, #fef4d0 0%, transparent 50%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -151,18 +151,33 @@
 
 @layer utilities {
   .irp-card {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-      var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(103, 65, 217, 0.1);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
   }
-  .irp-glow {
-    box-shadow: 0 0 0 1px rgba(138, 110, 255, 0.18), 0 18px 50px -20px rgba(138, 110, 255, 0.45);
+  .shadow-soft {
+    box-shadow: var(--shadow-sm);
   }
-  .irp-gold-text {
-    background: linear-gradient(90deg, #ffd870, #ffa500);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  .shadow-soft-md {
+    box-shadow: var(--shadow-md);
+  }
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-bar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
   }
 }

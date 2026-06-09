@@ -1,5 +1,5 @@
 import { TrendingUp, ArrowRight } from "lucide-react";
-import { ProgressRing, IrpCard } from "./ui";
+import { ProgressRing } from "./ui";
 
 export interface SubjectRow {
   subject: string;
@@ -35,83 +35,81 @@ export function ProgressSummary({
   subjects: SubjectRow[];
 }) {
   return (
-    <IrpCard className="p-5 sm:p-6">
+    <div className="irp-card p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-[#e8e6ff]">
-            <TrendingUp className="h-4 w-4 text-[#8a6eff]" /> Overall IRP Progress
+          <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
+            <TrendingUp className="h-4 w-4 text-brand" /> Overall IRP Progress
           </h3>
-          <p className="mt-0.5 text-xs text-[#7a6eaa]">MCQs &amp; Coding practice combined</p>
+          <p className="mt-0.5 text-xs text-muted2">MCQs &amp; Coding practice combined</p>
         </div>
-        <div className="flex items-center gap-3 text-xs font-bold text-[#7a6eaa]">
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5b8cff]" />MCQs</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#46d39b]" />Coding</span>
+        <div className="flex items-center gap-3 text-xs font-bold text-muted2">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-l1" />MCQs</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-teal" />Coding</span>
         </div>
       </div>
 
       <div className="mb-6 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
-        {/* Overall — gold */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[#ffc83d]/25 bg-[#ffc83d]/[0.07] p-4">
-          <ProgressRing value={overallPct} tone="gold" label="Overall" />
+        {/* Overall — blue→purple */}
+        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
+          <ProgressRing value={overallPct} tone="purple" label="Overall" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-[#a99fce]">Total points</p>
-            <p className="font-display text-2xl font-black leading-none">
-              <span className="irp-gold-text">{points.toLocaleString()}</span>
+            <p className="text-xs font-medium text-muted2">Total points</p>
+            <p className="font-display text-2xl font-black leading-none text-ink">
+              {points.toLocaleString()}
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#7a6eaa]">
+            <p className="mt-1 text-xs font-semibold text-muted2">
               of {maxPoints.toLocaleString()} pts
             </p>
-            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[#ffc83d]/30 bg-[#ffc83d]/10 px-2 py-1 text-[10px] font-bold text-[#ffd870]">
+            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
               🏅 You're doing great
             </span>
           </div>
         </div>
 
         {/* MCQs — blue */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[#5b8cff]/20 bg-[#5b8cff]/[0.08] p-4">
+        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
           <ProgressRing value={mcqPct} tone="blue" label="MCQs" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-[#a99fce]">Questions done</p>
-            <p className="font-display text-2xl font-black leading-none text-[#e8e6ff]">
+            <p className="text-xs font-medium text-muted2">Questions done</p>
+            <p className="font-display text-2xl font-black leading-none text-ink">
               {mcqDone}
-              <span className="text-base font-semibold text-[#6a6092]">/{mcqTotal}</span>
+              <span className="text-base font-semibold text-dim">/{mcqTotal}</span>
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#ffc564]">
+            <p className="mt-1 text-xs font-semibold text-l2-text">
               {Math.max(0, mcqTotal - mcqDone)} remaining
             </p>
-            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[#5b8cff]/30 bg-[#5b8cff]/10 px-2 py-1 text-[10px] font-bold text-[#9cc0ff] transition-colors hover:bg-[#5b8cff]/20">
+            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1 transition-colors hover:bg-l1 hover:text-white">
               Continue <ArrowRight className="h-3 w-3" />
             </button>
           </div>
         </div>
 
-        {/* Coding — green */}
-        <div className="flex h-full items-center gap-4 rounded-2xl border border-[#1d9e75]/20 bg-[#1d9e75]/[0.08] p-4">
+        {/* Coding — teal */}
+        <div className="flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-teal bg-white p-4 shadow-soft">
           <ProgressRing value={codingPct} tone="green" label="Coding" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-[#a99fce]">Problems solved</p>
-            <p className="font-display text-2xl font-black leading-none text-[#e8e6ff]">
+            <p className="text-xs font-medium text-muted2">Problems solved</p>
+            <p className="font-display text-2xl font-black leading-none text-ink">
               {codingDone}
-              <span className="text-base font-semibold text-[#6a6092]">/{codingTotal}</span>
+              <span className="text-base font-semibold text-dim">/{codingTotal}</span>
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#ffc564]">
+            <p className="mt-1 text-xs font-semibold text-l2-text">
               {Math.max(0, codingTotal - codingDone)} remaining
             </p>
-            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[#1d9e75]/30 bg-[#1d9e75]/10 px-2 py-1 text-[10px] font-bold text-[#5fe0ad] transition-colors hover:bg-[#1d9e75]/20">
+            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(12,166,120,0.25)] bg-[#e8faf0] px-2 py-1 text-[10px] font-bold text-teal transition-colors hover:bg-teal hover:text-white">
               Continue <ArrowRight className="h-3 w-3" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="-mx-1 mt-2 rounded-2xl border border-white/5 bg-black/20 px-4 py-5">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-wider text-[#7a6eaa]">
-          Subject-wise breakdown
-        </p>
+      <div className="-mx-1 mt-2 rounded-2xl border border-[rgba(103,65,217,0.06)] bg-[rgba(248,247,255,0.8)] px-4 py-5">
+        <p className="section-label mb-4 text-muted2">Subject-wise breakdown</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {subjects.map((sub) => (
-            <div key={sub.subject} className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
-              <p className="mb-3 truncate text-sm font-bold text-[#e8e6ff]">{sub.subject}</p>
+            <div key={sub.subject} className="rounded-2xl border border-[rgba(103,65,217,0.07)] bg-white p-4 shadow-soft">
+              <p className="mb-3 truncate text-sm font-bold text-ink">{sub.subject}</p>
               <Bar tone="blue" label="MCQ" done={sub.mcqCompleted} total={sub.mcqTotal} pct={sub.mcqPercentage} />
               <div className="h-2.5" />
               <Bar tone="green" label="Code" done={sub.codingCompleted} total={sub.codingTotal} pct={sub.codingPercentage} />
@@ -119,7 +117,7 @@ export function ProgressSummary({
           ))}
         </div>
       </div>
-    </IrpCard>
+    </div>
   );
 }
 
@@ -136,14 +134,15 @@ function Bar({
   total: number;
   pct: number;
 }) {
-  const color = tone === "blue" ? "#5b8cff" : "#46d39b";
+  const color = tone === "blue" ? "#3b5bdb" : "#0ca678";
+  const fill = tone === "blue" ? "linear-gradient(90deg,#3b82f6,#3b5bdb)" : "linear-gradient(90deg,#0ca678,#2f9e44)";
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span className="w-9 shrink-0 text-[11px] font-bold" style={{ color }}>{label}</span>
-      <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white/5">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+      <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[rgba(103,65,217,0.08)]">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: fill }} />
       </div>
-      <span className="w-12 shrink-0 text-right text-[11px] font-semibold text-[#a99fce]">{done}/{total}</span>
+      <span className="w-12 shrink-0 text-right text-[11px] font-semibold text-muted2">{done}/{total}</span>
       <span className="w-9 shrink-0 text-right text-[11px] font-bold" style={{ color }}>{pct}%</span>
     </div>
   );
