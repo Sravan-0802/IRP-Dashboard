@@ -48,15 +48,13 @@ export function CountdownRing({
           strokeDashoffset={circ - arc}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">{label}</span>
+      <div className="absolute inset-0 flex items-center justify-center">
         <span
           className="font-display font-black leading-none"
-          style={{ fontSize: size * 0.3, color: t.text }}
+          style={{ fontSize: size * 0.34, color: t.text }}
         >
           {value}
         </span>
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">{unit}</span>
       </div>
     </div>
   );
