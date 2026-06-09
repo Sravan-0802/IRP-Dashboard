@@ -1,1 +1,2 @@
 - [BigQuery VPC blocker](bigquery-vpc-blocker.md) — IRP BigQuery access from Replit is hard-blocked by org VPC Service Controls (403); data is synced into Postgres instead.
+- [API server dev rebuild gotcha](api-server-dev-rebuild.md) — adding routes/schema needs a workflow restart (bundles only at startup) AND a db push, else 404 then 500.
