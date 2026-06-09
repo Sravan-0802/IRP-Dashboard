@@ -77,7 +77,7 @@ export function SidebarContent({
             type="button"
             onClick={() => onNavigate(key)}
             className={cn(
-              "flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold transition-all",
+              "flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3b5bdb]/50",
               active === key
                 ? "border-[1.5px] border-[#3b5bdb]/[0.18] bg-[#eef2ff] text-[#3b5bdb]"
                 : "border-[1.5px] border-transparent text-[#6e6a8a] hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]",
@@ -93,13 +93,13 @@ export function SidebarContent({
         <button
           type="button"
           onClick={onOpenSettings}
-          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]"
+          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
         >
           <Settings className="h-4 w-4" /> Settings
         </button>
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#fa5252] transition-colors hover:bg-[#fa5252]/10"
+          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#fa5252] transition-colors hover:bg-[#fa5252]/10 focus:outline-none"
         >
           <LogOut className="h-4 w-4" /> Logout
         </button>
