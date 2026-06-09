@@ -1,0 +1,91 @@
+Here's the prompt:
+
+---
+
+# IRP 2.0 — Course Progress Section Redesign
+
+This is a UI-only change to the **My Learning page**. Specifically the course progress section needs to be restructured. Do not change any other page or component.
+
+---
+
+## The Problem
+
+Right now the track cards show everything crammed into one card — the ring, course list, and subject-wise stats all stacked together. This looks cluttered, especially when a track has many courses (Frontend has 6). The course pills wrap into multiple lines and the subject stats expand below that, making the card feel like a wall of content.
+
+---
+
+## The Fix — Split into Two Distinct Sections
+
+Separate the track cards into **two clearly distinct sections** on the My Learning page:
+
+### Section 1 — Course Progress
+Shows which courses the student has completed, is in progress on, or hasn't started. Clean and scannable.
+
+### Section 2 — Subject-wise Stats
+Shows the MCQ and coding breakdown per subject. Detailed, data-focused. Visually separate from Section 1.
+
+These two sections should feel like different cards on the page — not nested inside each other. A clear heading and visual separation between them.
+
+---
+
+## Section 1 — Course Progress Layout
+
+**Heading:** "Course Progress" — section label style (10px uppercase, letter-spacing 2px, purple)
+
+Each track is a horizontal row card (full width, not a 2-column grid). Layout inside each row card:
+
+- **Left:** Ring showing track % (54px SVG ring, same gradient stroke system as before)
+- **Middle:** Track name + level label + course count. Below that: course pills in a single horizontal scrollable row (no wrapping — if too many pills they scroll horizontally). This keeps the card height fixed and clean.
+- **Right:** A small "X/Y done" counter in muted text
+
+Course pills stay the same colour system:
+- Done ✓: green tint
+- In progress: blue tint
+- Not started: grey
+
+Each card: white background, `1.5px solid rgba(103,65,217,0.1)` border, 14px border radius, 16px padding, shadow. Hover: border slightly deeper.
+
+No expand button in this section. Just the track overview. Clean, scannable, one line per track.
+
+---
+
+## Section 2 — Subject-wise Stats Layout
+
+**Heading:** "Subject-wise Stats" — same section label style
+
+This is a separate card below Section 1. Inside it, show all subjects across all active tracks in a clean table or grid — not nested inside track cards.
+
+Layout options — pick whichever renders cleanest:
+
+**Option A — Compact table:**
+Columns: Subject name | Track | MCQ bar + % | Code bar + %
+Each row is one subject. Alternating row backgrounds (`white` / `#fafafa`). Track shown as a small coloured pill tag (blue for Frontend, teal for Coding, etc.). Bars are thin (4px) inline bars, same gradient fills as before.
+
+**Option B — 2-column subject grid:**
+Each subject is a small card (2 per row). Each card shows:
+- Subject name (DM Sans 12px weight 700)
+- Track tag pill
+- MCQ bar + percentage
+- Code bar + percentage
+Cards: white, soft border, 10px border radius, 12px padding.
+
+Use whichever option feels less cramped with the actual content. If a student is on L1 they have 5 subjects. L2 adds more. It should scale without breaking.
+
+The key thing: **this section is visually separate from the course list.** Student can see at a glance "here are my courses, here is my subject performance" without them bleeding into each other.
+
+---
+
+## Behaviour Notes
+
+- Both sections are always visible — no expand/collapse needed since they're already separated
+- Section 2 only shows subjects relevant to the student's current level (L1 shows HTML/CSS, JS, React, Python, DSA. L2 adds backend subjects. L3/Wildcard shows DSA levels and platform stats)
+- Section 1 shows all tracks for the student's current level as horizontal rows
+- The summary stat cards at the top of My Learning (overall %, MCQs done, problems solved) stay exactly as they are — don't touch those
+
+---
+
+**Apply this change only to the My Learning page course progress area. Everything else on every other page stays the same.**
+
+---
+
+That's it — paste this into Replit and it'll restructure the section cleanly without touching anything else.

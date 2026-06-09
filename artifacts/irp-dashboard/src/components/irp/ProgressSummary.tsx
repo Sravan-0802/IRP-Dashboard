@@ -116,7 +116,7 @@ export function ProgressSummary({
 export function SubjectBreakdown({ subjects }: { subjects: SubjectRow[] }) {
   return (
     <div className="irp-card p-5 sm:p-6">
-      <p className="section-label mb-4 text-muted2">Subject-wise breakdown</p>
+      <p className="section-label mb-4 text-brand">Subject-wise Stats</p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {subjects.map((sub) => (
           <div key={sub.subject} className="rounded-2xl border border-[rgba(103,65,217,0.07)] bg-white p-4 shadow-soft">

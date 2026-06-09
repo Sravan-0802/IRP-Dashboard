@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { TRACKS } from "@/lib/courses";
 import { IrpCard, ProgressRing } from "@/components/irp/ui";
 import { SubjectBreakdown, type SubjectRow } from "@/components/irp/ProgressSummary";
-import { cn } from "@/lib/utils";
 
 function StatCard({
   label,
@@ -46,9 +43,13 @@ function trackPct(subjects: SubjectRow[]): number {
   return total > 0 ? Math.round((done / total) * 100) : 0;
 }
 
-export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+function subjectsDone(subjects: SubjectRow[]): number {
+  return subjects.filter(
+    (s) => s.mcqPercentage >= 100 && s.codingPercentage >= 100,
+  ).length;
+}
 
+export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
   const mcqDone = subjects.reduce((a, s) => a + s.mcqCompleted, 0);
   const mcqTotal = subjects.reduce((a, s) => a + s.mcqTotal, 0);
   const codeDone = subjects.reduce((a, s) => a + s.codingCompleted, 0);
@@ -56,7 +57,6 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
   const overallDone = mcqDone + codeDone;
   const overallTotal = mcqTotal + codeTotal;
 
-  // Map each track to a slice of subject rows (best-effort by name match; falls back to all).
   function subjectsForTrack(courses: string[]): SubjectRow[] {
     const matched = subjects.filter((s) =>
       courses.some(
@@ -75,83 +75,74 @@ export function MyLearning({ subjects }: { subjects: SubjectRow[] }) {
         <p className="mt-1 text-sm text-muted2">Track your courses, subjects and practice progress.</p>
       </div>
 
+      {/* Summary stat cards — unchanged */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Overall completion" done={overallDone} total={overallTotal} tone="overall" />
         <StatCard label="MCQs done" done={mcqDone} total={mcqTotal} tone="mcq" />
         <StatCard label="Problems solved" done={codeDone} total={codeTotal} tone="code" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {TRACKS.map((track) => {
-          const tSubjects = subjectsForTrack(track.courses);
-          const pct = trackPct(tSubjects);
-          const tone = pct === 100 ? "green" : "purple";
-          const isOpen = expanded === track.name;
-          return (
-            <IrpCard key={track.name} className="p-5">
-              <div className="flex items-start gap-4">
-                <ProgressRing value={pct} size={68} tone={tone} />
+      {/* ── Section 1: Course Progress ── */}
+      <IrpCard className="p-5 sm:p-6">
+        <p className="section-label mb-4 text-brand">Course Progress</p>
+        <div className="space-y-3">
+          {TRACKS.map((track) => {
+            const tSubjects = subjectsForTrack(track.courses);
+            const pct = trackPct(tSubjects);
+            const done = subjectsDone(tSubjects);
+            const tone = pct === 100 ? "green" : "purple";
+            const doneColor = pct === 100 ? "#0ca678" : "#3b5bdb";
+
+            return (
+              <div
+                key={track.name}
+                className="flex items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-white p-4 shadow-soft transition-colors hover:border-[rgba(103,65,217,0.22)]"
+              >
+                {/* Ring */}
+                <div className="shrink-0">
+                  <ProgressRing value={pct} size={54} tone={tone} />
+                </div>
+
+                {/* Middle: name + level + pills */}
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-base font-extrabold text-ink">
-                    {track.emoji} {track.name}
-                  </p>
-                  <p className="text-xs text-muted2">
-                    Level {track.level} · {track.courses.length} courses
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-display text-sm font-extrabold text-ink">
+                      {track.emoji} {track.name}
+                    </p>
+                    <span className="shrink-0 text-[10px] font-semibold text-muted2">
+                      L{track.level}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-dim">{track.courses.length} courses</p>
+                  {/* Horizontal scrollable pills — no wrap */}
+                  <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {track.courses.map((c) => (
                       <span
                         key={c}
-                        className="rounded-md border border-[#dee2e6] bg-[#f1f3f5] px-2 py-1 text-[10px] font-medium text-muted2"
+                        className="shrink-0 rounded-md border border-[#dee2e6] bg-[#f1f3f5] px-2 py-1 text-[10px] font-medium text-muted2"
                       >
                         {c}
                       </span>
                     ))}
                   </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setExpanded(isOpen ? null : track.name)}
-                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border-t border-[rgba(103,65,217,0.07)] bg-[rgba(103,65,217,0.03)] py-2 text-xs font-semibold text-muted2 transition-colors hover:bg-[rgba(103,65,217,0.05)] hover:text-brand"
-              >
-                Subject-wise stats
-                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
-              </button>
-
-              {isOpen && (
-                <div className="mt-3 space-y-3 rounded-xl border border-[rgba(103,65,217,0.06)] bg-[rgba(248,247,255,0.8)] p-3">
-                  {tSubjects.map((s) => (
-                    <div key={s.subject} className="rounded-lg border border-[rgba(103,65,217,0.07)] bg-white p-2.5">
-                      <p className="mb-1.5 text-xs font-semibold text-ink">{s.subject}</p>
-                      <MiniBar tone="blue" label="MCQ" pct={s.mcqPercentage} />
-                      <div className="h-1.5" />
-                      <MiniBar tone="green" label="Code" pct={s.codingPercentage} />
-                    </div>
-                  ))}
+                {/* Right: done counter */}
+                <div className="shrink-0 text-right">
+                  <p className="font-display text-base font-black leading-none" style={{ color: doneColor }}>
+                    {done}
+                    <span className="text-xs font-semibold text-dim">/{tSubjects.length}</span>
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-dim">subjects done</p>
                 </div>
-              )}
-            </IrpCard>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      </IrpCard>
 
+      {/* ── Section 2: Subject-wise Stats ── */}
       <SubjectBreakdown subjects={subjects} />
-    </div>
-  );
-}
-
-function MiniBar({ tone, label, pct }: { tone: "blue" | "green"; label: string; pct: number }) {
-  const color = tone === "blue" ? "#3b5bdb" : "#0ca678";
-  const fill = tone === "blue" ? "linear-gradient(90deg,#3b82f6,#3b5bdb)" : "linear-gradient(90deg,#0ca678,#2f9e44)";
-  return (
-    <div className="flex items-center gap-2">
-      <span className="w-9 text-[10px] font-bold" style={{ color }}>{label}</span>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[rgba(103,65,217,0.08)]">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: fill }} />
-      </div>
-      <span className="w-9 text-right text-[10px] font-bold" style={{ color }}>{pct}%</span>
     </div>
   );
 }
