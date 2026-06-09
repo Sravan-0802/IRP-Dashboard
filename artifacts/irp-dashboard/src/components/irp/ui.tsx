@@ -76,11 +76,11 @@ export function ProgressRing({
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span
-          className="font-display font-extrabold tabular-nums text-[#0d1117]"
-          style={{ fontSize: size * 0.26 }}
+          className="font-sans font-bold tabular-nums tracking-tight text-[#0d1117]"
+          style={{ fontSize: size * 0.3 }}
         >
           {Math.round(v)}
-          <span style={{ fontSize: size * 0.15 }} className="text-[#6e6a8a]">%</span>
+          <span style={{ fontSize: size * 0.14 }} className="ml-0.5 font-semibold text-[#6e6a8a]">%</span>
         </span>
         {label && (
           <span
