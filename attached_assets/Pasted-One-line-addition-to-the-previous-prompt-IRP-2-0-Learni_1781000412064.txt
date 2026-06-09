@@ -1,0 +1,55 @@
+One line addition to the previous prompt:
+
+---
+
+# IRP 2.0 — Learning Hub Course Section Fix
+
+This is a small UI fix to the Learning Hub page only. Do not change any other page.
+
+---
+
+## What to revert
+
+The course progress section was recently changed to full-width horizontal row cards. **Revert this back to the original 2-column grid layout** — two track cards side by side, each card showing the ring on the left and course pills on the right.
+
+---
+
+## The only actual change needed
+
+**Remove the subject-wise stats expand button and panel from inside the track cards entirely.**
+
+That's it. The cards go back to exactly how they were before — 2-column grid, ring + track name + course pills — but without the "Subject-wise stats ⌄" toggle button at the bottom of each card and without the expandable stats panel that opens below it.
+
+---
+
+## What the track card should contain after this change
+
+- Ring (54px, track % complete)
+- Track name + emoji
+- Level label + course count
+- Course pills (done ✓ green / in progress blue / not started grey)
+
+Nothing else. No expand button. No subject stats panel. Clean and compact.
+
+---
+
+## Subject-wise Stats
+
+Move the subject stats into their own **separate standalone card** below the course progress grid. Same visual style as the other cards on the page (white, soft border, shadow). Section label "SUBJECT-WISE STATS" above it. Use the compact table layout inside: Subject name | Track pill | MCQ bar + % | Code bar + %. This section sits below the track grid as its own breathing room card, not crammed inside the track cards.
+
+---
+
+## Display everything as percentages
+
+Every number shown to the student across the entire Learning Hub page must be displayed as a percentage — not raw counts. This means:
+
+- The summary stat cards at the top: instead of "96/140" show "69%" with a label like "MCQs completed". Instead of "46/93" show "49%" with a label like "Problems solved". Keep the progress bar.
+- The track rings already show % — no change needed there
+- The subject-wise stats table: MCQ and Code columns show only the % value next to the bar, not fractions like "18/25"
+- Course pills: do not add % to course pills — they are status indicators (done / in progress / not started), not numeric
+
+No raw X/Y fractions anywhere on this page. Percentages only.
+
+---
+
+**Summary: 2-column track grid comes back, subject stats move out into their own card below, all numbers shown as percentages. No other changes anywhere.**

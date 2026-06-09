@@ -1,4 +1,4 @@
-import { TrendingUp, ArrowRight } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { ProgressRing } from "./ui";
 
 export interface SubjectRow {
@@ -32,14 +32,16 @@ export function ProgressSummary({
   points: number;
   maxPoints: number;
 }) {
-  const momentum =
-    overallPct >= 75
+  function momentumLabel(pct: number) {
+    return pct >= 75
       ? "🔥 On fire"
-      : overallPct >= 50
+      : pct >= 50
         ? "⚡ In the zone"
-        : overallPct >= 25
+        : pct >= 25
           ? "📈 Building momentum"
           : "🚀 Just getting started";
+  }
+  const momentum = momentumLabel(overallPct);
   return (
     <div className="irp-card p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -85,9 +87,9 @@ export function ProgressSummary({
             <p className="mt-1 text-xs font-semibold text-l2-text">
               {Math.max(0, mcqTotal - mcqDone)} remaining
             </p>
-            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1 transition-colors hover:bg-l1 hover:text-white">
-              Continue <ArrowRight className="h-3 w-3" />
-            </button>
+            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
+              {momentumLabel(mcqPct)}
+            </span>
           </div>
         </div>
 
@@ -103,9 +105,9 @@ export function ProgressSummary({
             <p className="mt-1 text-xs font-semibold text-l2-text">
               {Math.max(0, codingTotal - codingDone)} remaining
             </p>
-            <button className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(12,166,120,0.25)] bg-[#e8faf0] px-2 py-1 text-[10px] font-bold text-teal transition-colors hover:bg-teal hover:text-white">
-              Continue <ArrowRight className="h-3 w-3" />
-            </button>
+            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(12,166,120,0.25)] bg-[#e8faf0] px-2 py-1 text-[10px] font-bold text-teal">
+              {momentumLabel(codingPct)}
+            </span>
           </div>
         </div>
       </div>
