@@ -1,5 +1,9 @@
 const STORAGE_KEY = "irp_auth_token";
 
+/** SSO login page — users land here when visiting the dashboard without a token. */
+export const LOGIN_URL =
+  import.meta.env.VITE_LOGIN_URL ?? "https://meetings.ccbp.in/mid/irp_dashboard";
+
 export function getAuthToken(): string | null {
   try {
     return sessionStorage.getItem(STORAGE_KEY);
@@ -33,4 +37,12 @@ export function captureAuthTokenFromUrl(): void {
   } catch {
     // Malformed URL or unavailable history API; ignore.
   }
+}
+
+export function redirectToLogin(): void {
+  window.location.href = LOGIN_URL;
+}
+
+export function hasAuthToken(): boolean {
+  return Boolean(getAuthToken());
 }
