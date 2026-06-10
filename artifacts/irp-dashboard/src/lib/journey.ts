@@ -65,7 +65,7 @@ export function getPhase(state: JourneyState): Phase {
 
 export const LEVEL_META: Record<1 | 2 | 3, { name: string; tag: string }> = {
   1: { name: "Level 1", tag: "The Hustler" },
-  2: { name: "Level 2", tag: "The AI Architect" },
+  2: { name: "Level 2", tag: "The Main Character" },
   3: { name: "Level 3", tag: "Infinite Aura" },
 };
 

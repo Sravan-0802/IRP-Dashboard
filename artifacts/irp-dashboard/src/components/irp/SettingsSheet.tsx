@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { X, Zap, Trophy, AlertTriangle } from "lucide-react";
-import type { Journey, JourneyState } from "@/lib/journey";
-import { STANDARD_STATES, WILDCARD_STATES } from "@/lib/journey";
-import { useSwitchPath, useSetJourneyState } from "@/lib/useJourney";
-import { WildcardConfirm } from "./WildcardConfirm";
+import { X, Trophy } from "lucide-react";
+import type { Journey } from "@/lib/journey";
+import { useSwitchPath } from "@/lib/useJourney";
 
 export function SettingsSheet({
   journey,
@@ -14,17 +12,13 @@ export function SettingsSheet({
   journey: Journey;
   open: boolean;
   onClose: () => void;
-  initialMode?: "menu" | "to-wildcard" | "to-standard";
+  initialMode?: "menu" | "to-standard";
 }) {
-  const [mode, setMode] = useState<"menu" | "to-wildcard" | "to-standard">(initialMode);
+  const [mode, setMode] = useState<"menu" | "to-standard">(initialMode);
   const switchPath = useSwitchPath();
-  const setState = useSetJourneyState();
   const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
-
-  const standardToWildcardBlocked = journey.hasAttemptedL1 || journey.journeyState !== "L1_PREP";
-  const states = journey.isWildcard ? WILDCARD_STATES : STANDARD_STATES;
 
   function close() {
     setMode("menu");
@@ -32,9 +26,9 @@ export function SettingsSheet({
     onClose();
   }
 
-  function doSwitch(to: "standard" | "wildcard") {
+  function doSwitch() {
     setError(null);
-    switchPath.mutate(to, {
+    switchPath.mutate("standard", {
       onSuccess: close,
       onError: (e) => setError(e instanceof Error ? e.message : "Switch failed"),
     });
@@ -64,7 +58,7 @@ export function SettingsSheet({
                   path.
                 </p>
 
-                {journey.isWildcard ? (
+                {journey.isWildcard && (
                   <button
                     type="button"
                     onClick={() => setMode("to-standard")}
@@ -72,55 +66,12 @@ export function SettingsSheet({
                   >
                     <Trophy className="h-4 w-4" /> Switch to Standard Path
                   </button>
-                ) : standardToWildcardBlocked ? (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-[rgba(245,159,0,0.2)] bg-l2-bg p-3 text-xs text-l2-text">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-l2-text" />
-                    You've already begun the standard path assessment. Switching to Wildcard is no
-                    longer available.
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setMode("to-wildcard")}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(230,73,128,0.4)] bg-l3-bg px-4 py-2.5 text-sm font-bold text-l3-text transition-colors hover:bg-[#ffe3ef]"
-                  >
-                    <Zap className="h-4 w-4" /> Switch to Wildcard
-                  </button>
                 )}
               </div>
             </section>
 
-            <section>
-              <p className="section-label mb-3 text-muted2">
-                Preview state (demo)
-              </p>
-              <select
-                value={journey.journeyState}
-                onChange={(e) => setState.mutate(e.target.value as JourneyState)}
-                className="w-full rounded-lg border border-[rgba(103,65,217,0.15)] bg-surface px-3 py-2.5 text-sm font-semibold text-ink outline-none focus:border-l1"
-              >
-                {states.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-2 text-xs text-dim">
-                Simulates the journey_state an admin/webhook would set.
-              </p>
-            </section>
-
             {error && <p className="text-sm text-red">{error}</p>}
           </div>
-        )}
-
-        {mode === "to-wildcard" && (
-          <WildcardConfirm
-            busy={switchPath.isPending}
-            onConfirm={() => doSwitch("wildcard")}
-            onCancel={() => setMode("menu")}
-            cancelLabel="Cancel, stay on Standard"
-          />
         )}
 
         {mode === "to-standard" && (
@@ -135,7 +86,7 @@ export function SettingsSheet({
               <button
                 type="button"
                 disabled={switchPath.isPending}
-                onClick={() => doSwitch("standard")}
+                onClick={doSwitch}
                 className="rounded-xl bg-l1 px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 Yes, switch to Standard Path

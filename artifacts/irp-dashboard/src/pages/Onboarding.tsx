@@ -44,7 +44,7 @@ export default function Onboarding() {
             <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
               <span className="rounded-md border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-l1">L1 · The Hustler</span>
               <ArrowRight className="h-3 w-3 text-dim" />
-              <span className="rounded-md border border-[rgba(245,159,0,0.2)] bg-l2-bg px-2 py-1 text-l2-text">L2 · The AI Architect</span>
+              <span className="rounded-md border border-[rgba(245,159,0,0.2)] bg-l2-bg px-2 py-1 text-l2-text">L2 · The Main Character</span>
               <ArrowRight className="h-3 w-3 text-dim" />
               <span className="rounded-md border border-[rgba(230,73,128,0.2)] bg-l3-bg px-2 py-1 text-l3-text">L3 · Infinite Aura</span>
             </div>
