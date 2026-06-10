@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, CalendarClock, LogOut, Settings, Zap, ChevronDown } from "lucide-react";
+import { LayoutDashboard, BookOpen, CalendarClock, LogOut, Settings, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
@@ -54,7 +54,6 @@ export function SidebarContent({
             <p className="truncate text-xs font-bold text-[#0d1117]">{name}</p>
             <p className="text-[10px] font-medium text-[#6e6a8a]">YOG {yog}</p>
           </div>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[#aaa5c0]" />
         </div>
         {journey.isWildcard ? (
           <div className="mt-2 flex items-center justify-between rounded-[9px] bg-gradient-to-r from-[#9c36b5] to-[#e64980] px-3 py-1.5 text-xs font-bold text-white">
