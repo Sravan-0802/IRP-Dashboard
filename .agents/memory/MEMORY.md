@@ -2,3 +2,4 @@
 - [API server dev rebuild gotcha](api-server-dev-rebuild.md) — adding routes/schema needs a workflow restart (bundles only at startup) AND a db push, else 404 then 500.
 - [IRP journey state semantics](irp-journey-state-semantics.md) — a level is "cleared" when journeyState contains `_POST_`; getPhase() alone is ambiguous for post-reattempt states.
 - [Hero live date-gating](hero-live-date-gating.md) — assessment "live" UI must be gated on isAssessmentLive() (date), not journey phase alone; no "window closes" before exam day.
+- [L1-only journey gate](l1-only-gate.md) — temporary read-side clamp forces all journeys to L1; getLevel defaults to 1 not 3; remove + normalize prod DB when L2/L3 launch.

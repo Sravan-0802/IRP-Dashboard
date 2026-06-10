@@ -75,10 +75,24 @@ async function ensureStudent() {
   return row;
 }
 
+// ── L1-only gate (temporary) ────────────────────────────────────────────────
+// Only Level 1 is live right now. Any stored state above L1 (or a Wildcard /
+// PLACED state) is clamped down to its Level 1 equivalent on read, so students
+// always see the L1 journey regardless of stale data. Remove this clamp once
+// L2/L3 progression goes live.
+function clampToL1(state: string): string {
+  if (state.startsWith("L1_")) return state;
+  if (state.startsWith("L2_") || state.startsWith("L3_")) {
+    return "L1_" + state.slice(3);
+  }
+  // WILDCARD_ACTIVE, PLACED, or anything unrecognized.
+  return "L1_PREP";
+}
+
 function serialize(s: typeof studentsTable.$inferSelect) {
   return {
-    journeyState: s.journeyState,
-    isWildcard: s.isWildcard === 1,
+    journeyState: clampToL1(s.journeyState),
+    isWildcard: false,
     hasCompletedOnboarding: s.hasCompletedOnboarding === 1,
     hasAttemptedL1: s.hasAttemptedL1 === 1,
     l3ExamStarted: s.l3ExamStarted === 1,

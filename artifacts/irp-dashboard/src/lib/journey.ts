@@ -45,9 +45,10 @@ export type Phase =
   | "PLACED";
 
 export function getLevel(state: JourneyState): 1 | 2 | 3 {
-  if (state.startsWith("L1_")) return 1;
   if (state.startsWith("L2_")) return 2;
-  return 3; // L3_*, WILDCARD_ACTIVE, PLACED
+  if (state.startsWith("L3_")) return 3;
+  // L1_*, WILDCARD_ACTIVE, PLACED, or anything unrecognized default to L1.
+  return 1;
 }
 
 export function getPhase(state: JourneyState): Phase {
