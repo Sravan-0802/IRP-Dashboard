@@ -44,27 +44,29 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  /* ── IRP 2.0 / NxtWave Academy palette (raw, for direct use in components) ── */
-  --color-ink: #0d1117;
-  --color-ink2: #3d3558;
-  --color-muted2: #6e6a8a;
-  --color-dim: #aaa5c0;
-  --color-surface: #f8f7ff;
+  /* ── Gen Z / IRP 2.0 palette ── */
+  --color-ink: #1a0b2e;
+  --color-ink2: #4c1d95;
+  --color-muted2: #7c6a9a;
+  --color-dim: #b8a8d4;
+  --color-surface: #faf5ff;
 
-  --color-l1: #3b5bdb;
-  --color-l1-bg: #eef2ff;
-  --color-l2: #f59f00;
-  --color-l2-bg: #fff9db;
-  --color-l2-text: #e67700;
-  --color-l3: #e64980;
-  --color-l3-bg: #fff0f6;
-  --color-l3-text: #c2255c;
+  --color-l1: #8b5cf6;
+  --color-l1-bg: #f3e8ff;
+  --color-l2: #fbbf24;
+  --color-l2-bg: #fef9c3;
+  --color-l2-text: #d97706;
+  --color-l3: #f472b6;
+  --color-l3-bg: #fce7f3;
+  --color-l3-text: #db2777;
 
-  --color-brand: #6741d9;
-  --color-brand-2: #9c36b5;
-  --color-teal: #0ca678;
-  --color-amber: #f59f00;
-  --color-red: #fa5252;
+  --color-brand: #a855f7;
+  --color-brand-2: #ec4899;
+  --color-teal: #22d3ee;
+  --color-neon: #e879f9;
+  --color-lime: #a3e635;
+  --color-amber: #fbbf24;
+  --color-red: #fb7185;
 
   --font-sans: var(--app-font-sans);
   --font-display: var(--app-font-display);
@@ -102,7 +104,7 @@
   --popover-foreground: 213 28% 7%;
   --popover-border: 252 52% 92%;
 
-  --primary: 228 69% 55%;
+  --primary: 271 91% 65%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 250 100% 98%;
@@ -135,12 +137,12 @@
   }
   body {
     @apply font-sans antialiased text-foreground;
-    background-color: #f0edff;
+    background-color: #f5f0ff;
     background-image:
-      radial-gradient(ellipse 80% 60% at 0% 0%, #e4ddff 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 100% 0%, #d1f5ea 0%, transparent 50%),
-      radial-gradient(ellipse 70% 60% at 100% 100%, #fce4f0 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 0% 100%, #fef4d0 0%, transparent 50%);
+      radial-gradient(ellipse 80% 60% at 0% 0%, #e9d5ff 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 100% 0%, #fbcfe8 0%, transparent 50%),
+      radial-gradient(ellipse 70% 60% at 100% 100%, #a5f3fc 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, #fef08a 0%, transparent 50%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -151,12 +153,12 @@
 
 @layer utilities {
   .irp-card {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1.5px solid rgba(103, 65, 217, 0.1);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(168, 85, 247, 0.14);
     border-radius: 16px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 24px rgba(168, 85, 247, 0.08), 0 1px 3px rgba(236, 72, 153, 0.06);
   }
   .shadow-soft {
     box-shadow: var(--shadow-sm);
@@ -200,18 +202,38 @@
     animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .text-gradient-brand {
-    background: linear-gradient(100deg, #3b5bdb, #6741d9 55%, #9c36b5);
+    background: linear-gradient(100deg, #818cf8, #a855f7 40%, #ec4899 70%, #22d3ee);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .shimmer-text {
-    background: linear-gradient(100deg, #6741d9 0%, #e64980 28%, #3b5bdb 55%, #6741d9 80%);
+    background: linear-gradient(100deg, #a855f7 0%, #ec4899 25%, #22d3ee 50%, #e879f9 75%, #a855f7 100%);
     background-size: 220% auto;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: text-shimmer 6s linear infinite;
+    animation: text-shimmer 5s linear infinite;
+  }
+  .genz-badge {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(243,232,255,0.9));
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    box-shadow: 0 2px 12px rgba(236, 72, 153, 0.12);
+  }
+  .genz-chip-cyan {
+    background: linear-gradient(135deg, #ecfeff, #f0f9ff);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    color: #0891b2;
+  }
+  .genz-chip-pink {
+    background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+    border: 1px solid rgba(236, 72, 153, 0.35);
+    color: #db2777;
+  }
+  .genz-chip-violet {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    color: #7c3aed;
   }
 }
 

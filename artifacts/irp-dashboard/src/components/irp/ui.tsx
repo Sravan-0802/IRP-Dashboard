@@ -5,19 +5,19 @@ import { cn } from "@/lib/utils";
 type RingTone = "purple" | "blue" | "green" | "pink" | "gold";
 
 const RING_STOPS: Record<RingTone, [string, string]> = {
-  purple: ["#3b5bdb", "#6741d9"],
-  blue: ["#3b82f6", "#3b5bdb"],
-  green: ["#0ca678", "#2f9e44"],
-  pink: ["#e64980", "#c2255c"],
-  gold: ["#f59f00", "#e67700"],
+  purple: ["#a855f7", "#ec4899"],
+  blue: ["#818cf8", "#a855f7"],
+  green: ["#22d3ee", "#a3e635"],
+  pink: ["#f472b6", "#ec4899"],
+  gold: ["#fbbf24", "#f472b6"],
 };
 
 const RING_TRACK: Record<RingTone, string> = {
-  purple: "rgba(59,91,219,0.1)",
-  blue: "rgba(59,130,246,0.1)",
-  green: "rgba(12,166,120,0.1)",
-  pink: "rgba(230,73,128,0.1)",
-  gold: "rgba(245,159,0,0.1)",
+  purple: "rgba(168,85,247,0.12)",
+  blue: "rgba(129,140,248,0.12)",
+  green: "rgba(34,211,238,0.12)",
+  pink: "rgba(244,114,182,0.12)",
+  gold: "rgba(251,191,36,0.12)",
 };
 
 export function ProgressRing({

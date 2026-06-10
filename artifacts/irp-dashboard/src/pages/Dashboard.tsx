@@ -4,6 +4,7 @@ import {
   useGetStudent, getGetStudentQueryKey,
   useGetStudentProgress, getGetStudentProgressQueryKey,
 } from "@workspace/api-client-react";
+import { EXAM_DATE, EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { useJourney } from "@/lib/useJourney";
 import { getLevel } from "@/lib/journey";
 import { DEMO_STUDENT, DEMO_PROGRESS } from "@/lib/demoData";
@@ -13,9 +14,6 @@ import { DashboardView } from "@/components/irp/DashboardView";
 import { MyLearning } from "./MyLearning";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
-
-const EXAM_DATE = new Date("2026-06-14T00:00:00");
-const EXAM_DATE_LABEL = "14 June 2026";
 
 export default function Dashboard() {
   const { data: journey, isLoading: loadingJourney } = useJourney();

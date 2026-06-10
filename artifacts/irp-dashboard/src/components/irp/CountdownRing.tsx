@@ -1,7 +1,8 @@
 const TONES = {
-  blue: { from: "#3b82f6", to: "#6741d9", track: "rgba(59,91,219,0.1)", text: "#3b5bdb" },
-  teal: { from: "#0ca678", to: "#2f9e44", track: "rgba(12,166,120,0.12)", text: "#0ca678" },
-  pink: { from: "#e64980", to: "#9c36b5", track: "rgba(230,73,128,0.12)", text: "#e64980" },
+  blue: { from: "#818cf8", to: "#a855f7", track: "rgba(139,92,246,0.12)", text: "#8b5cf6" },
+  teal: { from: "#22d3ee", to: "#a855f7", track: "rgba(34,211,238,0.14)", text: "#06b6d4" },
+  pink: { from: "#f472b6", to: "#ec4899", track: "rgba(236,72,153,0.14)", text: "#ec4899" },
+  neon: { from: "#22d3ee", to: "#ec4899", track: "rgba(232,121,249,0.14)", text: "#d946ef" },
 } as const;
 
 export function CountdownRing({
@@ -10,14 +11,14 @@ export function CountdownRing({
   size = 120,
   total = 61,
   tone = "blue",
-  label = "Starts In",
+  showUnit = false,
 }: {
   value: number;
   unit: string;
   size?: number;
   total?: number;
   tone?: keyof typeof TONES;
-  label?: string;
+  showUnit?: boolean;
 }) {
   const radius = size * 0.383;
   const circ = 2 * Math.PI * radius;
@@ -48,13 +49,18 @@ export function CountdownRing({
           strokeDashoffset={circ - arc}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
           className="font-display font-black leading-none"
-          style={{ fontSize: size * 0.34, color: t.text }}
+          style={{ fontSize: size * (showUnit ? 0.3 : 0.34), color: t.text }}
         >
           {value}
         </span>
+        {showUnit && (
+          <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#6e6a8a]">
+            {unit}
+          </span>
+        )}
       </div>
     </div>
   );

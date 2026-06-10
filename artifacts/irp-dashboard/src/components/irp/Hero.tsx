@@ -1,4 +1,4 @@
-import { CheckCircle2, CalendarClock } from "lucide-react";
+import { Calendar, CalendarClock } from "lucide-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import { CountdownRing } from "./CountdownRing";
@@ -133,66 +133,162 @@ export function Hero({
   if (phase === "EXAM_OPEN") {
     return (
       <div
-        className="relative overflow-hidden rounded-2xl border border-[rgba(12,166,120,0.25)] p-6 shadow-soft sm:p-8"
-        style={{ background: "linear-gradient(130deg, #e8faf0, #f0fff8)" }}
+        className="relative overflow-hidden rounded-2xl border border-[rgba(236,72,153,0.28)] p-6 shadow-soft-md animate-pop-in sm:p-8"
+        style={{ background: "linear-gradient(125deg, #fdf2f8 0%, #fae8ff 38%, #ecfeff 100%)" }}
       >
-        <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
-          <div className="text-center sm:text-left">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(12,166,120,0.3)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal">
-              <PulsingDot color="#0ca678" /> Assessment is LIVE
+        <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.25),transparent_70%)] blur-2xl animate-glow-pulse" />
+        <div
+          className="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.2),transparent_70%)] blur-2xl animate-glow-pulse"
+          style={{ animationDelay: "1.2s" }}
+        />
+
+        <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full items-center gap-4 sm:gap-5 lg:w-auto">
+            <div className="relative shrink-0">
+              <div className="select-none text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">⚡</div>
+              <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon opacity-60" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-brand-2" />
+              </span>
             </div>
-            <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-              {meta.name}: {meta.tag}
-            </h2>
-            <p className="mt-1 text-sm font-medium text-muted2">
-              {days} {days === 1 ? "day" : "days"} remaining
-            </p>
+            <div className="min-w-0 text-left">
+              <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-2">
+                <PulsingDot color="#ec4899" /> Assessment is live
+              </div>
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
+                {meta.name} {LEVEL_EMOJI[level]}
+              </p>
+              <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
+                {meta.tag}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
+                Window closes in{" "}
+                <span className="font-bold text-brand-2">
+                  {days} {days === 1 ? "day" : "days"}
+                </span>
+                . MCQs &amp; coding — go full send. 🔥
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="genz-chip-violet rounded-lg px-2.5 py-1 text-[10px] font-bold">MCQs</span>
+                <span className="genz-chip-cyan rounded-lg px-2.5 py-1 text-[10px] font-bold">Coding</span>
+                <span className="genz-chip-pink rounded-lg px-2.5 py-1 text-[10px] font-bold">✨ Live now</span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Closes In</p>
-            <CountdownRing value={days} unit="Days" total={14} tone="teal" />
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Days</p>
+
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+              <Calendar className="h-3.5 w-3.5 text-brand-2" /> {examDateLabel}
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-2/80">Closes in</p>
+            <CountdownRing value={days} unit="Days" total={14} tone="neon" size={96} showUnit />
+            <div className="genz-badge flex items-center gap-3 rounded-xl px-4 py-2">
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand">{overallPct}%</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">Overall</p>
+              </div>
+              <div className="h-6 w-px bg-[rgba(168,85,247,0.2)]" />
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand-2">
+                  {points.toLocaleString()}
+                </p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">pts</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── PREP & REATTEMPT_ACTIVE (default — upcoming assessment) ──
-  const isReattemptActive = phase === "REATTEMPT_ACTIVE";
+  // ── REATTEMPT_ACTIVE (live round 2) ──
+  if (phase === "REATTEMPT_ACTIVE") {
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl border border-[rgba(251,191,36,0.35)] p-6 shadow-soft-md animate-pop-in sm:p-8"
+        style={{ background: "linear-gradient(125deg, #fef9c3 0%, #fce7f3 45%, #ede9fe 100%)" }}
+      >
+        <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.22),transparent_70%)] blur-2xl animate-glow-pulse" />
+
+        <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full items-center gap-4 sm:gap-5 lg:w-auto">
+            <div className="select-none shrink-0 text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">🔁</div>
+            <div className="min-w-0 text-left">
+              <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-l2-text">
+                <PulsingDot color="#fbbf24" /> Round 2 is live
+              </div>
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
+                {meta.name} {LEVEL_EMOJI[level]}
+              </p>
+              <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
+                {meta.tag}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
+                Your comeback window is open —{" "}
+                <span className="font-bold text-brand-2">
+                  {days} {days === 1 ? "day" : "days"}
+                </span>{" "}
+                left. Main character energy only. 💥
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Closes in</p>
+            <CountdownRing value={days} unit="Days" tone="pink" size={96} showUnit />
+            <div className="genz-badge flex items-center gap-3 rounded-xl px-4 py-2">
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand">{overallPct}%</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">Overall</p>
+              </div>
+              <div className="h-6 w-px bg-[rgba(168,85,247,0.2)]" />
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand-2">{points.toLocaleString()}</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">pts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── PREP (default — upcoming assessment) ──
   const nextLevel = level < 3 ? LEVEL_META[(level + 1) as 1 | 2 | 3] : null;
-  const soon = days <= 7;
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.16)] p-6 shadow-soft-md animate-pop-in sm:p-8"
-      style={{ background: "linear-gradient(125deg, #eef2ff 0%, #f3ecff 45%, #ffeef7 100%)" }}
+      className="relative overflow-hidden rounded-2xl border border-[rgba(168,85,247,0.22)] p-6 shadow-soft-md animate-pop-in sm:p-8"
+      style={{ background: "linear-gradient(125deg, #ede9fe 0%, #fce7f3 42%, #ecfeff 100%)" }}
     >
-      {/* glowing aura orbs */}
-      <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(103,65,217,0.28),transparent_70%)] blur-2xl animate-glow-pulse" />
+      <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.28),transparent_70%)] blur-2xl animate-glow-pulse" />
       <div
-        className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(230,73,128,0.2),transparent_70%)] blur-2xl animate-glow-pulse"
+        className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.22),transparent_70%)] blur-2xl animate-glow-pulse"
         style={{ animationDelay: "1.4s" }}
       />
-      <div className="relative flex flex-col items-center gap-4 lg:flex-row lg:justify-between">
-        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-          <div className="select-none text-5xl drop-shadow-sm animate-float-soft">
-            {isReattemptActive ? "🔁" : "🚀"}
-          </div>
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[rgba(59,91,219,0.22)] bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-l1 backdrop-blur">
-              <PulsingDot color="#3b5bdb" /> {isReattemptActive ? "Round 2 — You've got this" : "Your next mission"}
+      <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full items-center gap-4 sm:gap-5 lg:w-auto">
+          <div className="select-none shrink-0 text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">🚀</div>
+          <div className="min-w-0 text-left">
+            <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+              <PulsingDot color="#a855f7" /> Your next mission
             </div>
-            <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted2">
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
               {meta.name} {LEVEL_EMOJI[level]}
             </p>
-            <h2 className="font-display text-2xl font-extrabold leading-[1.05] sm:text-3xl">
-              <span className="shimmer-text">{meta.tag}</span>
+            <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
+              {meta.tag}
             </h2>
-            <p className="mt-1.5 max-w-sm text-xs font-medium text-muted2">
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
               {nextLevel ? (
                 <>
                   Clear this assessment to unlock{" "}
-                  <span className="font-bold text-ink">{nextLevel.name}: {nextLevel.tag}</span>.
+                  <span className="font-bold text-brand-2">
+                    {nextLevel.name}: {nextLevel.tag}
+                  </span>
+                  .
                 </>
               ) : (
                 <>Clear this to lock in your placement — the finish line is right there.</>
@@ -200,21 +296,19 @@ export function Hero({
             </p>
           </div>
         </div>
-        {/* Right: date chip → ring → days → stats */}
-        <div className="flex shrink-0 flex-col items-center gap-1.5">
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white/70 px-3 py-1 text-[11px] font-bold text-brand backdrop-blur">
-            <CalendarClock className="h-3 w-3" /> {examDateLabel}
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+            <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
           </span>
-          <CountdownRing value={days} unit="Days" tone="blue" size={90} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Days</p>
-          <div className="flex items-center gap-3 rounded-xl border border-[rgba(103,65,217,0.14)] bg-white/70 px-3 py-2 backdrop-blur">
+          <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
+          <div className="genz-badge flex items-center gap-3 rounded-xl px-4 py-2">
             <div className="text-center">
-              <p className="font-display text-sm font-black leading-none text-l1">{overallPct}%</p>
+              <p className="font-display text-sm font-black leading-none text-brand">{overallPct}%</p>
               <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">Overall</p>
             </div>
-            <div className="h-6 w-px bg-[rgba(103,65,217,0.14)]" />
+            <div className="h-6 w-px bg-[rgba(168,85,247,0.2)]" />
             <div className="text-center">
-              <p className="font-display text-sm font-black leading-none text-brand">{points.toLocaleString()}</p>
+              <p className="font-display text-sm font-black leading-none text-brand-2">{points.toLocaleString()}</p>
               <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">pts</p>
             </div>
           </div>

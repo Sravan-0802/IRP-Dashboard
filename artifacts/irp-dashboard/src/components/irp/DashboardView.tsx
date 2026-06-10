@@ -13,6 +13,7 @@ import { getLevel, getPhase } from "@/lib/journey";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
+import { AssessmentResults } from "./AssessmentResults";
 
 function journeySteps(journey: Journey): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -124,6 +125,8 @@ export function DashboardView({
       )}
 
       {showRings(journey) && <ProgressSummary {...progress} />}
+
+      <AssessmentResults journey={journey} examDateLabel={examDateLabel} />
 
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (
