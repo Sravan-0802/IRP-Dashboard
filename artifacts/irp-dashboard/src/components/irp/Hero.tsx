@@ -1,6 +1,7 @@
 import { Calendar, CalendarClock } from "lucide-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
+import { isAssessmentLive } from "@/lib/irpDates";
 import { CountdownRing } from "./CountdownRing";
 
 const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
@@ -123,6 +124,68 @@ export function Hero({
             <p className="font-display text-base font-extrabold text-ink">
               {journey.reattemptDate ?? examDateLabel}
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── EXAM_OPEN but assessment day hasn't arrived yet (approaching) ──
+  // "Live" must only ever show on the assessment date itself — never before.
+  if (phase === "EXAM_OPEN" && !isAssessmentLive()) {
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl border border-[rgba(168,85,247,0.22)] p-6 shadow-soft-md animate-pop-in sm:p-8"
+        style={{ background: "linear-gradient(125deg, #ede9fe 0%, #fce7f3 42%, #ecfeff 100%)" }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.28),transparent_70%)] blur-2xl animate-glow-pulse" />
+        <div
+          className="pointer-events-none absolute -bottom-28 left-1/4 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.22),transparent_70%)] blur-2xl animate-glow-pulse"
+          style={{ animationDelay: "1.4s" }}
+        />
+        <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full items-center gap-4 sm:gap-5 lg:w-auto">
+            <div className="select-none shrink-0 text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">🗓️</div>
+            <div className="min-w-0 text-left">
+              <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+                <Calendar className="h-3.5 w-3.5" /> Assessment day approaching
+              </div>
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
+                {meta.name} {LEVEL_EMOJI[level]}
+              </p>
+              <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
+                {meta.tag}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
+                Your {meta.name} assessment goes live on{" "}
+                <span className="font-bold text-brand-2">{examDateLabel}</span>. Keep prepping — MCQs &amp; coding. 🔥
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="genz-chip-violet rounded-lg px-2.5 py-1 text-[10px] font-bold">MCQs</span>
+                <span className="genz-chip-cyan rounded-lg px-2.5 py-1 text-[10px] font-bold">Coding</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Goes live in</p>
+            <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
+            <div className="genz-badge flex items-center gap-3 rounded-xl px-4 py-2">
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand">{overallPct}%</p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">Overall</p>
+              </div>
+              <div className="h-6 w-px bg-[rgba(168,85,247,0.2)]" />
+              <div className="text-center">
+                <p className="font-display text-sm font-black leading-none text-brand-2">
+                  {points.toLocaleString()}
+                </p>
+                <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-dim">pts</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
