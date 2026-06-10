@@ -17,7 +17,7 @@ export function BookSlot() {
           <div className="text-5xl">🗓️</div>
           <h2 className="mt-3 font-display text-xl font-extrabold text-ink">Slot booking opens soon</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted2">
-            We'll notify you the moment slots go live.
+            We'll notify you when the Assessment Selection and Slot Selection Feature goes live.
           </p>
           <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[rgba(59,91,219,0.18)] bg-l1-bg px-3 py-1 text-xs font-bold text-l1">
             ⏳ Coming soon
