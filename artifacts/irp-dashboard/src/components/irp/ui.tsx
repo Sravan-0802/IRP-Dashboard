@@ -1,4 +1,5 @@
 import React from "react";
+import { ClipboardList, Users, Lock, Trophy, RotateCcw, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type RingTone = "purple" | "blue" | "green" | "pink" | "gold";
@@ -129,11 +130,19 @@ export function Pill({
 
 export type StepStatus = "done" | "active" | "locked" | "reattempt";
 
+export type StepIcon = "assessment" | "post" | "access";
+
 export interface JourneyStep {
   label: string;
   status: StepStatus;
-  emoji: string;
+  icon: StepIcon;
 }
+
+const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string }>> = {
+  assessment: ClipboardList,
+  post: Users,
+  access: Trophy,
+};
 
 export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
   return (
@@ -142,12 +151,12 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
       {steps.map((step, i) => {
         const ring =
           step.status === "done"
-            ? "border-[#0ca678] bg-[#d3f9d8]"
+            ? "border-[#0ca678] bg-[#d3f9d8] text-[#0ca678]"
             : step.status === "active"
               ? "border-[#3b5bdb] bg-[#3b5bdb] text-white shadow-[0_0_0_4px_rgba(59,91,219,0.15)]"
               : step.status === "reattempt"
-                ? "border-dashed border-[#6741d9]/40 bg-[#eef2ff]"
-                : "border-[#dee2e6] bg-[#f1f3f5]";
+                ? "border-dashed border-[#6741d9]/40 bg-[#eef2ff] text-[#6741d9]"
+                : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
         const badge =
           step.status === "done"
             ? <Pill tone="green">Cleared</Pill>
@@ -156,6 +165,16 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
               : step.status === "reattempt"
                 ? <Pill tone="purple">Reattempt</Pill>
                 : <Pill tone="grey">Locked</Pill>;
+
+        const StepIcon =
+          step.status === "done"
+            ? CheckCircle2
+            : step.status === "locked"
+              ? Lock
+              : step.status === "reattempt"
+                ? RotateCcw
+                : STEP_ICONS[step.icon];
+
         return (
           <div
             key={`${step.label}-${i}`}
@@ -163,11 +182,11 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
           >
             <div
               className={cn(
-                "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 text-xl md:mb-3",
+                "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 md:mb-3",
                 ring,
               )}
             >
-              <span>{step.status === "reattempt" ? "↩️" : step.status === "locked" ? "🔒" : step.emoji}</span>
+              <StepIcon className="h-6 w-6" strokeWidth={2.25} />
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#3b5bdb] shadow-[var(--shadow-sm)] ring-2 ring-white">
                 {i + 1}
               </span>

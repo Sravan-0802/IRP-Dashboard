@@ -164,7 +164,7 @@ export function Hero({
   const soon = days <= 7;
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.16)] p-4 shadow-soft-md animate-pop-in sm:p-5"
+      className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.16)] p-6 shadow-soft-md animate-pop-in sm:p-8"
       style={{ background: "linear-gradient(125deg, #eef2ff 0%, #f3ecff 45%, #ffeef7 100%)" }}
     >
       {/* glowing aura orbs */}

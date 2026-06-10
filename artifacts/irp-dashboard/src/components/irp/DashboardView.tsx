@@ -1,11 +1,18 @@
-import { FileText, Users, Lock, Brain, Code2, Mic, Zap, ArrowRight } from "lucide-react";
+import {
+  Brain,
+  Code2,
+  Mic,
+  Zap,
+  ArrowRight,
+  FileText,
+  Users,
+  Lock,
+} from "lucide-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
-import { SubjectStatsTable } from "./SubjectStatsTable";
-import { AssessmentScores } from "./AssessmentScores";
 
 function journeySteps(journey: Journey): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -13,30 +20,30 @@ function journeySteps(journey: Journey): JourneyStep[] {
 
   if (phase === "WILDCARD") {
     return [
-      { label: "L3 Exam", status: "active", emoji: "📝" },
-      { label: "Project", status: "locked", emoji: "🛠️" },
-      { label: "Interview", status: "locked", emoji: "🎤" },
+      { label: "L3 Exam", status: "active", icon: "assessment" },
+      { label: "Project", status: "locked", icon: "post" },
+      { label: "Interview", status: "locked", icon: "access" },
     ];
   }
   if (phase === "PLACED") {
     return [
-      { label: "Assessment", status: "done", emoji: "📋" },
-      { label: "Post-Assessment", status: "done", emoji: "👥" },
-      { label: "Placed", status: "done", emoji: "🏆" },
+      { label: "Assessment", status: "done", icon: "assessment" },
+      { label: "Post-Assessment", status: "done", icon: "post" },
+      { label: "Placed", status: "done", icon: "access" },
     ];
   }
   if (phase === "POST_ASSESSMENT") {
     return [
-      { label: "Online Assessment", status: "done", emoji: "📋" },
-      { label: "Post-Assessment", status: "active", emoji: "👥" },
-      { label: `Level ${level} Access`, status: "locked", emoji: "🔒" },
+      { label: "Online Assessment", status: "done", icon: "assessment" },
+      { label: "Post-Assessment", status: "active", icon: "post" },
+      { label: `Level ${level} Access`, status: "locked", icon: "access" },
     ];
   }
   const first: JourneyStep["status"] = phase === "REATTEMPT_WAITING" ? "reattempt" : "active";
   return [
-    { label: "Online Assessment", status: first, emoji: "📋" },
-    { label: "Post-Assessment", status: "locked", emoji: "👥" },
-    { label: `Level ${level} Access`, status: "locked", emoji: "🔒" },
+    { label: "Online Assessment", status: first, icon: "assessment" },
+    { label: "Post-Assessment", status: "locked", icon: "post" },
+    { label: `Level ${level} Access`, status: "locked", icon: "access" },
   ];
 }
 
@@ -117,15 +124,6 @@ export function DashboardView({
       )}
 
       {showRings(journey) && <ProgressSummary {...progress} />}
-
-      {showRings(journey) && (
-        <SubjectStatsTable
-          subjects={progress.subjects}
-          level={getLevel(journey.journeyState)}
-        />
-      )}
-
-      <AssessmentScores journey={journey} examDateLabel={examDateLabel} />
 
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (
