@@ -20,25 +20,24 @@ const EXAM_DATE_LABEL = "14 June 2026";
 export default function Dashboard() {
   const { data: journey, isLoading: loadingJourney } = useJourney();
   const { data: student, isError: studentError } = useGetStudent({
-    query: { queryKey: getGetStudentQueryKey() },
+    query: { queryKey: getGetStudentQueryKey(), retry: false },
   });
   const { data: progress, isError: progressError } = useGetStudentProgress({
-    query: { queryKey: getGetStudentProgressQueryKey() },
+    query: { queryKey: getGetStudentProgressQueryKey(), retry: false },
   });
 
   const [page, setPage] = useState<PageKey>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsMode, setSettingsMode] = useState<"menu" | "to-standard">("menu");
-  const [countdown, setCountdown] = useState({ days: 0, hours: 0 });
+  const [countdown, setCountdown] = useState({ days: 0 });
 
   useEffect(() => {
     const tick = () => {
       const dist = EXAM_DATE.getTime() - Date.now();
-      if (dist < 0) return setCountdown({ days: 0, hours: 0 });
+      if (dist < 0) return setCountdown({ days: 0 });
       setCountdown({
         days: Math.floor(dist / 86_400_000),
-        hours: Math.floor(dist / 3_600_000),
       });
     };
     tick();
@@ -142,7 +141,6 @@ export default function Dashboard() {
                 journey={journey}
                 firstName={firstName}
                 days={countdown.days}
-                hours={countdown.hours}
                 examDateLabel={EXAM_DATE_LABEL}
                 progress={progressProps}
                 onSwitchToStandard={openSwitchToStandard}

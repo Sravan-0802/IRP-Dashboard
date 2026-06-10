@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, CalendarClock } from "lucide-react";
+import { CheckCircle2, CalendarClock } from "lucide-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import { CountdownRing } from "./CountdownRing";
@@ -17,14 +17,12 @@ function PulsingDot({ color }: { color: string }) {
 export function Hero({
   journey,
   days,
-  hours,
   examDateLabel,
   overallPct = 0,
   points = 0,
 }: {
   journey: Journey;
   days: number;
-  hours: number;
   examDateLabel: string;
   overallPct?: number;
   points?: number;
@@ -146,15 +144,14 @@ export function Hero({
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               {meta.name}: {meta.tag}
             </h2>
-            <p className="mt-1 text-sm font-medium text-muted2">{hours} hours remaining</p>
-            <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-              Attempt Now <ArrowRight className="h-4 w-4" />
-            </button>
+            <p className="mt-1 text-sm font-medium text-muted2">
+              {days} {days === 1 ? "day" : "days"} remaining
+            </p>
           </div>
           <div className="flex flex-col items-center gap-2">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Closes In</p>
-            <CountdownRing value={hours} unit="Hours" total={48} tone="teal" />
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Hours</p>
+            <CountdownRing value={days} unit="Days" total={14} tone="teal" />
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#6e6a8a]">Days</p>
           </div>
         </div>
       </div>

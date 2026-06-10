@@ -1,10 +1,15 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { db, formsAuthTokensTable } from "@workspace/db";
+import { db, formsAuthTokensTable, academyUserBasicDetailsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { resolveAcademyUserId } from "../lib/auth";
 
 const router = Router();
 
-const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
+// SSO tokens are re-verified on every dashboard request, so the TTL doubles as
+// the effective session length. Configurable via FORMS_TOKEN_TTL_MINUTES.
+const TOKEN_TTL_MINUTES = Number(process.env["FORMS_TOKEN_TTL_MINUTES"]) || 15;
+const TOKEN_TTL_MS = TOKEN_TTL_MINUTES * 60 * 1000;
 
 function resolveUserIdFromBody(body: Record<string, unknown>): string | null {
   const candidate =
@@ -117,6 +122,28 @@ router.post("/auth/generate-auth-code-with-redirect", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "generate-auth-code-with-redirect error");
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/auth/me — verify the current SSO token and return the resolved user.
+// Used by the dashboard right after the SSO redirect to confirm the session.
+router.get("/auth/me", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      return void res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const [user] = await db
+      .select()
+      .from(academyUserBasicDetailsTable)
+      .where(eq(academyUserBasicDetailsTable.userId, userId))
+      .limit(1);
+
+    res.json({ userId, userName: user?.userName ?? null });
+  } catch (err) {
+    req.log.error({ err }, "auth/me error");
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -109,7 +109,8 @@ export async function fetchCourseProgress(): Promise<CourseProgressRow[]> {
   const query = `SELECT
       user_id, course_id, course_title,
       mcqs_completed, total_mcqs, mcq_completion_pct,
-      coding_problems_completed, total_coding_problems, coding_completion_pct,
+      coding_problems_completed, total_coding_problems,
+      coding_problem_completion_pct AS coding_completion_pct,
       overall_completed, overall_total, overall_completion_pct
     FROM \`${projectId}.${dataset}.${COURSE_PROGRESS_TABLE}\``;
   const [rows] = await bq.query({ query });

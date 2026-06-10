@@ -1,16 +1,32 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "./pages/Dashboard";
 import Onboarding from "./pages/Onboarding";
+import NotEnrolled from "./pages/NotEnrolled";
 import NotFound from "@/pages/not-found";
 import { useJourney } from "@/lib/useJourney";
 
 const queryClient = new QueryClient();
 
+function isNotEnrolled(error: unknown): boolean {
+  const e = error as { status?: number; data?: { code?: string } } | null;
+  return e?.status === 404 && e?.data?.code === "NOT_ENROLLED";
+}
+
 function Home() {
   const { data: journey, isLoading } = useJourney();
+  const { error: studentError } = useGetStudent({
+    query: { queryKey: getGetStudentQueryKey(), retry: false },
+  });
+
+  // SSO user whose id isn't in our academy list — show a dedicated screen.
+  if (isNotEnrolled(studentError)) {
+    const userId = (studentError as { data?: { userId?: string } } | null)?.data?.userId;
+    return <NotEnrolled userId={userId} />;
+  }
 
   if (isLoading) {
     return (

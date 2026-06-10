@@ -2,7 +2,6 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   studentsTable,
-  subjectProgressTable,
   studentMarksTable,
   studentActivityTable,
   practiceSessionsTable,
@@ -11,139 +10,127 @@ import {
   academyUserCourseProgressTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { resolveAcademyUserId } from "../lib/auth";
 
 const router = Router();
 
 const STUDENT_ID = 1;
 
-async function getPrimaryAcademyUser() {
-  const users = await db.select().from(academyUserBasicDetailsTable);
-  if (users.length === 0) return null;
-  return users.find((u) => u.userName?.toLowerCase().includes("sravan")) ?? users[0];
+/** BigQuery sometimes stores encrypted tokens in user_name — not suitable for display. */
+function isLikelyDisplayName(value: string | null | undefined): value is string {
+  if (!value?.trim()) return false;
+  const v = value.trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) return false;
+  if (v.length > 24 && /^[A-Za-z0-9+/=]+$/.test(v) && !/\s/.test(v)) return false;
+  return true;
 }
 
-async function getStudentProfile() {
+function studentBelongsToAcademyUser(
+  studentEmail: string | null | undefined,
+  academyUserId: string,
+): boolean {
+  if (!studentEmail?.trim()) return false;
+  return studentEmail.trim().toLowerCase().startsWith(`${academyUserId.toLowerCase()}@`);
+}
+
+function resolveStudentName(
+  academyUserName: string | null | undefined,
+  studentName: string | null | undefined,
+  academyUserId: string,
+  studentEmail?: string | null,
+): string {
+  const envName = process.env.ACADEMY_USER_DISPLAY_NAME?.trim();
+  if (envName) return envName;
+  if (isLikelyDisplayName(academyUserName)) return academyUserName;
+  if (studentBelongsToAcademyUser(studentEmail, academyUserId) && isLikelyDisplayName(studentName)) {
+    return studentName;
+  }
+  return "Student";
+}
+
+async function getAcademyUserById(userId: string) {
+  const [user] = await db
+    .select()
+    .from(academyUserBasicDetailsTable)
+    .where(eq(academyUserBasicDetailsTable.userId, userId))
+    .limit(1);
+  return user ?? null;
+}
+
+async function getStudentProfile(userId: string) {
   const [studentRow] = await db
     .select()
     .from(studentsTable)
     .where(eq(studentsTable.id, STUDENT_ID))
     .limit(1);
 
-  const academyUser = await getPrimaryAcademyUser();
+  const academyUser = await getAcademyUserById(userId);
 
   if (academyUser) {
     const s = studentRow;
+    const linked = studentBelongsToAcademyUser(s?.email, academyUser.userId);
     return {
       id: STUDENT_ID,
-      name: academyUser.userName ?? s?.name ?? "Student",
+      name: resolveStudentName(academyUser.userName, s?.name, academyUser.userId, s?.email),
       yog: s?.yog ?? 2028,
       level: s?.level ?? "Level 1 • The Hustler",
-      email: s?.email ?? `${academyUser.userId}@academy.local`,
+      email: linked ? (s?.email ?? `${academyUser.userId}@academy.local`) : `${academyUser.userId}@academy.local`,
       avatar: s?.avatar ?? "",
       registrationStatus: s?.registrationStatus ?? "registered",
       currentLevel: s?.currentLevel ?? 1,
     };
   }
 
-  if (!studentRow) return null;
-
-  return {
-    id: studentRow.id,
-    name: studentRow.name,
-    yog: studentRow.yog,
-    level: studentRow.level,
-    email: studentRow.email,
-    avatar: studentRow.avatar,
-    registrationStatus: studentRow.registrationStatus,
-    currentLevel: studentRow.currentLevel,
-  };
+  // Token is valid but this user_id is not in our academy list — not enrolled.
+  void studentRow;
+  return null;
 }
 
-async function getSubjectProgressResponse() {
-  const academyUser = await getPrimaryAcademyUser();
-  if (academyUser) {
-    const courses = await db
-      .select()
-      .from(academyUserCourseProgressTable)
-      .where(eq(academyUserCourseProgressTable.userId, academyUser.userId));
+async function getSubjectProgressResponse(userId: string) {
+  const academyUser = await getAcademyUserById(userId);
+  if (!academyUser) return null;
 
-    if (courses.length > 0) {
-      const subjectData = courses.map((c) => ({
-        subject: c.courseTitle ?? c.courseId ?? "Course",
-        mcqCompleted: c.mcqsCompleted ?? 0,
-        mcqTotal: c.totalMcqs ?? 0,
-        codingCompleted: c.codingProblemsCompleted ?? 0,
-        codingTotal: c.totalCodingProblems ?? 0,
-        mcqPercentage: Math.round(c.mcqCompletionPct ?? 0),
-        codingPercentage: Math.round(c.codingCompletionPct ?? 0),
-      }));
-
-      const totalMcqCompleted = subjectData.reduce((acc, s) => acc + s.mcqCompleted, 0);
-      const totalMcqTotal = subjectData.reduce((acc, s) => acc + s.mcqTotal, 0);
-      const totalCodingCompleted = subjectData.reduce((acc, s) => acc + s.codingCompleted, 0);
-      const totalCodingTotal = subjectData.reduce((acc, s) => acc + s.codingTotal, 0);
-
-      return {
-        overallMcqPercentage:
-          totalMcqTotal > 0 ? Math.round((totalMcqCompleted / totalMcqTotal) * 100) : 0,
-        overallCodingPercentage:
-          totalCodingTotal > 0
-            ? Math.round((totalCodingCompleted / totalCodingTotal) * 100)
-            : 0,
-        streakDays: 0,
-        lastActiveDate: academyUser.syncedAt.toISOString().slice(0, 10),
-        subjects: subjectData,
-      };
-    }
-  }
-
-  const subjects = await db
+  const courses = await db
     .select()
-    .from(subjectProgressTable)
-    .where(eq(subjectProgressTable.studentId, STUDENT_ID));
+    .from(academyUserCourseProgressTable)
+    .where(eq(academyUserCourseProgressTable.userId, academyUser.userId));
 
-  const activity = await db
-    .select()
-    .from(studentActivityTable)
-    .where(eq(studentActivityTable.studentId, STUDENT_ID))
-    .limit(1);
-
-  const activityData = activity[0];
-
-  const subjectData = subjects.map((s) => ({
-    subject: s.subject,
-    mcqCompleted: s.mcqCompleted,
-    mcqTotal: s.mcqTotal,
-    codingCompleted: s.codingCompleted,
-    codingTotal: s.codingTotal,
-    mcqPercentage: s.mcqTotal > 0 ? Math.round((s.mcqCompleted / s.mcqTotal) * 100) : 0,
-    codingPercentage:
-      s.codingTotal > 0 ? Math.round((s.codingCompleted / s.codingTotal) * 100) : 0,
+  const subjectData = courses.map((c) => ({
+    subject: c.courseTitle ?? c.courseId ?? "Course",
+    mcqCompleted: c.mcqsCompleted ?? 0,
+    mcqTotal: c.totalMcqs ?? 0,
+    codingCompleted: c.codingProblemsCompleted ?? 0,
+    codingTotal: c.totalCodingProblems ?? 0,
+    mcqPercentage: Math.round(c.mcqCompletionPct ?? 0),
+    codingPercentage: Math.round(c.codingCompletionPct ?? 0),
   }));
 
-  const totalMcqCompleted = subjects.reduce((acc, s) => acc + s.mcqCompleted, 0);
-  const totalMcqTotal = subjects.reduce((acc, s) => acc + s.mcqTotal, 0);
-  const totalCodingCompleted = subjects.reduce((acc, s) => acc + s.codingCompleted, 0);
-  const totalCodingTotal = subjects.reduce((acc, s) => acc + s.codingTotal, 0);
+  const totalMcqCompleted = subjectData.reduce((acc, s) => acc + s.mcqCompleted, 0);
+  const totalMcqTotal = subjectData.reduce((acc, s) => acc + s.mcqTotal, 0);
+  const totalCodingCompleted = subjectData.reduce((acc, s) => acc + s.codingCompleted, 0);
+  const totalCodingTotal = subjectData.reduce((acc, s) => acc + s.codingTotal, 0);
 
   return {
     overallMcqPercentage:
       totalMcqTotal > 0 ? Math.round((totalMcqCompleted / totalMcqTotal) * 100) : 0,
     overallCodingPercentage:
-      totalCodingTotal > 0
-        ? Math.round((totalCodingCompleted / totalCodingTotal) * 100)
-        : 0,
-    streakDays: activityData?.streakDays ?? 0,
-    lastActiveDate: activityData?.lastActiveDate ?? "",
+      totalCodingTotal > 0 ? Math.round((totalCodingCompleted / totalCodingTotal) * 100) : 0,
+    streakDays: 0,
+    lastActiveDate: academyUser.syncedAt.toISOString().slice(0, 10),
     subjects: subjectData,
   };
 }
 
 router.get("/student", async (req, res) => {
   try {
-    const profile = await getStudentProfile();
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const profile = await getStudentProfile(userId);
     if (!profile) {
-      res.status(404).json({ error: "Student not found" });
+      res.status(404).json({ error: "Not enrolled in IRP", code: "NOT_ENROLLED", userId });
       return;
     }
     res.json(profile);
@@ -155,7 +142,17 @@ router.get("/student", async (req, res) => {
 
 router.get("/student/progress", async (req, res) => {
   try {
-    res.json(await getSubjectProgressResponse());
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const progress = await getSubjectProgressResponse(userId);
+    if (!progress) {
+      res.status(404).json({ error: "Not enrolled in IRP", code: "NOT_ENROLLED", userId });
+      return;
+    }
+    res.json(progress);
   } catch (err) {
     req.log.error({ err }, "Failed to get student progress");
     res.status(500).json({ error: "Internal server error" });
@@ -164,6 +161,11 @@ router.get("/student/progress", async (req, res) => {
 
 router.get("/student/marks", async (req, res) => {
   try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const marks = await db
       .select()
       .from(studentMarksTable)
@@ -190,6 +192,11 @@ router.get("/student/marks", async (req, res) => {
 
 router.get("/student/activity", async (req, res) => {
   try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const activity = await db
       .select()
       .from(studentActivityTable)

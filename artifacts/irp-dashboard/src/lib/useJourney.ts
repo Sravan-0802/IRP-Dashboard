@@ -1,12 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Journey, JourneyState } from "./journey";
+import { getAuthToken } from "./authToken";
 
 const JOURNEY_KEY = ["student", "journey"] as const;
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
   const res = await fetch(url, {
-    headers: { "content-type": "application/json" },
     ...init,
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;

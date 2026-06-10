@@ -65,15 +65,24 @@ async function recordStatus(
     });
 }
 
+function dedupeByKey<T>(rows: T[], keyFn: (row: T) => string): T[] {
+  const map = new Map<string, T>();
+  for (const row of rows) map.set(keyFn(row), row);
+  return [...map.values()];
+}
+
 async function syncBasicDetails(): Promise<number> {
   const rows = await fetchBasicDetails();
-  const mapped = rows
-    .filter((r) => r.user_id != null && String(r.user_id).trim() !== "")
-    .map((r) => ({
-      userId: String(r.user_id),
-      userName: toStr(r.user_name),
-      syncedAt: new Date(),
-    }));
+  const mapped = dedupeByKey(
+    rows
+      .filter((r) => r.user_id != null && String(r.user_id).trim() !== "")
+      .map((r) => ({
+        userId: String(r.user_id),
+        userName: toStr(r.user_name),
+        syncedAt: new Date(),
+      })),
+    (r) => r.userId,
+  );
 
   for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
     const batch = mapped.slice(i, i + BATCH_SIZE);
@@ -93,29 +102,32 @@ async function syncBasicDetails(): Promise<number> {
 
 async function syncCourseProgress(): Promise<number> {
   const rows = await fetchCourseProgress();
-  const mapped = rows
-    .filter(
-      (r) =>
-        r.user_id != null &&
-        String(r.user_id).trim() !== "" &&
-        r.course_id != null &&
-        String(r.course_id).trim() !== ""
-    )
-    .map((r) => ({
-      userId: String(r.user_id),
-      courseId: String(r.course_id),
-      courseTitle: toStr(r.course_title),
-      mcqsCompleted: toInt(r.mcqs_completed),
-      totalMcqs: toInt(r.total_mcqs),
-      mcqCompletionPct: toReal(r.mcq_completion_pct),
-      codingProblemsCompleted: toInt(r.coding_problems_completed),
-      totalCodingProblems: toInt(r.total_coding_problems),
-      codingCompletionPct: toReal(r.coding_completion_pct),
-      overallCompleted: toInt(r.overall_completed),
-      overallTotal: toInt(r.overall_total),
-      overallCompletionPct: toReal(r.overall_completion_pct),
-      syncedAt: new Date(),
-    }));
+  const mapped = dedupeByKey(
+    rows
+      .filter(
+        (r) =>
+          r.user_id != null &&
+          String(r.user_id).trim() !== "" &&
+          r.course_id != null &&
+          String(r.course_id).trim() !== ""
+      )
+      .map((r) => ({
+        userId: String(r.user_id),
+        courseId: String(r.course_id),
+        courseTitle: toStr(r.course_title),
+        mcqsCompleted: toInt(r.mcqs_completed),
+        totalMcqs: toInt(r.total_mcqs),
+        mcqCompletionPct: toReal(r.mcq_completion_pct),
+        codingProblemsCompleted: toInt(r.coding_problems_completed),
+        totalCodingProblems: toInt(r.total_coding_problems),
+        codingCompletionPct: toReal(r.coding_completion_pct),
+        overallCompleted: toInt(r.overall_completed),
+        overallTotal: toInt(r.overall_total),
+        overallCompletionPct: toReal(r.overall_completion_pct),
+        syncedAt: new Date(),
+      })),
+    (r) => `${r.userId}:${r.courseId}`,
+  );
 
   for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
     const batch = mapped.slice(i, i + BATCH_SIZE);
@@ -206,12 +218,57 @@ export async function runBigQuerySync(): Promise<SyncResult> {
   }
 }
 
-let intervalHandle: ReturnType<typeof setInterval> | null = null;
+let nextRunHandle: ReturnType<typeof setTimeout> | null = null;
+
+const IST_OFFSET_MINUTES = 5 * 60 + 30; // Asia/Kolkata is UTC+05:30 (no DST)
+const MINUTES_PER_DAY = 24 * 60;
 
 /**
- * Schedules the sync to run on an interval (default 60 min, override with
- * BQ_SYNC_INTERVAL_MINUTES). Runs once shortly after startup. Failures are
- * logged but never crash the server (expected while VPC access is pending).
+ * Parses the configured daily sync times (IST) into minutes-of-day in UTC.
+ * Override with BQ_SYNC_TIMES_IST, e.g. "10:00,18:00". Defaults to 10:00 & 18:00 IST.
+ */
+function getSyncTargetsUtcMinutes(): number[] {
+  const raw = process.env["BQ_SYNC_TIMES_IST"]?.trim();
+  const items = (raw ? raw.split(",") : ["10:00", "18:00"])
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const targets: number[] = [];
+  for (const item of items) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(item);
+    if (!m) continue;
+    const hours = Number(m[1]);
+    const mins = Number(m[2]);
+    if (hours > 23 || mins > 59) continue;
+    const utc = (((hours * 60 + mins - IST_OFFSET_MINUTES) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+    targets.push(utc);
+  }
+
+  const unique = [...new Set(targets)].sort((a, b) => a - b);
+  // Fallback to 10:00 & 18:00 IST if config was empty/invalid.
+  return unique.length ? unique : [(10 * 60 - IST_OFFSET_MINUTES + MINUTES_PER_DAY) % MINUTES_PER_DAY, (18 * 60 - IST_OFFSET_MINUTES + MINUTES_PER_DAY) % MINUTES_PER_DAY].sort((a, b) => a - b);
+}
+
+function msUntilNextTarget(targetsUtcMinutes: number[]): number {
+  const now = new Date();
+  const nowMinOfDay = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const nowSec = now.getUTCSeconds();
+
+  for (const target of targetsUtcMinutes) {
+    const deltaMin = target - nowMinOfDay;
+    if (deltaMin > 0) {
+      return (deltaMin * 60 - nowSec) * 1000;
+    }
+  }
+  // All targets already passed today — schedule the first one tomorrow.
+  const minsUntilMidnight = MINUTES_PER_DAY - nowMinOfDay;
+  return ((minsUntilMidnight + targetsUtcMinutes[0]) * 60 - nowSec) * 1000;
+}
+
+/**
+ * Schedules the sync to run at fixed daily times (default 10:00 & 18:00 IST,
+ * override with BQ_SYNC_TIMES_IST). Runs once shortly after startup unless
+ * BQ_SYNC_ON_BOOT is "false". Failures are logged but never crash the server.
  */
 export function startBigQuerySyncScheduler(): void {
   if (!isBigQueryConfigured()) {
@@ -219,18 +276,32 @@ export function startBigQuerySyncScheduler(): void {
     return;
   }
 
-  const minutes = Number(process.env["BQ_SYNC_INTERVAL_MINUTES"] ?? "60");
-  const intervalMs = Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : 60 * 60 * 1000;
+  const targets = getSyncTargetsUtcMinutes();
 
-  // Initial run shortly after boot, off the critical startup path.
-  setTimeout(() => {
-    runBigQuerySync().catch((err) => logger.error({ err }, "Initial BigQuery sync errored"));
-  }, 10_000);
+  if (process.env["BQ_SYNC_ON_BOOT"] !== "false") {
+    // Initial run shortly after boot, off the critical startup path.
+    setTimeout(() => {
+      runBigQuerySync().catch((err) => logger.error({ err }, "Initial BigQuery sync errored"));
+    }, 10_000);
+  }
 
-  if (intervalHandle) clearInterval(intervalHandle);
-  intervalHandle = setInterval(() => {
-    runBigQuerySync().catch((err) => logger.error({ err }, "Scheduled BigQuery sync errored"));
-  }, intervalMs);
+  const scheduleNext = () => {
+    const delay = msUntilNextTarget(targets);
+    const nextRunAt = new Date(Date.now() + delay).toISOString();
+    if (nextRunHandle) clearTimeout(nextRunHandle);
+    nextRunHandle = setTimeout(() => {
+      runBigQuerySync()
+        .catch((err) => logger.error({ err }, "Scheduled BigQuery sync errored"))
+        .finally(scheduleNext);
+    }, delay);
+    logger.info({ nextRunAt, minutesUntil: Math.round(delay / 60000) }, "Next BigQuery sync scheduled");
+  };
 
-  logger.info({ intervalMinutes: intervalMs / 60000 }, "BigQuery sync scheduler started");
+  scheduleNext();
+
+  const istTimes = targets.map((t) => {
+    const ist = (t + IST_OFFSET_MINUTES) % MINUTES_PER_DAY;
+    return `${String(Math.floor(ist / 60)).padStart(2, "0")}:${String(ist % 60).padStart(2, "0")}`;
+  });
+  logger.info({ syncTimesIST: istTimes }, "BigQuery sync scheduler started (daily, IST)");
 }

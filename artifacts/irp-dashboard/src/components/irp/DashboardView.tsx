@@ -4,6 +4,7 @@ import { getLevel, getPhase } from "@/lib/journey";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
+import { SubjectStatsTable } from "./SubjectStatsTable";
 import { AssessmentScores } from "./AssessmentScores";
 
 function journeySteps(journey: Journey): JourneyStep[] {
@@ -54,7 +55,6 @@ export function DashboardView({
   journey,
   firstName,
   days,
-  hours,
   examDateLabel,
   progress,
   onSwitchToStandard,
@@ -62,7 +62,6 @@ export function DashboardView({
   journey: Journey;
   firstName: string;
   days: number;
-  hours: number;
   examDateLabel: string;
   progress: {
     overallPct: number;
@@ -109,7 +108,7 @@ export function DashboardView({
         <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
       </div>
 
-      <Hero journey={journey} days={days} hours={hours} examDateLabel={examDateLabel} overallPct={progress.overallPct} points={progress.points} />
+      <Hero journey={journey} days={days} examDateLabel={examDateLabel} overallPct={progress.overallPct} points={progress.points} />
 
       {phase !== "PLACED" && (
         <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
@@ -118,6 +117,13 @@ export function DashboardView({
       )}
 
       {showRings(journey) && <ProgressSummary {...progress} />}
+
+      {showRings(journey) && (
+        <SubjectStatsTable
+          subjects={progress.subjects}
+          level={getLevel(journey.journeyState)}
+        />
+      )}
 
       <AssessmentScores journey={journey} examDateLabel={examDateLabel} />
 

@@ -68,7 +68,7 @@ async function syncCourseProgress() {
     query: `SELECT
       user_id, course_id, course_title,
       mcqs_completed, total_mcqs, mcq_completion_pct,
-      coding_problems_completed, total_coding_problems, coding_completion_pct,
+      coding_problems_completed, total_coding_problems, coding_problem_completion_pct,
       overall_completed, overall_total, overall_completion_pct
     FROM \`${projectId}.${dataset}.academy_users_course_progress_data_for_irp_portal\``,
   });
@@ -79,7 +79,7 @@ async function syncCourseProgress() {
       `INSERT INTO academy_user_course_progress (
         user_id, course_id, course_title,
         mcqs_completed, total_mcqs, mcq_completion_pct,
-        coding_problems_completed, total_coding_problems, coding_completion_pct,
+        coding_problems_completed, total_coding_problems, coding_problem_completion_pct,
         overall_completed, overall_total, overall_completion_pct, synced_at
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
       ON CONFLICT (user_id, course_id) DO UPDATE SET
@@ -103,7 +103,7 @@ async function syncCourseProgress() {
         row.mcq_completion_pct ?? null,
         row.coding_problems_completed ?? null,
         row.total_coding_problems ?? null,
-        row.coding_completion_pct ?? null,
+        row.coding_problem_completion_pct ?? null,
         row.overall_completed ?? null,
         row.overall_total ?? null,
         row.overall_completion_pct ?? null,
