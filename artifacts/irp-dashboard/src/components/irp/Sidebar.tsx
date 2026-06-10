@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, CalendarClock, LogOut, Settings, Zap } from "lucide-react";
+import { LayoutDashboard, BookOpen, CalendarClock, Settings, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
@@ -95,12 +95,6 @@ export function SidebarContent({
           className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
         >
           <Settings className="h-4 w-4" /> Settings
-        </button>
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#fa5252] transition-colors hover:bg-[#fa5252]/10 focus:outline-none"
-        >
-          <LogOut className="h-4 w-4" /> Logout
         </button>
       </div>
     </div>

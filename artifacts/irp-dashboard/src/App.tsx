@@ -8,7 +8,6 @@ import Onboarding from "./pages/Onboarding";
 import NotEnrolled from "./pages/NotEnrolled";
 import NotFound from "@/pages/not-found";
 import { useJourney } from "@/lib/useJourney";
-import { hasAuthToken, redirectToLogin } from "@/lib/authToken";
 
 const queryClient = new QueryClient();
 
@@ -17,37 +16,11 @@ function isNotEnrolled(error: unknown): boolean {
   return e?.status === 404 && e?.data?.code === "NOT_ENROLLED";
 }
 
-function isUnauthorized(error: unknown): boolean {
-  return (error as { status?: number } | null)?.status === 401;
-}
-
-function RedirectingToLogin() {
-  return (
-    <div className="flex h-[100dvh] items-center justify-center">
-      <p className="text-sm font-semibold text-muted2">Redirecting to login…</p>
-    </div>
-  );
-}
-
-function AuthGate({ children }: { children: React.ReactNode }) {
-  if (import.meta.env.PROD && !hasAuthToken()) {
-    redirectToLogin();
-    return <RedirectingToLogin />;
-  }
-  return <>{children}</>;
-}
-
 function Home() {
-  const { data: journey, isLoading, error: journeyError } = useJourney();
+  const { data: journey, isLoading } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
   });
-
-  // Expired or missing token on the server → back to login.
-  if (import.meta.env.PROD && (isUnauthorized(studentError) || isUnauthorized(journeyError))) {
-    redirectToLogin();
-    return <RedirectingToLogin />;
-  }
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.
   if (isNotEnrolled(studentError)) {
@@ -74,9 +47,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        <AuthGate>
-          <Home />
-        </AuthGate>
+        <Home />
       </Route>
       <Route component={NotFound} />
     </Switch>
