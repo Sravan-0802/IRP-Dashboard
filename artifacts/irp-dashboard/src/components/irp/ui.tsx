@@ -26,6 +26,7 @@ export function ProgressRing({
   strokeWidth = 8,
   tone = "purple",
   label,
+  locked = false,
   className,
 }: {
   value: number;
@@ -33,6 +34,7 @@ export function ProgressRing({
   strokeWidth?: number;
   tone?: RingTone;
   label?: string;
+  locked?: boolean;
   className?: string;
 }) {
   const v = Math.min(100, Math.max(0, value || 0));
@@ -76,20 +78,30 @@ export function ProgressRing({
         />
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span
-          className="font-sans font-bold tabular-nums tracking-tight text-[#0d1117]"
-          style={{ fontSize: size * 0.3 }}
-        >
-          {Math.round(v)}
-          <span style={{ fontSize: size * 0.14 }} className="ml-0.5 font-semibold text-[#6e6a8a]">%</span>
-        </span>
-        {label && (
-          <span
-            className="mt-0.5 font-bold uppercase tracking-wide text-[#6e6a8a]"
-            style={{ fontSize: size * 0.12 }}
-          >
-            {label}
-          </span>
+        {locked ? (
+          <Lock
+            style={{ width: size * 0.32, height: size * 0.32 }}
+            className="text-[#aaa5c0]"
+            strokeWidth={2.25}
+          />
+        ) : (
+          <>
+            <span
+              className="font-sans font-bold tabular-nums tracking-tight text-[#0d1117]"
+              style={{ fontSize: size * 0.3 }}
+            >
+              {Math.round(v)}
+              <span style={{ fontSize: size * 0.14 }} className="ml-0.5 font-semibold text-[#6e6a8a]">%</span>
+            </span>
+            {label && (
+              <span
+                className="mt-0.5 font-bold uppercase tracking-wide text-[#6e6a8a]"
+                style={{ fontSize: size * 0.12 }}
+              >
+                {label}
+              </span>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -138,7 +150,7 @@ export interface JourneyStep {
   icon: StepIcon;
 }
 
-const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string }>> = {
+const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   assessment: ClipboardList,
   post: Users,
   access: Trophy,

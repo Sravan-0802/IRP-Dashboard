@@ -159,14 +159,8 @@ function ScoreCard({
         locked ? "opacity-90" : ""
       }`}
     >
-      <div className="relative">
-        <ProgressRing value={pct} tone={tone} label={label} />
-        {locked && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-white/55">
-            <Lock className="h-4 w-4 text-muted2" />
-          </div>
-        )}
-      </div>
+      <ProgressRing value={pct} tone={tone} label={label} locked={locked} />
+
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-muted2">{title}</p>
         <p className="font-display text-2xl font-black leading-none text-ink">
