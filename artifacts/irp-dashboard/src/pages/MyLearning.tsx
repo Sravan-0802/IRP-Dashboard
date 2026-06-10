@@ -93,6 +93,20 @@ export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; le
       </div>
 
       <SubjectStatsTable subjects={subjects} level={level} />
+
+      <p
+        className="text-left italic"
+        style={{
+          fontFamily: '"DM Sans", sans-serif',
+          fontSize: "11px",
+          color: "#aaa5c0",
+          marginTop: "8px",
+          marginBottom: "0",
+        }}
+      >
+        Course progress shown here reflects your completion of courses in the NxtWave Academy Course
+        Library. This is separate from your Growth Cycle progress tracked in My Journey.
+      </p>
     </div>
   );
 }
