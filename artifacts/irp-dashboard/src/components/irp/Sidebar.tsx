@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, CalendarClock, Settings, Zap } from "lucide-react";
+import { LayoutDashboard, BookOpen, ClipboardList, CalendarClock, Settings, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
@@ -9,11 +9,12 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#e64980",
 };
 
-export type PageKey = "dashboard" | "learning" | "slot";
+export type PageKey = "dashboard" | "learning" | "assessments" | "slot";
 
 const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { key: "learning", icon: BookOpen, label: "Practice Hub" },
+  { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
   { key: "slot", icon: CalendarClock, label: "Book a Slot" },
 ];
 

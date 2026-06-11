@@ -1,8 +1,10 @@
+import { Lock } from "lucide-react";
 import { TRACKS } from "@/lib/courses";
 import { subjectsForTrack } from "@/lib/subjectMatching";
 import { IrpCard, ProgressRing } from "@/components/irp/ui";
 import { SubjectStatsTable } from "@/components/irp/SubjectStatsTable";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
+import { isProgressVisible, PROGRESS_UNLOCK_LABEL } from "@/lib/irpDates";
 
 function StatCard({
   label,
@@ -42,6 +44,32 @@ function trackPct(subjects: SubjectRow[], courses: string[]): number {
 }
 
 export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; level?: 1 | 2 | 3 }) {
+  if (!isProgressVisible()) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Practice Hub</h1>
+          <p className="mt-1 text-sm text-muted2">Track your courses, subjects and practice progress.</p>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-l1-bg text-l1">
+            <Lock className="h-7 w-7" />
+          </div>
+          <div>
+            <p className="font-display text-xl font-extrabold text-ink">Progress data is being prepared</p>
+            <p className="mt-2 max-w-sm text-sm text-muted2">
+              Your course progress, MCQ stats, and coding scores will be visible here from{" "}
+              <span className="font-bold text-l1">{PROGRESS_UNLOCK_LABEL}</span>. Keep practising!
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(59,91,219,0.2)] bg-l1-bg px-4 py-1.5 text-sm font-bold text-l1">
+            🔒 Unlocks {PROGRESS_UNLOCK_LABEL}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const mcqDone = subjects.reduce((a, s) => a + s.mcqCompleted, 0);
   const mcqTotal = subjects.reduce((a, s) => a + s.mcqTotal, 0);
   const codeDone = subjects.reduce((a, s) => a + s.codingCompleted, 0);

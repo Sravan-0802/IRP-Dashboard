@@ -1,5 +1,6 @@
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Lock } from "lucide-react";
 import { ProgressRing } from "./ui";
+import { isProgressVisible, PROGRESS_UNLOCK_LABEL } from "@/lib/irpDates";
 
 export interface SubjectRow {
   subject: string;
@@ -32,6 +33,30 @@ export function ProgressSummary({
   points: number;
   maxPoints: number;
 }) {
+  if (!isProgressVisible()) {
+    return (
+      <div className="irp-card p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
+            <TrendingUp className="h-4 w-4 text-brand" /> Overall IRP Progress
+          </h3>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
+            <Lock className="h-5 w-5" />
+          </div>
+          <p className="font-display text-base font-extrabold text-ink">Progress data is being prepared</p>
+          <p className="max-w-xs text-sm text-muted2">
+            Your MCQ and coding stats will be visible here from <span className="font-bold text-l1">{PROGRESS_UNLOCK_LABEL}</span>.
+          </p>
+          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[rgba(59,91,219,0.2)] bg-l1-bg px-3 py-1 text-xs font-bold text-l1">
+            🔒 Unlocks {PROGRESS_UNLOCK_LABEL}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   function momentumLabel(pct: number) {
     return pct >= 75
       ? "🔥 On fire"

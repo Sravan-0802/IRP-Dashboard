@@ -118,6 +118,7 @@ function serialize(s: typeof studentsTable.$inferSelect, clamp: boolean) {
 
 router.get("/student/journey", async (req, res) => {
   try {
+    const userId = await resolveAcademyUserId(req);
     const student = await ensureStudent();
     if (!student) {
       res.status(404).json({ error: "Student not found" });
@@ -136,6 +137,10 @@ router.post("/student/journey/onboard", async (req, res) => {
     const path = String(req.body?.path ?? "");
     if (path !== "standard" && path !== "wildcard") {
       res.status(400).json({ error: "path must be 'standard' or 'wildcard'" });
+      return;
+    }
+    if (path === "wildcard" && (await shouldClampToL1(req))) {
+      res.status(403).json({ error: "Wildcard path is not available for your account." });
       return;
     }
     await ensureStudent();
@@ -170,6 +175,10 @@ router.post("/student/journey/switch", async (req, res) => {
     }
 
     if (to === "wildcard") {
+      if (await shouldClampToL1(req)) {
+        res.status(403).json({ error: "Wildcard path is not available for your account." });
+        return;
+      }
       // Block if the student has already begun the standard assessment.
       if (student.hasAttemptedL1 === 1 || student.journeyState !== "L1_PREP") {
         res.status(409).json({
@@ -212,6 +221,11 @@ router.post("/student/journey/state", async (req, res) => {
     const state = String(req.body?.state ?? "");
     if (!ALL_STATES.has(state)) {
       res.status(400).json({ error: "Invalid journey_state" });
+      return;
+    }
+    const isL3State = state === "WILDCARD_ACTIVE" || state.startsWith("L3_");
+    if (isL3State && (await shouldClampToL1(req))) {
+      res.status(403).json({ error: "Level 3 preview is not available for your account." });
       return;
     }
     await ensureStudent();

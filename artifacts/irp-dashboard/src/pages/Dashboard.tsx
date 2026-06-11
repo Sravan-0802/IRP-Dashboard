@@ -12,6 +12,7 @@ import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { MyLearning } from "./MyLearning";
+import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 
@@ -145,6 +146,7 @@ export default function Dashboard() {
               />
             )}
             {page === "learning" && <MyLearning subjects={subjects} level={getLevel(journey.journeyState)} />}
+            {page === "assessments" && <AssessmentsHub level={getLevel(journey.journeyState)} />}
             {page === "slot" && <BookSlot />}
           </div>
         </main>
