@@ -1,10 +1,24 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { db, studentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { resolveAcademyUserId } from "../lib/auth";
 
 const router = Router();
 
 const STUDENT_ID = 1;
+
+// ── L3 allowlist ─────────────────────────────────────────────────────────────
+// Academy user IDs that are allowed to see their true level (e.g. Level 3).
+// Everyone else is clamped down to Level 1. Add IDs here as they are provided.
+const L3_ALLOWED_ACADEMY_USER_IDS = new Set<string>([
+  // "academy-user-id-goes-here",
+]);
+
+async function shouldClampToL1(req: Request): Promise<boolean> {
+  const userId = await resolveAcademyUserId(req);
+  if (userId && L3_ALLOWED_ACADEMY_USER_IDS.has(userId)) return false;
+  return true;
+}
 
 // ── Journey state machine ──────────────────────────────────────────────────
 const STANDARD_STATES = [
@@ -89,10 +103,10 @@ function clampToL1(state: string): string {
   return "L1_PREP";
 }
 
-function serialize(s: typeof studentsTable.$inferSelect) {
+function serialize(s: typeof studentsTable.$inferSelect, clamp: boolean) {
   return {
-    journeyState: clampToL1(s.journeyState),
-    isWildcard: false,
+    journeyState: clamp ? clampToL1(s.journeyState) : s.journeyState,
+    isWildcard: clamp ? false : s.isWildcard === 1,
     hasCompletedOnboarding: s.hasCompletedOnboarding === 1,
     hasAttemptedL1: s.hasAttemptedL1 === 1,
     l3ExamStarted: s.l3ExamStarted === 1,
@@ -109,7 +123,7 @@ router.get("/student/journey", async (req, res) => {
       res.status(404).json({ error: "Student not found" });
       return;
     }
-    res.json(serialize(student));
+    res.json(serialize(student, await shouldClampToL1(req)));
   } catch (err) {
     req.log.error({ err }, "Failed to get journey");
     res.status(500).json({ error: "Internal server error" });
@@ -134,7 +148,7 @@ router.post("/student/journey/onboard", async (req, res) => {
       })
       .where(eq(studentsTable.id, STUDENT_ID))
       .returning();
-    res.json(serialize(updated));
+    res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {
     req.log.error({ err }, "Failed to complete onboarding");
     res.status(500).json({ error: "Internal server error" });
@@ -169,7 +183,7 @@ router.post("/student/journey/switch", async (req, res) => {
         .set({ isWildcard: 1, journeyState: "WILDCARD_ACTIVE" })
         .where(eq(studentsTable.id, STUDENT_ID))
         .returning();
-      res.json(serialize(updated));
+      res.json(serialize(updated, await shouldClampToL1(req)));
       return;
     }
 
@@ -185,7 +199,7 @@ router.post("/student/journey/switch", async (req, res) => {
       .set({ isWildcard: 0, journeyState: "L1_PREP" })
       .where(eq(studentsTable.id, STUDENT_ID))
       .returning();
-    res.json(serialize(updated));
+    res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {
     req.log.error({ err }, "Failed to switch path");
     res.status(500).json({ error: "Internal server error" });
@@ -217,7 +231,7 @@ router.post("/student/journey/state", async (req, res) => {
       .set(patch)
       .where(eq(studentsTable.id, STUDENT_ID))
       .returning();
-    res.json(serialize(updated));
+    res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {
     req.log.error({ err }, "Failed to set journey state");
     res.status(500).json({ error: "Internal server error" });
