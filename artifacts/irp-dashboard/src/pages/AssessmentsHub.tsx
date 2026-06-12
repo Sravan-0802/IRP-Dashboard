@@ -80,10 +80,9 @@ function saveStatuses(map: StatusMap) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 }
 
-function statusPill(status: AssessmentStatus, kind: "mock" | "main") {
+function statusPill(status: AssessmentStatus, _kind: "mock" | "main") {
   if (status === "done") return <Pill tone="green"><CheckCircle2 className="h-3 w-3" /> Done</Pill>;
-  if (status === "in-progress") return <Pill tone="amber">In Progress</Pill>;
-  return <Pill tone="purple">{kind === "mock" ? "To be done" : "Start"}</Pill>;
+  return null;
 }
 
 // ── Components ───────────────────────────────────────────────────────────────
