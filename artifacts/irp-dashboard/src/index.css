@@ -44,29 +44,29 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  /* ── Gen Z / IRP 2.0 palette ── */
-  --color-ink: #1a0b2e;
-  --color-ink2: #4c1d95;
-  --color-muted2: #7c6a9a;
-  --color-dim: #b8a8d4;
+  /* ── Gen Z / IRP 2.0 palette — Bold Gradient Pop ── */
+  --color-ink: #150826;
+  --color-ink2: #5b21b6;
+  --color-muted2: #6b5b95;
+  --color-dim: #b3a4d0;
   --color-surface: #faf5ff;
 
-  --color-l1: #8b5cf6;
-  --color-l1-bg: #f3e8ff;
-  --color-l2: #fbbf24;
-  --color-l2-bg: #fef9c3;
-  --color-l2-text: #d97706;
-  --color-l3: #f472b6;
+  --color-l1: #7c3aed;
+  --color-l1-bg: #ede9fe;
+  --color-l2: #f59e0b;
+  --color-l2-bg: #fef3c7;
+  --color-l2-text: #b45309;
+  --color-l3: #ec4899;
   --color-l3-bg: #fce7f3;
-  --color-l3-text: #db2777;
+  --color-l3-text: #be185d;
 
-  --color-brand: #a855f7;
-  --color-brand-2: #ec4899;
-  --color-teal: #22d3ee;
-  --color-neon: #e879f9;
-  --color-lime: #a3e635;
-  --color-amber: #fbbf24;
-  --color-red: #fb7185;
+  --color-brand: #7c3aed;
+  --color-brand-2: #db2777;
+  --color-teal: #06b6d4;
+  --color-neon: #d946ef;
+  --color-lime: #65a30d;
+  --color-amber: #f59e0b;
+  --color-red: #f43f5e;
 
   --font-sans: var(--app-font-sans);
   --font-display: var(--app-font-display);
@@ -137,12 +137,12 @@
   }
   body {
     @apply font-sans antialiased text-foreground;
-    background-color: #f5f0ff;
+    background-color: #f1e9ff;
     background-image:
-      radial-gradient(ellipse 80% 60% at 0% 0%, #e9d5ff 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 100% 0%, #fbcfe8 0%, transparent 50%),
-      radial-gradient(ellipse 70% 60% at 100% 100%, #a5f3fc 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 0% 100%, #fef08a 0%, transparent 50%);
+      radial-gradient(ellipse 80% 60% at 0% 0%, #d8b4fe 0%, transparent 58%),
+      radial-gradient(ellipse 62% 52% at 100% 0%, #f9a8d4 0%, transparent 54%),
+      radial-gradient(ellipse 72% 62% at 100% 100%, #67e8f9 0%, transparent 58%),
+      radial-gradient(ellipse 62% 52% at 0% 100%, #fde047 0%, transparent 54%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -153,12 +153,12 @@
 
 @layer utilities {
   .irp-card {
-    background: rgba(255, 255, 255, 0.82);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.8));
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(168, 85, 247, 0.14);
+    border: 1.5px solid rgba(124, 58, 237, 0.16);
     border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(168, 85, 247, 0.08), 0 1px 3px rgba(236, 72, 153, 0.06);
+    box-shadow: 0 8px 30px rgba(124, 58, 237, 0.13), 0 2px 8px rgba(219, 39, 119, 0.08);
   }
   .shadow-soft {
     box-shadow: var(--shadow-sm);
@@ -202,18 +202,40 @@
     animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .text-gradient-brand {
-    background: linear-gradient(100deg, #818cf8, #a855f7 40%, #ec4899 70%, #22d3ee);
+    background: linear-gradient(100deg, #7c3aed, #db2777 45%, #f59e0b 72%, #06b6d4);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .shimmer-text {
-    background: linear-gradient(100deg, #a855f7 0%, #ec4899 25%, #22d3ee 50%, #e879f9 75%, #a855f7 100%);
+    background: linear-gradient(100deg, #7c3aed 0%, #db2777 25%, #06b6d4 50%, #d946ef 75%, #7c3aed 100%);
     background-size: 220% auto;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     animation: text-shimmer 5s linear infinite;
+  }
+  .btn-pop {
+    background: linear-gradient(120deg, #7c3aed 0%, #db2777 100%);
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.32);
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, filter 0.2s ease;
+  }
+  .btn-pop:hover {
+    filter: brightness(1.06) saturate(1.05);
+    box-shadow: 0 10px 28px rgba(219, 39, 119, 0.4);
+    transform: translateY(-2px);
+  }
+  .btn-pop:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+  }
+  .btn-pop:disabled {
+    background: #e5e0f0;
+    color: #b3a4d0;
+    box-shadow: none;
+    transform: none;
+    filter: none;
   }
   .genz-badge {
     background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(243,232,255,0.9));
@@ -265,6 +287,15 @@
     transition: none;
   }
   .hover-lift:hover {
+    transform: none;
+  }
+  .btn-pop {
+    transition: none;
+  }
+  .btn-pop:hover {
+    transform: none;
+  }
+  .btn-pop:active {
     transform: none;
   }
 }

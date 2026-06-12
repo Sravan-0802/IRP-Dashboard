@@ -173,7 +173,7 @@ function AssessmentCard({
             type="button"
             disabled={!canStart}
             onClick={openAssessment}
-            className="flex items-center gap-2 rounded-xl bg-[#3b5bdb] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed"
           >
             <ExternalLink className="h-4 w-4" />
             {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
@@ -189,7 +189,7 @@ function AssessmentCard({
           <button
             type="button"
             onClick={openAssessment}
-            className="flex items-center gap-2 rounded-xl bg-[#3b5bdb] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
           >
             <ExternalLink className="h-4 w-4" /> Continue Assessment
           </button>

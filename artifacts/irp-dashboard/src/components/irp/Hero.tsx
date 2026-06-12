@@ -136,7 +136,7 @@ export function Hero({
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-[rgba(168,85,247,0.22)] p-6 shadow-soft-md animate-pop-in sm:p-8"
-        style={{ background: "linear-gradient(125deg, #ede9fe 0%, #fce7f3 42%, #ecfeff 100%)" }}
+        style={{ background: "linear-gradient(125deg, #ddd6fe 0%, #fbcfe8 45%, #cffafe 100%)" }}
       >
         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.28),transparent_70%)] blur-2xl animate-glow-pulse" />
         <div
@@ -197,7 +197,7 @@ export function Hero({
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-[rgba(236,72,153,0.28)] p-6 shadow-soft-md animate-pop-in sm:p-8"
-        style={{ background: "linear-gradient(125deg, #fdf2f8 0%, #fae8ff 38%, #ecfeff 100%)" }}
+        style={{ background: "linear-gradient(125deg, #fbcfe8 0%, #f5d0fe 40%, #cffafe 100%)" }}
       >
         <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.25),transparent_70%)] blur-2xl animate-glow-pulse" />
         <div
@@ -269,7 +269,7 @@ export function Hero({
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-[rgba(251,191,36,0.35)] p-6 shadow-soft-md animate-pop-in sm:p-8"
-        style={{ background: "linear-gradient(125deg, #fef9c3 0%, #fce7f3 45%, #ede9fe 100%)" }}
+        style={{ background: "linear-gradient(125deg, #fde68a 0%, #fbcfe8 45%, #ddd6fe 100%)" }}
       >
         <div className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.22),transparent_70%)] blur-2xl animate-glow-pulse" />
 
