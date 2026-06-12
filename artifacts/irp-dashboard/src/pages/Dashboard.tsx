@@ -134,7 +134,7 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16">
-          <div className="mx-auto max-w-[1160px] p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
             {page === "dashboard" && (
               <DashboardView
                 journey={journey}
