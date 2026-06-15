@@ -1,11 +1,10 @@
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 import { db, studentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
+import { getOrCreateStudentForUser, userHasAssessmentData } from "../lib/student";
 
 const router = Router();
-
-const STUDENT_ID = 1;
 
 // ── L3 allowlist ─────────────────────────────────────────────────────────────
 // Academy user IDs that are allowed to see their true level (e.g. Level 3).
@@ -59,35 +58,27 @@ const WILDCARD_STATES = [
 
 const ALL_STATES = new Set<string>([...STANDARD_STATES, ...WILDCARD_STATES]);
 
-async function ensureStudent() {
-  const [existing] = await db
-    .select()
-    .from(studentsTable)
-    .where(eq(studentsTable.id, STUDENT_ID))
-    .limit(1);
-
-  if (existing) return existing;
-
-  const [created] = await db
-    .insert(studentsTable)
-    .values({
-      id: STUDENT_ID,
-      name: "Student",
-      yog: 2028,
-      email: "student-1@academy.local",
-    })
-    .onConflictDoNothing()
-    .returning();
-
-  if (created) return created;
-
-  const [row] = await db
-    .select()
-    .from(studentsTable)
-    .where(eq(studentsTable.id, STUDENT_ID))
-    .limit(1);
-  return row;
+/** Resolve the SSO user for a request, or null when unauthenticated. */
+async function requireUserId(req: Request, res: Response): Promise<string | null> {
+  const userId = await resolveAcademyUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  return userId;
 }
+
+// Journey shape for users without a persisted row yet (e.g. not enrolled).
+const DEFAULT_JOURNEY = {
+  journeyState: "L1_PREP",
+  isWildcard: false,
+  hasCompletedOnboarding: true,
+  hasAttemptedL1: false,
+  l3ExamStarted: false,
+  reattemptDate: null,
+  projectSubmitted: false,
+  projectDueDate: null,
+};
 
 // ── L1-only gate (temporary) ────────────────────────────────────────────────
 // Only Level 1 is live right now. Any stored state above L1 (or a Wildcard /
@@ -118,13 +109,25 @@ function serialize(s: typeof studentsTable.$inferSelect, clamp: boolean) {
 
 router.get("/student/journey", async (req, res) => {
   try {
-    const userId = await resolveAcademyUserId(req);
-    const student = await ensureStudent();
+    const userId = await requireUserId(req, res);
+    if (!userId) return;
+
+    const clamp = await shouldClampToL1(req);
+
+    // Only enrolled (assessed) users get a persisted, mutable journey. Everyone
+    // else gets a harmless default — they'll be shown the not-enrolled screen
+    // anyway because /student 404s for them.
+    if (!(await userHasAssessmentData(userId))) {
+      res.json(DEFAULT_JOURNEY);
+      return;
+    }
+
+    const student = await getOrCreateStudentForUser(userId);
     if (!student) {
       res.status(404).json({ error: "Student not found" });
       return;
     }
-    res.json(serialize(student, await shouldClampToL1(req)));
+    res.json(serialize(student, clamp));
   } catch (err) {
     req.log.error({ err }, "Failed to get journey");
     res.status(500).json({ error: "Internal server error" });
@@ -134,6 +137,9 @@ router.get("/student/journey", async (req, res) => {
 // Onboarding path selection (first login only).
 router.post("/student/journey/onboard", async (req, res) => {
   try {
+    const userId = await requireUserId(req, res);
+    if (!userId) return;
+
     const path = String(req.body?.path ?? "");
     if (path !== "standard" && path !== "wildcard") {
       res.status(400).json({ error: "path must be 'standard' or 'wildcard'" });
@@ -143,7 +149,11 @@ router.post("/student/journey/onboard", async (req, res) => {
       res.status(403).json({ error: "Wildcard path is not available for your account." });
       return;
     }
-    await ensureStudent();
+    const student = await getOrCreateStudentForUser(userId);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
     const [updated] = await db
       .update(studentsTable)
       .set({
@@ -151,7 +161,7 @@ router.post("/student/journey/onboard", async (req, res) => {
         isWildcard: path === "wildcard" ? 1 : 0,
         journeyState: path === "wildcard" ? "WILDCARD_ACTIVE" : "L1_PREP",
       })
-      .where(eq(studentsTable.id, STUDENT_ID))
+      .where(eq(studentsTable.id, student.id))
       .returning();
     res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {
@@ -163,12 +173,15 @@ router.post("/student/journey/onboard", async (req, res) => {
 // Bidirectional path switching (post-onboarding).
 router.post("/student/journey/switch", async (req, res) => {
   try {
+    const userId = await requireUserId(req, res);
+    if (!userId) return;
+
     const to = String(req.body?.to ?? "");
     if (to !== "standard" && to !== "wildcard") {
       res.status(400).json({ error: "to must be 'standard' or 'wildcard'" });
       return;
     }
-    const student = await ensureStudent();
+    const student = await getOrCreateStudentForUser(userId);
     if (!student) {
       res.status(404).json({ error: "Student not found" });
       return;
@@ -190,7 +203,7 @@ router.post("/student/journey/switch", async (req, res) => {
       const [updated] = await db
         .update(studentsTable)
         .set({ isWildcard: 1, journeyState: "WILDCARD_ACTIVE" })
-        .where(eq(studentsTable.id, STUDENT_ID))
+        .where(eq(studentsTable.id, student.id))
         .returning();
       res.json(serialize(updated, await shouldClampToL1(req)));
       return;
@@ -206,7 +219,7 @@ router.post("/student/journey/switch", async (req, res) => {
     const [updated] = await db
       .update(studentsTable)
       .set({ isWildcard: 0, journeyState: "L1_PREP" })
-      .where(eq(studentsTable.id, STUDENT_ID))
+      .where(eq(studentsTable.id, student.id))
       .returning();
     res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {
@@ -218,6 +231,9 @@ router.post("/student/journey/switch", async (req, res) => {
 // Admin / preview: set an arbitrary valid journey state (and related flags).
 router.post("/student/journey/state", async (req, res) => {
   try {
+    const userId = await requireUserId(req, res);
+    if (!userId) return;
+
     const state = String(req.body?.state ?? "");
     if (!ALL_STATES.has(state)) {
       res.status(400).json({ error: "Invalid journey_state" });
@@ -228,7 +244,11 @@ router.post("/student/journey/state", async (req, res) => {
       res.status(403).json({ error: "Level 3 preview is not available for your account." });
       return;
     }
-    await ensureStudent();
+    const student = await getOrCreateStudentForUser(userId);
+    if (!student) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
     const patch: Partial<typeof studentsTable.$inferInsert> = {
       journeyState: state,
     };
@@ -243,7 +263,7 @@ router.post("/student/journey/state", async (req, res) => {
     const [updated] = await db
       .update(studentsTable)
       .set(patch)
-      .where(eq(studentsTable.id, STUDENT_ID))
+      .where(eq(studentsTable.id, student.id))
       .returning();
     res.json(serialize(updated, await shouldClampToL1(req)));
   } catch (err) {

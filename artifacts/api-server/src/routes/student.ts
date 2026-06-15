@@ -12,10 +12,9 @@ import {
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
+import { getStudentForUser, userHasAssessmentData } from "../lib/student";
 
 const router = Router();
-
-const STUDENT_ID = 1;
 
 /** BigQuery sometimes stores encrypted tokens in user_name — not suitable for display. */
 function isLikelyDisplayName(value: string | null | undefined): value is string {
@@ -58,46 +57,21 @@ async function getAcademyUserById(userId: string) {
   return user ?? null;
 }
 
-/** Dashboard is only for users who appear in synced assessment data. */
-async function hasAssessmentData(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: academyUserAssessmentDetailsTable.id })
-    .from(academyUserAssessmentDetailsTable)
-    .where(eq(academyUserAssessmentDetailsTable.userId, userId))
-    .limit(1);
-  return Boolean(row);
-}
-
 async function getStudentProfile(userId: string) {
-  if (!(await hasAssessmentData(userId))) {
+  if (!(await userHasAssessmentData(userId))) {
     return null;
   }
 
-  const [studentRow] = await db
-    .select()
-    .from(studentsTable)
-    .where(eq(studentsTable.id, STUDENT_ID))
-    .limit(1);
-
+  // This user's own profile row (per academy user_id), if it exists yet.
+  const s = await getStudentForUser(userId);
   const academyUser = await getAcademyUserById(userId);
-  const s = studentRow;
-  const linked = academyUser
-    ? studentBelongsToAcademyUser(s?.email, academyUser.userId)
-    : false;
 
   return {
-    id: STUDENT_ID,
-    name: resolveStudentName(
-      academyUser?.userName,
-      s?.name,
-      userId,
-      s?.email,
-    ),
+    id: s?.id ?? 0,
+    name: resolveStudentName(academyUser?.userName, s?.name, userId, s?.email),
     yog: s?.yog ?? 2028,
     level: s?.level ?? "Level 1 • The Hustler",
-    email: linked
-      ? (s?.email ?? `${userId}@academy.local`)
-      : `${userId}@academy.local`,
+    email: s?.email ?? `${userId}@academy.local`,
     avatar: s?.avatar ?? "",
     registrationStatus: s?.registrationStatus ?? "registered",
     currentLevel: s?.currentLevel ?? 1,
@@ -105,7 +79,7 @@ async function getStudentProfile(userId: string) {
 }
 
 async function getSubjectProgressResponse(userId: string) {
-  if (!(await hasAssessmentData(userId))) return null;
+  if (!(await userHasAssessmentData(userId))) return null;
 
   const academyUser = await getAcademyUserById(userId);
 
@@ -155,7 +129,7 @@ function parseAssessmentLevel(level: string | null): number | null {
 }
 
 async function getAssessmentResultsResponse(userId: string) {
-  if (!(await hasAssessmentData(userId))) return null;
+  if (!(await userHasAssessmentData(userId))) return null;
 
   const rows = await db
     .select()
@@ -275,10 +249,15 @@ router.get("/student/marks", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
+    const student = await getStudentForUser(userId);
+    if (!student) {
+      res.json([]);
+      return;
+    }
     const marks = await db
       .select()
       .from(studentMarksTable)
-      .where(eq(studentMarksTable.studentId, STUDENT_ID))
+      .where(eq(studentMarksTable.studentId, student.id))
       .orderBy(studentMarksTable.date);
 
     res.json(
@@ -306,21 +285,26 @@ router.get("/student/activity", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
+    const student = await getStudentForUser(userId);
+    if (!student) {
+      res.json({ totalMcqSolved: 0, totalCodingSolved: 0, weeklyActivity: [], recentSessions: [] });
+      return;
+    }
     const activity = await db
       .select()
       .from(studentActivityTable)
-      .where(eq(studentActivityTable.studentId, STUDENT_ID))
+      .where(eq(studentActivityTable.studentId, student.id))
       .limit(1);
 
     const weeklyActivity = await db
       .select()
       .from(weeklyActivityTable)
-      .where(eq(weeklyActivityTable.studentId, STUDENT_ID));
+      .where(eq(weeklyActivityTable.studentId, student.id));
 
     const recentSessions = await db
       .select()
       .from(practiceSessionsTable)
-      .where(eq(practiceSessionsTable.studentId, STUDENT_ID))
+      .where(eq(practiceSessionsTable.studentId, student.id))
       .orderBy(practiceSessionsTable.createdAt)
       .limit(10);
 
