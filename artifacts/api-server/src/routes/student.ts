@@ -39,8 +39,7 @@ function resolveStudentName(
   academyUserId: string,
   studentEmail?: string | null,
 ): string {
-  const envName = process.env.ACADEMY_USER_DISPLAY_NAME?.trim();
-  if (envName) return envName;
+  // Always resolve the name per-user from the synced academy data first.
   if (isLikelyDisplayName(academyUserName)) return academyUserName;
   if (studentBelongsToAcademyUser(studentEmail, academyUserId) && isLikelyDisplayName(studentName)) {
     return studentName;

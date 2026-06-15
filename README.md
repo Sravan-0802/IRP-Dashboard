@@ -92,9 +92,6 @@ PORT=8080
 # Dev: which SSO user to impersonate (bypasses token check outside prod)
 ACADEMY_USER_ID=<uuid>
 
-# Optional: override display name in dev
-ACADEMY_USER_DISPLAY_NAME=Sravan
-
 # BigQuery sync
 project_id=...
 private_key="-----BEGIN PRIVATE KEY-----\n..."

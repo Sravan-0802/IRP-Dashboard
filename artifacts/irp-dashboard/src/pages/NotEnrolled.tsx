@@ -1,4 +1,4 @@
-export function NotEnrolled({ userId }: { userId?: string | null }) {
+export function NotEnrolled() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center p-6">
       <div
@@ -16,19 +16,8 @@ export function NotEnrolled({ userId }: { userId?: string | null }) {
         </p>
         <p className="mx-auto mt-3 max-w-sm text-xs text-dim">
           If you have already written the assessment and still see this message,
-          please contact your program coordinator with your reference ID below.
+          please contact your program coordinator.
         </p>
-
-        {userId ? (
-          <div className="mx-auto mt-5 inline-flex flex-col items-center gap-1 rounded-xl border border-[rgba(103,65,217,0.15)] bg-white/70 px-4 py-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-dim">
-              Your reference ID
-            </span>
-            <span className="select-all break-all font-mono text-xs font-semibold text-ink">
-              {userId}
-            </span>
-          </div>
-        ) : null}
       </div>
     </div>
   );

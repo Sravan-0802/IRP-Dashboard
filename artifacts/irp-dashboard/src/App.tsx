@@ -45,8 +45,7 @@ function Home() {
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.
   if (isNotEnrolled(studentError)) {
-    const userId = (studentError as { data?: { userId?: string } } | null)?.data?.userId;
-    return <NotEnrolled userId={userId} />;
+    return <NotEnrolled />;
   }
 
   if (journeyError) {
