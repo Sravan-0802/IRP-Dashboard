@@ -26,6 +26,7 @@ export function useJourney() {
   return useQuery({
     queryKey: JOURNEY_KEY,
     queryFn: () => api<Journey>("/api/student/journey"),
+    retry: false,
   });
 }
 

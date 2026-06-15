@@ -24,7 +24,7 @@ function isUnauthorized(error: unknown): boolean {
 }
 
 function Home() {
-  const { data: journey, isLoading } = useJourney();
+  const { data: journey, isLoading, isError: journeyError } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
   });
@@ -47,6 +47,20 @@ function Home() {
   if (isNotEnrolled(studentError)) {
     const userId = (studentError as { data?: { userId?: string } } | null)?.data?.userId;
     return <NotEnrolled userId={userId} />;
+  }
+
+  if (journeyError) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+          <p className="font-display text-lg font-extrabold text-ink">Could not load dashboard</p>
+          <p className="mt-2 text-sm text-muted2">
+            The API server may be down or the database needs setup. Make sure the API is running on
+            port 8080 and assessment data is synced.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (isLoading) {
