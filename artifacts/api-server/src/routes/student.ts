@@ -7,6 +7,7 @@ import {
   practiceSessionsTable,
   weeklyActivityTable,
   academyUserBasicDetailsTable,
+  academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -57,7 +58,21 @@ async function getAcademyUserById(userId: string) {
   return user ?? null;
 }
 
+/** Dashboard is only for users who appear in synced assessment data. */
+async function hasAssessmentData(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: academyUserAssessmentDetailsTable.id })
+    .from(academyUserAssessmentDetailsTable)
+    .where(eq(academyUserAssessmentDetailsTable.userId, userId))
+    .limit(1);
+  return Boolean(row);
+}
+
 async function getStudentProfile(userId: string) {
+  if (!(await hasAssessmentData(userId))) {
+    return null;
+  }
+
   const [studentRow] = await db
     .select()
     .from(studentsTable)
@@ -65,35 +80,39 @@ async function getStudentProfile(userId: string) {
     .limit(1);
 
   const academyUser = await getAcademyUserById(userId);
+  const s = studentRow;
+  const linked = academyUser
+    ? studentBelongsToAcademyUser(s?.email, academyUser.userId)
+    : false;
 
-  if (academyUser) {
-    const s = studentRow;
-    const linked = studentBelongsToAcademyUser(s?.email, academyUser.userId);
-    return {
-      id: STUDENT_ID,
-      name: resolveStudentName(academyUser.userName, s?.name, academyUser.userId, s?.email),
-      yog: s?.yog ?? 2028,
-      level: s?.level ?? "Level 1 • The Hustler",
-      email: linked ? (s?.email ?? `${academyUser.userId}@academy.local`) : `${academyUser.userId}@academy.local`,
-      avatar: s?.avatar ?? "",
-      registrationStatus: s?.registrationStatus ?? "registered",
-      currentLevel: s?.currentLevel ?? 1,
-    };
-  }
-
-  // Token is valid but this user_id is not in our academy list — not enrolled.
-  void studentRow;
-  return null;
+  return {
+    id: STUDENT_ID,
+    name: resolveStudentName(
+      academyUser?.userName,
+      s?.name,
+      userId,
+      s?.email,
+    ),
+    yog: s?.yog ?? 2028,
+    level: s?.level ?? "Level 1 • The Hustler",
+    email: linked
+      ? (s?.email ?? `${userId}@academy.local`)
+      : `${userId}@academy.local`,
+    avatar: s?.avatar ?? "",
+    registrationStatus: s?.registrationStatus ?? "registered",
+    currentLevel: s?.currentLevel ?? 1,
+  };
 }
 
 async function getSubjectProgressResponse(userId: string) {
+  if (!(await hasAssessmentData(userId))) return null;
+
   const academyUser = await getAcademyUserById(userId);
-  if (!academyUser) return null;
 
   const courses = await db
     .select()
     .from(academyUserCourseProgressTable)
-    .where(eq(academyUserCourseProgressTable.userId, academyUser.userId));
+    .where(eq(academyUserCourseProgressTable.userId, userId));
 
   const subjectData = courses.map((c) => ({
     subject: c.courseTitle ?? c.courseId ?? "Course",
@@ -116,8 +135,63 @@ async function getSubjectProgressResponse(userId: string) {
     overallCodingPercentage:
       totalCodingTotal > 0 ? Math.round((totalCodingCompleted / totalCodingTotal) * 100) : 0,
     streakDays: 0,
-    lastActiveDate: academyUser.syncedAt.toISOString().slice(0, 10),
+    lastActiveDate:
+      academyUser?.syncedAt.toISOString().slice(0, 10) ??
+      courses[0]?.syncedAt?.toISOString().slice(0, 10) ??
+      new Date().toISOString().slice(0, 10),
     subjects: subjectData,
+  };
+}
+
+function pct(score: number | null, max: number | null): number {
+  if (score == null || max == null || max <= 0) return 0;
+  return Math.round((score / max) * 100);
+}
+
+function parseAssessmentLevel(level: string | null): number | null {
+  if (!level?.trim()) return null;
+  const match = /^L?(\d)/i.exec(level.trim());
+  return match ? Number(match[1]) : null;
+}
+
+async function getAssessmentResultsResponse(userId: string) {
+  if (!(await hasAssessmentData(userId))) return null;
+
+  const rows = await db
+    .select()
+    .from(academyUserAssessmentDetailsTable)
+    .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+
+  return {
+    assessments: rows.map((a) => {
+      const mcqScore = a.mcqUserSectionScore ?? 0;
+      const mcqMax = a.mcqSectionMaxScore ?? 0;
+      const codingScore = a.codingUserSectionScore ?? 0;
+      const codingMax = a.codingSectionMaxScore ?? 0;
+      const overallScore = a.assessmentUserScore ?? mcqScore + codingScore;
+      const overallMax = a.assessmentTotalScore ?? mcqMax + codingMax;
+
+      return {
+        organisationAssessmentId: a.organisationAssessmentId,
+        assessmentTitle: a.assessmentTitle ?? "Assessment",
+        assessmentTag: a.assessmentTag ?? undefined,
+        level: a.level ?? "",
+        cycle: a.cycle ?? undefined,
+        mcqScore,
+        mcqMax,
+        mcqPct: pct(a.mcqUserSectionScore, a.mcqSectionMaxScore),
+        codingScore,
+        codingMax,
+        codingPct: pct(a.codingUserSectionScore, a.codingSectionMaxScore),
+        overallScore,
+        overallMax,
+        overallPct: pct(
+          a.assessmentUserScore ?? (mcqScore + codingScore || null),
+          a.assessmentTotalScore ?? (mcqMax + codingMax || null),
+        ),
+        levelNumber: parseAssessmentLevel(a.level),
+      };
+    }),
   };
 }
 
@@ -130,7 +204,11 @@ router.get("/student", async (req, res) => {
     }
     const profile = await getStudentProfile(userId);
     if (!profile) {
-      res.status(404).json({ error: "Not enrolled in IRP", code: "NOT_ENROLLED", userId });
+      res.status(404).json({
+        error: "Not found in IRP assessment data",
+        code: "NOT_ENROLLED",
+        userId,
+      });
       return;
     }
     res.json(profile);
@@ -149,12 +227,43 @@ router.get("/student/progress", async (req, res) => {
     }
     const progress = await getSubjectProgressResponse(userId);
     if (!progress) {
-      res.status(404).json({ error: "Not enrolled in IRP", code: "NOT_ENROLLED", userId });
+      res.status(404).json({
+        error: "Not found in IRP assessment data",
+        code: "NOT_ENROLLED",
+        userId,
+      });
       return;
     }
     res.json(progress);
   } catch (err) {
     req.log.error({ err }, "Failed to get student progress");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/student/assessments", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const results = await getAssessmentResultsResponse(userId);
+    if (!results) {
+      res.status(404).json({
+        error: "Not found in IRP assessment data",
+        code: "NOT_ENROLLED",
+        userId,
+      });
+      return;
+    }
+    res.json({
+      assessments: results.assessments.map(
+        ({ levelNumber: _levelNumber, ...assessment }) => assessment,
+      ),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get student assessments");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -3,11 +3,12 @@ import { Menu, X } from "lucide-react";
 import {
   useGetStudent, getGetStudentQueryKey,
   useGetStudentProgress, getGetStudentProgressQueryKey,
+  useGetStudentAssessments, getGetStudentAssessmentsQueryKey,
 } from "@workspace/api-client-react";
 import { EXAM_DATE, EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { useJourney } from "@/lib/useJourney";
 import { getLevel } from "@/lib/journey";
-import { DEMO_STUDENT, DEMO_PROGRESS } from "@/lib/demoData";
+import { DEMO_STUDENT, DEMO_PROGRESS, DEMO_ASSESSMENTS } from "@/lib/demoData";
 import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { DashboardView } from "@/components/irp/DashboardView";
@@ -23,6 +24,9 @@ export default function Dashboard() {
   });
   const { data: progress, isError: progressError } = useGetStudentProgress({
     query: { queryKey: getGetStudentProgressQueryKey(), retry: false },
+  });
+  const { data: assessmentsData, isError: assessmentsError } = useGetStudentAssessments({
+    query: { queryKey: getGetStudentAssessmentsQueryKey(), retry: false },
   });
 
   const [page, setPage] = useState<PageKey>("dashboard");
@@ -46,6 +50,8 @@ export default function Dashboard() {
 
   const displayStudent = student ?? (studentError ? DEMO_STUDENT : null);
   const displayProgress = progress ?? (progressError ? DEMO_PROGRESS : null);
+  const displayAssessments =
+    assessmentsData?.assessments ?? (assessmentsError ? DEMO_ASSESSMENTS.assessments : []);
 
   const subjects: SubjectRow[] = useMemo(
     () => (Array.isArray(displayProgress?.subjects) ? (displayProgress!.subjects as SubjectRow[]) : []),
@@ -142,6 +148,7 @@ export default function Dashboard() {
                 days={countdown.days}
                 examDateLabel={EXAM_DATE_LABEL}
                 progress={progressProps}
+                assessments={displayAssessments}
                 onSwitchToStandard={openSwitchToStandard}
               />
             )}

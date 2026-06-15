@@ -8,8 +8,8 @@ export const RESULTS_UNLOCK_DATE = new Date("2026-06-15T00:00:00");
  * Course-progress and practice stats are hidden until this date.
  * Edit this date when progress data goes live.
  */
-export const PROGRESS_UNLOCK_DATE = new Date("2026-06-16T00:00:00");
-export const PROGRESS_UNLOCK_LABEL = "Monday, 16 June";
+export const PROGRESS_UNLOCK_DATE = new Date("2026-06-15T00:00:00");
+export const PROGRESS_UNLOCK_LABEL = "Monday, 15 June";
 
 /**
  * The assessment is only "live" on the assessment day itself (from the exam

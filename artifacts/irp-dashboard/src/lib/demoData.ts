@@ -2,6 +2,7 @@ import type {
   Student,
   StudentProgress,
   StudentActivity,
+  StudentAssessments,
 } from "@workspace/api-client-react";
 
 export const DEMO_STUDENT: Student = {
@@ -65,6 +66,27 @@ export const DEMO_PROGRESS: StudentProgress = {
       codingTotal: 20,
       mcqPercentage: 48,
       codingPercentage: 25,
+    },
+  ],
+};
+
+export const DEMO_ASSESSMENTS: StudentAssessments = {
+  assessments: [
+    {
+      organisationAssessmentId: "demo-l1-assessment",
+      assessmentTitle: "IRP Level 1 — The Hustler Assessment",
+      assessmentTag: "main",
+      level: "1",
+      cycle: "2026-06",
+      mcqScore: 39,
+      mcqMax: 50,
+      mcqPct: 78,
+      codingScore: 33,
+      codingMax: 50,
+      codingPct: 66,
+      overallScore: 72,
+      overallMax: 100,
+      overallPct: 72,
     },
   ],
 };

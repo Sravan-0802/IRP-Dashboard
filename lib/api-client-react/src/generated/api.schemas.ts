@@ -55,6 +55,27 @@ export interface SubjectMark {
   date: string;
 }
 
+export interface AssessmentResult {
+  organisationAssessmentId: string;
+  assessmentTitle: string;
+  assessmentTag?: string;
+  level: string;
+  cycle?: string;
+  mcqScore: number;
+  mcqMax: number;
+  mcqPct: number;
+  codingScore: number;
+  codingMax: number;
+  codingPct: number;
+  overallScore: number;
+  overallMax: number;
+  overallPct: number;
+}
+
+export interface StudentAssessments {
+  assessments: AssessmentResult[];
+}
+
 export interface DayActivity {
   day: string;
   mcq: number;

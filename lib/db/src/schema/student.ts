@@ -127,6 +127,35 @@ export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details"
   syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Mirror of BigQuery `y_academy_users_irp_main_assessment_details_for_irp_portal`
+export const academyUserAssessmentDetailsTable = pgTable(
+  "academy_user_assessment_details",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    organisationAssessmentId: text("organisation_assessment_id").notNull(),
+    assessmentTitle: text("assessment_title"),
+    assessmentTag: text("assessment_tag"),
+    level: text("level"),
+    cycle: text("cycle"),
+    mcqSectionMaxScore: real("mcq_section_max_score"),
+    mcqUserSectionScore: real("mcq_user_section_score"),
+    mcqAttemptDurationMins: real("mcq_attempt_duration_mins"),
+    codingSectionMaxScore: real("coding_section_max_score"),
+    codingUserSectionScore: real("coding_user_section_score"),
+    codingAttemptDurationMins: real("coding_attempt_duration_mins"),
+    assessmentTotalScore: real("assessment_total_score"),
+    assessmentUserScore: real("assessment_user_score"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userAssessmentUnique: unique("academy_user_assessment_unique").on(
+      t.userId,
+      t.organisationAssessmentId,
+    ),
+  }),
+);
+
 // Mirror of BigQuery `academy_users_course_progress_data_for_irp_portal`
 export const academyUserCourseProgressTable = pgTable(
   "academy_user_course_progress",
@@ -164,6 +193,7 @@ export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
 });
 
 export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
+export type AcademyUserAssessmentDetails = typeof academyUserAssessmentDetailsTable.$inferSelect;
 export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;
 export type BigquerySyncStatus = typeof bigquerySyncStatusTable.$inferSelect;
 

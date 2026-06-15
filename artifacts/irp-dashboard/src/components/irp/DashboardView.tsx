@@ -8,16 +8,39 @@ import {
   Users,
   Lock,
 } from "lucide-react";
+import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
+import { areAssignmentResultsVisible } from "@/lib/irpDates";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 
-function journeySteps(journey: Journey): JourneyStep[] {
+function parseAssessmentLevel(level: string | null | undefined): number | null {
+  if (!level?.trim()) return null;
+  const match = /^L?(\d)/i.exec(level.trim());
+  return match ? Number(match[1]) : null;
+}
+
+function hasCompletedAssessment(
+  assessments: AssessmentResult[],
+  level: 1 | 2 | 3,
+): boolean {
+  return assessments.some(
+    (a) =>
+      parseAssessmentLevel(a.level) === level &&
+      (a.overallScore > 0 || a.mcqScore > 0 || a.codingScore > 0),
+  );
+}
+
+function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
+  const assessmentDone =
+    phase === "POST_ASSESSMENT" ||
+    phase === "PLACED" ||
+    (areAssignmentResultsVisible() && hasCompletedAssessment(assessments, level));
 
   if (phase === "WILDCARD") {
     return [
@@ -40,7 +63,11 @@ function journeySteps(journey: Journey): JourneyStep[] {
       { label: `Level ${level} Access`, status: "locked", icon: "access" },
     ];
   }
-  const first: JourneyStep["status"] = phase === "REATTEMPT_WAITING" ? "reattempt" : "active";
+  const first: JourneyStep["status"] = assessmentDone
+    ? "done"
+    : phase === "REATTEMPT_WAITING"
+      ? "reattempt"
+      : "active";
   return [
     { label: "Online Assessment", status: first, icon: "assessment" },
     { label: "Post-Assessment", status: "locked", icon: "post" },
@@ -65,6 +92,7 @@ export function DashboardView({
   days,
   examDateLabel,
   progress,
+  assessments,
   onSwitchToStandard,
 }: {
   journey: Journey;
@@ -83,6 +111,7 @@ export function DashboardView({
     maxPoints: number;
     subjects: SubjectRow[];
   };
+  assessments: AssessmentResult[];
   onSwitchToStandard: () => void;
 }) {
   const phase = getPhase(journey.journeyState);
@@ -120,13 +149,13 @@ export function DashboardView({
 
       {phase !== "PLACED" && (
         <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
-          <JourneyBar steps={journeySteps(journey)} />
+          <JourneyBar steps={journeySteps(journey, assessments)} />
         </IrpCard>
       )}
 
       {showRings(journey) && <ProgressSummary {...progress} />}
 
-      <AssessmentResults journey={journey} examDateLabel={examDateLabel} />
+      <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
 
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (

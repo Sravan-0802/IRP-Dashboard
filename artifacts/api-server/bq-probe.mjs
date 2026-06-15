@@ -40,6 +40,7 @@ const bq = new BigQuery({
 
 const BASIC = "academy_users_basic_details_for_irp_portal";
 const PROGRESS = "academy_users_course_progress_data_for_irp_portal";
+const ASSESSMENT = "y_academy_users_irp_main_assessment_details_for_irp_portal";
 
 const [datasets] = await bq.getDatasets();
 let foundDataset = process.env.BQ_DATASET?.trim() || null;
@@ -49,7 +50,7 @@ if (!foundDataset) {
     if (!ds.id) continue;
     const [tables] = await ds.getTables();
     const ids = tables.map((t) => t.id);
-    if (ids.includes(BASIC) || ids.includes(PROGRESS)) {
+    if (ids.includes(BASIC) || ids.includes(PROGRESS) || ids.includes(ASSESSMENT)) {
       foundDataset = ds.id;
       break;
     }
@@ -69,8 +70,13 @@ const sampleBasic = await bq.query({
 const sampleProgress = await bq.query({
   query: `SELECT user_id, course_title, overall_completion_pct FROM \`${projectId}.${foundDataset}.${PROGRESS}\` LIMIT 5`,
 });
+const sampleAssessment = await bq.query({
+  query: `SELECT user_id, assessment_title, assessment_user_score, assessment_total_score FROM \`${projectId}.${foundDataset}.${ASSESSMENT}\` LIMIT 5`,
+});
 
 console.log("\nBasic details sample:");
 console.table(sampleBasic[0]);
 console.log("\nCourse progress sample:");
 console.table(sampleProgress[0]);
+console.log("\nAssessment details sample:");
+console.table(sampleAssessment[0]);

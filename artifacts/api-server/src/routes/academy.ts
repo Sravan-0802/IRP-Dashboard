@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   db,
   academyUserBasicDetailsTable,
+  academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -60,6 +61,47 @@ router.get("/academy/users/:userId/progress", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get user progress");
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/academy/users/:userId/assessments — main assessment results for one user
+router.get("/academy/users/:userId/assessments", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const basic = await db
+      .select()
+      .from(academyUserBasicDetailsTable)
+      .where(eq(academyUserBasicDetailsTable.userId, userId))
+      .limit(1);
+
+    const assessments = await db
+      .select()
+      .from(academyUserAssessmentDetailsTable)
+      .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+
+    res.json({
+      userId,
+      userName: basic[0]?.userName ?? null,
+      assessments: assessments.map((a) => ({
+        organisationAssessmentId: a.organisationAssessmentId,
+        assessmentTitle: a.assessmentTitle,
+        assessmentTag: a.assessmentTag,
+        level: a.level,
+        cycle: a.cycle,
+        mcqSectionMaxScore: a.mcqSectionMaxScore,
+        mcqUserSectionScore: a.mcqUserSectionScore,
+        mcqAttemptDurationMins: a.mcqAttemptDurationMins,
+        codingSectionMaxScore: a.codingSectionMaxScore,
+        codingUserSectionScore: a.codingUserSectionScore,
+        codingAttemptDurationMins: a.codingAttemptDurationMins,
+        assessmentTotalScore: a.assessmentTotalScore,
+        assessmentUserScore: a.assessmentUserScore,
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get user assessments");
     res.status(500).json({ message: "Server error" });
   }
 });

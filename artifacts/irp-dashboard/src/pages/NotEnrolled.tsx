@@ -5,13 +5,18 @@ export function NotEnrolled({ userId }: { userId?: string | null }) {
         className="w-full max-w-md rounded-2xl border border-[rgba(103,65,217,0.16)] p-8 text-center shadow-soft"
         style={{ background: "linear-gradient(130deg, #eef2ff, #f8f0ff)" }}
       >
-        <div className="text-5xl">🚧</div>
+        <div className="text-5xl">📋</div>
         <h1 className="mt-4 font-display text-2xl font-extrabold text-ink">
-          You're not on the IRP list yet
+          You're not in our data yet
         </h1>
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted2">
-          We couldn't find your account in the IRP 2.0 program. If you think this
-          is a mistake, please reach out to your program coordinator.
+          You're signed in, but we couldn't find your IRP assessment records in
+          our database. This dashboard is only available for students who have
+          taken the IRP assessment.
+        </p>
+        <p className="mx-auto mt-3 max-w-sm text-xs text-dim">
+          If you have already written the assessment and still see this message,
+          please contact your program coordinator with your reference ID below.
         </p>
 
         {userId ? (

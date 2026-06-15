@@ -19,6 +19,7 @@ import type {
   HealthStatus,
   Student,
   StudentActivity,
+  StudentAssessments,
   StudentProgress,
   SubjectMark
 } from './api.schemas';
@@ -335,6 +336,84 @@ export function useGetStudentMarks<TData = Awaited<ReturnType<typeof getStudentM
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStudentMarksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetStudentAssessmentsUrl = () => {
+
+
+
+
+  return `/api/student/assessments`
+}
+
+/**
+ * Returns synced main assessment scores from Postgres
+ * @summary Get student assessment results
+ */
+export const getStudentAssessments = async ( options?: RequestInit): Promise<StudentAssessments> => {
+
+  return customFetch<StudentAssessments>(getGetStudentAssessmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentAssessmentsQueryKey = () => {
+    return [
+    `/api/student/assessments`
+    ] as const;
+    }
+
+
+export const getGetStudentAssessmentsQueryOptions = <TData = Awaited<ReturnType<typeof getStudentAssessments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAssessments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentAssessmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentAssessments>>> = ({ signal }) => getStudentAssessments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentAssessments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentAssessmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentAssessments>>>
+export type GetStudentAssessmentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get student assessment results
+ */
+
+export function useGetStudentAssessments<TData = Awaited<ReturnType<typeof getStudentAssessments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAssessments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentAssessmentsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

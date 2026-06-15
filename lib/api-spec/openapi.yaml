@@ -71,6 +71,20 @@ paths:
                 items:
                   $ref: "#/components/schemas/SubjectMark"
 
+  /student/assessments:
+    get:
+      operationId: getStudentAssessments
+      tags: [student]
+      summary: Get student assessment results
+      description: Returns synced main assessment scores from Postgres
+      responses:
+        "200":
+          description: Student assessment results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAssessments"
+
   /student/activity:
     get:
       operationId: getStudentActivity
@@ -206,6 +220,61 @@ components:
           description: Practice or Mock Assessment
         date:
           type: string
+
+    AssessmentResult:
+      type: object
+      required:
+        - organisationAssessmentId
+        - assessmentTitle
+        - level
+        - mcqScore
+        - mcqMax
+        - mcqPct
+        - codingScore
+        - codingMax
+        - codingPct
+        - overallScore
+        - overallMax
+        - overallPct
+      properties:
+        organisationAssessmentId:
+          type: string
+        assessmentTitle:
+          type: string
+        assessmentTag:
+          type: string
+        level:
+          type: string
+        cycle:
+          type: string
+        mcqScore:
+          type: number
+        mcqMax:
+          type: number
+        mcqPct:
+          type: number
+        codingScore:
+          type: number
+        codingMax:
+          type: number
+        codingPct:
+          type: number
+        overallScore:
+          type: number
+        overallMax:
+          type: number
+        overallPct:
+          type: number
+
+    StudentAssessments:
+      type: object
+      required:
+        - assessments
+      properties:
+        assessments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssessmentResult"
 
     StudentActivity:
       type: object

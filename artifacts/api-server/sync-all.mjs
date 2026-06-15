@@ -114,8 +114,66 @@ async function syncCourseProgress() {
   return upserted;
 }
 
+async function syncAssessmentDetails() {
+  const [rows] = await bq.query({
+    query: `SELECT
+      user_id, organisation_assessment_id, assessment_title,
+      assessment_tag_str_extracted, level, cycle,
+      mcq_section_max_score, mcq_user_section_score, mcq_user_attempt_duration_in_mins,
+      coding_section_max_score, coding_user_section_score, coding_user_attempt_duration_in_mins,
+      assessment_total_score, assessment_user_score
+    FROM \`${projectId}.${dataset}.y_academy_users_irp_main_assessment_details_for_irp_portal\``,
+  });
+  let upserted = 0;
+  for (const row of rows) {
+    if (!row.user_id || !row.organisation_assessment_id) continue;
+    await pool.query(
+      `INSERT INTO academy_user_assessment_details (
+        user_id, organisation_assessment_id, assessment_title, assessment_tag,
+        level, cycle,
+        mcq_section_max_score, mcq_user_section_score, mcq_attempt_duration_mins,
+        coding_section_max_score, coding_user_section_score, coding_attempt_duration_mins,
+        assessment_total_score, assessment_user_score, synced_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW())
+      ON CONFLICT (user_id, organisation_assessment_id) DO UPDATE SET
+        assessment_title = EXCLUDED.assessment_title,
+        assessment_tag = EXCLUDED.assessment_tag,
+        level = EXCLUDED.level,
+        cycle = EXCLUDED.cycle,
+        mcq_section_max_score = EXCLUDED.mcq_section_max_score,
+        mcq_user_section_score = EXCLUDED.mcq_user_section_score,
+        mcq_attempt_duration_mins = EXCLUDED.mcq_attempt_duration_mins,
+        coding_section_max_score = EXCLUDED.coding_section_max_score,
+        coding_user_section_score = EXCLUDED.coding_user_section_score,
+        coding_attempt_duration_mins = EXCLUDED.coding_attempt_duration_mins,
+        assessment_total_score = EXCLUDED.assessment_total_score,
+        assessment_user_score = EXCLUDED.assessment_user_score,
+        synced_at = NOW()`,
+      [
+        String(row.user_id),
+        String(row.organisation_assessment_id),
+        row.assessment_title ?? null,
+        row.assessment_tag_str_extracted ?? null,
+        row.level ?? null,
+        row.cycle ?? null,
+        row.mcq_section_max_score ?? null,
+        row.mcq_user_section_score ?? null,
+        row.mcq_user_attempt_duration_in_mins ?? null,
+        row.coding_section_max_score ?? null,
+        row.coding_user_section_score ?? null,
+        row.coding_user_attempt_duration_in_mins ?? null,
+        row.assessment_total_score ?? null,
+        row.assessment_user_score ?? null,
+      ]
+    );
+    upserted++;
+  }
+  return upserted;
+}
+
 const basic = await syncBasicDetails();
 const progress = await syncCourseProgress();
+const assessments = await syncAssessmentDetails();
 
 const sravan = await pool.query(
   `SELECT c.course_title, c.mcq_completion_pct, c.coding_completion_pct, c.overall_completion_pct
@@ -128,4 +186,4 @@ const sravan = await pool.query(
 
 await pool.end();
 
-console.log(JSON.stringify({ basicDetails: basic, courseProgress: progress, sravanSample: sravan.rows }, null, 2));
+console.log(JSON.stringify({ basicDetails: basic, courseProgress: progress, assessmentDetails: assessments, sravanSample: sravan.rows }, null, 2));

@@ -1,5 +1,5 @@
 import React from "react";
-import { ClipboardList, Users, Lock, Trophy, RotateCcw, CheckCircle2 } from "lucide-react";
+import { ClipboardList, Users, Lock, Trophy, RotateCcw, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type RingTone = "purple" | "blue" | "green" | "pink" | "gold";
@@ -156,10 +156,32 @@ const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string; str
   access: Trophy,
 };
 
+function connectorTone(status: StepStatus): string {
+  if (status === "done") return "text-[#0ca678]";
+  if (status === "active" || status === "reattempt") return "text-[#3b5bdb]";
+  return "text-[#dee2e6]";
+}
+
+function StepConnector({ fromStatus }: { fromStatus: StepStatus }) {
+  const tone = connectorTone(fromStatus);
+  return (
+    <>
+      <div className={cn("hidden shrink-0 items-center gap-0 px-1 pt-7 md:flex", tone)}>
+        <div className="h-0.5 w-6 rounded-full bg-current opacity-40" />
+        <ChevronRight className="h-5 w-5 shrink-0" strokeWidth={2.5} aria-hidden />
+        <div className="h-0.5 w-6 rounded-full bg-current opacity-40" />
+      </div>
+      <div className={cn("flex flex-col items-center py-1 md:hidden", tone)}>
+        <div className="h-4 w-0.5 rounded-full bg-current opacity-40" />
+        <ChevronDown className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden />
+      </div>
+    </>
+  );
+}
+
 export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
   return (
-    <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between md:gap-0">
-      <div className="absolute left-[16.7%] right-[16.7%] top-7 z-0 hidden h-0.5 bg-[#6741d9]/10 md:block" />
+    <div className="flex flex-col md:flex-row md:items-start">
       {steps.map((step, i) => {
         const ring =
           step.status === "done"
@@ -171,7 +193,7 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
                 : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
         const badge =
           step.status === "done"
-            ? <Pill tone="green">Cleared</Pill>
+            ? <Pill tone="green">Completed</Pill>
             : step.status === "active"
               ? <Pill tone="purple">In Progress</Pill>
               : step.status === "reattempt"
@@ -188,28 +210,28 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
                 : STEP_ICONS[step.icon];
 
         return (
-          <div
-            key={`${step.label}-${i}`}
-            className="relative z-10 flex items-start gap-4 md:w-1/3 md:flex-col md:items-center md:text-center"
-          >
-            <div
-              className={cn(
-                "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 md:mb-3",
-                ring,
-              )}
-            >
-              <StepIcon className="h-6 w-6" strokeWidth={2.25} />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#3b5bdb] shadow-[var(--shadow-sm)] ring-2 ring-white">
-                {i + 1}
-              </span>
+          <React.Fragment key={`${step.label}-${i}`}>
+            <div className="relative z-10 flex flex-1 items-start gap-4 md:flex-col md:items-center md:text-center">
+              <div
+                className={cn(
+                  "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 md:mb-3",
+                  ring,
+                )}
+              >
+                <StepIcon className="h-6 w-6" strokeWidth={2.25} />
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#3b5bdb] shadow-[var(--shadow-sm)] ring-2 ring-white">
+                  {i + 1}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1 md:flex-none">
+                <p className={cn("text-sm font-bold", step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
+                  {step.label}
+                </p>
+                <div className="mt-1.5">{badge}</div>
+              </div>
             </div>
-            <div className="min-w-0 flex-1 md:flex-none">
-              <p className={cn("text-sm font-bold", step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
-                {step.label}
-              </p>
-              <div className="mt-1.5">{badge}</div>
-            </div>
-          </div>
+            {i < steps.length - 1 && <StepConnector fromStatus={step.status} />}
+          </React.Fragment>
         );
       })}
     </div>

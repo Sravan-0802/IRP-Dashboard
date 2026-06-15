@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './assessmentResult';
 export * from './dayActivity';
 export * from './healthStatus';
 export * from './session';
 export * from './student';
 export * from './studentActivity';
+export * from './studentAssessments';
 export * from './studentProgress';
 export * from './subjectMark';
 export * from './subjectProgress';

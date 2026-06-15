@@ -47,6 +47,56 @@ export function getBigQueryClient(): BigQuery {
 
 const BASIC_DETAILS_TABLE = "academy_users_basic_details_for_irp_portal";
 const COURSE_PROGRESS_TABLE = "academy_users_course_progress_data_for_irp_portal";
+/** Physical copy in the portal dataset (preferred — same pattern as basic details / progress). */
+const ASSESSMENT_PHYSICAL_TABLE = "academy_users_irp_main_assessment_details_for_irp_portal";
+/** View over retention_academy_analytics — requires access to the underlying table. */
+const ASSESSMENT_VIEW_TABLE = "y_academy_users_irp_main_assessment_details_for_irp_portal";
+
+const ASSESSMENT_SELECT = `SELECT
+      user_id, organisation_assessment_id, assessment_title,
+      assessment_tag_str_extracted, level, cycle,
+      mcq_section_max_score, mcq_user_section_score, mcq_user_attempt_duration_in_mins,
+      coding_section_max_score, coding_user_section_score, coding_user_attempt_duration_in_mins,
+      assessment_total_score, assessment_user_score`;
+
+function assessmentTableCandidates(): string[] {
+  const configured = process.env["BQ_ASSESSMENT_TABLE"]?.trim();
+  const candidates = [
+    configured,
+    ASSESSMENT_PHYSICAL_TABLE,
+    ASSESSMENT_VIEW_TABLE,
+  ].filter((v): v is string => Boolean(v));
+  return [...new Set(candidates)];
+}
+
+/**
+ * Picks the first assessment table the service account can actually query.
+ * Prefers a physical copy in the portal dataset; falls back to the view.
+ */
+async function resolveAssessmentTable(bq: BigQuery, dataset: string): Promise<string> {
+  const projectId = process.env["project_id"];
+  let lastError: Error | null = null;
+
+  for (const table of assessmentTableCandidates()) {
+    try {
+      await bq.query({
+        query: `SELECT 1 FROM \`${projectId}.${dataset}.${table}\` LIMIT 1`,
+      });
+      logger.info({ table, dataset }, "Resolved BigQuery assessment table");
+      return table;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      logger.warn({ table, err: lastError.message }, "Assessment table not queryable");
+    }
+  }
+
+  throw new Error(
+    `No queryable assessment table found in ${dataset}. ` +
+      `Ask a GCP admin to grant read access on retention_academy_analytics.y_academy_users_irp_assessment_details ` +
+      `or materialize academy_users_irp_main_assessment_details_for_irp_portal into ${dataset}. ` +
+      `Last error: ${lastError?.message ?? "unknown"}`
+  );
+}
 
 /**
  * Resolves the BigQuery dataset that holds the IRP portal tables.
@@ -62,7 +112,12 @@ async function resolveDataset(bq: BigQuery): Promise<string> {
     if (!ds.id) continue;
     const [tables] = await ds.getTables();
     const ids = tables.map((t) => t.id);
-    if (ids.includes(BASIC_DETAILS_TABLE) || ids.includes(COURSE_PROGRESS_TABLE)) {
+    if (
+      ids.includes(BASIC_DETAILS_TABLE) ||
+      ids.includes(COURSE_PROGRESS_TABLE) ||
+      ids.includes(ASSESSMENT_PHYSICAL_TABLE) ||
+      ids.includes(ASSESSMENT_VIEW_TABLE)
+    ) {
       logger.info({ dataset: ds.id }, "Auto-discovered BigQuery dataset for IRP tables");
       return ds.id;
     }
@@ -93,6 +148,23 @@ export interface CourseProgressRow {
   overall_completion_pct: number | null;
 }
 
+export interface MainAssessmentDetailsRow {
+  user_id: string | null;
+  organisation_assessment_id: string | null;
+  assessment_title: string | null;
+  assessment_tag_str_extracted: string | null;
+  level: string | null;
+  cycle: string | null;
+  mcq_section_max_score: number | null;
+  mcq_user_section_score: number | null;
+  mcq_user_attempt_duration_in_mins: number | null;
+  coding_section_max_score: number | null;
+  coding_user_section_score: number | null;
+  coding_user_attempt_duration_in_mins: number | null;
+  assessment_total_score: number | null;
+  assessment_user_score: number | null;
+}
+
 export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   const bq = getBigQueryClient();
   const dataset = await resolveDataset(bq);
@@ -115,4 +187,15 @@ export async function fetchCourseProgress(): Promise<CourseProgressRow[]> {
     FROM \`${projectId}.${dataset}.${COURSE_PROGRESS_TABLE}\``;
   const [rows] = await bq.query({ query });
   return rows as CourseProgressRow[];
+}
+
+export async function fetchMainAssessmentDetails(): Promise<MainAssessmentDetailsRow[]> {
+  const bq = getBigQueryClient();
+  const dataset = await resolveDataset(bq);
+  const projectId = process.env["project_id"];
+  const table = await resolveAssessmentTable(bq, dataset);
+  const query = `${ASSESSMENT_SELECT}
+    FROM \`${projectId}.${dataset}.${table}\``;
+  const [rows] = await bq.query({ query });
+  return rows as MainAssessmentDetailsRow[];
 }

@@ -72,6 +72,30 @@ export const GetStudentMarksResponse = zod.array(GetStudentMarksResponseItem)
 
 
 /**
+ * Returns synced main assessment scores from Postgres
+ * @summary Get student assessment results
+ */
+export const GetStudentAssessmentsResponse = zod.object({
+  "assessments": zod.array(zod.object({
+  "organisationAssessmentId": zod.string(),
+  "assessmentTitle": zod.string(),
+  "assessmentTag": zod.string().optional(),
+  "level": zod.string(),
+  "cycle": zod.string().optional(),
+  "mcqScore": zod.number(),
+  "mcqMax": zod.number(),
+  "mcqPct": zod.number(),
+  "codingScore": zod.number(),
+  "codingMax": zod.number(),
+  "codingPct": zod.number(),
+  "overallScore": zod.number(),
+  "overallMax": zod.number(),
+  "overallPct": zod.number()
+}))
+})
+
+
+/**
  * Returns recent practice activity and streaks
  * @summary Get recent student activity
  */

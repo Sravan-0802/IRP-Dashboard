@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   db,
   academyUserBasicDetailsTable,
+  academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
   bigquerySyncStatusTable,
 } from "@workspace/db";
@@ -9,11 +10,13 @@ import { logger } from "./logger";
 import {
   fetchBasicDetails,
   fetchCourseProgress,
+  fetchMainAssessmentDetails,
   isBigQueryConfigured,
 } from "./bigquery";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
+const ASSESSMENT_DETAILS_KEY = "academy_user_assessment_details";
 const BATCH_SIZE = 500;
 
 function toInt(v: unknown): number | null {
@@ -157,6 +160,67 @@ async function syncCourseProgress(): Promise<number> {
   return mapped.length;
 }
 
+async function syncMainAssessmentDetails(): Promise<number> {
+  const rows = await fetchMainAssessmentDetails();
+  const mapped = dedupeByKey(
+    rows
+      .filter(
+        (r) =>
+          r.user_id != null &&
+          String(r.user_id).trim() !== "" &&
+          r.organisation_assessment_id != null &&
+          String(r.organisation_assessment_id).trim() !== ""
+      )
+      .map((r) => ({
+        userId: String(r.user_id),
+        organisationAssessmentId: String(r.organisation_assessment_id),
+        assessmentTitle: toStr(r.assessment_title),
+        assessmentTag: toStr(r.assessment_tag_str_extracted),
+        level: toStr(r.level),
+        cycle: toStr(r.cycle),
+        mcqSectionMaxScore: toReal(r.mcq_section_max_score),
+        mcqUserSectionScore: toReal(r.mcq_user_section_score),
+        mcqAttemptDurationMins: toReal(r.mcq_user_attempt_duration_in_mins),
+        codingSectionMaxScore: toReal(r.coding_section_max_score),
+        codingUserSectionScore: toReal(r.coding_user_section_score),
+        codingAttemptDurationMins: toReal(r.coding_user_attempt_duration_in_mins),
+        assessmentTotalScore: toReal(r.assessment_total_score),
+        assessmentUserScore: toReal(r.assessment_user_score),
+        syncedAt: new Date(),
+      })),
+    (r) => `${r.userId}:${r.organisationAssessmentId}`,
+  );
+
+  for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
+    const batch = mapped.slice(i, i + BATCH_SIZE);
+    await db
+      .insert(academyUserAssessmentDetailsTable)
+      .values(batch)
+      .onConflictDoUpdate({
+        target: [
+          academyUserAssessmentDetailsTable.userId,
+          academyUserAssessmentDetailsTable.organisationAssessmentId,
+        ],
+        set: {
+          assessmentTitle: sql`excluded.assessment_title`,
+          assessmentTag: sql`excluded.assessment_tag`,
+          level: sql`excluded.level`,
+          cycle: sql`excluded.cycle`,
+          mcqSectionMaxScore: sql`excluded.mcq_section_max_score`,
+          mcqUserSectionScore: sql`excluded.mcq_user_section_score`,
+          mcqAttemptDurationMins: sql`excluded.mcq_attempt_duration_mins`,
+          codingSectionMaxScore: sql`excluded.coding_section_max_score`,
+          codingUserSectionScore: sql`excluded.coding_user_section_score`,
+          codingAttemptDurationMins: sql`excluded.coding_attempt_duration_mins`,
+          assessmentTotalScore: sql`excluded.assessment_total_score`,
+          assessmentUserScore: sql`excluded.assessment_user_score`,
+          syncedAt: sql`excluded.synced_at`,
+        },
+      });
+  }
+  return mapped.length;
+}
+
 async function runOne(
   key: string,
   fn: () => Promise<number>
@@ -185,7 +249,7 @@ export interface SyncResult {
 let syncInProgress = false;
 
 /**
- * Pulls both IRP tables from BigQuery and upserts them into Postgres.
+ * Pulls all IRP tables from BigQuery and upserts them into Postgres.
  * Each table is tracked independently so one failure does not block the other.
  */
 export async function runBigQuerySync(): Promise<SyncResult> {
@@ -211,6 +275,7 @@ export async function runBigQuerySync(): Promise<SyncResult> {
     const results = [
       await runOne(BASIC_DETAILS_KEY, syncBasicDetails),
       await runOne(COURSE_PROGRESS_KEY, syncCourseProgress),
+      await runOne(ASSESSMENT_DETAILS_KEY, syncMainAssessmentDetails),
     ];
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {

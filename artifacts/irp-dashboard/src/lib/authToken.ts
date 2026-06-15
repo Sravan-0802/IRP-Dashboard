@@ -46,3 +46,16 @@ export function redirectToLogin(): void {
 export function hasAuthToken(): boolean {
   return Boolean(getAuthToken());
 }
+
+/** Production builds require SSO; dev can use the API server's ACADEMY_USER_ID fallback. */
+export function shouldRequireSsoLogin(): boolean {
+  if (import.meta.env.VITE_SSO_REQUIRED === "false") return false;
+  return import.meta.env.PROD;
+}
+
+/** Send unauthenticated production visitors to the IRP Dashboard SSO meeting link. */
+export function ensureAuthenticated(): boolean {
+  if (!shouldRequireSsoLogin() || hasAuthToken()) return true;
+  redirectToLogin();
+  return false;
+}

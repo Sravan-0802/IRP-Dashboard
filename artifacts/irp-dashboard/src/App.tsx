@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-react";
@@ -7,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Onboarding from "./pages/Onboarding";
 import NotEnrolled from "./pages/NotEnrolled";
 import NotFound from "@/pages/not-found";
+import { redirectToLogin, shouldRequireSsoLogin } from "@/lib/authToken";
 import { useJourney } from "@/lib/useJourney";
 
 const queryClient = new QueryClient();
@@ -16,11 +18,30 @@ function isNotEnrolled(error: unknown): boolean {
   return e?.status === 404 && e?.data?.code === "NOT_ENROLLED";
 }
 
+function isUnauthorized(error: unknown): boolean {
+  const e = error as { status?: number } | null;
+  return e?.status === 401;
+}
+
 function Home() {
   const { data: journey, isLoading } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
   });
+
+  useEffect(() => {
+    if (isUnauthorized(studentError) && shouldRequireSsoLogin()) {
+      redirectToLogin();
+    }
+  }, [studentError]);
+
+  if (isUnauthorized(studentError) && shouldRequireSsoLogin()) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center">
+        <p className="text-sm font-semibold text-muted2">Redirecting to login…</p>
+      </div>
+    );
+  }
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.
   if (isNotEnrolled(studentError)) {
