@@ -139,6 +139,14 @@ export const dashboardFeedbackTable = pgTable("dashboard_feedback", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const dashboardAnalyticsEventsTable = pgTable("dashboard_analytics_events", {
+  id: serial("id").primaryKey(),
+  academyUserId: text("academy_user_id").notNull(),
+  studentId: integer("student_id").references(() => studentsTable.id),
+  eventType: text("event_type").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Mirror of BigQuery `academy_users_basic_details_for_irp_portal`
 export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details", {
   userId: text("user_id").primaryKey(),

@@ -5,6 +5,7 @@ import { useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-reac
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Onboarding from "./pages/Onboarding";
 import NotEnrolled from "./pages/NotEnrolled";
 import NotFound from "@/pages/not-found";
@@ -80,6 +81,9 @@ function Home() {
 function Router() {
   return (
     <Switch>
+      <Route path="/analytics">
+        <Analytics />
+      </Route>
       <Route path="/">
         <Home />
       </Route>

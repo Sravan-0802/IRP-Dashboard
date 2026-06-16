@@ -9,6 +9,11 @@ import { EXAM_DATE, EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { useJourney } from "@/lib/useJourney";
 import { getLevel } from "@/lib/journey";
 import { DEMO_STUDENT, DEMO_PROGRESS, DEMO_ASSESSMENTS } from "@/lib/demoData";
+import {
+  DASHBOARD_ANALYTICS_EVENTS,
+  trackDashboardEvent,
+  trackDashboardVisitOnce,
+} from "@/lib/analytics";
 import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
@@ -49,6 +54,33 @@ export default function Dashboard() {
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    trackDashboardVisitOnce();
+  }, []);
+
+  const navigate = (key: PageKey) => {
+    if (key === "dashboard") {
+      trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_DASHBOARD);
+    } else if (key === "slot") {
+      trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENT_CALENDAR);
+    }
+    setPage(key);
+  };
+
+  function openFeedback() {
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.FEEDBACK_OPEN);
+    setFeedbackOpen(true);
+  }
+
+  function openContactUs() {
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.CONTACT_US_CLICK);
+    setPage("dashboard");
+    setMobileOpen(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   const displayStudent = student ?? (studentError ? DEMO_STUDENT : null);
   const displayProgress = progress ?? (progressError ? DEMO_PROGRESS : null);
@@ -100,14 +132,6 @@ export default function Dashboard() {
     setSettingsOpen(true);
   }
 
-  function openContactUs() {
-    setPage("dashboard");
-    setMobileOpen(false);
-    window.requestAnimationFrame(() => {
-      document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
   return (
     <div className="flex h-[100dvh] overflow-hidden">
       <aside className="glass-panel hidden w-[220px] shrink-0 border-r border-[rgba(103,65,217,0.1)] shadow-[2px_0_20px_rgba(103,65,217,0.05)] md:flex">
@@ -116,9 +140,9 @@ export default function Dashboard() {
           yog={displayStudent.yog}
           journey={journey}
           active={page}
-          onNavigate={setPage}
+          onNavigate={navigate}
           onOpenSettings={openSettings}
-          onOpenFeedback={() => setFeedbackOpen(true)}
+          onOpenFeedback={openFeedback}
           onOpenContact={openContactUs}
         />
       </aside>
@@ -136,9 +160,9 @@ export default function Dashboard() {
               yog={displayStudent.yog}
               journey={journey}
               active={page}
-              onNavigate={(k) => { setPage(k); setMobileOpen(false); }}
+              onNavigate={(k) => { navigate(k); setMobileOpen(false); }}
               onOpenSettings={() => { setMobileOpen(false); openSettings(); }}
-              onOpenFeedback={() => { setMobileOpen(false); setFeedbackOpen(true); }}
+              onOpenFeedback={() => { setMobileOpen(false); openFeedback(); }}
               onOpenContact={() => { openContactUs(); }}
             />
           </div>
@@ -184,7 +208,7 @@ export default function Dashboard() {
 
       <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
-      <FeedbackButton variant="floating" onClick={() => setFeedbackOpen(true)} />
+      <FeedbackButton variant="floating" onClick={openFeedback} />
     </div>
   );
 }

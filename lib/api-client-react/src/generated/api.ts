@@ -22,6 +22,9 @@ import type {
 import type {
   ContactMessageRequest,
   ContactMessageResponse,
+  DashboardAnalyticsEventRequest,
+  DashboardAnalyticsEventResponse,
+  DashboardAnalyticsSummary,
   HealthStatus,
   Student,
   StudentActivity,
@@ -581,4 +584,154 @@ export const useSubmitContactMessage = <TError = ErrorType<void>,
       > => {
       return useMutation(getSubmitContactMessageMutationOptions(options));
     }
+
+export const getLogDashboardAnalyticsEventUrl = () => {
+
+
+
+
+  return `/api/student/analytics/event`
+}
+
+/**
+ * Records UI interaction events for internal analytics
+ * @summary Log a dashboard analytics event
+ */
+export const logDashboardAnalyticsEvent = async (dashboardAnalyticsEventRequest: DashboardAnalyticsEventRequest, options?: RequestInit): Promise<DashboardAnalyticsEventResponse> => {
+
+  return customFetch<DashboardAnalyticsEventResponse>(getLogDashboardAnalyticsEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      dashboardAnalyticsEventRequest,)
+  }
+);}
+
+
+
+
+export const getLogDashboardAnalyticsEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>, TError,{data: BodyType<DashboardAnalyticsEventRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>, TError,{data: BodyType<DashboardAnalyticsEventRequest>}, TContext> => {
+
+const mutationKey = ['logDashboardAnalyticsEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>, {data: BodyType<DashboardAnalyticsEventRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  logDashboardAnalyticsEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogDashboardAnalyticsEventMutationResult = NonNullable<Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>>
+    export type LogDashboardAnalyticsEventMutationBody = BodyType<DashboardAnalyticsEventRequest>
+    export type LogDashboardAnalyticsEventMutationError = ErrorType<void>
+
+    /**
+ * @summary Log a dashboard analytics event
+ */
+export const useLogDashboardAnalyticsEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>, TError,{data: BodyType<DashboardAnalyticsEventRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logDashboardAnalyticsEvent>>,
+        TError,
+        {data: BodyType<DashboardAnalyticsEventRequest>},
+        TContext
+      > => {
+      return useMutation(getLogDashboardAnalyticsEventMutationOptions(options));
+    }
+
+export const getGetDashboardAnalyticsUrl = () => {
+
+
+
+
+  return `/api/analytics/dashboard`
+}
+
+/**
+ * Returns aggregate click and visit stats (requires admin API key)
+ * @summary Get dashboard usage analytics
+ */
+export const getDashboardAnalytics = async ( options?: RequestInit): Promise<DashboardAnalyticsSummary> => {
+
+  return customFetch<DashboardAnalyticsSummary>(getGetDashboardAnalyticsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDashboardAnalyticsQueryKey = () => {
+    return [
+    `/api/analytics/dashboard`
+    ] as const;
+    }
+
+
+export const getGetDashboardAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardAnalytics>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardAnalyticsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardAnalytics>>> = ({ signal }) => getDashboardAnalytics({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardAnalytics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardAnalytics>>>
+export type GetDashboardAnalyticsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get dashboard usage analytics
+ */
+
+export function useGetDashboardAnalytics<TData = Awaited<ReturnType<typeof getDashboardAnalytics>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardAnalyticsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

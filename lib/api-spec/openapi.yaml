@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: student
     description: Student profile and progress
+  - name: analytics
+    description: Dashboard usage analytics
 paths:
   /healthz:
     get:
@@ -123,7 +125,55 @@ paths:
         "401":
           description: Unauthorized
 
+  /student/analytics/event:
+    post:
+      operationId: logDashboardAnalyticsEvent
+      tags: [student]
+      summary: Log a dashboard analytics event
+      description: Records UI interaction events for internal analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DashboardAnalyticsEventRequest"
+      responses:
+        "201":
+          description: Event logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardAnalyticsEventResponse"
+        "400":
+          description: Invalid event type
+        "401":
+          description: Unauthorized
+
+  /analytics/dashboard:
+    get:
+      operationId: getDashboardAnalytics
+      tags: [analytics]
+      summary: Get dashboard usage analytics
+      description: Returns aggregate click and visit stats (requires admin API key)
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardAnalyticsSummary"
+        "401":
+          description: Unauthorized
+
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
   schemas:
     HealthStatus:
       type: object
@@ -383,3 +433,91 @@ components:
           type: boolean
         id:
           type: integer
+
+    DashboardAnalyticsEventRequest:
+      type: object
+      required:
+        - eventType
+      properties:
+        eventType:
+          type: string
+          enum:
+            - dashboard_visit
+            - nav_dashboard
+            - nav_assessment_calendar
+            - feedback_open
+            - contact_us_click
+
+    DashboardAnalyticsEventResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+
+    DashboardAnalyticsMetric:
+      type: object
+      required:
+        - eventType
+        - label
+        - totalClicks
+        - uniqueUsers
+      properties:
+        eventType:
+          type: string
+        label:
+          type: string
+        totalClicks:
+          type: integer
+        uniqueUsers:
+          type: integer
+
+    DashboardAnalyticsDailyMetric:
+      type: object
+      required:
+        - eventType
+        - clicks
+        - users
+      properties:
+        eventType:
+          type: string
+        clicks:
+          type: integer
+        users:
+          type: integer
+
+    DashboardAnalyticsDailyRow:
+      type: object
+      required:
+        - date
+        - metrics
+      properties:
+        date:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardAnalyticsDailyMetric"
+
+    DashboardAnalyticsSummary:
+      type: object
+      required:
+        - trackingSince
+        - generatedAt
+        - events
+        - daily
+      properties:
+        trackingSince:
+          type: string
+          nullable: true
+        generatedAt:
+          type: string
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardAnalyticsMetric"
+        daily:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardAnalyticsDailyRow"

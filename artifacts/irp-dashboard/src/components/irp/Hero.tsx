@@ -55,7 +55,7 @@ export function Hero({
 
   if (showPostExamHero) {
     const cleared = assessmentStatus === "done";
-    const attempted = assessmentStatus === "attempted";
+    const attempted = assessmentStatus === "attempted_not_cleared";
 
     return (
       <div

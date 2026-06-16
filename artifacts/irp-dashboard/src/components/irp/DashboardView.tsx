@@ -3,17 +3,14 @@ import {
   Code2,
   Mic,
   Zap,
-  ArrowRight,
-  FileText,
-  Users,
-  Lock,
 } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
-import { getLevel, getPhase } from "@/lib/journey";
+import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import { getAssessmentStepStatus } from "@/lib/assessment";
+import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { Hero } from "./Hero";
-import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
+import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
@@ -21,6 +18,10 @@ import { ContactUs } from "./ContactUs";
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
+
+  if (level === 1 && !journey.isWildcard) {
+    return l1HustlerJourneySteps(journey, assessments);
+  }
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
@@ -74,7 +75,9 @@ function assessmentMotivation(
     case "POST_ASSESSMENT":
       return assessmentStatus === "done"
         ? "Assessment cleared. Finish your tasks and keep the momentum rolling. 💪"
-        : "Assessment attempted. Review your results and keep building for the next round. 💪";
+        : assessmentStatus === "attempted_not_cleared"
+          ? "You attempted the assessment but didn't clear yet. Review your results and keep pushing. 💪"
+          : "Assessment attempted. Review your results and keep building for the next round. 💪";
     case "PLACED":
       return "You did it. Take it in — you've earned this. 🎉";
     case "REATTEMPT_WAITING":
@@ -139,62 +142,20 @@ export function DashboardView({
 
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
 
-      <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
-        <JourneyBar steps={journeySteps(journey, assessments)} />
+      <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
+        {level === 1 && !journey.isWildcard && (
+          <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted2 md:text-left">
+            {LEVEL_META[1].name} · {LEVEL_META[1].tag}
+          </p>
+        )}
+        <JourneyBar steps={journeySteps(journey, assessments)} compact={level === 1 && !journey.isWildcard} />
       </IrpCard>
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
 
-      <ContactUs />
-
       <ProgressSummary {...progress} />
 
-      {/* Post-assessment task cards */}
-      {phase === "POST_ASSESSMENT" && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-[rgba(59,91,219,0.22)] bg-l1-bg p-5 shadow-soft">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-l1">Step 01</span>
-              <Pill tone="purple">In Progress</Pill>
-            </div>
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-white/70 text-l1">
-              <FileText className="h-5 w-5" />
-            </div>
-            <h3 className="font-display text-lg font-extrabold text-ink">Project</h3>
-            <p className="mt-1 text-sm text-muted2">
-              Build and submit your project to unlock the mock interview.
-            </p>
-            <p className="mt-3 text-xs font-bold text-l2-text">
-              Due {journey.projectDueDate ?? "soon"}
-            </p>
-            <button className="mt-4 flex items-center gap-2 rounded-xl bg-l1 px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-              View Project Brief <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div
-            className={
-              journey.projectSubmitted
-                ? "rounded-2xl border border-[rgba(59,91,219,0.22)] bg-l1-bg p-5 shadow-soft"
-                : "rounded-2xl border border-[#dee2e6] bg-[#f8f9fa] p-5 shadow-soft"
-            }
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <span className={`text-[11px] font-bold uppercase tracking-wider ${journey.projectSubmitted ? "text-l1" : "text-dim"}`}>Step 02</span>
-              {journey.projectSubmitted ? <Pill tone="purple">Unlocked</Pill> : <Pill tone="grey">Locked</Pill>}
-            </div>
-            <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${journey.projectSubmitted ? "bg-white/70 text-l1" : "bg-white/60 text-dim"}`}>
-              {journey.projectSubmitted ? <Users className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-            </div>
-            <h3 className={`font-display text-lg font-extrabold ${journey.projectSubmitted ? "text-ink" : "text-muted2"}`}>Mock Interview</h3>
-            <p className={`mt-1 text-sm ${journey.projectSubmitted ? "text-muted2" : "text-dim"}`}>
-              {journey.projectSubmitted
-                ? "Your interview is unlocked. Schedule it from the slot page."
-                : "Unlocks after your project is submitted."}
-            </p>
-          </div>
-        </div>
-      )}
+      <ContactUs />
 
       {/* Wildcard: what L3 covers + opt-back */}
       {phase === "WILDCARD" && (

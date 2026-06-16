@@ -11,6 +11,7 @@ import {
   academyUserCourseProgressTable,
   contactUsMessagesTable,
   dashboardFeedbackTable,
+  dashboardAnalyticsEventsTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -444,6 +445,44 @@ router.post("/student/feedback", async (req, res) => {
     res.status(201).json({ ok: true, id: row.id });
   } catch (err) {
     req.log.error({ err }, "Failed to save dashboard feedback");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const ANALYTICS_EVENT_TYPES = new Set([
+  "dashboard_visit",
+  "nav_dashboard",
+  "nav_assessment_calendar",
+  "feedback_open",
+  "contact_us_click",
+]);
+
+router.post("/student/analytics/event", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const eventType =
+      typeof req.body?.eventType === "string" ? req.body.eventType.trim() : "";
+    if (!ANALYTICS_EVENT_TYPES.has(eventType)) {
+      res.status(400).json({ error: "Invalid event type" });
+      return;
+    }
+
+    const student = await getStudentForUser(userId);
+
+    await db.insert(dashboardAnalyticsEventsTable).values({
+      academyUserId: userId,
+      studentId: student?.id ?? null,
+      eventType,
+    });
+
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to log dashboard analytics event");
     res.status(500).json({ error: "Internal server error" });
   }
 });

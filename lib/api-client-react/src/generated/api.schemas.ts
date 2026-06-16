@@ -114,3 +114,47 @@ export interface ContactMessageResponse {
   id: number;
 }
 
+export type DashboardAnalyticsEventRequestEventType = typeof DashboardAnalyticsEventRequestEventType[keyof typeof DashboardAnalyticsEventRequestEventType];
+
+
+export const DashboardAnalyticsEventRequestEventType = {
+  dashboard_visit: 'dashboard_visit',
+  nav_dashboard: 'nav_dashboard',
+  nav_assessment_calendar: 'nav_assessment_calendar',
+  feedback_open: 'feedback_open',
+  contact_us_click: 'contact_us_click',
+} as const;
+
+export interface DashboardAnalyticsEventRequest {
+  eventType: DashboardAnalyticsEventRequestEventType;
+}
+
+export interface DashboardAnalyticsEventResponse {
+  ok: boolean;
+}
+
+export interface DashboardAnalyticsMetric {
+  eventType: string;
+  label: string;
+  totalClicks: number;
+  uniqueUsers: number;
+}
+
+export interface DashboardAnalyticsDailyMetric {
+  eventType: string;
+  clicks: number;
+  users: number;
+}
+
+export interface DashboardAnalyticsDailyRow {
+  date: string;
+  metrics: DashboardAnalyticsDailyMetric[];
+}
+
+export interface DashboardAnalyticsSummary {
+  trackingSince: string | null;
+  generatedAt: string;
+  events: DashboardAnalyticsMetric[];
+  daily: DashboardAnalyticsDailyRow[];
+}
+

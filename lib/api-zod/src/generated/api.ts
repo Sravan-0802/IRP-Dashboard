@@ -132,3 +132,36 @@ export const SubmitContactMessageBody = zod.object({
 })
 
 
+/**
+ * Records UI interaction events for internal analytics
+ * @summary Log a dashboard analytics event
+ */
+export const LogDashboardAnalyticsEventBody = zod.object({
+  "eventType": zod.enum(['dashboard_visit', 'nav_dashboard', 'nav_assessment_calendar', 'feedback_open', 'contact_us_click'])
+})
+
+
+/**
+ * Returns aggregate click and visit stats (requires admin API key)
+ * @summary Get dashboard usage analytics
+ */
+export const GetDashboardAnalyticsResponse = zod.object({
+  "trackingSince": zod.string().nullable(),
+  "generatedAt": zod.string(),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "label": zod.string(),
+  "totalClicks": zod.number(),
+  "uniqueUsers": zod.number()
+})),
+  "daily": zod.array(zod.object({
+  "date": zod.string(),
+  "metrics": zod.array(zod.object({
+  "eventType": zod.string(),
+  "clicks": zod.number(),
+  "users": zod.number()
+}))
+}))
+})
+
+

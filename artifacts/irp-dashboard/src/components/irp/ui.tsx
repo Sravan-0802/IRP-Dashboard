@@ -1,5 +1,5 @@
 import React from "react";
-import { ClipboardList, Users, Lock, Trophy, RotateCcw, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
+import { ClipboardList, Lock, Trophy, RotateCcw, CheckCircle2, ChevronRight, ChevronDown, Mic, UserRound, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type RingTone = "purple" | "blue" | "green" | "pink" | "gold";
@@ -140,9 +140,9 @@ export function Pill({
   );
 }
 
-export type StepStatus = "done" | "attempted" | "active" | "locked" | "reattempt";
+export type StepStatus = "done" | "attempted_not_cleared" | "active" | "locked" | "reattempt";
 
-export type StepIcon = "assessment" | "post" | "access";
+export type StepIcon = "assessment" | "post" | "mock" | "human" | "access";
 
 export interface JourneyStep {
   label: string;
@@ -152,13 +152,15 @@ export interface JourneyStep {
 
 const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   assessment: ClipboardList,
-  post: Users,
+  post: FileText,
+  mock: Mic,
+  human: UserRound,
   access: Trophy,
 };
 
 function connectorTone(status: StepStatus): string {
   if (status === "done") return "text-[#0ca678]";
-  if (status === "attempted") return "text-[#e67700]";
+  if (status === "attempted_not_cleared") return "text-[#e67700]";
   if (status === "active" || status === "reattempt") return "text-[#3b5bdb]";
   return "text-[#dee2e6]";
 }
@@ -180,14 +182,23 @@ function StepConnector({ fromStatus }: { fromStatus: StepStatus }) {
   );
 }
 
-export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
+export function JourneyBar({ steps, compact = false }: { steps: JourneyStep[]; compact?: boolean }) {
+  const iconSize = compact ? "h-10 w-10" : "h-14 w-14";
+  const iconInner = compact ? "h-5 w-5" : "h-6 w-6";
+  const stepBadge = compact ? "h-4 w-4 text-[9px]" : "h-5 w-5 text-[10px]";
+  const labelClass = compact ? "text-xs" : "text-sm";
+
   return (
-    <div className="flex flex-col md:flex-row md:items-start">
+    <div className="-mx-1 overflow-x-auto px-1 pb-1">
+      <div className={cn(
+        "flex flex-col md:flex-row md:items-start",
+        compact ? "min-w-[min(100%,720px)] md:min-w-[820px]" : "min-w-[min(100%,720px)] md:min-w-[860px]",
+      )}>
       {steps.map((step, i) => {
         const ring =
           step.status === "done"
             ? "border-[#0ca678] bg-[#d3f9d8] text-[#0ca678]"
-            : step.status === "attempted"
+            : step.status === "attempted_not_cleared"
               ? "border-[#f59f00] bg-[#fff9db] text-[#e67700]"
               : step.status === "active"
                 ? "border-[#3b5bdb] bg-[#3b5bdb] text-white shadow-[0_0_0_4px_rgba(59,91,219,0.15)]"
@@ -197,8 +208,15 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
         const badge =
           step.status === "done"
             ? <Pill tone="green">Completed</Pill>
-            : step.status === "attempted"
-              ? <Pill tone="amber">Attempted</Pill>
+            : step.status === "attempted_not_cleared"
+              ? (
+                <Pill
+                  tone="amber"
+                  className={cn(compact && "px-2 py-0.5 text-[9px] normal-case tracking-normal")}
+                >
+                  Attempted but not cleared
+                </Pill>
+              )
               : step.status === "active"
                 ? <Pill tone="purple">In Progress</Pill>
                 : step.status === "reattempt"
@@ -206,7 +224,7 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
                   : <Pill tone="grey">Locked</Pill>;
 
         const StepIcon =
-          step.status === "done" || step.status === "attempted"
+          step.status === "done" || step.status === "attempted_not_cleared"
             ? CheckCircle2
             : step.status === "locked"
               ? Lock
@@ -216,29 +234,36 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
 
         return (
           <React.Fragment key={`${step.label}-${i}`}>
-            <div className="relative z-10 flex flex-1 items-start gap-4 md:flex-col md:items-center md:text-center">
+            <div className="relative z-10 flex flex-1 items-start gap-3 md:flex-col md:items-center md:gap-0 md:text-center">
               <div
                 className={cn(
-                  "relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 md:mb-3",
+                  "relative flex shrink-0 items-center justify-center rounded-full border-2 md:mb-2",
+                  iconSize,
                   ring,
                 )}
               >
-                <StepIcon className="h-6 w-6" strokeWidth={2.25} />
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#3b5bdb] shadow-[var(--shadow-sm)] ring-2 ring-white">
+                <StepIcon className={iconInner} strokeWidth={2.25} />
+                <span className={cn(
+                  "absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-white font-black text-[#3b5bdb] shadow-[var(--shadow-sm)] ring-2 ring-white",
+                  stepBadge,
+                )}>
                   {i + 1}
                 </span>
               </div>
               <div className="min-w-0 flex-1 md:flex-none">
-                <p className={cn("text-sm font-bold", step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
+                <p className={cn("font-bold leading-tight", labelClass, step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
                   {step.label}
                 </p>
-                <div className="mt-1.5">{badge}</div>
+                <div className={cn(compact ? "mt-1 scale-90 origin-left md:origin-center" : "mt-1.5")}>{badge}</div>
               </div>
             </div>
-            {i < steps.length - 1 && <StepConnector fromStatus={step.status} />}
+            {i < steps.length - 1 && step.status !== "attempted_not_cleared" && (
+              <StepConnector fromStatus={step.status} />
+            )}
           </React.Fragment>
         );
       })}
+      </div>
     </div>
   );
 }

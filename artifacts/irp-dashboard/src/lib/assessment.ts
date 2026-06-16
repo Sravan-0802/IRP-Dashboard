@@ -102,10 +102,10 @@ export function resultTone(pct: number): "green" | "amber" {
 export function getAssessmentStepStatus(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
-): "done" | "attempted" | "active" {
+): "done" | "attempted_not_cleared" | "active" {
   if (!hasWrittenAssessment(assessments, level)) return "active";
   if (hasClearedAssessment(assessments, level)) return "done";
-  return "attempted";
+  return "attempted_not_cleared";
 }
 
 export function isAssessmentResultsLocked(
