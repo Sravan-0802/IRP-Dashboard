@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CheckCircle2, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/authToken";
-import { feedbackTierForRating, type FeedbackRating } from "@/lib/feedbackQuestions";
+import { feedbackTierForRating, pickFeedbackQuestion, type FeedbackRating } from "@/lib/feedbackQuestions";
 
 function StarRating({
   value,
@@ -45,7 +45,8 @@ function StarRating({
 
 export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [rating, setRating] = useState<FeedbackRating | null>(null);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
 
@@ -55,37 +56,29 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
 
   function close() {
     setRating(null);
-    setAnswers({});
+    setQuestion(null);
+    setAnswer("");
     setStatus("idle");
     setError("");
     onClose();
   }
 
   function selectRating(next: FeedbackRating) {
+    const nextTier = feedbackTierForRating(next);
     setRating(next);
-    setAnswers({});
-    if (status === "error") setStatus("idle");
-  }
-
-  function setAnswer(index: number, value: string) {
-    setAnswers((prev) => ({ ...prev, [index]: value }));
+    setQuestion(pickFeedbackQuestion(nextTier));
+    setAnswer("");
     if (status === "error") setStatus("idle");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!rating || !tier) return;
+    if (!rating || !tier || !question) return;
 
-    const payload = tier.questions
-      .map((question, index) => ({
-        question,
-        answer: (answers[index] ?? "").trim(),
-      }))
-      .filter((entry) => entry.answer.length > 0);
-
-    if (payload.length === 0) {
+    const trimmed = answer.trim();
+    if (!trimmed) {
       setStatus("error");
-      setError("Please answer at least one question.");
+      setError("Please answer the question.");
       return;
     }
 
@@ -100,7 +93,11 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
           "content-type": "application/json",
           ...(token ? { authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ rating, label: tier.label, answers: payload }),
+        body: JSON.stringify({
+          rating,
+          label: tier.label,
+          answers: [{ question, answer: trimmed }],
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -153,33 +150,32 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
             <h2 className="mt-2 pr-6 font-display text-xl font-extrabold leading-snug text-ink sm:text-[1.35rem]">
               Was this dashboard helpful for you?
             </h2>
-            <p className="mt-1.5 text-sm text-muted2">Your answers are required.</p>
+            <p className="mt-1.5 text-sm text-muted2">Your answer is required.</p>
 
             <StarRating value={rating} onChange={selectRating} />
 
             <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-[#fafafa] px-4 py-3">
-              {!tier ? (
+              {!tier || !question ? (
                 <p className="py-10 text-center text-sm text-[#94a3b8]">Select a rating to continue.</p>
               ) : (
-                <div className="max-h-[min(40vh,320px)] space-y-4 overflow-y-auto py-1">
+                <div className="py-1">
                   <p className="text-xs font-bold text-[#7c3aed]">
                     {tier.stars} {tier.label}
                   </p>
-                  {tier.questions.map((question, index) => (
-                    <div key={question}>
-                      <label className="mb-1.5 block text-xs font-semibold text-ink2">
-                        {question}
-                      </label>
-                      <textarea
-                        value={answers[index] ?? ""}
-                        onChange={(e) => setAnswer(index, e.target.value)}
-                        rows={2}
-                        maxLength={1000}
-                        disabled={status === "sending"}
-                        className="w-full resize-none rounded-lg border border-[rgba(103,65,217,0.12)] bg-white px-3 py-2 text-sm text-ink placeholder:text-muted2 focus:border-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[rgba(167,139,250,0.2)] disabled:opacity-60"
-                      />
-                    </div>
-                  ))}
+                  <label className="mb-1.5 mt-3 block text-xs font-semibold text-ink2">
+                    {question}
+                  </label>
+                  <textarea
+                    value={answer}
+                    onChange={(e) => {
+                      setAnswer(e.target.value);
+                      if (status === "error") setStatus("idle");
+                    }}
+                    rows={3}
+                    maxLength={1000}
+                    disabled={status === "sending"}
+                    className="w-full resize-none rounded-lg border border-[rgba(103,65,217,0.12)] bg-white px-3 py-2 text-sm text-ink placeholder:text-muted2 focus:border-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[rgba(167,139,250,0.2)] disabled:opacity-60"
+                  />
                 </div>
               )}
             </div>

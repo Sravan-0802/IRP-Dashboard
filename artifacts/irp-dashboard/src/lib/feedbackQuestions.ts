@@ -73,3 +73,9 @@ export const FEEDBACK_TIERS: FeedbackTier[] = [
 export function feedbackTierForRating(rating: FeedbackRating): FeedbackTier {
   return FEEDBACK_TIERS.find((t) => t.rating === rating)!;
 }
+
+/** Pick one follow-up question from the tier's pool of five. */
+export function pickFeedbackQuestion(tier: FeedbackTier): string {
+  const index = Math.floor(Math.random() * tier.questions.length);
+  return tier.questions[index]!;
+}
