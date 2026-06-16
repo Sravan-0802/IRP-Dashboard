@@ -11,7 +11,7 @@ import { getAssessmentStepStatus } from "@/lib/assessment";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
-import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
+import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
 
@@ -88,7 +88,7 @@ function assessmentMotivation(
     default:
       return days > 0
         ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${points.toLocaleString()} pts — keep stacking. 🔥`
-        : "Your next mission is loading. Time to lock in. 🔥";
+        : "";
   }
 }
 
@@ -106,6 +106,7 @@ export function DashboardView({
   progress,
   assessments,
   onSwitchToStandard,
+  onOpenAssessmentCalendar,
 }: {
   journey: Journey;
   firstName: string;
@@ -125,6 +126,7 @@ export function DashboardView({
   };
   assessments: AssessmentResult[];
   onSwitchToStandard: () => void;
+  onOpenAssessmentCalendar?: () => void;
 }) {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
@@ -137,7 +139,9 @@ export function DashboardView({
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
           Welcome back, {firstName}! <span className="inline-block animate-float-soft">👋</span>
         </h1>
-        <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
+        {motivation ? (
+          <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
+        ) : null}
       </div>
 
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
@@ -148,12 +152,14 @@ export function DashboardView({
             {LEVEL_META[1].name} · {LEVEL_META[1].tag}
           </p>
         )}
-        <JourneyBar steps={journeySteps(journey, assessments)} compact={level === 1 && !journey.isWildcard} />
+        <JourneyBar
+          steps={journeySteps(journey, assessments)}
+          compact={level === 1 && !journey.isWildcard}
+          onAssessmentCalendarClick={onOpenAssessmentCalendar}
+        />
       </IrpCard>
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
-
-      <ProgressSummary {...progress} />
 
       <ContactUs />
 

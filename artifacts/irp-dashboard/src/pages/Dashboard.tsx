@@ -188,6 +188,7 @@ export default function Dashboard() {
                 progress={progressProps}
                 assessments={displayAssessments}
                 onSwitchToStandard={openSwitchToStandard}
+                onOpenAssessmentCalendar={() => navigate("slot")}
               />
             )}
             {page === "assessments" && (

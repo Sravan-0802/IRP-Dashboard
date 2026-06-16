@@ -42,7 +42,7 @@ export function ContactUs() {
       <div className="mb-4">
         <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
           <Mail className="h-4 w-4 text-brand" />
-          Contact Us
+          Help & Support
         </h3>
         <p className="mt-1 text-xs text-muted2">
           Have a question or need help? Send us a message and our team will get back to you.

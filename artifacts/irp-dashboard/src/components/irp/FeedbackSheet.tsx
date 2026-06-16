@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/authToken";
@@ -49,6 +49,15 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
   const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -111,7 +120,7 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
   }
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-4">
       <button
         type="button"
         aria-label="Close feedback"
@@ -119,12 +128,17 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
         onClick={close}
       />
 
-      <div className="relative w-full max-w-[520px] rounded-2xl border border-[rgba(103,65,217,0.1)] bg-white px-6 py-7 shadow-[0_24px_60px_rgba(103,65,217,0.18)] sm:px-8 sm:py-8">
+      <div className="relative flex max-h-[min(92dvh,640px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[rgba(103,65,217,0.1)] bg-white shadow-[0_24px_60px_rgba(103,65,217,0.18)] sm:max-h-none sm:max-w-[520px] sm:rounded-2xl">
+        <div className="flex shrink-0 justify-center pt-2 sm:hidden">
+          <span className="h-1 w-10 rounded-full bg-[#e2e8f0]" aria-hidden />
+        </div>
+
+        <div className="overflow-y-auto overscroll-contain px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8">
         <button
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute right-4 top-4 rounded-lg p-1 text-muted2 hover:bg-[rgba(103,65,217,0.06)]"
+          className="absolute right-4 top-4 rounded-lg p-1 text-muted2 hover:bg-[rgba(103,65,217,0.06)] sm:top-4"
         >
           <X className="h-4 w-4" />
         </button>
@@ -147,7 +161,7 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a78bfa]">
               Feedback
             </p>
-            <h2 className="mt-2 pr-6 font-display text-xl font-extrabold leading-snug text-ink sm:text-[1.35rem]">
+            <h2 className="mt-2 pr-8 font-display text-lg font-extrabold leading-snug text-ink sm:pr-6 sm:text-[1.35rem]">
               Was this dashboard helpful for you?
             </h2>
             <p className="mt-1.5 text-sm text-muted2">Your answer is required.</p>
@@ -193,6 +207,7 @@ export function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () =>
             </button>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

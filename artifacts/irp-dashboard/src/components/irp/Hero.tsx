@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock } from "lucide-react";
+import { Calendar, CalendarClock, ArrowRight, Trophy, ClipboardList, Clock, ShieldCheck } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -8,7 +8,11 @@ import {
   isExamWindowClosed,
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
-import { getAssessmentStepStatus } from "@/lib/assessment";
+import {
+  assessmentOverallPct,
+  getAssessmentStepStatus,
+  pickAssessmentForLevel,
+} from "@/lib/assessment";
 import { CountdownRing } from "./CountdownRing";
 
 const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
@@ -30,6 +34,103 @@ function PulsingDot({ color }: { color: string }) {
       <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ background: color }} />
       <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: color }} />
     </span>
+  );
+}
+
+function scrollToAssessmentResults() {
+  document.getElementById("assessment-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ClearedAssessmentHero({
+  level,
+  examDateLabel,
+  assessments,
+}: {
+  level: 1 | 2 | 3;
+  examDateLabel: string;
+  assessments: AssessmentResult[];
+}) {
+  const meta = LEVEL_META[level];
+  const assessment = pickAssessmentForLevel(assessments, level);
+  const progressPct = assessment ? assessmentOverallPct(assessment) : 0;
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl border border-[rgba(12,166,120,0.25)] p-5 shadow-soft sm:p-6 md:p-8"
+      style={{ background: "linear-gradient(130deg, #e8faf0, #f0fff8)" }}
+    >
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(12,166,120,0.3)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal">
+            <PulsingDot color="#0ca678" /> Assessment completed
+          </div>
+          <LevelHeading name={meta.name} level={level} />
+          <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
+            You cleared the assessment
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-muted2">
+            Great work on {examDateLabel}. Check your results below and continue with post-assessment tasks.
+          </p>
+        </div>
+
+        <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
+          <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+            <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+          </span>
+          <div className="relative flex h-28 w-36 items-center justify-center sm:h-32 sm:w-44" aria-hidden>
+            <ShieldCheck className="h-20 w-20 text-[#0ca678]/90" strokeWidth={1.25} />
+            <ClipboardList className="absolute bottom-0 right-0 h-14 w-14 text-[#12b886]/85" strokeWidth={1.5} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 items-center gap-4 rounded-2xl bg-white p-4 shadow-soft sm:p-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:gap-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
+            <Trophy className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-muted2">Your progress</p>
+            <p className="font-display text-2xl font-extrabold leading-none text-teal">{progressPct}%</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[rgba(12,166,120,0.12)]">
+              <div
+                className="h-full rounded-full bg-teal transition-all duration-700"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
+            <ClipboardList className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-muted2">Completed</p>
+            <p className="truncate text-sm font-bold text-ink">Assessment · {meta.name}</p>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-muted2">Completed on</p>
+            <p className="text-sm font-bold text-ink">{examDateLabel}</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={scrollToAssessmentResults}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 lg:w-auto lg:shrink-0"
+        >
+          View results
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -57,37 +158,39 @@ export function Hero({
     const cleared = assessmentStatus === "done";
     const attempted = assessmentStatus === "attempted_not_cleared";
 
+    if (cleared) {
+      return (
+        <ClearedAssessmentHero
+          level={level}
+          examDateLabel={examDateLabel}
+          assessments={assessments}
+        />
+      );
+    }
+
     return (
       <div
         className={
-          cleared
-            ? "relative overflow-hidden rounded-2xl border border-[rgba(12,166,120,0.25)] p-6 shadow-soft sm:p-8"
-            : attempted
-              ? "relative overflow-hidden rounded-2xl border border-[rgba(245,159,0,0.28)] p-6 shadow-soft sm:p-8"
-              : "relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-6 shadow-soft sm:p-8"
+          attempted
+            ? "relative overflow-hidden rounded-2xl border border-[rgba(245,159,0,0.28)] p-6 shadow-soft sm:p-8"
+            : "relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-6 shadow-soft sm:p-8"
         }
         style={{
-          background: cleared
-            ? "linear-gradient(130deg, #e8faf0, #f0fff8)"
-            : attempted
-              ? "linear-gradient(130deg, #fff9db, #fff5f5)"
-              : "linear-gradient(130deg, #ede9fe, #f8f7ff)",
+          background: attempted
+            ? "linear-gradient(130deg, #fff9db, #fff5f5)"
+            : "linear-gradient(130deg, #ede9fe, #f8f7ff)",
         }}
       >
         <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
           <div className="text-center sm:text-left">
             <div
               className={
-                cleared
-                  ? "mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(12,166,120,0.3)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal"
-                  : attempted
-                    ? "mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,159,0,0.35)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#e67700]"
-                    : "mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(103,65,217,0.2)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand"
+                attempted
+                  ? "mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,159,0,0.35)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#e67700]"
+                  : "mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(103,65,217,0.2)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand"
               }
             >
-              {cleared ? (
-                <><PulsingDot color="#0ca678" /> Assessment completed</>
-              ) : attempted ? (
+              {attempted ? (
                 <><PulsingDot color="#f59f00" /> Assessment attempted</>
               ) : (
                 <><PulsingDot color="#6741d9" /> Assessment window closed</>
@@ -95,19 +198,15 @@ export function Hero({
             </div>
             <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-              {cleared
-                ? "You cleared the assessment"
-                : attempted
-                  ? "Your results are ready"
-                  : "Assessment day is over"}
+              {attempted
+                ? "Your results are ready"
+                : "Assessment day is over"}
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
-              {cleared ? (
-                <>Great work on {examDateLabel}. Check your results below and continue with post-assessment tasks.</>
-              ) : attempted ? (
+              {attempted ? (
                 <>You attempted the {examDateLabel} assessment. Review your score below — you need 70% to clear.</>
               ) : resultsVisible ? (
-                <>The assessment on {examDateLabel} has ended. Complete your attempt to see results, or contact us if you need help.</>
+                <>Assessment completed. New assessment dates will be announced soon—stay tuned.</>
               ) : (
                 <>The assessment on {examDateLabel} has ended. Results unlock on {PROGRESS_UNLOCK_LABEL}.</>
               )}
@@ -168,6 +267,16 @@ export function Hero({
 
   // ── POST_ASSESSMENT (cleared) ──
   if (phase === "POST_ASSESSMENT") {
+    if (assessmentStatus === "done") {
+      return (
+        <ClearedAssessmentHero
+          level={level}
+          examDateLabel={examDateLabel}
+          assessments={assessments}
+        />
+      );
+    }
+
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-[rgba(12,166,120,0.25)] p-6 shadow-soft sm:p-8"
@@ -183,7 +292,7 @@ export function Hero({
               Post-Assessment is live
             </h2>
             <p className="mt-1 text-sm font-medium text-muted2">
-              Complete your project, then unlock the mock interview.
+              Complete your FE project, then continue with mock interviews.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-center gap-2">

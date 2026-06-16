@@ -165,8 +165,23 @@ function connectorTone(status: StepStatus): string {
   return "text-[#dee2e6]";
 }
 
-function StepConnector({ fromStatus }: { fromStatus: StepStatus }) {
+function StepConnector({
+  fromStatus,
+  layout,
+}: {
+  fromStatus: StepStatus;
+  layout: "vertical" | "horizontal";
+}) {
   const tone = connectorTone(fromStatus);
+  if (layout === "horizontal") {
+    return (
+      <div className={cn("flex w-6 shrink-0 items-center gap-0 self-start px-0.5 pt-7 sm:w-8", tone)}>
+        <div className="h-0.5 flex-1 rounded-full bg-current opacity-40" />
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={2.5} aria-hidden />
+        <div className="h-0.5 flex-1 rounded-full bg-current opacity-40" />
+      </div>
+    );
+  }
   return (
     <>
       <div className={cn("hidden shrink-0 items-center gap-0 px-1 pt-7 md:flex", tone)}>
@@ -182,18 +197,37 @@ function StepConnector({ fromStatus }: { fromStatus: StepStatus }) {
   );
 }
 
-export function JourneyBar({ steps, compact = false }: { steps: JourneyStep[]; compact?: boolean }) {
+export function JourneyBar({
+  steps,
+  compact = false,
+  onAssessmentCalendarClick,
+}: {
+  steps: JourneyStep[];
+  compact?: boolean;
+  onAssessmentCalendarClick?: () => void;
+}) {
+  const horizontal = compact;
   const iconSize = compact ? "h-10 w-10" : "h-14 w-14";
   const iconInner = compact ? "h-5 w-5" : "h-6 w-6";
   const stepBadge = compact ? "h-4 w-4 text-[9px]" : "h-5 w-5 text-[10px]";
-  const labelClass = compact ? "text-xs" : "text-sm";
+  const labelClass = compact ? "text-[11px] sm:text-xs" : "text-sm";
 
   return (
-    <div className="-mx-1 overflow-x-auto px-1 pb-1">
-      <div className={cn(
-        "flex flex-col md:flex-row md:items-start",
-        compact ? "min-w-[min(100%,720px)] md:min-w-[820px]" : "min-w-[min(100%,720px)] md:min-w-[860px]",
-      )}>
+    <div
+      className={cn(
+        "w-full pb-1",
+        horizontal
+          ? undefined
+          : "-mx-1 overflow-x-auto px-1 overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+      )}
+    >
+      <div
+        className={cn(
+          horizontal
+            ? "flex w-full flex-row items-start"
+            : "flex min-w-[min(100%,720px)] flex-col md:min-w-0 md:w-full md:flex-row md:items-start",
+        )}
+      >
       {steps.map((step, i) => {
         const ring =
           step.status === "done"
@@ -212,7 +246,7 @@ export function JourneyBar({ steps, compact = false }: { steps: JourneyStep[]; c
               ? (
                 <Pill
                   tone="amber"
-                  className={cn(compact && "px-2 py-0.5 text-[9px] normal-case tracking-normal")}
+                  className="px-2 py-0.5 text-[9px] normal-case leading-snug tracking-normal"
                 >
                   Attempted but not cleared
                 </Pill>
@@ -234,10 +268,16 @@ export function JourneyBar({ steps, compact = false }: { steps: JourneyStep[]; c
 
         return (
           <React.Fragment key={`${step.label}-${i}`}>
-            <div className="relative z-10 flex flex-1 items-start gap-3 md:flex-col md:items-center md:gap-0 md:text-center">
+            <div
+              className={cn(
+                "relative z-10 flex min-w-0 flex-col items-center text-center",
+                horizontal ? "flex-1 px-0.5" : "flex-1 items-start gap-3 md:flex-col md:items-center md:gap-0 md:text-center",
+              )}
+            >
               <div
                 className={cn(
-                  "relative flex shrink-0 items-center justify-center rounded-full border-2 md:mb-2",
+                  "relative flex shrink-0 items-center justify-center rounded-full border-2",
+                  horizontal ? "mb-2" : "md:mb-2",
                   iconSize,
                   ring,
                 )}
@@ -250,15 +290,38 @@ export function JourneyBar({ steps, compact = false }: { steps: JourneyStep[]; c
                   {i + 1}
                 </span>
               </div>
-              <div className="min-w-0 flex-1 md:flex-none">
+              <div className={cn("min-w-0 w-full", horizontal ? "px-0" : "flex-1 md:flex-none")}>
                 <p className={cn("font-bold leading-tight", labelClass, step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
                   {step.label}
                 </p>
-                <div className={cn(compact ? "mt-1 scale-90 origin-left md:origin-center" : "mt-1.5")}>{badge}</div>
+                <div className={cn(horizontal ? "mt-1 flex justify-center" : compact ? "mt-1 scale-90 origin-left md:origin-center" : "mt-1.5")}>
+                  {badge}
+                </div>
+                {step.status === "attempted_not_cleared" && (
+                  <p className="mt-1.5 text-[10px] leading-snug text-muted2 sm:text-[11px]">
+                    For future assessments, refer to the{" "}
+                    {onAssessmentCalendarClick ? (
+                      <button
+                        type="button"
+                        onClick={onAssessmentCalendarClick}
+                        className="font-semibold text-brand underline-offset-2 hover:underline"
+                      >
+                        Assessment Calendar
+                      </button>
+                    ) : (
+                      <span className="font-semibold text-brand">Assessment Calendar</span>
+                    )}
+                    .
+                  </p>
+                )}
               </div>
             </div>
-            {i < steps.length - 1 && step.status !== "attempted_not_cleared" && (
-              <StepConnector fromStatus={step.status} />
+            {i < steps.length - 1 && (
+              step.status !== "attempted_not_cleared" ? (
+                <StepConnector fromStatus={step.status} layout={horizontal ? "horizontal" : "vertical"} />
+              ) : horizontal ? (
+                <div className="w-6 shrink-0 self-start sm:w-8" aria-hidden />
+              ) : null
             )}
           </React.Fragment>
         );

@@ -99,7 +99,7 @@ export function SidebarContent({
           onClick={onOpenContact}
           className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
         >
-          <Mail className="h-4 w-4" /> Contact Us
+          <Mail className="h-4 w-4" /> Help & Support
         </button>
         <button
           type="button"

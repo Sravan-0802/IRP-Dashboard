@@ -50,7 +50,7 @@ export function AssessmentResults({
   })();
 
   return (
-    <div className="irp-card p-5 sm:p-6">
+    <div id="assessment-results" className="irp-card scroll-mt-24 p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="flex items-center gap-2 font-display text-base font-extrabold">
@@ -66,7 +66,7 @@ export function AssessmentResults({
         )}
       </div>
 
-      <div className="mb-4 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
         <ScoreCard
           label="Overall"
           tone="purple"
@@ -99,40 +99,12 @@ export function AssessmentResults({
         />
       </div>
 
-      {showResults && assessment ? (
-        <div className="overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.08)]">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[rgba(103,65,217,0.08)] bg-[rgba(248,247,255,0.9)]">
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-muted2">Section</th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-l1">Score</th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-teal">Percentage</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-[rgba(103,65,217,0.06)]">
-                <td className="px-4 py-3 font-semibold text-ink">MCQs</td>
-                <td className="px-4 py-3 text-muted2">
-                  {Math.round(assessment.mcqScore)}/{Math.round(assessment.mcqMax)}
-                </td>
-                <td className="px-4 py-3 text-muted2">{assessment.mcqPct}%</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-semibold text-ink">Coding</td>
-                <td className="px-4 py-3 text-muted2">
-                  {Math.round(assessment.codingScore)}/{Math.round(assessment.codingMax)}
-                </td>
-                <td className="px-4 py-3 text-muted2">{assessment.codingPct}%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      ) : (
+      {!showResults || !assessment ? (
         <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-[rgba(248,247,255,0.8)] px-4 py-3">
           <Lock className="h-4 w-4 shrink-0 text-muted2" />
           <p className="text-xs font-medium text-muted2">{lockedMessage}</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,5 @@
-import { TrendingUp, Lock } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { ProgressRing } from "./ui";
-import { isProgressVisible, PROGRESS_UNLOCK_LABEL } from "@/lib/irpDates";
 
 export interface SubjectRow {
   subject: string;
@@ -14,12 +13,6 @@ export interface SubjectRow {
 
 export function ProgressSummary({
   overallPct,
-  mcqPct,
-  codingPct,
-  mcqDone,
-  mcqTotal,
-  codingDone,
-  codingTotal,
   points,
   maxPoints,
 }: {
@@ -33,30 +26,6 @@ export function ProgressSummary({
   points: number;
   maxPoints: number;
 }) {
-  if (!isProgressVisible()) {
-    return (
-      <div className="irp-card p-5 sm:p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
-            <TrendingUp className="h-4 w-4 text-brand" /> Overall IRP Progress
-          </h3>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-10 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
-            <Lock className="h-5 w-5" />
-          </div>
-          <p className="font-display text-base font-extrabold text-ink">Progress data is being prepared</p>
-          <p className="max-w-xs text-sm text-muted2">
-            Your MCQ and coding stats will be visible here from <span className="font-bold text-l1">{PROGRESS_UNLOCK_LABEL}</span>.
-          </p>
-          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[rgba(59,91,219,0.2)] bg-l1-bg px-3 py-1 text-xs font-bold text-l1">
-            🔒 Unlocks {PROGRESS_UNLOCK_LABEL}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   function momentumLabel(pct: number) {
     return pct >= 75
       ? "🔥 On fire"
@@ -66,74 +35,31 @@ export function ProgressSummary({
           ? "📈 Building momentum"
           : "🚀 Just getting started";
   }
+
   const momentum = momentumLabel(overallPct);
+
   return (
     <div className="irp-card p-5 sm:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
-            <TrendingUp className="h-4 w-4 text-brand" /> Overall IRP Progress
-          </h3>
-          <p className="mt-0.5 text-xs text-muted2">MCQs &amp; Coding practice combined</p>
-        </div>
-        <div className="flex items-center gap-3 text-xs font-bold text-muted2">
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-l1" />MCQs</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-teal" />Coding</span>
-        </div>
+      <div className="mb-5">
+        <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
+          <TrendingUp className="h-4 w-4 text-brand" /> Overall IRP Progress
+        </h3>
+        <p className="mt-0.5 text-xs text-muted2">MCQs &amp; Coding practice combined</p>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
-        {/* Overall — blue→purple */}
-        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
-          <ProgressRing value={overallPct} tone="purple" label="Overall" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted2">Total points</p>
-            <p className="font-display text-2xl font-black leading-none text-ink">
-              {points.toLocaleString()}
-            </p>
-            <p className="mt-1 text-xs font-semibold text-muted2">
-              of {maxPoints.toLocaleString()} pts
-            </p>
-            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
-              {momentum}
-            </span>
-          </div>
-        </div>
-
-        {/* MCQs — blue */}
-        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft">
-          <ProgressRing value={mcqPct} tone="blue" label="MCQs" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted2">Questions done</p>
-            <p className="font-display text-2xl font-black leading-none text-ink">
-              {mcqDone}
-              <span className="text-base font-semibold text-dim">/{mcqTotal}</span>
-            </p>
-            <p className="mt-1 text-xs font-semibold text-l2-text">
-              {Math.max(0, mcqTotal - mcqDone)} remaining
-            </p>
-            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
-              {momentumLabel(mcqPct)}
-            </span>
-          </div>
-        </div>
-
-        {/* Coding — teal */}
-        <div className="hover-lift flex h-full items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-teal bg-white p-4 shadow-soft">
-          <ProgressRing value={codingPct} tone="green" label="Coding" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted2">Problems solved</p>
-            <p className="font-display text-2xl font-black leading-none text-ink">
-              {codingDone}
-              <span className="text-base font-semibold text-dim">/{codingTotal}</span>
-            </p>
-            <p className="mt-1 text-xs font-semibold text-l2-text">
-              {Math.max(0, codingTotal - codingDone)} remaining
-            </p>
-            <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(12,166,120,0.25)] bg-[#e8faf0] px-2 py-1 text-[10px] font-bold text-teal">
-              {momentumLabel(codingPct)}
-            </span>
-          </div>
+      <div className="hover-lift flex items-center gap-4 rounded-2xl border border-[rgba(103,65,217,0.1)] border-t-[3px] border-t-l1 bg-white p-4 shadow-soft sm:max-w-md">
+        <ProgressRing value={overallPct} tone="purple" label="Overall" />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-muted2">Total points</p>
+          <p className="font-display text-2xl font-black leading-none text-ink">
+            {points.toLocaleString()}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-muted2">
+            of {maxPoints.toLocaleString()} pts
+          </p>
+          <span className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[rgba(59,91,219,0.18)] bg-l1-bg px-2 py-1 text-[10px] font-bold text-l1">
+            {momentum}
+          </span>
         </div>
       </div>
     </div>
