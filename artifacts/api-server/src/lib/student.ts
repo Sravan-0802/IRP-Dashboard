@@ -78,8 +78,12 @@ export async function getOrCreateStudentForUser(userId: string) {
   } catch (err) {
     // A stale serial sequence (e.g. legacy rows inserted with explicit ids)
     // can collide on the primary key. Realign the sequence and retry once.
-    const message = err instanceof Error ? err.message : String(err);
-    if (!message.includes("students_pkey")) throw err;
+    // Drizzle wraps the underlying PG error, so we check the full error chain.
+    const fullText = [
+      err instanceof Error ? err.message : String(err),
+      err instanceof Error && err.cause instanceof Error ? err.cause.message : "",
+    ].join(" ");
+    if (!fullText.includes("students_pkey")) throw err;
     await realignStudentIdSequence();
     const created = await insertStudent(userId, name);
     if (created) return created;
