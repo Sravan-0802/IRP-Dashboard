@@ -1,7 +1,21 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
+import { LEVEL_META } from "@/lib/journey";
 
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
+
+/** BigQuery sometimes stores organisation_assessment_id in assessment_title — hide for display. */
+export function formatAssessmentTitle(
+  title: string | null | undefined,
+  level: 1 | 2 | 3,
+): string {
+  const fallback = `${LEVEL_META[level].name} online assessment`;
+  if (!title?.trim()) return fallback;
+  const t = title.trim();
+  if (/^[0-9a-f]{32}$/i.test(t)) return fallback;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) return fallback;
+  return t;
+}
 
 export function parseAssessmentLevel(level: string | null | undefined): number | null {
   if (!level?.trim()) return null;

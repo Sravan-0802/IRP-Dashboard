@@ -1,4 +1,5 @@
-import { LayoutDashboard, BookOpen, ClipboardList, CalendarClock, Settings, Zap } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CalendarClock, Settings, Zap, Mail } from "lucide-react";
+import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
@@ -9,13 +10,12 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#e64980",
 };
 
-export type PageKey = "dashboard" | "learning" | "assessments" | "slot";
+export type PageKey = "dashboard" | "assessments" | "slot";
 
 const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { key: "learning", icon: BookOpen, label: "Practice Hub" },
   { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
-  { key: "slot", icon: CalendarClock, label: "Book a Slot" },
+  { key: "slot", icon: CalendarClock, label: "Assessment Calendar" },
 ];
 
 export function SidebarContent({
@@ -25,6 +25,8 @@ export function SidebarContent({
   active,
   onNavigate,
   onOpenSettings,
+  onOpenFeedback,
+  onOpenContact,
 }: {
   name: string;
   yog: number;
@@ -32,6 +34,8 @@ export function SidebarContent({
   active: PageKey;
   onNavigate: (key: PageKey) => void;
   onOpenSettings: () => void;
+  onOpenFeedback: () => void;
+  onOpenContact: () => void;
 }) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   return (
@@ -89,7 +93,14 @@ export function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-[#6741d9]/10 px-3 py-3">
+      <div className="space-y-2 border-t border-[#6741d9]/10 px-3 py-3">
+        <button
+          type="button"
+          onClick={onOpenContact}
+          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
+        >
+          <Mail className="h-4 w-4" /> Contact Us
+        </button>
         <button
           type="button"
           onClick={onOpenSettings}
@@ -97,6 +108,7 @@ export function SidebarContent({
         >
           <Settings className="h-4 w-4" /> Settings
         </button>
+        <FeedbackButton onClick={onOpenFeedback} />
       </div>
     </div>
   );

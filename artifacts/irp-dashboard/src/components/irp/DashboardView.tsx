@@ -139,17 +139,15 @@ export function DashboardView({
 
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
 
+      <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
+        <JourneyBar steps={journeySteps(journey, assessments)} />
+      </IrpCard>
+
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
 
-      {phase !== "PLACED" && (
-        <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
-          <JourneyBar steps={journeySteps(journey, assessments)} />
-        </IrpCard>
-      )}
+      <ContactUs />
 
       <ProgressSummary {...progress} />
-
-      <ContactUs />
 
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (

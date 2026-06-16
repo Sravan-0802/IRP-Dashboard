@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock, CheckCircle2, ClipboardList, Lock } from "lucide-react";
+import { Calendar, CalendarClock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -8,15 +8,21 @@ import {
   isExamWindowClosed,
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
-import {
-  assessmentOverallPct,
-  getAssessmentStepStatus,
-  pickAssessmentForLevel,
-  resultLabel,
-} from "@/lib/assessment";
+import { getAssessmentStepStatus } from "@/lib/assessment";
 import { CountdownRing } from "./CountdownRing";
 
 const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
+
+const LEVEL_HEADING_CLASS =
+  "mb-2 font-display text-xl font-extrabold text-ink sm:text-2xl";
+
+function LevelHeading({ name, level }: { name: string; level: 1 | 2 | 3 }) {
+  return (
+    <p className={LEVEL_HEADING_CLASS}>
+      {name} {LEVEL_EMOJI[level]}
+    </p>
+  );
+}
 
 function PulsingDot({ color }: { color: string }) {
   return (
@@ -43,9 +49,6 @@ export function Hero({
   const meta = LEVEL_META[level];
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
   const resultsVisible = areAssignmentResultsVisible();
-  const assessment = pickAssessmentForLevel(assessments, level);
-  const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
-
   const showPostExamHero =
     (isExamWindowClosed() || resultsVisible) &&
     (phase === "PREP" || phase === "EXAM_OPEN");
@@ -90,9 +93,7 @@ export function Hero({
                 <><PulsingDot color="#6741d9" /> Assessment window closed</>
               )}
             </div>
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
-              {meta.name} {LEVEL_EMOJI[level]}
-            </p>
+            <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               {cleared
                 ? "You cleared the assessment"
@@ -117,31 +118,6 @@ export function Hero({
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
               <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
             </span>
-            {cleared ? (
-              <div className="flex flex-col items-center gap-1 rounded-2xl border border-[rgba(12,166,120,0.25)] bg-[#d3f9d8] px-6 py-5">
-                <CheckCircle2 className="h-8 w-8 text-teal" />
-                <p className="font-display text-sm font-extrabold text-teal">Completed</p>
-                {assessment && (
-                  <p className="text-xs font-bold text-teal">{overallPct}% · Cleared</p>
-                )}
-              </div>
-            ) : attempted ? (
-              <div className="flex flex-col items-center gap-1 rounded-2xl border border-[rgba(245,159,0,0.3)] bg-[#fff9db] px-6 py-5">
-                <ClipboardList className="h-8 w-8 text-[#e67700]" />
-                <p className="font-display text-sm font-extrabold text-[#e67700]">Attempted</p>
-                {assessment && (
-                  <p className="text-xs font-bold text-[#e67700]">
-                    {overallPct}% · {resultLabel(overallPct)}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1 rounded-2xl border border-[rgba(103,65,217,0.15)] bg-white/80 px-6 py-5">
-                <Lock className="h-8 w-8 text-muted2" />
-                <p className="font-display text-sm font-extrabold text-ink">In Progress</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted2">No score yet</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -160,8 +136,9 @@ export function Hero({
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(156,54,181,0.25)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-2">
               <PulsingDot color="#9c36b5" /> Wildcard Path — Active
             </div>
+            <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-              Infinite Aura: L3 Direct
+              {meta.tag}
             </h2>
             <p className="mt-1 text-sm font-medium text-muted2">{examDateLabel} • L3 Assessment</p>
           </div>
@@ -199,8 +176,9 @@ export function Hero({
         <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
           <div className="text-center sm:text-left">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(12,166,120,0.3)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal">
-              <PulsingDot color="#0ca678" /> {meta.name} Assessment — Cleared
+              <PulsingDot color="#0ca678" /> Assessment completed
             </div>
+            <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               Post-Assessment is live
             </h2>
@@ -208,9 +186,10 @@ export function Hero({
               Complete your project, then unlock the mock interview.
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border border-[rgba(12,166,120,0.25)] bg-[#d3f9d8] px-6 py-5">
-            <span className="text-2xl">✅</span>
-            <p className="font-display text-base font-extrabold text-teal">{meta.name} Cleared</p>
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+            </span>
           </div>
         </div>
       </div>
@@ -226,6 +205,7 @@ export function Hero({
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(103,65,217,0.2)] bg-[rgba(103,65,217,0.06)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
               Reattempt
             </div>
+            <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               Your next attempt is coming up
             </h2>
@@ -266,9 +246,7 @@ export function Hero({
               <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
                 <Calendar className="h-3.5 w-3.5" /> Assessment day approaching
               </div>
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
-                {meta.name} {LEVEL_EMOJI[level]}
-              </p>
+              <LevelHeading name={meta.name} level={level} />
               <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
                 {meta.tag}
               </h2>
@@ -321,9 +299,7 @@ export function Hero({
               <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-2">
                 <PulsingDot color="#ec4899" /> Assessment is live
               </div>
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
-                {meta.name} {LEVEL_EMOJI[level]}
-              </p>
+              <LevelHeading name={meta.name} level={level} />
               <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
                 {meta.tag}
               </h2>
@@ -370,9 +346,7 @@ export function Hero({
               <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-l2-text">
                 <PulsingDot color="#fbbf24" /> Round 2 is live
               </div>
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
-                {meta.name} {LEVEL_EMOJI[level]}
-              </p>
+              <LevelHeading name={meta.name} level={level} />
               <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
                 {meta.tag}
               </h2>
@@ -417,9 +391,7 @@ export function Hero({
             <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
               <PulsingDot color="#a855f7" /> Your next mission
             </div>
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted2">
-              {meta.name} {LEVEL_EMOJI[level]}
-            </p>
+            <LevelHeading name={meta.name} level={level} />
             <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
               {meta.tag}
             </h2>

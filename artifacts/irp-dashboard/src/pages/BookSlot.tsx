@@ -5,8 +5,8 @@ export function BookSlot() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Book a Slot</h1>
-        <p className="mt-1 text-sm text-muted2">Reserve your assessment slot once booking opens.</p>
+        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
+        <p className="mt-1 text-sm text-muted2">View and reserve your assessment dates once booking opens.</p>
       </div>
 
       {!SLOTS_RELEASED ? (
@@ -15,7 +15,7 @@ export function BookSlot() {
           style={{ background: "linear-gradient(130deg, #eef2ff, #f8f0ff)" }}
         >
           <div className="text-5xl">🗓️</div>
-          <h2 className="mt-3 font-display text-xl font-extrabold text-ink">Slot booking opens soon</h2>
+          <h2 className="mt-3 font-display text-xl font-extrabold text-ink">Assessment calendar opens soon</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted2">
             We'll notify you when the Assessment Selection and Slot Selection Feature goes live.
           </p>

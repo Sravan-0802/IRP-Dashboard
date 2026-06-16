@@ -11,8 +11,9 @@ import { getLevel } from "@/lib/journey";
 import { DEMO_STUDENT, DEMO_PROGRESS, DEMO_ASSESSMENTS } from "@/lib/demoData";
 import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
+import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
+import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { DashboardView } from "@/components/irp/DashboardView";
-import { MyLearning } from "./MyLearning";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [page, setPage] = useState<PageKey>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsMode, setSettingsMode] = useState<"menu" | "to-standard">("menu");
   const [countdown, setCountdown] = useState({ days: 0 });
 
@@ -98,6 +100,14 @@ export default function Dashboard() {
     setSettingsOpen(true);
   }
 
+  function openContactUs() {
+    setPage("dashboard");
+    setMobileOpen(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   return (
     <div className="flex h-[100dvh] overflow-hidden">
       <aside className="glass-panel hidden w-[220px] shrink-0 border-r border-[rgba(103,65,217,0.1)] shadow-[2px_0_20px_rgba(103,65,217,0.05)] md:flex">
@@ -108,6 +118,8 @@ export default function Dashboard() {
           active={page}
           onNavigate={setPage}
           onOpenSettings={openSettings}
+          onOpenFeedback={() => setFeedbackOpen(true)}
+          onOpenContact={openContactUs}
         />
       </aside>
 
@@ -126,6 +138,8 @@ export default function Dashboard() {
               active={page}
               onNavigate={(k) => { setPage(k); setMobileOpen(false); }}
               onOpenSettings={() => { setMobileOpen(false); openSettings(); }}
+              onOpenFeedback={() => { setMobileOpen(false); setFeedbackOpen(true); }}
+              onOpenContact={() => { openContactUs(); }}
             />
           </div>
         </div>
@@ -152,7 +166,6 @@ export default function Dashboard() {
                 onSwitchToStandard={openSwitchToStandard}
               />
             )}
-            {page === "learning" && <MyLearning subjects={subjects} level={getLevel(journey.journeyState)} />}
             {page === "assessments" && (
               <AssessmentsHub level={getLevel(journey.journeyState)} assessments={displayAssessments} />
             )}
@@ -168,6 +181,10 @@ export default function Dashboard() {
         onClose={() => setSettingsOpen(false)}
         initialMode={settingsMode}
       />
+
+      <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
+      <FeedbackButton variant="floating" onClick={() => setFeedbackOpen(true)} />
     </div>
   );
 }

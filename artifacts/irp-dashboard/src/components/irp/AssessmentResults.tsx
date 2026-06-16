@@ -1,10 +1,11 @@
 import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
-import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
+import { getLevel, getPhase } from "@/lib/journey";
 import { areAssignmentResultsVisible } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
+  formatAssessmentTitle,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   pickAssessmentForLevel,
@@ -24,7 +25,6 @@ export function AssessmentResults({
 }) {
   const level = getLevel(journey.journeyState);
   const phase = getPhase(journey.journeyState);
-  const meta = LEVEL_META[level];
   const resultsUnlockedByDate =
     areAssignmentResultsVisible() ||
     phase === "POST_ASSESSMENT" ||
@@ -58,7 +58,7 @@ export function AssessmentResults({
             <span className="text-gradient-brand">Assessment Results</span>
           </h3>
           <p className="mt-0.5 text-xs text-muted2">
-            {assessment?.assessmentTitle ?? `${meta.name} online assessment`} · {examDateLabel}
+            {formatAssessmentTitle(assessment?.assessmentTitle, level)} · {examDateLabel}
           </p>
         </div>
         {showResults && assessment && (

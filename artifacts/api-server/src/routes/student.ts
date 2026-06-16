@@ -10,6 +10,7 @@ import {
   academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
   contactUsMessagesTable,
+  dashboardFeedbackTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -392,6 +393,57 @@ router.post("/student/contact", async (req, res) => {
     res.status(201).json({ ok: true, id: row.id });
   } catch (err) {
     req.log.error({ err }, "Failed to save contact message");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/student/feedback", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const rating = Number(req.body?.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      res.status(400).json({ error: "Rating must be an integer from 1 to 5" });
+      return;
+    }
+
+    const label = typeof req.body?.label === "string" ? req.body.label.trim() : "";
+    const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
+    const normalized = answers
+      .map((entry: unknown) => {
+        if (!entry || typeof entry !== "object") return null;
+        const question = "question" in entry && typeof entry.question === "string" ? entry.question.trim() : "";
+        const answer = "answer" in entry && typeof entry.answer === "string" ? entry.answer.trim() : "";
+        if (!question || !answer || answer.length > 1000) return null;
+        return { question, answer };
+      })
+      .filter(Boolean) as { question: string; answer: string }[];
+
+    if (!label || normalized.length === 0) {
+      res.status(400).json({ error: "At least one answer is required" });
+      return;
+    }
+
+    const student = await getStudentForUser(userId);
+
+    const [row] = await db
+      .insert(dashboardFeedbackTable)
+      .values({
+        academyUserId: userId,
+        studentId: student?.id ?? null,
+        rating,
+        ratingLabel: label,
+        responses: JSON.stringify(normalized),
+      })
+      .returning({ id: dashboardFeedbackTable.id });
+
+    res.status(201).json({ ok: true, id: row.id });
+  } catch (err) {
+    req.log.error({ err }, "Failed to save dashboard feedback");
     res.status(500).json({ error: "Internal server error" });
   }
 });

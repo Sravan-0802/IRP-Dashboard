@@ -38,7 +38,7 @@ export function ContactUs() {
   }
 
   return (
-    <div className="irp-card p-5 sm:p-6">
+    <div id="contact-us" className="irp-card scroll-mt-24 p-5 sm:p-6">
       <div className="mb-4">
         <h3 className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
           <Mail className="h-4 w-4 text-brand" />
