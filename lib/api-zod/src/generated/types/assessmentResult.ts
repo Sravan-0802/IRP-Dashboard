@@ -21,4 +21,6 @@ export interface AssessmentResult {
   overallScore: number;
   overallMax: number;
   overallPct: number;
+  /** True when assessment_user_score or section scores exist — the exam was attempted. */
+  hasWrittenAssessment: boolean;
 }

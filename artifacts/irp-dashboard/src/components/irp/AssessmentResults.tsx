@@ -3,35 +3,15 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import { areAssignmentResultsVisible } from "@/lib/irpDates";
+import {
+  assessmentOverallPct,
+  hasWrittenAssessment,
+  isAssessmentResultsLocked,
+  pickAssessmentForLevel,
+  resultLabel,
+  resultTone,
+} from "@/lib/assessment";
 import { ProgressRing, Pill } from "./ui";
-
-function resultTone(pct: number): "green" | "purple" | "grey" {
-  if (pct >= 60) return "green";
-  if (pct >= 40) return "purple";
-  return "grey";
-}
-
-function resultLabel(pct: number) {
-  if (pct >= 75) return "Strong";
-  if (pct >= 60) return "Cleared";
-  if (pct >= 40) return "Borderline";
-  return "Needs work";
-}
-
-function parseAssessmentLevel(level: string | null | undefined): number | null {
-  if (!level?.trim()) return null;
-  const match = /^L?(\d)/i.exec(level.trim());
-  return match ? Number(match[1]) : null;
-}
-
-function pickAssessment(
-  assessments: AssessmentResult[],
-  level: 1 | 2 | 3,
-): AssessmentResult | null {
-  const forLevel = assessments.filter((a) => parseAssessmentLevel(a.level) === level);
-  if (forLevel.length > 0) return forLevel[0];
-  return assessments[0] ?? null;
-}
 
 export function AssessmentResults({
   journey,
@@ -45,12 +25,29 @@ export function AssessmentResults({
   const level = getLevel(journey.journeyState);
   const phase = getPhase(journey.journeyState);
   const meta = LEVEL_META[level];
-  const unlocked =
+  const resultsUnlockedByDate =
     areAssignmentResultsVisible() ||
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
-  const assessment = pickAssessment(assessments, level);
-  const hasResults = unlocked && assessment != null;
+  const assessment = pickAssessmentForLevel(assessments, level);
+  const locked = isAssessmentResultsLocked(assessments, level, resultsUnlockedByDate);
+  const showResults = !locked;
+  const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
+
+  const lockedMessage = (() => {
+    if (!resultsUnlockedByDate) {
+      return (
+        <>
+          Marks unlock after your assessment on{" "}
+          <span className="font-bold text-ink">{examDateLabel}</span>.
+        </>
+      );
+    }
+    if (!hasWrittenAssessment(assessments, level)) {
+      return <>Complete your online assessment to unlock your results.</>;
+    }
+    return "Your assessment results are syncing. Check back shortly.";
+  })();
 
   return (
     <div className="irp-card p-5 sm:p-6">
@@ -64,8 +61,8 @@ export function AssessmentResults({
             {assessment?.assessmentTitle ?? `${meta.name} online assessment`} · {examDateLabel}
           </p>
         </div>
-        {hasResults && (
-          <Pill tone={resultTone(assessment.overallPct)}>{resultLabel(assessment.overallPct)}</Pill>
+        {showResults && assessment && (
+          <Pill tone={resultTone(overallPct)}>{resultLabel(overallPct)}</Pill>
         )}
       </div>
 
@@ -74,35 +71,35 @@ export function AssessmentResults({
           label="Overall"
           tone="purple"
           title="Total score"
-          value={hasResults ? `${Math.round(assessment.overallScore)}` : "—"}
-          suffix={hasResults ? `/${Math.round(assessment.overallMax)}` : ""}
-          sub={hasResults ? "Combined MCQs & coding" : "Unlocks after assessment"}
-          pct={hasResults ? assessment.overallPct : 0}
-          locked={!hasResults}
+          value={showResults && assessment ? `${Math.round(assessment.overallScore)}` : "—"}
+          suffix={showResults && assessment ? `/${Math.round(assessment.overallMax)}` : ""}
+          sub={showResults ? "Combined MCQs & coding" : "Unlocks after assessment"}
+          pct={showResults ? overallPct : 0}
+          locked={locked}
         />
         <ScoreCard
           label="MCQs"
           tone="blue"
           title="MCQ score"
-          value={hasResults ? `${Math.round(assessment.mcqScore)}` : "—"}
-          suffix={hasResults ? `/${Math.round(assessment.mcqMax)}` : ""}
-          sub={hasResults ? `${assessment.mcqPct}% correct` : "Unlocks after assessment"}
-          pct={hasResults ? assessment.mcqPct : 0}
-          locked={!hasResults}
+          value={showResults && assessment ? `${Math.round(assessment.mcqScore)}` : "—"}
+          suffix={showResults && assessment ? `/${Math.round(assessment.mcqMax)}` : ""}
+          sub={showResults && assessment ? `${assessment.mcqPct}% correct` : "Unlocks after assessment"}
+          pct={showResults && assessment ? assessment.mcqPct : 0}
+          locked={locked}
         />
         <ScoreCard
           label="Coding"
           tone="green"
           title="Coding score"
-          value={hasResults ? `${Math.round(assessment.codingScore)}` : "—"}
-          suffix={hasResults ? `/${Math.round(assessment.codingMax)}` : ""}
-          sub={hasResults ? `${assessment.codingPct}% solved` : "Unlocks after assessment"}
-          pct={hasResults ? assessment.codingPct : 0}
-          locked={!hasResults}
+          value={showResults && assessment ? `${Math.round(assessment.codingScore)}` : "—"}
+          suffix={showResults && assessment ? `/${Math.round(assessment.codingMax)}` : ""}
+          sub={showResults && assessment ? `${assessment.codingPct}% solved` : "Unlocks after assessment"}
+          pct={showResults && assessment ? assessment.codingPct : 0}
+          locked={locked}
         />
       </div>
 
-      {hasResults ? (
+      {showResults && assessment ? (
         <div className="overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.08)]">
           <table className="w-full text-left text-sm">
             <thead>
@@ -133,16 +130,7 @@ export function AssessmentResults({
       ) : (
         <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-[rgba(248,247,255,0.8)] px-4 py-3">
           <Lock className="h-4 w-4 shrink-0 text-muted2" />
-          <p className="text-xs font-medium text-muted2">
-            {unlocked && assessments.length === 0
-              ? "Your assessment results are syncing. Check back shortly."
-              : (
-                <>
-                  Marks unlock after your assessment on{" "}
-                  <span className="font-bold text-ink">{examDateLabel}</span>.
-                </>
-              )}
-          </p>
+          <p className="text-xs font-medium text-muted2">{lockedMessage}</p>
         </div>
       )}
     </div>

@@ -87,6 +87,7 @@ export const DEMO_ASSESSMENTS: StudentAssessments = {
       overallScore: 72,
       overallMax: 100,
       overallPct: 72,
+      hasWrittenAssessment: true,
     },
   ],
 };

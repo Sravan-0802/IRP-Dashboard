@@ -99,6 +99,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/StudentActivity"
 
+  /student/contact:
+    post:
+      operationId: submitContactMessage
+      tags: [student]
+      summary: Submit a contact us message
+      description: Stores a message from the student for the IRP team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactMessageRequest"
+      responses:
+        "201":
+          description: Message saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMessageResponse"
+        "400":
+          description: Invalid message
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -236,6 +260,7 @@ components:
         - overallScore
         - overallMax
         - overallPct
+        - hasWrittenAssessment
       properties:
         organisationAssessmentId:
           type: string
@@ -265,6 +290,9 @@ components:
           type: number
         overallPct:
           type: number
+        hasWrittenAssessment:
+          type: boolean
+          description: True when assessment_user_score or section scores exist — the exam was attempted.
 
     StudentAssessments:
       type: object
@@ -333,4 +361,25 @@ components:
         date:
           type: string
         questionsAttempted:
+          type: integer
+
+    ContactMessageRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+
+    ContactMessageResponse:
+      type: object
+      required:
+        - ok
+        - id
+      properties:
+        ok:
+          type: boolean
+        id:
           type: integer

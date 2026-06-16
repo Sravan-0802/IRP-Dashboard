@@ -11,36 +11,18 @@ import {
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible } from "@/lib/irpDates";
+import { getAssessmentStepStatus } from "@/lib/assessment";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, Pill, type JourneyStep } from "./ui";
 import { ProgressSummary, type SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
-
-function parseAssessmentLevel(level: string | null | undefined): number | null {
-  if (!level?.trim()) return null;
-  const match = /^L?(\d)/i.exec(level.trim());
-  return match ? Number(match[1]) : null;
-}
-
-function hasCompletedAssessment(
-  assessments: AssessmentResult[],
-  level: 1 | 2 | 3,
-): boolean {
-  return assessments.some(
-    (a) =>
-      parseAssessmentLevel(a.level) === level &&
-      (a.overallScore > 0 || a.mcqScore > 0 || a.codingScore > 0),
-  );
-}
+import { ContactUs } from "./ContactUs";
 
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
-  const assessmentDone =
-    phase === "POST_ASSESSMENT" ||
-    phase === "PLACED" ||
-    (areAssignmentResultsVisible() && hasCompletedAssessment(assessments, level));
+
+  const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
   if (phase === "WILDCARD") {
     return [
@@ -58,26 +40,53 @@ function journeySteps(journey: Journey, assessments: AssessmentResult[]): Journe
   }
   if (phase === "POST_ASSESSMENT") {
     return [
-      { label: "Online Assessment", status: "done", icon: "assessment" },
+      { label: "Online Assessment", status: assessmentStatus, icon: "assessment" },
       { label: "Post-Assessment", status: "active", icon: "post" },
       { label: `Level ${level} Access`, status: "locked", icon: "access" },
     ];
   }
-  const first: JourneyStep["status"] = assessmentDone
-    ? "done"
-    : phase === "REATTEMPT_WAITING"
+
+  const onlineAssessmentStatus: JourneyStep["status"] =
+    phase === "REATTEMPT_WAITING"
       ? "reattempt"
-      : "active";
+      : assessmentStatus;
+
   return [
-    { label: "Online Assessment", status: first, icon: "assessment" },
+    { label: "Online Assessment", status: onlineAssessmentStatus, icon: "assessment" },
     { label: "Post-Assessment", status: "locked", icon: "post" },
     { label: `Level ${level} Access`, status: "locked", icon: "access" },
   ];
 }
 
-function showRings(journey: Journey): boolean {
-  const phase = getPhase(journey.journeyState);
-  return phase !== "POST_ASSESSMENT" && phase !== "PLACED";
+function assessmentMotivation(
+  phase: ReturnType<typeof getPhase>,
+  days: number,
+  points: number,
+  assessments: AssessmentResult[],
+  level: 1 | 2 | 3,
+): string {
+
+  const assessmentStatus = getAssessmentStepStatus(assessments, level);
+
+  switch (phase) {
+    case "EXAM_OPEN":
+      return "It's go time. Give it everything — this is your moment. 🔥";
+    case "POST_ASSESSMENT":
+      return assessmentStatus === "done"
+        ? "Assessment cleared. Finish your tasks and keep the momentum rolling. 💪"
+        : "Assessment attempted. Review your results and keep building for the next round. 💪";
+    case "PLACED":
+      return "You did it. Take it in — you've earned this. 🎉";
+    case "REATTEMPT_WAITING":
+    case "REATTEMPT_ACTIVE":
+      return "One setback doesn't define you. Round 2 is where comebacks happen. 💥";
+    case "WILDCARD":
+      return "You're on the fast track. Big risk, bigger reward — let's go. ⚡";
+    default:
+      return days > 0
+        ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${points.toLocaleString()} pts — keep stacking. 🔥`
+        : "Your next mission is loading. Time to lock in. 🔥";
+  }
 }
 
 const L3_COVERS = [
@@ -115,26 +124,9 @@ export function DashboardView({
   onSwitchToStandard: () => void;
 }) {
   const phase = getPhase(journey.journeyState);
+  const level = getLevel(journey.journeyState);
 
-  const motivation = (() => {
-    switch (phase) {
-      case "EXAM_OPEN":
-        return "It's go time. Give it everything — this is your moment. 🔥";
-      case "POST_ASSESSMENT":
-        return "Assessment cleared. Finish your tasks and keep the momentum rolling. 💪";
-      case "PLACED":
-        return "You did it. Take it in — you've earned this. 🎉";
-      case "REATTEMPT_WAITING":
-      case "REATTEMPT_ACTIVE":
-        return "One setback doesn't define you. Round 2 is where comebacks happen. 💥";
-      case "WILDCARD":
-        return "You're on the fast track. Big risk, bigger reward — let's go. ⚡";
-      default:
-        return days > 0
-          ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${progress.points.toLocaleString()} pts — keep stacking. 🔥`
-          : "Your next mission is loading. Time to lock in. 🔥";
-    }
-  })();
+  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level);
 
   return (
     <div className="space-y-6">
@@ -145,7 +137,9 @@ export function DashboardView({
         <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
       </div>
 
-      <Hero journey={journey} days={days} examDateLabel={examDateLabel} overallPct={progress.overallPct} points={progress.points} />
+      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
+
+      <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
 
       {phase !== "PLACED" && (
         <IrpCard className="px-4 py-5 sm:px-6 md:px-8 md:py-6">
@@ -153,9 +147,9 @@ export function DashboardView({
         </IrpCard>
       )}
 
-      {showRings(journey) && <ProgressSummary {...progress} />}
+      <ProgressSummary {...progress} />
 
-      <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
+      <ContactUs />
 
       {/* Post-assessment task cards */}
       {phase === "POST_ASSESSMENT" && (

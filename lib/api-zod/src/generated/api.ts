@@ -90,7 +90,8 @@ export const GetStudentAssessmentsResponse = zod.object({
   "codingPct": zod.number(),
   "overallScore": zod.number(),
   "overallMax": zod.number(),
-  "overallPct": zod.number()
+  "overallPct": zod.number(),
+  "hasWrittenAssessment": zod.boolean().describe('True when assessment_user_score or section scores exist — the exam was attempted.')
 }))
 })
 
@@ -115,6 +116,19 @@ export const GetStudentActivityResponse = zod.object({
   "date": zod.string(),
   "questionsAttempted": zod.number()
 }))
+})
+
+
+/**
+ * Stores a message from the student for the IRP team
+ * @summary Submit a contact us message
+ */
+export const submitContactMessageBodyMessageMax = 2000;
+
+
+
+export const SubmitContactMessageBody = zod.object({
+  "message": zod.string().min(1).max(submitContactMessageBodyMessageMax)
 })
 
 

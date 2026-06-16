@@ -9,6 +9,7 @@ import {
   academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
+  contactUsMessagesTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -123,8 +124,22 @@ function pct(score: number | null, max: number | null): number {
 
 function parseAssessmentLevel(level: string | null): number | null {
   if (!level?.trim()) return null;
-  const match = /^L?(\d)/i.exec(level.trim());
-  return match ? Number(match[1]) : null;
+  const v = level.trim();
+  const levelWord = /level\s*(\d+)/i.exec(v);
+  if (levelWord) {
+    const n = Number(levelWord[1]);
+    return n >= 1 && n <= 3 ? n : null;
+  }
+  const lPrefix = /^L(\d+)/i.exec(v);
+  if (lPrefix) {
+    const n = Number(lPrefix[1]);
+    return n >= 1 && n <= 3 ? n : null;
+  }
+  if (/^\d+$/.test(v)) {
+    const n = Number(v);
+    return n >= 1 && n <= 3 ? n : null;
+  }
+  return null;
 }
 
 async function getAssessmentResultsResponse(userId: string) {
@@ -143,6 +158,10 @@ async function getAssessmentResultsResponse(userId: string) {
       const codingMax = a.codingSectionMaxScore ?? 0;
       const overallScore = a.assessmentUserScore ?? mcqScore + codingScore;
       const overallMax = a.assessmentTotalScore ?? mcqMax + codingMax;
+      const hasWrittenAssessment =
+        a.assessmentUserScore != null ||
+        a.mcqUserSectionScore != null ||
+        a.codingUserSectionScore != null;
 
       return {
         organisationAssessmentId: a.organisationAssessmentId,
@@ -162,6 +181,7 @@ async function getAssessmentResultsResponse(userId: string) {
           a.assessmentUserScore ?? (mcqScore + codingScore || null),
           a.assessmentTotalScore ?? (mcqMax + codingMax || null),
         ),
+        hasWrittenAssessment,
         levelNumber: parseAssessmentLevel(a.level),
       };
     }),
@@ -328,6 +348,50 @@ router.get("/student/activity", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get student activity");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/student/contact", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+    if (!raw || raw.length > 2000) {
+      res.status(400).json({ error: "Message must be 1–2000 characters" });
+      return;
+    }
+
+    const student = await getStudentForUser(userId);
+    const [basic] = await db
+      .select({ userName: academyUserBasicDetailsTable.userName })
+      .from(academyUserBasicDetailsTable)
+      .where(eq(academyUserBasicDetailsTable.userId, userId))
+      .limit(1);
+
+    const displayName = isLikelyDisplayName(student?.name)
+      ? student!.name
+      : isLikelyDisplayName(basic?.userName)
+        ? basic!.userName!
+        : null;
+
+    const [row] = await db
+      .insert(contactUsMessagesTable)
+      .values({
+        academyUserId: userId,
+        studentId: student?.id ?? null,
+        userName: displayName,
+        message: raw,
+      })
+      .returning({ id: contactUsMessagesTable.id });
+
+    res.status(201).json({ ok: true, id: row.id });
+  } catch (err) {
+    req.log.error({ err }, "Failed to save contact message");
     res.status(500).json({ error: "Internal server error" });
   }
 });

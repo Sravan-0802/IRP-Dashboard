@@ -7,6 +7,8 @@
  */
 
 export * from './assessmentResult';
+export * from './contactMessageRequest';
+export * from './contactMessageResponse';
 export * from './dayActivity';
 export * from './healthStatus';
 export * from './session';

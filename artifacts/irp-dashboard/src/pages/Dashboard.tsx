@@ -153,7 +153,9 @@ export default function Dashboard() {
               />
             )}
             {page === "learning" && <MyLearning subjects={subjects} level={getLevel(journey.journeyState)} />}
-            {page === "assessments" && <AssessmentsHub level={getLevel(journey.journeyState)} />}
+            {page === "assessments" && (
+              <AssessmentsHub level={getLevel(journey.journeyState)} assessments={displayAssessments} />
+            )}
             {page === "slot" && <BookSlot />}
           </div>
         </main>

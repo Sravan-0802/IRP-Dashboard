@@ -140,7 +140,7 @@ export function Pill({
   );
 }
 
-export type StepStatus = "done" | "active" | "locked" | "reattempt";
+export type StepStatus = "done" | "attempted" | "active" | "locked" | "reattempt";
 
 export type StepIcon = "assessment" | "post" | "access";
 
@@ -158,6 +158,7 @@ const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string; str
 
 function connectorTone(status: StepStatus): string {
   if (status === "done") return "text-[#0ca678]";
+  if (status === "attempted") return "text-[#e67700]";
   if (status === "active" || status === "reattempt") return "text-[#3b5bdb]";
   return "text-[#dee2e6]";
 }
@@ -186,22 +187,26 @@ export function JourneyBar({ steps }: { steps: JourneyStep[] }) {
         const ring =
           step.status === "done"
             ? "border-[#0ca678] bg-[#d3f9d8] text-[#0ca678]"
-            : step.status === "active"
-              ? "border-[#3b5bdb] bg-[#3b5bdb] text-white shadow-[0_0_0_4px_rgba(59,91,219,0.15)]"
-              : step.status === "reattempt"
-                ? "border-dashed border-[#6741d9]/40 bg-[#eef2ff] text-[#6741d9]"
-                : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
+            : step.status === "attempted"
+              ? "border-[#f59f00] bg-[#fff9db] text-[#e67700]"
+              : step.status === "active"
+                ? "border-[#3b5bdb] bg-[#3b5bdb] text-white shadow-[0_0_0_4px_rgba(59,91,219,0.15)]"
+                : step.status === "reattempt"
+                  ? "border-dashed border-[#6741d9]/40 bg-[#eef2ff] text-[#6741d9]"
+                  : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
         const badge =
           step.status === "done"
             ? <Pill tone="green">Completed</Pill>
-            : step.status === "active"
-              ? <Pill tone="purple">In Progress</Pill>
-              : step.status === "reattempt"
-                ? <Pill tone="purple">Reattempt</Pill>
-                : <Pill tone="grey">Locked</Pill>;
+            : step.status === "attempted"
+              ? <Pill tone="amber">Attempted</Pill>
+              : step.status === "active"
+                ? <Pill tone="purple">In Progress</Pill>
+                : step.status === "reattempt"
+                  ? <Pill tone="purple">Reattempt</Pill>
+                  : <Pill tone="grey">Locked</Pill>;
 
         const StepIcon =
-          step.status === "done"
+          step.status === "done" || step.status === "attempted"
             ? CheckCircle2
             : step.status === "locked"
               ? Lock

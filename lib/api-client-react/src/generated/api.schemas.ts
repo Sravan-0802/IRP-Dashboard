@@ -70,6 +70,8 @@ export interface AssessmentResult {
   overallScore: number;
   overallMax: number;
   overallPct: number;
+  /** True when assessment_user_score or section scores exist — the exam was attempted. */
+  hasWrittenAssessment: boolean;
 }
 
 export interface StudentAssessments {
@@ -97,5 +99,18 @@ export interface StudentActivity {
   totalCodingSolved: number;
   weeklyActivity: DayActivity[];
   recentSessions: Session[];
+}
+
+export interface ContactMessageRequest {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  message: string;
+}
+
+export interface ContactMessageResponse {
+  ok: boolean;
+  id: number;
 }
 

@@ -29,3 +29,8 @@ export function areAssignmentResultsVisible(now = new Date()): boolean {
 export function isProgressVisible(now = new Date()): boolean {
   return now >= PROGRESS_UNLOCK_DATE;
 }
+
+/** True after the assessment day window has ended (from 15 June 2026 onward). */
+export function isExamWindowClosed(now = new Date()): boolean {
+  return now >= EXAM_DATE && !isAssessmentLive(now);
+}

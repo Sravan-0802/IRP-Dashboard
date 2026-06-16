@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
 import { LEVEL_META } from "@/lib/journey";
+import {
+  hasClearedAssessment,
+  hasWrittenAssessment,
+} from "@/lib/assessment";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -78,6 +83,29 @@ function loadStatuses(): StatusMap {
 
 function saveStatuses(map: StatusMap) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+
+function deriveAssessmentState(
+  config: AssessmentConfig,
+  assessments: AssessmentResult[],
+  level: 1 | 2 | 3,
+  local: { status: AssessmentStatus; slot?: string },
+): { status: AssessmentStatus; slot?: string } {
+  const written = hasWrittenAssessment(assessments, level);
+  const cleared = hasClearedAssessment(assessments, level);
+  const defaultSlot = config.slots?.[0]?.id;
+
+  if (config.kind === "main") {
+    if (cleared) return { status: "done", slot: local.slot ?? defaultSlot };
+    if (written) return { status: "in-progress", slot: local.slot ?? defaultSlot };
+    return local;
+  }
+
+  if (written || cleared) {
+    return { status: "done", slot: local.slot ?? defaultSlot };
+  }
+
+  return local;
 }
 
 function statusPill(status: AssessmentStatus, _kind: "mock" | "main") {
@@ -204,10 +232,16 @@ function AssessmentCard({
   );
 }
 
-export function AssessmentsHub({ level = 1 }: { level?: 1 | 2 | 3 }) {
+export function AssessmentsHub({
+  level = 1,
+  assessments = [],
+}: {
+  level?: 1 | 2 | 3;
+  assessments?: AssessmentResult[];
+}) {
   const [statuses, setStatuses] = useState<StatusMap>(loadStatuses);
 
-  const assessments = ASSESSMENTS_BY_LEVEL[level];
+  const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
@@ -227,7 +261,7 @@ export function AssessmentsHub({ level = 1 }: { level?: 1 | 2 | 3 }) {
         </p>
       </div>
 
-      {assessments.length === 0 ? (
+      {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
             <ClipboardList className="h-5 w-5" />
@@ -239,11 +273,11 @@ export function AssessmentsHub({ level = 1 }: { level?: 1 | 2 | 3 }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {assessments.map((a) => (
+          {assessmentsForLevel.map((a) => (
             <AssessmentCard
               key={a.id}
               config={a}
-              state={statuses[a.id] ?? { status: "todo" }}
+              state={deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" })}
               onUpdate={(next) => update(a.id, next)}
             />
           ))}
