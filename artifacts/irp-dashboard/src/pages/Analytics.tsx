@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -8,14 +8,25 @@ type AnalyticsMetric = {
   uniqueUsers: number;
 };
 
+type AnalyticsUser = {
+  academyUserId: string;
+  userName: string | null;
+  totalEvents: number;
+  firstSeen: string | null;
+  lastSeen: string | null;
+  metrics: Array<{ eventType: string; clicks: number }>;
+};
+
 type AnalyticsSummary = {
   trackingSince: string | null;
   generatedAt: string;
+  totalVisitors: number;
   events: AnalyticsMetric[];
   daily: Array<{
     date: string;
     metrics: Array<{ eventType: string; clicks: number; users: number }>;
   }>;
+  users: AnalyticsUser[];
 };
 
 const STORAGE_KEY = "irp_analytics_admin_key";
@@ -106,6 +117,17 @@ export default function AnalyticsPage() {
     }));
   }, [data]);
 
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyId = useCallback((id: string) => {
+    void navigator.clipboard?.writeText(id).then(
+      () => {
+        setCopiedId(id);
+        window.setTimeout(() => setCopiedId(null), 1500);
+      },
+      () => {},
+    );
+  }, []);
+
   return (
     <div className="min-h-[100dvh] bg-[#f6f7fb] px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -185,6 +207,86 @@ export default function AnalyticsPage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            <div className="irp-card p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <UserRound className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    Visitors{" "}
+                    <span className="text-sm font-semibold text-[#6e6a8a]">
+                      ({data.totalVisitors})
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-[#6e6a8a]">
+                  Every user who opened the dashboard and what they did
+                </p>
+              </div>
+
+              {data.users.length === 0 ? (
+                <p className="text-sm text-[#6e6a8a]">
+                  No visitors recorded yet. User IDs will appear here as students open the dashboard.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[rgba(103,65,217,0.12)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                        <th className="px-2 py-2">Visitor</th>
+                        {dailyColumns.map((col) => (
+                          <th key={col.eventType} className="px-2 py-2 text-center">
+                            {col.label}
+                          </th>
+                        ))}
+                        <th className="px-2 py-2 text-center">Total</th>
+                        <th className="px-2 py-2">Last active</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.users.map((u) => (
+                        <tr
+                          key={u.academyUserId}
+                          className="border-b border-[rgba(103,65,217,0.06)] align-top"
+                        >
+                          <td className="px-2 py-2.5">
+                            <div className="font-semibold text-[#0d1117]">
+                              {u.userName?.trim() || "Unnamed student"}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyId(u.academyUserId)}
+                              title={`Click to copy: ${u.academyUserId}`}
+                              className="mt-0.5 font-mono text-[11px] text-[#6e6a8a] transition-colors hover:text-[#6741d9]"
+                            >
+                              {copiedId === u.academyUserId ? "Copied!" : u.academyUserId}
+                            </button>
+                          </td>
+                          {dailyColumns.map((col) => {
+                            const metric = u.metrics.find((m) => m.eventType === col.eventType);
+                            const value = metric?.clicks ?? 0;
+                            return (
+                              <td
+                                key={`${u.academyUserId}-${col.eventType}`}
+                                className={`px-2 py-2.5 text-center ${
+                                  value > 0 ? "font-semibold text-[#0d1117]" : "text-[#c2c0d6]"
+                                }`}
+                              >
+                                {value}
+                              </td>
+                            );
+                          })}
+                          <td className="px-2 py-2.5 text-center font-bold text-[#3b5bdb]">
+                            {u.totalEvents}
+                          </td>
+                          <td className="px-2 py-2.5 text-[#6e6a8a]">{formatDate(u.lastSeen)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="irp-card p-5">

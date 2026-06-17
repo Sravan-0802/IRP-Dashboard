@@ -5,3 +5,4 @@
 - [L1-only journey gate](l1-only-gate.md) — temporary read-side clamp forces all journeys to L1; getLevel defaults to 1 not 3; remove + normalize prod DB when L2/L3 launch.
 - [Drizzle pkey retry detection](drizzle-pkey-retry.md) — Drizzle wraps PG errors so err.message is "Failed query:…"; check err.cause.message too for constraint names like students_pkey.
 - [Dev seeding flow](dev-seeding-flow.md) — to run locally: curl /api/auth/me to find ACADEMY_USER_ID, then seed academy_user_basic_details + academy_user_assessment_details for that UUID.
+- [Analytics admin-key auth](analytics-admin-key-auth.md) — `dev` key fails locally because TOKEN_SECRET is set; secret values are redacted, so test admin routes via SQL not curl.

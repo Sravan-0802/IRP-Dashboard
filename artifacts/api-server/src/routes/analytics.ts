@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable } from "@workspace/db";
-import { sql, count, countDistinct, inArray } from "drizzle-orm";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable } from "@workspace/db";
+import { sql, count, countDistinct, inArray, min, max } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 
 const router = Router();
@@ -84,6 +84,82 @@ router.get("/analytics/dashboard", async (req, res) => {
         })),
       }));
 
+    // Per-user breakdown: who came, and what they did.
+    const perUserRows = await db
+      .select({
+        academyUserId: dashboardAnalyticsEventsTable.academyUserId,
+        eventType: dashboardAnalyticsEventsTable.eventType,
+        clicks: count(),
+        firstSeen: min(dashboardAnalyticsEventsTable.createdAt),
+        lastSeen: max(dashboardAnalyticsEventsTable.createdAt),
+      })
+      .from(dashboardAnalyticsEventsTable)
+      .where(inArray(dashboardAnalyticsEventsTable.eventType, TRACKED_EVENTS))
+      .groupBy(
+        dashboardAnalyticsEventsTable.academyUserId,
+        dashboardAnalyticsEventsTable.eventType,
+      );
+
+    const userIds = [...new Set(perUserRows.map((r) => r.academyUserId))];
+    const nameRows = userIds.length
+      ? await db
+          .select({
+            userId: academyUserBasicDetailsTable.userId,
+            userName: academyUserBasicDetailsTable.userName,
+          })
+          .from(academyUserBasicDetailsTable)
+          .where(inArray(academyUserBasicDetailsTable.userId, userIds))
+      : [];
+    const nameMap = new Map(nameRows.map((r) => [r.userId, r.userName]));
+
+    const toIso = (v: unknown): string | null =>
+      v ? new Date(v as string | Date).toISOString() : null;
+
+    type PerUser = {
+      academyUserId: string;
+      userName: string | null;
+      totalEvents: number;
+      firstSeen: string | null;
+      lastSeen: string | null;
+      counts: Record<string, number>;
+    };
+    const usersMap = new Map<string, PerUser>();
+    for (const row of perUserRows) {
+      let u = usersMap.get(row.academyUserId);
+      if (!u) {
+        u = {
+          academyUserId: row.academyUserId,
+          userName: nameMap.get(row.academyUserId) ?? null,
+          totalEvents: 0,
+          firstSeen: null,
+          lastSeen: null,
+          counts: {},
+        };
+        usersMap.set(row.academyUserId, u);
+      }
+      const clicks = Number(row.clicks ?? 0);
+      u.counts[row.eventType] = clicks;
+      u.totalEvents += clicks;
+      const fs = toIso(row.firstSeen);
+      const ls = toIso(row.lastSeen);
+      if (fs && (!u.firstSeen || fs < u.firstSeen)) u.firstSeen = fs;
+      if (ls && (!u.lastSeen || ls > u.lastSeen)) u.lastSeen = ls;
+    }
+
+    const users = [...usersMap.values()]
+      .map((u) => ({
+        academyUserId: u.academyUserId,
+        userName: u.userName,
+        totalEvents: u.totalEvents,
+        firstSeen: u.firstSeen,
+        lastSeen: u.lastSeen,
+        metrics: TRACKED_EVENTS.map((eventType) => ({
+          eventType,
+          clicks: u.counts[eventType] ?? 0,
+        })),
+      }))
+      .sort((a, b) => (b.lastSeen ?? "").localeCompare(a.lastSeen ?? ""));
+
     const [firstEvent] = await db
       .select({ createdAt: dashboardAnalyticsEventsTable.createdAt })
       .from(dashboardAnalyticsEventsTable)
@@ -93,8 +169,10 @@ router.get("/analytics/dashboard", async (req, res) => {
     res.json({
       trackingSince: firstEvent?.createdAt?.toISOString() ?? null,
       generatedAt: new Date().toISOString(),
+      totalVisitors: users.length,
       events,
       daily,
+      users,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");
