@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -29,6 +29,14 @@ type AnalyticsFeedback = {
   submittedAt: string | null;
 };
 
+type AnalyticsContactMessage = {
+  id: string;
+  academyUserId: string;
+  userName: string | null;
+  message: string;
+  submittedAt: string | null;
+};
+
 type AnalyticsSummary = {
   trackingSince: string | null;
   generatedAt: string;
@@ -42,6 +50,8 @@ type AnalyticsSummary = {
   feedbacks: AnalyticsFeedback[];
   feedbackCount: number;
   avgRating: number | null;
+  contactMessages: AnalyticsContactMessage[];
+  contactMessageCount: number;
 };
 
 const STORAGE_KEY = "irp_analytics_admin_key";
@@ -375,6 +385,49 @@ export default function AnalyticsPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="irp-card p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    Help & Support{" "}
+                    <span className="text-sm font-semibold text-[#6e6a8a]">
+                      ({data.contactMessageCount})
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-[#6e6a8a]">Messages sent by students via the Help &amp; Support form</p>
+              </div>
+
+              {data.contactMessages.length === 0 ? (
+                <p className="text-sm text-[#6e6a8a]">
+                  No messages yet. Student messages will appear here as they reach out for help.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {data.contactMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
+                    >
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="font-semibold text-[#0d1117]">
+                            {msg.userName?.trim() || "Unnamed student"}
+                          </span>
+                          <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
+                        </div>
+                        <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
+                      </div>
+                      <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">
+                        {msg.message}
+                      </p>
                     </div>
                   ))}
                 </div>

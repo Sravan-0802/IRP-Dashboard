@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable } from "@workspace/db";
-import { sql, count, countDistinct, inArray, min, max } from "drizzle-orm";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable } from "@workspace/db";
+import { sql, count, countDistinct, inArray, min, max, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 
 const router = Router();
@@ -209,6 +209,31 @@ router.get("/analytics/dashboard", async (req, res) => {
         ? Math.round((feedbacks.reduce((s, f) => s + f.rating, 0) / feedbacks.length) * 10) / 10
         : null;
 
+    // Help & Support messages.
+    const contactRows = await db
+      .select({
+        id: contactUsMessagesTable.id,
+        academyUserId: contactUsMessagesTable.academyUserId,
+        userName: contactUsMessagesTable.userName,
+        message: contactUsMessagesTable.message,
+        createdAt: contactUsMessagesTable.createdAt,
+      })
+      .from(contactUsMessagesTable)
+      .orderBy(desc(contactUsMessagesTable.createdAt))
+      .limit(200);
+
+    const contactMessages = [...contactRows]
+      .sort((a, b) =>
+        (b.createdAt?.toISOString() ?? "").localeCompare(a.createdAt?.toISOString() ?? ""),
+      )
+      .map((r) => ({
+        id: String(r.id),
+        academyUserId: r.academyUserId,
+        userName: r.userName ?? null,
+        message: r.message,
+        submittedAt: r.createdAt ? r.createdAt.toISOString() : null,
+      }));
+
     const [firstEvent] = await db
       .select({ createdAt: dashboardAnalyticsEventsTable.createdAt })
       .from(dashboardAnalyticsEventsTable)
@@ -225,6 +250,8 @@ router.get("/analytics/dashboard", async (req, res) => {
       feedbacks,
       feedbackCount: feedbacks.length,
       avgRating,
+      contactMessages,
+      contactMessageCount: contactMessages.length,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");
