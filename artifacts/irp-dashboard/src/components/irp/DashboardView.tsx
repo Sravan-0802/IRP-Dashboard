@@ -145,7 +145,7 @@ export function DashboardView({
     setDisclaimerDismissed(true);
   };
 
-  const showDisclaimer = phase === "POST_ASSESSMENT" && !disclaimerDismissed;
+  const showDisclaimer = !disclaimerDismissed;
 
   return (
     <div className="space-y-6">
