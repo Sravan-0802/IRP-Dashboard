@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -17,6 +17,18 @@ type AnalyticsUser = {
   metrics: Array<{ eventType: string; clicks: number }>;
 };
 
+type FeedbackQA = { question: string; answer: string };
+
+type AnalyticsFeedback = {
+  id: string;
+  academyUserId: string;
+  userName: string | null;
+  rating: number;
+  ratingLabel: string;
+  responses: FeedbackQA[];
+  submittedAt: string | null;
+};
+
 type AnalyticsSummary = {
   trackingSince: string | null;
   generatedAt: string;
@@ -27,6 +39,9 @@ type AnalyticsSummary = {
     metrics: Array<{ eventType: string; clicks: number; users: number }>;
   }>;
   users: AnalyticsUser[];
+  feedbacks: AnalyticsFeedback[];
+  feedbackCount: number;
+  avgRating: number | null;
 };
 
 const STORAGE_KEY = "irp_analytics_admin_key";
@@ -285,6 +300,83 @@ export default function AnalyticsPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+
+            <div className="irp-card p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    Student Feedback{" "}
+                    <span className="text-sm font-semibold text-[#6e6a8a]">
+                      ({data.feedbackCount})
+                    </span>
+                  </h2>
+                </div>
+                {data.avgRating !== null && (
+                  <div className="flex items-center gap-1.5 rounded-full border border-[rgba(103,65,217,0.15)] bg-[#f3f0ff] px-3 py-1">
+                    <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                    <span className="text-sm font-bold text-[#0d1117]">{data.avgRating.toFixed(1)}</span>
+                    <span className="text-xs text-[#6e6a8a]">avg rating</span>
+                  </div>
+                )}
+              </div>
+
+              {data.feedbacks.length === 0 ? (
+                <p className="text-sm text-[#6e6a8a]">
+                  No feedback submitted yet. Responses will appear here as students rate the dashboard.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {data.feedbacks.map((fb) => (
+                    <div
+                      key={fb.id}
+                      className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[#0d1117]">
+                              {fb.userName?.trim() || "Unnamed student"}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                              {fb.ratingLabel}
+                            </span>
+                          </div>
+                          <p className="font-mono text-[11px] text-[#6e6a8a]">{fb.academyUserId}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`h-4 w-4 ${
+                                  s <= fb.rating
+                                    ? "fill-[#f59e0b] text-[#f59e0b]"
+                                    : "fill-none text-[#d1d5db]"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs text-[#6e6a8a]">{formatDate(fb.submittedAt)}</span>
+                        </div>
+                      </div>
+                      {fb.responses.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {fb.responses.map((qa, i) => (
+                            <div key={i} className="rounded-lg bg-white p-3 border border-[rgba(103,65,217,0.08)]">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-[#6741d9]/70">
+                                {qa.question}
+                              </p>
+                              <p className="mt-1 text-sm text-[#0d1117]">{qa.answer}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

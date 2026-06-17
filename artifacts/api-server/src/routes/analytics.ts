@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable } from "@workspace/db";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable } from "@workspace/db";
 import { sql, count, countDistinct, inArray, min, max } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 
@@ -160,6 +160,55 @@ router.get("/analytics/dashboard", async (req, res) => {
       }))
       .sort((a, b) => (b.lastSeen ?? "").localeCompare(a.lastSeen ?? ""));
 
+    // Feedback submissions with user names joined.
+    type FeedbackRow = {
+      id: string;
+      academy_user_id: string;
+      user_name: string | null;
+      rating: string;
+      rating_label: string;
+      responses: string;
+      created_at: string;
+    };
+    const feedbackResult = await db.execute<FeedbackRow>(sql`
+      SELECT
+        f.id::text,
+        f.academy_user_id,
+        b.user_name,
+        f.rating::text,
+        f.rating_label,
+        f.responses,
+        f.created_at
+      FROM dashboard_feedback f
+      LEFT JOIN academy_user_basic_details b ON b.user_id = f.academy_user_id
+      ORDER BY f.created_at DESC
+      LIMIT 200
+    `);
+
+    type FeedbackQA = { question: string; answer: string };
+    const feedbacks = feedbackResult.rows.map((r) => {
+      let responses: FeedbackQA[] = [];
+      try {
+        responses = JSON.parse(r.responses) as FeedbackQA[];
+      } catch {
+        // malformed JSON — skip responses
+      }
+      return {
+        id: r.id,
+        academyUserId: r.academy_user_id,
+        userName: r.user_name ?? null,
+        rating: Number(r.rating),
+        ratingLabel: r.rating_label,
+        responses,
+        submittedAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+      };
+    });
+
+    const avgRating =
+      feedbacks.length > 0
+        ? Math.round((feedbacks.reduce((s, f) => s + f.rating, 0) / feedbacks.length) * 10) / 10
+        : null;
+
     const [firstEvent] = await db
       .select({ createdAt: dashboardAnalyticsEventsTable.createdAt })
       .from(dashboardAnalyticsEventsTable)
@@ -173,6 +222,9 @@ router.get("/analytics/dashboard", async (req, res) => {
       events,
       daily,
       users,
+      feedbacks,
+      feedbackCount: feedbacks.length,
+      avgRating,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");
