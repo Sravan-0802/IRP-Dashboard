@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -97,6 +97,51 @@ function formatDate(iso: string | null): string {
   });
 }
 
+function downloadCsv(filename: string, rows: string[][]): void {
+  const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = rows.map((r) => r.map(escape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const PAGE_SIZE = 10;
+
+function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+  return (
+    <div className="mt-4 flex items-center justify-between gap-2">
+      <p className="text-xs text-[#6e6a8a]">
+        Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(103,65,217,0.15)] text-[#6741d9] disabled:opacity-30 hover:bg-[#f3f0ff]"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="px-2 text-xs font-semibold text-[#0d1117]">{page} / {totalPages}</span>
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[rgba(103,65,217,0.15)] text-[#6741d9] disabled:opacity-30 hover:bg-[#f3f0ff]"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [apiKey, setApiKey] = useState(captureKeyFromUrl);
   const [inputKey, setInputKey] = useState(apiKey);
@@ -140,6 +185,16 @@ export default function AnalyticsPage() {
       eventType: e.eventType,
       label: e.label.replace(" clicks", "").replace(" opens", "").replace("Users who visited the dashboard", "Visits"),
     }));
+  }, [data]);
+
+  const [visitorsPage, setVisitorsPage] = useState(1);
+  const [feedbackPage, setFeedbackPage] = useState(1);
+  const [supportPage, setSupportPage] = useState(1);
+
+  useEffect(() => {
+    setVisitorsPage(1);
+    setFeedbackPage(1);
+    setSupportPage(1);
   }, [data]);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -245,9 +300,28 @@ export default function AnalyticsPage() {
                     </span>
                   </h2>
                 </div>
-                <p className="text-xs text-[#6e6a8a]">
-                  Every user who opened the dashboard and what they did
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-[#6e6a8a]">Every user who opened the dashboard and what they did</p>
+                  {data.users.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const headers = ["Name", "Academy User ID", ...dailyColumns.map((c) => c.label), "Total Events", "Last Active"];
+                        const rows = data.users.map((u) => [
+                          u.userName?.trim() || "Unnamed student",
+                          u.academyUserId,
+                          ...dailyColumns.map((col) => String(u.metrics.find((m) => m.eventType === col.eventType)?.clicks ?? 0)),
+                          String(u.totalEvents),
+                          formatDate(u.lastSeen),
+                        ]);
+                        downloadCsv("irp-visitors.csv", [headers, ...rows]);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download CSV
+                    </button>
+                  )}
+                </div>
               </div>
 
               {data.users.length === 0 ? (
@@ -255,62 +329,65 @@ export default function AnalyticsPage() {
                   No visitors recorded yet. User IDs will appear here as students open the dashboard.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-[rgba(103,65,217,0.12)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                        <th className="px-2 py-2">Visitor</th>
-                        {dailyColumns.map((col) => (
-                          <th key={col.eventType} className="px-2 py-2 text-center">
-                            {col.label}
-                          </th>
-                        ))}
-                        <th className="px-2 py-2 text-center">Total</th>
-                        <th className="px-2 py-2">Last active</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.users.map((u) => (
-                        <tr
-                          key={u.academyUserId}
-                          className="border-b border-[rgba(103,65,217,0.06)] align-top"
-                        >
-                          <td className="px-2 py-2.5">
-                            <div className="font-semibold text-[#0d1117]">
-                              {u.userName?.trim() || "Unnamed student"}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => copyId(u.academyUserId)}
-                              title={`Click to copy: ${u.academyUserId}`}
-                              className="mt-0.5 font-mono text-[11px] text-[#6e6a8a] transition-colors hover:text-[#6741d9]"
-                            >
-                              {copiedId === u.academyUserId ? "Copied!" : u.academyUserId}
-                            </button>
-                          </td>
-                          {dailyColumns.map((col) => {
-                            const metric = u.metrics.find((m) => m.eventType === col.eventType);
-                            const value = metric?.clicks ?? 0;
-                            return (
-                              <td
-                                key={`${u.academyUserId}-${col.eventType}`}
-                                className={`px-2 py-2.5 text-center ${
-                                  value > 0 ? "font-semibold text-[#0d1117]" : "text-[#c2c0d6]"
-                                }`}
-                              >
-                                {value}
-                              </td>
-                            );
-                          })}
-                          <td className="px-2 py-2.5 text-center font-bold text-[#3b5bdb]">
-                            {u.totalEvents}
-                          </td>
-                          <td className="px-2 py-2.5 text-[#6e6a8a]">{formatDate(u.lastSeen)}</td>
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-[rgba(103,65,217,0.12)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                          <th className="px-2 py-2">Visitor</th>
+                          {dailyColumns.map((col) => (
+                            <th key={col.eventType} className="px-2 py-2 text-center">
+                              {col.label}
+                            </th>
+                          ))}
+                          <th className="px-2 py-2 text-center">Total</th>
+                          <th className="px-2 py-2">Last active</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {data.users.slice((visitorsPage - 1) * PAGE_SIZE, visitorsPage * PAGE_SIZE).map((u) => (
+                          <tr
+                            key={u.academyUserId}
+                            className="border-b border-[rgba(103,65,217,0.06)] align-top"
+                          >
+                            <td className="px-2 py-2.5">
+                              <div className="font-semibold text-[#0d1117]">
+                                {u.userName?.trim() || "Unnamed student"}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyId(u.academyUserId)}
+                                title={`Click to copy: ${u.academyUserId}`}
+                                className="mt-0.5 font-mono text-[11px] text-[#6e6a8a] transition-colors hover:text-[#6741d9]"
+                              >
+                                {copiedId === u.academyUserId ? "Copied!" : u.academyUserId}
+                              </button>
+                            </td>
+                            {dailyColumns.map((col) => {
+                              const metric = u.metrics.find((m) => m.eventType === col.eventType);
+                              const value = metric?.clicks ?? 0;
+                              return (
+                                <td
+                                  key={`${u.academyUserId}-${col.eventType}`}
+                                  className={`px-2 py-2.5 text-center ${
+                                    value > 0 ? "font-semibold text-[#0d1117]" : "text-[#c2c0d6]"
+                                  }`}
+                                >
+                                  {value}
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-2.5 text-center font-bold text-[#3b5bdb]">
+                              {u.totalEvents}
+                            </td>
+                            <td className="px-2 py-2.5 text-[#6e6a8a]">{formatDate(u.lastSeen)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination page={visitorsPage} total={data.users.length} onChange={setVisitorsPage} />
+                </>
               )}
             </div>
 
@@ -325,13 +402,35 @@ export default function AnalyticsPage() {
                     </span>
                   </h2>
                 </div>
-                {data.avgRating !== null && (
-                  <div className="flex items-center gap-1.5 rounded-full border border-[rgba(103,65,217,0.15)] bg-[#f3f0ff] px-3 py-1">
-                    <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
-                    <span className="text-sm font-bold text-[#0d1117]">{data.avgRating.toFixed(1)}</span>
-                    <span className="text-xs text-[#6e6a8a]">avg rating</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  {data.avgRating !== null && (
+                    <div className="flex items-center gap-1.5 rounded-full border border-[rgba(103,65,217,0.15)] bg-[#f3f0ff] px-3 py-1">
+                      <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                      <span className="text-sm font-bold text-[#0d1117]">{data.avgRating.toFixed(1)}</span>
+                      <span className="text-xs text-[#6e6a8a]">avg rating</span>
+                    </div>
+                  )}
+                  {data.feedbacks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const headers = ["Name", "Academy User ID", "Rating", "Rating Label", "Q&A", "Submitted At"];
+                        const rows = data.feedbacks.map((fb) => [
+                          fb.userName?.trim() || "Unnamed student",
+                          fb.academyUserId,
+                          String(fb.rating),
+                          fb.ratingLabel,
+                          fb.responses.map((r) => `${r.question}: ${r.answer}`).join(" | "),
+                          formatDate(fb.submittedAt),
+                        ]);
+                        downloadCsv("irp-feedback.csv", [headers, ...rows]);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download CSV
+                    </button>
+                  )}
+                </div>
               </div>
 
               {data.feedbacks.length === 0 ? (
@@ -339,55 +438,58 @@ export default function AnalyticsPage() {
                   No feedback submitted yet. Responses will appear here as students rate the dashboard.
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {data.feedbacks.map((fb) => (
-                    <div
-                      key={fb.id}
-                      className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[#0d1117]">
-                              {fb.userName?.trim() || "Unnamed student"}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                              {fb.ratingLabel}
-                            </span>
+                <>
+                  <div className="space-y-4">
+                    {data.feedbacks.slice((feedbackPage - 1) * PAGE_SIZE, feedbackPage * PAGE_SIZE).map((fb) => (
+                      <div
+                        key={fb.id}
+                        className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[#0d1117]">
+                                {fb.userName?.trim() || "Unnamed student"}
+                              </span>
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                                {fb.ratingLabel}
+                              </span>
+                            </div>
+                            <p className="font-mono text-[11px] text-[#6e6a8a]">{fb.academyUserId}</p>
                           </div>
-                          <p className="font-mono text-[11px] text-[#6e6a8a]">{fb.academyUserId}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`h-4 w-4 ${
+                                    s <= fb.rating
+                                      ? "fill-[#f59e0b] text-[#f59e0b]"
+                                      : "fill-none text-[#d1d5db]"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-[#6e6a8a]">{formatDate(fb.submittedAt)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`h-4 w-4 ${
-                                  s <= fb.rating
-                                    ? "fill-[#f59e0b] text-[#f59e0b]"
-                                    : "fill-none text-[#d1d5db]"
-                                }`}
-                              />
+                        {fb.responses.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {fb.responses.map((qa, i) => (
+                              <div key={i} className="rounded-lg bg-white p-3 border border-[rgba(103,65,217,0.08)]">
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-[#6741d9]/70">
+                                  {qa.question}
+                                </p>
+                                <p className="mt-1 text-sm text-[#0d1117]">{qa.answer}</p>
+                              </div>
                             ))}
                           </div>
-                          <span className="text-xs text-[#6e6a8a]">{formatDate(fb.submittedAt)}</span>
-                        </div>
+                        )}
                       </div>
-                      {fb.responses.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {fb.responses.map((qa, i) => (
-                            <div key={i} className="rounded-lg bg-white p-3 border border-[rgba(103,65,217,0.08)]">
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-[#6741d9]/70">
-                                {qa.question}
-                              </p>
-                              <p className="mt-1 text-sm text-[#0d1117]">{qa.answer}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  <Pagination page={feedbackPage} total={data.feedbacks.length} onChange={setFeedbackPage} />
+                </>
               )}
             </div>
 
@@ -402,7 +504,27 @@ export default function AnalyticsPage() {
                     </span>
                   </h2>
                 </div>
-                <p className="text-xs text-[#6e6a8a]">Messages sent by students via the Help &amp; Support form</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-[#6e6a8a]">Messages sent by students via the Help &amp; Support form</p>
+                  {data.contactMessages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const headers = ["Name", "Academy User ID", "Message", "Submitted At"];
+                        const rows = data.contactMessages.map((msg) => [
+                          msg.userName?.trim() || "Unnamed student",
+                          msg.academyUserId,
+                          msg.message,
+                          formatDate(msg.submittedAt),
+                        ]);
+                        downloadCsv("irp-support.csv", [headers, ...rows]);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download CSV
+                    </button>
+                  )}
+                </div>
               </div>
 
               {data.contactMessages.length === 0 ? (
@@ -410,27 +532,30 @@ export default function AnalyticsPage() {
                   No messages yet. Student messages will appear here as they reach out for help.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {data.contactMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
-                    >
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <span className="font-semibold text-[#0d1117]">
-                            {msg.userName?.trim() || "Unnamed student"}
-                          </span>
-                          <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
+                <>
+                  <div className="space-y-3">
+                    {data.contactMessages.slice((supportPage - 1) * PAGE_SIZE, supportPage * PAGE_SIZE).map((msg) => (
+                      <div
+                        key={msg.id}
+                        className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
+                      >
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <span className="font-semibold text-[#0d1117]">
+                              {msg.userName?.trim() || "Unnamed student"}
+                            </span>
+                            <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
+                          </div>
+                          <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
                         </div>
-                        <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
+                        <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">
+                          {msg.message}
+                        </p>
                       </div>
-                      <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">
-                        {msg.message}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  <Pagination page={supportPage} total={data.contactMessages.length} onChange={setSupportPage} />
+                </>
               )}
             </div>
 
