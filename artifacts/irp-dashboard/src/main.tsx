@@ -12,7 +12,9 @@ import "./index.css";
 // the backend can re-verify it and resolve the current user.
 captureAuthTokenFromUrl();
 
-if (ensureAuthenticated()) {
+const isAnalyticsPage = window.location.pathname.startsWith("/analytics");
+
+if (isAnalyticsPage || ensureAuthenticated()) {
   setAuthTokenGetter(() => getAuthToken());
   createRoot(document.getElementById("root")!).render(<App />);
 }
