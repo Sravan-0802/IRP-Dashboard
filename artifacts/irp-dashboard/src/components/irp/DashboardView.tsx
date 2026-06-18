@@ -1,11 +1,8 @@
-import { useState } from "react";
 import {
   Brain,
   Code2,
   Mic,
   Zap,
-  X,
-  AlertTriangle,
 } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
@@ -136,43 +133,8 @@ export function DashboardView({
 
   const motivation = assessmentMotivation(phase, days, progress.points, assessments, level);
 
-  const DISCLAIMER_KEY = "irp_disclaimer_dismissed";
-  const [disclaimerDismissed, setDisclaimerDismissed] = useState(() => {
-    try { return sessionStorage.getItem(DISCLAIMER_KEY) === "1"; } catch { return false; }
-  });
-  const dismissDisclaimer = () => {
-    try { sessionStorage.setItem(DISCLAIMER_KEY, "1"); } catch { /* ignore */ }
-    setDisclaimerDismissed(true);
-  };
-
-  const showDisclaimer = !disclaimerDismissed;
-
   return (
     <div className="space-y-6">
-      {showDisclaimer && (
-        <div className="animate-pop-in relative flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 pr-10 sm:px-5">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-          <div>
-            <p className="text-sm font-bold text-amber-900">Platform Notice</p>
-            <p className="mt-0.5 text-sm text-amber-800">
-              We are facing some product issues with our platform.{" "}
-              <span className="font-semibold">Your attempt won&apos;t be missed!</span>{" "}
-              We will ensure that you get a chance to attempt your{" "}
-              <span className="font-semibold">FE Project</span>.{" "}
-              Thank you for your patience!
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={dismissDisclaimer}
-            aria-label="Dismiss notice"
-            className="absolute right-3 top-3 rounded-lg p-1 text-amber-500 transition-colors hover:bg-amber-100 hover:text-amber-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       <div className="animate-pop-in">
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
           Welcome back, {firstName}! <span className="inline-block animate-float-soft">👋</span>
