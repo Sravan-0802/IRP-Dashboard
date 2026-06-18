@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardList, CalendarClock, Settings, Zap, Mail } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -24,7 +24,6 @@ export function SidebarContent({
   journey,
   active,
   onNavigate,
-  onOpenSettings,
   onOpenFeedback,
   onOpenContact,
 }: {
@@ -33,7 +32,6 @@ export function SidebarContent({
   journey: Journey;
   active: PageKey;
   onNavigate: (key: PageKey) => void;
-  onOpenSettings: () => void;
   onOpenFeedback: () => void;
   onOpenContact: () => void;
 }) {
@@ -100,13 +98,6 @@ export function SidebarContent({
           className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
         >
           <Mail className="h-4 w-4" /> Help & Support
-        </button>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-colors hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117] focus:outline-none"
-        >
-          <Settings className="h-4 w-4" /> Settings
         </button>
         <FeedbackButton onClick={onOpenFeedback} />
       </div>

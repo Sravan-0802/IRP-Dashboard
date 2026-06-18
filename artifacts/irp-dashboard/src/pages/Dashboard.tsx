@@ -141,7 +141,6 @@ export default function Dashboard() {
           journey={journey}
           active={page}
           onNavigate={navigate}
-          onOpenSettings={openSettings}
           onOpenFeedback={openFeedback}
           onOpenContact={openContactUs}
         />
@@ -161,7 +160,6 @@ export default function Dashboard() {
               journey={journey}
               active={page}
               onNavigate={(k) => { navigate(k); setMobileOpen(false); }}
-              onOpenSettings={() => { setMobileOpen(false); openSettings(); }}
               onOpenFeedback={() => { setMobileOpen(false); openFeedback(); }}
               onOpenContact={() => { openContactUs(); }}
             />
