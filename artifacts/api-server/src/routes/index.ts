@@ -6,6 +6,7 @@ import authRouter from "./auth";
 import syncRouter from "./sync";
 import academyRouter from "./academy";
 import analyticsRouter from "./analytics";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(authRouter);
 router.use(syncRouter);
 router.use(academyRouter);
 router.use(analyticsRouter);
+router.use(adminRouter);
 
 export default router;
