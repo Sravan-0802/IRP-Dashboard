@@ -2,11 +2,20 @@ import { useState } from "react";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
-import { LEVEL_META } from "@/lib/journey";
+import { L1AssessmentBanner } from "@/components/irp/L1AssessmentBanner";
+import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
+import { FeProjectCallout } from "@/components/irp/FeProjectCallout";
+import { LEVEL_META, type Journey } from "@/lib/journey";
 import {
   hasClearedAssessment,
   hasWrittenAssessment,
 } from "@/lib/assessment";
+import {
+  ASSESSMENT_STATUS_STORAGE_KEY,
+  L1_ASSESSMENT_CALENDAR_VISIBLE,
+  L1_HUSTLER_SLOTS,
+  type L1RegistrationRecord,
+} from "@/lib/l1AssessmentSchedule";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -32,12 +41,6 @@ interface AssessmentConfig {
 
 const L1_MOCK_ASSESSMENT_URL =
   "https://config.topin.tech/edit-assessment/77f9f450-9c8b-4205-aa34-78c2fd978f89";
-
-// L1 Hustler slot links — add URLs here when provided.
-const L1_HUSTLER_SLOTS: SlotConfig[] = [
-  { id: "slot-1", label: "3:00 PM – 5:00 PM" },
-  { id: "slot-2", label: "6:00 PM – 8:00 PM" },
-];
 
 function resolveAssessmentUrl(config: AssessmentConfig, slotId?: string): string | undefined {
   if (slotId && config.slots) {
@@ -69,20 +72,18 @@ const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
 
 // ── Status helpers ───────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "irp-assessment-status";
-
 type StatusMap = Record<string, { status: AssessmentStatus; slot?: string }>;
 
 function loadStatuses(): StatusMap {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as StatusMap;
+    return JSON.parse(localStorage.getItem(ASSESSMENT_STATUS_STORAGE_KEY) ?? "{}") as StatusMap;
   } catch {
     return {};
   }
 }
 
 function saveStatuses(map: StatusMap) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  localStorage.setItem(ASSESSMENT_STATUS_STORAGE_KEY, JSON.stringify(map));
 }
 
 function deriveAssessmentState(
@@ -119,14 +120,18 @@ function AssessmentCard({
   config,
   state,
   onUpdate,
+  onBook,
+  registrationClosed = false,
 }: {
   config: AssessmentConfig;
   state: { status: AssessmentStatus; slot?: string };
   onUpdate: (next: { status: AssessmentStatus; slot?: string }) => void;
+  onBook?: () => void;
+  registrationClosed?: boolean;
 }) {
   const { status, slot } = state;
   const Icon = config.kind === "mock" ? FlaskConical : Trophy;
-  const needsSlot = (config.slots?.length ?? 0) > 0;
+  const needsSlot = (config.slots?.length ?? 0) > 0 && !registrationClosed;
   const assessmentUrl = resolveAssessmentUrl(config, slot);
   const canStart = (!needsSlot || !!slot) && !!assessmentUrl;
 
@@ -195,8 +200,25 @@ function AssessmentCard({
         </p>
       )}
 
+      {registrationClosed && config.kind === "main" && status !== "done" ? (
+        <p className="mt-4 text-sm text-muted2">
+          Slot registration is closed for this cycle. The Assessment Calendar will reopen for the next
+          cycle — coming soon.
+        </p>
+      ) : null}
+
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        {status === "todo" && (
+        {status === "todo" && config.kind === "main" && needsSlot && onBook ? (
+          <button
+            type="button"
+            disabled={!slot}
+            onClick={onBook}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Book · Register for slot
+          </button>
+        ) : null}
+        {status === "todo" && config.kind !== "main" && (
           <button
             type="button"
             disabled={!canStart}
@@ -207,8 +229,21 @@ function AssessmentCard({
             {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
           </button>
         )}
+        {status === "todo" && config.kind === "main" && needsSlot && !onBook && (
+          <button
+            type="button"
+            disabled={!canStart}
+            onClick={openAssessment}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Start Assessment
+          </button>
+        )}
         {status === "todo" && needsSlot && !slot && (
-          <span className="text-xs font-semibold text-muted2">Select a slot to begin.</span>
+          <span className="text-xs font-semibold text-muted2">
+            {onBook ? "Select a slot, then click Book to register." : "Select a slot to begin."}
+          </span>
         )}
         {status === "todo" && needsSlot && slot && !assessmentUrl && (
           <span className="text-xs font-semibold text-muted2">Assessment link for this slot will be shared soon.</span>
@@ -235,11 +270,15 @@ function AssessmentCard({
 export function AssessmentsHub({
   level = 1,
   assessments = [],
+  journey,
 }: {
   level?: 1 | 2 | 3;
   assessments?: AssessmentResult[];
+  journey?: Journey;
 }) {
   const [statuses, setStatuses] = useState<StatusMap>(loadStatuses);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const hustlerState = statuses["l1-hustler"] ?? { status: "todo" as AssessmentStatus };
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
@@ -252,14 +291,28 @@ export function AssessmentsHub({
     });
   }
 
+  function handleRegistrationComplete(record: L1RegistrationRecord) {
+    if (record.slotId) {
+      update("l1-hustler", { status: "todo", slot: record.slotId });
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {level === 1 ? <L1AssessmentBanner /> : null}
+
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          Your {meta.name} assessments — attempt the mock first, then take on the real thing.
+          {L1_ASSESSMENT_CALENDAR_VISIBLE
+            ? `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`
+            : `Your ${meta.name} assessments — cleared the online exam? Complete IRP 2.0 FE Project Main II below.`}
         </p>
       </div>
+
+      {level === 1 && journey ? (
+        <FeProjectCallout journey={journey} assessments={assessments} className="mt-0" />
+      ) : null}
 
       {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
@@ -279,10 +332,23 @@ export function AssessmentsHub({
               config={a}
               state={deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" })}
               onUpdate={(next) => update(a.id, next)}
+              onBook={
+                a.id === "l1-hustler" && L1_ASSESSMENT_CALENDAR_VISIBLE
+                  ? () => setRegisterOpen(true)
+                  : undefined
+              }
+              registrationClosed={a.id === "l1-hustler" && !L1_ASSESSMENT_CALENDAR_VISIBLE}
             />
           ))}
         </div>
       )}
+
+      <L1RegistrationModal
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+        slotId={hustlerState.slot}
+        onComplete={handleRegistrationComplete}
+      />
     </div>
   );
 }

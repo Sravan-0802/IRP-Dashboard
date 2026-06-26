@@ -58,7 +58,11 @@ export function l1HustlerJourneySteps(
 
   return [
     { ...L1_STEPS[0], status: onlineStatus },
-    { ...L1_STEPS[1], status: feProjectStatus },
+    {
+      ...L1_STEPS[1],
+      status: feProjectStatus,
+      ...(feProjectStatus === "active" ? { badgeLabel: "Unlocked" } : {}),
+    },
     { ...L1_STEPS[2], status: aiMockStatus },
     { ...L1_STEPS[3], status: humanInterviewStatus },
     { ...L1_STEPS[4], status: level2AccessStatus },

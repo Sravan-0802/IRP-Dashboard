@@ -1,15 +1,15 @@
-export const EXAM_DATE = new Date("2026-06-14T00:00:00");
-export const EXAM_DATE_LABEL = "14 June 2026";
+export const EXAM_DATE = new Date("2026-07-05T00:00:00");
+export const EXAM_DATE_LABEL = "5th July 2026";
 
 /** Assignment results unlock the day after the L1 assessment. */
-export const RESULTS_UNLOCK_DATE = new Date("2026-06-15T00:00:00");
+export const RESULTS_UNLOCK_DATE = new Date("2026-07-06T00:00:00");
 
 /**
  * Course-progress and practice stats are hidden until this date.
  * Edit this date when progress data goes live.
  */
-export const PROGRESS_UNLOCK_DATE = new Date("2026-06-15T00:00:00");
-export const PROGRESS_UNLOCK_LABEL = "Monday, 15 June";
+export const PROGRESS_UNLOCK_DATE = new Date("2026-07-06T00:00:00");
+export const PROGRESS_UNLOCK_LABEL = "Monday, 6 July";
 
 /**
  * The assessment is only "live" on the assessment day itself (from the exam

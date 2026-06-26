@@ -148,6 +148,8 @@ export interface JourneyStep {
   label: string;
   status: StepStatus;
   icon: StepIcon;
+  /** Override default status pill text (e.g. "Unlocked" for FE Project). */
+  badgeLabel?: string;
 }
 
 const STEP_ICONS: Record<StepIcon, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
@@ -252,7 +254,11 @@ export function JourneyBar({
                 </Pill>
               )
               : step.status === "active"
-                ? <Pill tone="purple">In Progress</Pill>
+                ? (
+                  <Pill tone="purple">
+                    {step.badgeLabel ?? "In Progress"}
+                  </Pill>
+                )
                 : step.status === "reattempt"
                   ? <Pill tone="purple">Reattempt</Pill>
                   : <Pill tone="grey">Locked</Pill>;

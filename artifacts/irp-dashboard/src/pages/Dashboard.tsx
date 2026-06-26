@@ -190,7 +190,11 @@ export default function Dashboard() {
               />
             )}
             {page === "assessments" && (
-              <AssessmentsHub level={getLevel(journey.journeyState)} assessments={displayAssessments} />
+              <AssessmentsHub
+                level={getLevel(journey.journeyState)}
+                assessments={displayAssessments}
+                journey={journey}
+              />
             )}
             {page === "slot" && <BookSlot />}
           </div>

@@ -14,6 +14,7 @@ import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
+import { FeProjectCallout } from "./FeProjectCallout";
 
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -157,6 +158,7 @@ export function DashboardView({
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
+        <FeProjectCallout journey={journey} assessments={assessments} />
       </IrpCard>
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
