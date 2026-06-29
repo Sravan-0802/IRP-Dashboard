@@ -2,6 +2,13 @@ export const L1_REGISTRATION_CYCLE = 2;
 export const L1_REGISTRATION_LEVEL = 1;
 export const L1_REGISTRATION_ASSESSMENT_DATE = "5th July 2026";
 
+/** Slot registration closes at end of 3 July 2026 (IST). */
+export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T23:59:59+05:30");
+
+export function isL1RegistrationOpen(now = new Date()): boolean {
+  return now.getTime() <= L1_REGISTRATION_CLOSE_DATE.getTime();
+}
+
 export const L1_SLOT_LABELS: Record<string, string> = {
   "slot-1": "3:00 PM – 5:00 PM IST",
   "slot-2": "6:00 PM – 8:00 PM IST",

@@ -8,6 +8,14 @@ export const EXAM_DATE_LABEL = "5th July 2026";
 export const L1_CYCLE2_EXAM_DATE = EXAM_DATE;
 export const L1_CYCLE2_EXAM_DATE_LABEL = EXAM_DATE_LABEL;
 
+/** Slot registration closes at end of 3 July 2026 (IST). */
+export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T23:59:59+05:30");
+export const L1_REGISTRATION_CLOSE_DATE_LABEL = "3rd July 2026";
+
+export function isL1RegistrationOpen(now = new Date()): boolean {
+  return now.getTime() <= L1_REGISTRATION_CLOSE_DATE.getTime();
+}
+
 /** Assignment results unlock the day after the L1 assessment. */
 export const RESULTS_UNLOCK_DATE = new Date("2026-07-06T00:00:00");
 

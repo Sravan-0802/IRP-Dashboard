@@ -13,15 +13,16 @@ import {
 import {
   ASSESSMENT_STATUS_STORAGE_KEY,
   L1_HUSTLER_SLOTS,
+  hasSuccessfulSlotRegistration,
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
-import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
-  isCycle1Cleared,
-  shouldShowCycle2Banner,
-  shouldShowCycle2Calendar,
-} from "@/lib/l1StudentTrack";
+  L1_CYCLE2_EXAM_DATE_LABEL,
+  L1_REGISTRATION_CLOSE_DATE_LABEL,
+  isL1RegistrationOpen,
+} from "@/lib/irpDates";
+import { isCycle1Cleared, shouldShowCycle2Banner, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -320,7 +321,7 @@ export function AssessmentsHub({
   return (
     <div className="space-y-6">
       {level === 1 && shouldShowCycle2Banner(assessments) ? (
-        <L1AssessmentBanner assessments={assessments} />
+        <L1AssessmentBanner assessments={assessments} registration={registration} />
       ) : null}
 
       <div>
@@ -361,14 +362,18 @@ export function AssessmentsHub({
                   ? () => setRegisterOpen(true)
                   : undefined
               }
-              slotRegistrationSubmitted={a.id === "l1-hustler" && isSubmitted}
+              slotRegistrationSubmitted={a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)}
               registrationClosed={a.id === "l1-hustler" && !shouldShowCycle2Calendar(assessments)}
               registrationClosedNote={
                 a.id === "l1-hustler" && isCycle1Cleared(assessments)
                   ? "You cleared the 14 June assessment. Continue with IRP 2.0 FE Project Main II on the dashboard."
-                  : a.id === "l1-hustler"
-                    ? `Registration for ${L1_CYCLE2_EXAM_DATE_LABEL} — use the Assessment Calendar when open.`
-                    : undefined
+                  : a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)
+                    ? "Your slot is confirmed. Wait for the mock assessment link before exam day."
+                    : a.id === "l1-hustler" && !isL1RegistrationOpen()
+                      ? `Registration closed on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`
+                      : a.id === "l1-hustler"
+                        ? `Register by ${L1_REGISTRATION_CLOSE_DATE_LABEL} via the Assessment Calendar.`
+                        : undefined
               }
             />
           ))}

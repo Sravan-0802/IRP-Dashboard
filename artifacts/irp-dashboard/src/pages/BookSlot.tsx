@@ -11,8 +11,9 @@ import {
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
-import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
-import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
+import { L1_CYCLE2_EXAM_DATE_LABEL, isL1RegistrationOpen } from "@/lib/irpDates";
+import { isCycle1Cleared, shouldShowCycle2CalendarPage } from "@/lib/l1StudentTrack";
+import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
 import { useL1Registration } from "@/lib/useL1Registration";
 
 function AssessmentCalendarContent() {
@@ -150,21 +151,28 @@ function AssessmentCalendarContent() {
 }
 
 export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[] }) {
-  const showCalendar = shouldShowCycle2Calendar(assessments);
+  const { registration } = useL1Registration();
+  const slotBooked = hasSuccessfulSlotRegistration(registration);
+  const showCalendar = shouldShowCycle2CalendarPage(assessments, slotBooked);
   const cleared = isCycle1Cleared(assessments);
+  const registrationOpen = isL1RegistrationOpen();
 
   return (
     <div className="space-y-6">
-      <L1AssessmentBanner assessments={assessments} />
+      <L1AssessmentBanner assessments={assessments} registration={registration} />
 
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
         <p className="mt-1 text-sm text-muted2">
-          {showCalendar
+          {showCalendar && registrationOpen
             ? `Choose your slot for the assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}, then complete registration.`
-            : cleared
-              ? "You cleared the 14 June assessment and are on the post-assessment track."
-              : "Slot registration will appear here when it opens."}
+            : showCalendar && slotBooked
+              ? "Your slot is confirmed. The mock assessment link will be shared before exam day."
+              : cleared
+                ? "You cleared the 14 June assessment and are on the post-assessment track."
+                : !registrationOpen
+                  ? "Slot registration has closed."
+                  : "Slot registration will appear here when it opens."}
         </p>
       </div>
 

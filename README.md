@@ -16,10 +16,20 @@ pnpm install
 pnpm --filter @workspace/db run push
 
 # 3. Start the API server  →  http://localhost:8080
-pnpm --filter @workspace/api-server run dev
+npm run dev:api
 
 # 4. Start the dashboard UI  →  http://localhost:22020
-PORT=22020 BASE_PATH=/ pnpm --filter @workspace/irp-dashboard run dev
+npm run dev
+```
+
+Or from each package directory:
+
+```bash
+# Terminal 1 — API
+cd artifacts/api-server && npm run dev
+
+# Terminal 2 — UI
+cd artifacts/irp-dashboard && npm run dev
 ```
 
 Or use the workspace-level script from the root of the repo to start both the landing site and dashboard together:

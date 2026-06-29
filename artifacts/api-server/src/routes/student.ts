@@ -18,6 +18,7 @@ import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import {
+  isL1RegistrationOpen,
   L1_REGISTRATION_ASSESSMENT_DATE,
   L1_REGISTRATION_CYCLE,
   L1_REGISTRATION_LEVEL,
@@ -461,6 +462,7 @@ router.post("/student/feedback", async (req, res) => {
 const ANALYTICS_EVENT_TYPES = new Set([
   "dashboard_visit",
   "nav_dashboard",
+  "nav_assessments_hub",
   "nav_assessment_calendar",
   "feedback_open",
   "contact_us_click",
@@ -549,6 +551,23 @@ router.post("/student/l1-registration", async (req, res) => {
     });
     if (validationError) {
       res.status(400).json({ error: validationError });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: l1CycleRegistrationsTable.id })
+      .from(l1CycleRegistrationsTable)
+      .where(
+        and(
+          eq(l1CycleRegistrationsTable.academyUserId, userId),
+          eq(l1CycleRegistrationsTable.cycle, cycle),
+          eq(l1CycleRegistrationsTable.level, L1_REGISTRATION_LEVEL),
+        ),
+      )
+      .limit(1);
+
+    if (!isL1RegistrationOpen() && !existing) {
+      res.status(403).json({ error: "Slot registration closed on 3rd July 2026" });
       return;
     }
 

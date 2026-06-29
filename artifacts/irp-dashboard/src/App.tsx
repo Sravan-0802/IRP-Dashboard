@@ -84,6 +84,12 @@ function Router() {
       <Route path="/analytics">
         <Analytics />
       </Route>
+      <Route path="/assessments-hub">
+        <Home />
+      </Route>
+      <Route path="/assessment-calendar">
+        <Home />
+      </Route>
       <Route path="/">
         <Home />
       </Route>

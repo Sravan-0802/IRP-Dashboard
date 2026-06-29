@@ -18,6 +18,7 @@ import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
 import { FeProjectCallout } from "./FeProjectCallout";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
+import { useL1Registration } from "@/lib/useL1Registration";
 
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -151,6 +152,7 @@ export function DashboardView({
 }) {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
+  const { registration } = useL1Registration();
 
   const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey);
 
@@ -166,7 +168,11 @@ export function DashboardView({
       </div>
 
       {level === 1 && !journey.isWildcard ? (
-        <L1AssessmentBanner assessments={assessments} onRegisterClick={onOpenAssessmentCalendar} />
+        <L1AssessmentBanner
+          assessments={assessments}
+          registration={registration}
+          onRegisterClick={onOpenAssessmentCalendar}
+        />
       ) : null}
 
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />

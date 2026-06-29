@@ -3,6 +3,7 @@ import { getAuthToken } from "@/lib/authToken";
 export const DASHBOARD_ANALYTICS_EVENTS = {
   DASHBOARD_VISIT: "dashboard_visit",
   NAV_DASHBOARD: "nav_dashboard",
+  NAV_ASSESSMENTS_HUB: "nav_assessments_hub",
   NAV_ASSESSMENT_CALENDAR: "nav_assessment_calendar",
   FEEDBACK_OPEN: "feedback_open",
   CONTACT_US_CLICK: "contact_us_click",

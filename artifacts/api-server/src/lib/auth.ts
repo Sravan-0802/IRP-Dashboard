@@ -32,10 +32,15 @@ export function extractAuthToken(req: Request): string | null {
  * token against `forms_auth_tokens` on every call (no separate session). A
  * token is valid while it exists and has not expired.
  *
- * Outside production, when no token is present, falls back to the
- * `ACADEMY_USER_ID` env var so local development keeps working.
+ * Outside production, `ACADEMY_USER_ID` in `.env` wins over browser SSO tokens
+ * so you can preview different students without clearing sessionStorage.
  */
 export async function resolveAcademyUserId(req: Request): Promise<string | null> {
+  if (process.env["NODE_ENV"] !== "production") {
+    const devUser = process.env["ACADEMY_USER_ID"]?.trim();
+    if (devUser) return devUser;
+  }
+
   const token = extractAuthToken(req);
 
   if (token) {
@@ -49,11 +54,6 @@ export async function resolveAcademyUserId(req: Request): Promise<string | null>
       return row.userId;
     }
     return null;
-  }
-
-  if (process.env["NODE_ENV"] !== "production") {
-    const devUser = process.env["ACADEMY_USER_ID"]?.trim();
-    if (devUser) return devUser;
   }
 
   return null;

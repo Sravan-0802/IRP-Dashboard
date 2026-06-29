@@ -1,4 +1,4 @@
-import { EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { EXAM_DATE_LABEL, L1_REGISTRATION_CLOSE_DATE_LABEL } from "@/lib/irpDates";
 
 /**
  * L1 Cycle 2 UI flags — banner & calendar apply only to cycle2_pending students
@@ -27,7 +27,21 @@ export const L1_HUSTLER_CALENDAR = {
 export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
 export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 5th July 2026";
 export const L1_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
+  `We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar. Registration closes on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+
+export const L1_REGISTRATION_SUCCESS_BANNER_TITLE = "Registration confirmed";
+export const L1_REGISTRATION_SUCCESS_BANNER_TEXT =
+  "You successfully registered for your slot. Wait for the mock assessment link — we'll share it before the exam.";
+
+export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
+export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
+  `Slot registration for the 5 July assessment closed on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+
+export function hasSuccessfulSlotRegistration(
+  record: L1RegistrationRecord | null | undefined,
+): boolean {
+  return record?.availability === "yes" && Boolean(record.slotId);
+}
 
 export const AVAILABILITY_OPTIONS = [
   { value: "yes", label: "Yes, I can attend" },

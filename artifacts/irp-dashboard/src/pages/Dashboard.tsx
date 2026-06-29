@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import {
   useGetStudent, getGetStudentQueryKey,
@@ -16,6 +17,7 @@ import {
   trackDashboardVisitOnce,
 } from "@/lib/analytics";
 import { SidebarContent, type PageKey } from "@/components/irp/Sidebar";
+import { PAGE_PATHS, pathToPage } from "@/lib/dashboardRoutes";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
@@ -36,7 +38,8 @@ export default function Dashboard() {
     query: { queryKey: getGetStudentAssessmentsQueryKey(), retry: false },
   });
 
-  const [page, setPage] = useState<PageKey>("dashboard");
+  const [location, setLocation] = useLocation();
+  const page = pathToPage(location);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -50,10 +53,12 @@ export default function Dashboard() {
   const navigate = (key: PageKey) => {
     if (key === "dashboard") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_DASHBOARD);
+    } else if (key === "assessments") {
+      trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENTS_HUB);
     } else if (key === "slot") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENT_CALENDAR);
     }
-    setPage(key);
+    setLocation(PAGE_PATHS[key]);
   };
 
   function openFeedback() {
@@ -63,7 +68,7 @@ export default function Dashboard() {
 
   function openContactUs() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.CONTACT_US_CLICK);
-    setPage("dashboard");
+    setLocation(PAGE_PATHS.dashboard);
     setMobileOpen(false);
     window.requestAnimationFrame(() => {
       document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });

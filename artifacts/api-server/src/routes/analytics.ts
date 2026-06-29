@@ -9,6 +9,7 @@ const router = Router();
 const EVENT_LABELS: Record<string, string> = {
   dashboard_visit: "Users who visited the dashboard",
   nav_dashboard: "Dashboard nav clicks",
+  nav_assessments_hub: "Assessments Hub clicks",
   nav_assessment_calendar: "Assessment Calendar clicks",
   feedback_open: "Feedback opens",
   contact_us_click: "Help & Support clicks",

@@ -132,5 +132,8 @@ export function isAssessmentResultsLocked(
   level: 1 | 2 | 3,
   resultsUnlockedByDate: boolean,
 ): boolean {
-  return !resultsUnlockedByDate || !hasWrittenAssessment(assessments, level);
+  if (!hasWrittenAssessment(assessments, level)) return true;
+  // Cycle 1 sit complete but below clear threshold — show scores immediately on dashboard.
+  if (getAssessmentStepStatus(assessments, level) === "attempted_not_cleared") return false;
+  return !resultsUnlockedByDate;
 }

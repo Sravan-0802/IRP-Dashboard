@@ -8,6 +8,7 @@ import {
   L1_ASSESSMENT_CALENDAR_VISIBLE,
   L1_CYCLE2_BANNER_VISIBLE,
 } from "@/lib/l1AssessmentSchedule";
+import { isL1RegistrationOpen } from "@/lib/irpDates";
 
 /**
  * L1 online assessment — two student tracks (do not mix):
@@ -47,7 +48,19 @@ export function shouldShowCycle2Banner(assessments: AssessmentResult[]): boolean
   return L1_CYCLE2_BANNER_VISIBLE && isCycle2Candidate(assessments);
 }
 
-/** Cycle 2 calendar / slot registration — only for non-cleared students. */
+/** Cycle 2 calendar / slot registration — only for non-cleared students while registration is open. */
 export function shouldShowCycle2Calendar(assessments: AssessmentResult[]): boolean {
-  return L1_ASSESSMENT_CALENDAR_VISIBLE && isCycle2Candidate(assessments);
+  return L1_ASSESSMENT_CALENDAR_VISIBLE && isCycle2Candidate(assessments) && isL1RegistrationOpen();
+}
+
+/** Calendar page stays visible for registered students after registration closes. */
+export function shouldShowCycle2CalendarPage(
+  assessments: AssessmentResult[],
+  hasSlotRegistration: boolean,
+): boolean {
+  return (
+    L1_ASSESSMENT_CALENDAR_VISIBLE &&
+    isCycle2Candidate(assessments) &&
+    (isL1RegistrationOpen() || hasSlotRegistration)
+  );
 }

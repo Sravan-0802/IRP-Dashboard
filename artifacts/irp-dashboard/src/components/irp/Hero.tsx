@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock, ArrowRight, Trophy, ClipboardList, Clock, ShieldCheck } from "lucide-react";
+import { Calendar, CalendarClock, ClipboardList, ShieldCheck } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -10,16 +10,18 @@ import {
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import {
-  assessmentOverallPct,
   getAssessmentStepStatus,
   getAssessmentCompletedDateLabel,
+  assessmentOverallPct,
   pickAssessmentForLevel,
+  resultLabel,
 } from "@/lib/assessment";
 import {
   getL1UpcomingExamDateLabel,
   isCycle1Cleared,
 } from "@/lib/l1StudentTrack";
 import { CountdownRing } from "./CountdownRing";
+import { Pill } from "./ui";
 
 const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
 
@@ -43,22 +45,14 @@ function PulsingDot({ color }: { color: string }) {
   );
 }
 
-function scrollToAssessmentResults() {
-  document.getElementById("assessment-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function ClearedAssessmentHero({
   level,
   examDateLabel,
-  assessments,
 }: {
   level: 1 | 2 | 3;
   examDateLabel: string;
-  assessments: AssessmentResult[];
 }) {
   const meta = LEVEL_META[level];
-  const assessment = pickAssessmentForLevel(assessments, level);
-  const progressPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   return (
     <div
@@ -75,7 +69,7 @@ function ClearedAssessmentHero({
             You cleared the assessment
           </h2>
           <p className="mt-2 max-w-md text-sm text-muted2">
-            Great work on {examDateLabel}. Check your results below and continue with post-assessment tasks.
+            Great work on {examDateLabel}. Continue with post-assessment tasks below.
           </p>
         </div>
 
@@ -88,53 +82,6 @@ function ClearedAssessmentHero({
             <ClipboardList className="absolute bottom-0 right-0 h-14 w-14 text-[#12b886]/85" strokeWidth={1.5} />
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 items-center gap-4 rounded-2xl bg-white p-4 shadow-soft sm:p-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:gap-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
-            <Trophy className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-muted2">Your progress</p>
-            <p className="font-display text-2xl font-extrabold leading-none text-teal">{progressPct}%</p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[rgba(12,166,120,0.12)]">
-              <div
-                className="h-full rounded-full bg-teal transition-all duration-700"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
-            <ClipboardList className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-muted2">Completed</p>
-            <p className="truncate text-sm font-bold text-ink">Assessment · {meta.name}</p>
-          </div>
-        </div>
-
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8faf0] text-teal">
-            <Clock className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-muted2">Completed on</p>
-            <p className="text-sm font-bold text-ink">{examDateLabel}</p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={scrollToAssessmentResults}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 lg:w-auto lg:shrink-0"
-        >
-          View results
-          <ArrowRight className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );
@@ -174,8 +121,51 @@ export function Hero({
       <ClearedAssessmentHero
         level={level}
         examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
-        assessments={assessments}
       />
+    );
+  }
+
+  // Cycle 2 track: attempted Cycle 1 but did not clear — show past results + upcoming exam.
+  if (level === 1 && assessmentStatus === "attempted_not_cleared") {
+    const assessment = pickAssessmentForLevel(assessments, 1);
+    const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
+
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl border border-[rgba(245,159,0,0.28)] p-6 shadow-soft sm:p-8"
+        style={{ background: "linear-gradient(130deg, #fff9db, #fff5f5)" }}
+      >
+        <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
+          <div className="text-center sm:text-left">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,159,0,0.35)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#e67700]">
+              <PulsingDot color="#f59f00" /> Attempted but not cleared
+            </div>
+            <LevelHeading name={meta.name} level={level} />
+            <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
+              Your {L1_CYCLE1_EXAM_DATE_LABEL} results
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-muted2">
+              You scored{" "}
+              <span className="font-bold text-ink">{overallPct}%</span> on the 14 June assessment — you need 70% to
+              clear. Register for the upcoming assessment on{" "}
+              <span className="font-bold text-ink">{l1UpcomingDateLabel}</span> below.
+            </p>
+            {assessment ? (
+              <div className="mt-3">
+                <Pill tone="amber">{resultLabel(overallPct)} · {overallPct}%</Pill>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+              <Calendar className="h-3.5 w-3.5 text-brand" /> Next: {l1UpcomingDateLabel}
+            </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Countdown</p>
+            <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -188,7 +178,6 @@ export function Hero({
         <ClearedAssessmentHero
           level={level}
           examDateLabel={completedDateLabel}
-          assessments={assessments}
         />
       );
     }
@@ -297,7 +286,6 @@ export function Hero({
         <ClearedAssessmentHero
           level={level}
           examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
-          assessments={assessments}
         />
       );
     }
