@@ -7,10 +7,13 @@
  */
 import type { DashboardAnalyticsDailyRow } from './dashboardAnalyticsDailyRow';
 import type { DashboardAnalyticsMetric } from './dashboardAnalyticsMetric';
+import type { L1Registration } from './l1Registration';
 
 export interface DashboardAnalyticsSummary {
   trackingSince: string | null;
   generatedAt: string;
   events: DashboardAnalyticsMetric[];
   daily: DashboardAnalyticsDailyRow[];
+  l1Registrations: L1Registration[];
+  l1RegistrationCount: number;
 }

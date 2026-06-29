@@ -12,10 +12,17 @@ import {
 } from "@/lib/assessment";
 import {
   ASSESSMENT_STATUS_STORAGE_KEY,
-  L1_ASSESSMENT_CALENDAR_VISIBLE,
   L1_HUSTLER_SLOTS,
+  syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
+import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import {
+  isCycle1Cleared,
+  shouldShowCycle2Banner,
+  shouldShowCycle2Calendar,
+} from "@/lib/l1StudentTrack";
+import { useL1Registration } from "@/lib/useL1Registration";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -121,13 +128,17 @@ function AssessmentCard({
   state,
   onUpdate,
   onBook,
+  slotRegistrationSubmitted = false,
   registrationClosed = false,
+  registrationClosedNote,
 }: {
   config: AssessmentConfig;
   state: { status: AssessmentStatus; slot?: string };
   onUpdate: (next: { status: AssessmentStatus; slot?: string }) => void;
   onBook?: () => void;
+  slotRegistrationSubmitted?: boolean;
   registrationClosed?: boolean;
+  registrationClosedNote?: string;
 }) {
   const { status, slot } = state;
   const Icon = config.kind === "mock" ? FlaskConical : Trophy;
@@ -178,12 +189,12 @@ function AssessmentCard({
                 <button
                   key={s.id}
                   type="button"
-                  disabled={status === "in-progress"}
+                  disabled={status === "in-progress" || slotRegistrationSubmitted}
                   onClick={() => onUpdate({ status, slot: s.id })}
                   className={
                     selected
                       ? "rounded-xl border-2 border-[#3b5bdb] bg-[#eef2ff] px-4 py-2 text-sm font-bold text-[#3b5bdb]"
-                      : "rounded-xl border-2 border-[#dee2e6] bg-white px-4 py-2 text-sm font-semibold text-muted2 transition-colors hover:border-[#3b5bdb]/40 disabled:opacity-50"
+                      : "rounded-xl border-2 border-[#dee2e6] bg-white px-4 py-2 text-sm font-semibold text-muted2 transition-colors hover:border-[#3b5bdb]/40 disabled:cursor-default disabled:opacity-70"
                   }
                 >
                   {s.label}
@@ -200,15 +211,18 @@ function AssessmentCard({
         </p>
       )}
 
-      {registrationClosed && config.kind === "main" && status !== "done" ? (
-        <p className="mt-4 text-sm text-muted2">
-          Slot registration is closed for this cycle. The Assessment Calendar will reopen for the next
-          cycle — coming soon.
-        </p>
+      {registrationClosed && config.kind === "main" && status !== "done" && registrationClosedNote ? (
+        <p className="mt-4 text-sm text-muted2">{registrationClosedNote}</p>
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        {status === "todo" && config.kind === "main" && needsSlot && onBook ? (
+        {status === "todo" && config.kind === "main" && needsSlot && onBook && slotRegistrationSubmitted ? (
+          <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-4 py-2.5 text-sm font-bold text-teal">
+            <CheckCircle2 className="h-4 w-4" />
+            Submitted
+          </span>
+        ) : null}
+        {status === "todo" && config.kind === "main" && needsSlot && onBook && !slotRegistrationSubmitted ? (
           <button
             type="button"
             disabled={!slot}
@@ -240,7 +254,7 @@ function AssessmentCard({
             Start Assessment
           </button>
         )}
-        {status === "todo" && needsSlot && !slot && (
+        {status === "todo" && needsSlot && !slot && !slotRegistrationSubmitted && (
           <span className="text-xs font-semibold text-muted2">
             {onBook ? "Select a slot, then click Book to register." : "Select a slot to begin."}
           </span>
@@ -278,6 +292,7 @@ export function AssessmentsHub({
 }) {
   const [statuses, setStatuses] = useState<StatusMap>(loadStatuses);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const hustlerState = statuses["l1-hustler"] ?? { status: "todo" as AssessmentStatus };
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
@@ -291,7 +306,12 @@ export function AssessmentsHub({
     });
   }
 
+  async function handleRegistrationSubmit(record: L1RegistrationRecord) {
+    return submit(record);
+  }
+
   function handleRegistrationComplete(record: L1RegistrationRecord) {
+    syncL1HustlerSlotFromRegistration(record);
     if (record.slotId) {
       update("l1-hustler", { status: "todo", slot: record.slotId });
     }
@@ -299,14 +319,18 @@ export function AssessmentsHub({
 
   return (
     <div className="space-y-6">
-      {level === 1 ? <L1AssessmentBanner /> : null}
+      {level === 1 && shouldShowCycle2Banner(assessments) ? (
+        <L1AssessmentBanner assessments={assessments} />
+      ) : null}
 
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {L1_ASSESSMENT_CALENDAR_VISIBLE
-            ? `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`
-            : `Your ${meta.name} assessments — cleared the online exam? Complete IRP 2.0 FE Project Main II below.`}
+          {level === 1 && isCycle1Cleared(assessments)
+            ? "You cleared the 14 June assessment. Complete IRP 2.0 FE Project Main II below."
+            : level === 1
+              ? `The assessment on ${L1_CYCLE2_EXAM_DATE_LABEL} — attempt the mock first, then register for your slot.`
+              : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
 
@@ -333,11 +357,19 @@ export function AssessmentsHub({
               state={deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" })}
               onUpdate={(next) => update(a.id, next)}
               onBook={
-                a.id === "l1-hustler" && L1_ASSESSMENT_CALENDAR_VISIBLE
+                a.id === "l1-hustler" && shouldShowCycle2Calendar(assessments)
                   ? () => setRegisterOpen(true)
                   : undefined
               }
-              registrationClosed={a.id === "l1-hustler" && !L1_ASSESSMENT_CALENDAR_VISIBLE}
+              slotRegistrationSubmitted={a.id === "l1-hustler" && isSubmitted}
+              registrationClosed={a.id === "l1-hustler" && !shouldShowCycle2Calendar(assessments)}
+              registrationClosedNote={
+                a.id === "l1-hustler" && isCycle1Cleared(assessments)
+                  ? "You cleared the 14 June assessment. Continue with IRP 2.0 FE Project Main II on the dashboard."
+                  : a.id === "l1-hustler"
+                    ? `Registration for ${L1_CYCLE2_EXAM_DATE_LABEL} — use the Assessment Calendar when open.`
+                    : undefined
+              }
             />
           ))}
         </div>
@@ -347,6 +379,8 @@ export function AssessmentsHub({
         open={registerOpen}
         onOpenChange={setRegisterOpen}
         slotId={hustlerState.slot}
+        submitting={submitting}
+        onSubmit={handleRegistrationSubmit}
         onComplete={handleRegistrationComplete}
       />
     </div>

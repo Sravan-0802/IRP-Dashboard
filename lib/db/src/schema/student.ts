@@ -120,6 +120,36 @@ export const slotNotifyRequestsTable = pgTable("slot_notify_requests", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** L1 assessment slot registration per cycle (Cycle 2 = July 2026, etc.). */
+export const l1CycleRegistrationsTable = pgTable(
+  "l1_cycle_registrations",
+  {
+    id: serial("id").primaryKey(),
+    academyUserId: text("academy_user_id").notNull(),
+    studentId: integer("student_id").references(() => studentsTable.id),
+    userName: text("user_name"),
+    cycle: integer("cycle").notNull(),
+    level: integer("level").notNull().default(1),
+    assessmentDate: text("assessment_date").notNull(),
+    availability: text("availability").notNull(),
+    slotId: text("slot_id"),
+    slotLabel: text("slot_label"),
+    understandsGc: integer("understands_gc"),
+    willAttend: integer("will_attend"),
+    unavailabilityReason: text("unavailability_reason"),
+    notifyNextCycle: integer("notify_next_cycle"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCycleLevelUnique: unique("l1_cycle_reg_user_cycle_level").on(
+      t.academyUserId,
+      t.cycle,
+      t.level,
+    ),
+  }),
+);
+
 export const contactUsMessagesTable = pgTable("contact_us_messages", {
   id: serial("id").primaryKey(),
   academyUserId: text("academy_user_id").notNull(),
@@ -223,6 +253,9 @@ export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$infer
 export type AcademyUserAssessmentDetails = typeof academyUserAssessmentDetailsTable.$inferSelect;
 export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;
 export type BigquerySyncStatus = typeof bigquerySyncStatusTable.$inferSelect;
+
+export type L1CycleRegistration = typeof l1CycleRegistrationsTable.$inferSelect;
+export type InsertL1CycleRegistration = typeof l1CycleRegistrationsTable.$inferInsert;
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable } from "@workspace/db";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable, l1CycleRegistrationsTable } from "@workspace/db";
 import { sql, count, countDistinct, inArray, min, max, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
+import { rowToL1RegistrationResponse } from "../lib/l1Registration";
 
 const router = Router();
 
@@ -234,6 +235,14 @@ router.get("/analytics/dashboard", async (req, res) => {
         submittedAt: r.createdAt ? r.createdAt.toISOString() : null,
       }));
 
+    const registrationRows = await db
+      .select()
+      .from(l1CycleRegistrationsTable)
+      .orderBy(desc(l1CycleRegistrationsTable.submittedAt))
+      .limit(500);
+
+    const l1Registrations = registrationRows.map((r) => rowToL1RegistrationResponse(r));
+
     const [firstEvent] = await db
       .select({ createdAt: dashboardAnalyticsEventsTable.createdAt })
       .from(dashboardAnalyticsEventsTable)
@@ -252,6 +261,8 @@ router.get("/analytics/dashboard", async (req, res) => {
       avgRating,
       contactMessages,
       contactMessageCount: contactMessages.length,
+      l1Registrations,
+      l1RegistrationCount: l1Registrations.length,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");

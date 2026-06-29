@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -37,6 +37,23 @@ type AnalyticsContactMessage = {
   submittedAt: string | null;
 };
 
+type AnalyticsL1Registration = {
+  id: number;
+  academyUserId: string;
+  userName?: string | null;
+  cycle: number;
+  level: number;
+  assessmentDate: string;
+  availability: string;
+  slotId?: string;
+  slotLabel?: string;
+  understandsGc?: boolean;
+  willAttend?: boolean;
+  unavailabilityReason?: string;
+  notifyNextCycle?: boolean;
+  submittedAt: string;
+};
+
 type AnalyticsSummary = {
   trackingSince: string | null;
   generatedAt: string;
@@ -52,6 +69,8 @@ type AnalyticsSummary = {
   avgRating: number | null;
   contactMessages: AnalyticsContactMessage[];
   contactMessageCount: number;
+  l1Registrations: AnalyticsL1Registration[];
+  l1RegistrationCount: number;
 };
 
 const STORAGE_KEY = "irp_analytics_admin_key";
@@ -164,7 +183,11 @@ export default function AnalyticsPage() {
       if (!res.ok) {
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
-      setData(body as AnalyticsSummary);
+      setData({
+        ...(body as AnalyticsSummary),
+        l1Registrations: (body as AnalyticsSummary).l1Registrations ?? [],
+        l1RegistrationCount: (body as AnalyticsSummary).l1RegistrationCount ?? 0,
+      });
       storeKey(key.trim());
       setApiKey(key.trim());
     } catch (err) {
@@ -189,11 +212,13 @@ export default function AnalyticsPage() {
 
   const [visitorsPage, setVisitorsPage] = useState(1);
   const [feedbackPage, setFeedbackPage] = useState(1);
+  const [registrationPage, setRegistrationPage] = useState(1);
   const [supportPage, setSupportPage] = useState(1);
 
   useEffect(() => {
     setVisitorsPage(1);
     setFeedbackPage(1);
+    setRegistrationPage(1);
     setSupportPage(1);
   }, [data]);
 
@@ -489,6 +514,109 @@ export default function AnalyticsPage() {
                     ))}
                   </div>
                   <Pagination page={feedbackPage} total={data.feedbacks.length} onChange={setFeedbackPage} />
+                </>
+              )}
+            </div>
+
+            <div className="irp-card p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    L1 Assessment Registrations{" "}
+                    <span className="text-sm font-semibold text-[#6e6a8a]">
+                      ({data.l1RegistrationCount})
+                    </span>
+                  </h2>
+                </div>
+                {data.l1Registrations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = [
+                        "Name",
+                        "Academy User ID",
+                        "Cycle",
+                        "Assessment Date",
+                        "Availability",
+                        "Slot",
+                        "Understands GC",
+                        "Will Attend",
+                        "Unavailability Reason",
+                        "Notify Next Cycle",
+                        "Submitted At",
+                      ];
+                      const rows = data.l1Registrations.map((reg) => [
+                        reg.userName?.trim() || "Unnamed student",
+                        reg.academyUserId,
+                        String(reg.cycle),
+                        reg.assessmentDate,
+                        reg.availability,
+                        reg.slotLabel ?? reg.slotId ?? "",
+                        reg.understandsGc ? "Yes" : "",
+                        reg.willAttend ? "Yes" : "",
+                        reg.unavailabilityReason ?? "",
+                        reg.notifyNextCycle ? "Yes" : "",
+                        formatDate(reg.submittedAt),
+                      ]);
+                      downloadCsv("irp-l1-registrations.csv", [headers, ...rows]);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download CSV
+                  </button>
+                )}
+              </div>
+
+              {data.l1Registrations.length === 0 ? (
+                <p className="text-sm text-[#6e6a8a]">
+                  No slot registrations yet. Responses are saved to the l1_cycle_registrations table when students register.
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {data.l1Registrations
+                      .slice((registrationPage - 1) * PAGE_SIZE, registrationPage * PAGE_SIZE)
+                      .map((reg) => (
+                        <div
+                          key={reg.id}
+                          className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <span className="font-semibold text-[#0d1117]">
+                                {reg.userName?.trim() || "Unnamed student"}
+                              </span>
+                              <p className="font-mono text-[11px] text-[#6e6a8a]">{reg.academyUserId}</p>
+                            </div>
+                            <span className="text-xs text-[#6e6a8a]">{formatDate(reg.submittedAt)}</span>
+                          </div>
+                          <div className="mt-2 grid gap-1 text-sm text-[#0d1117] sm:grid-cols-2">
+                            <p>
+                              <span className="font-semibold text-[#6e6a8a]">Cycle:</span> {reg.cycle}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-[#6e6a8a]">Availability:</span> {reg.availability}
+                            </p>
+                            {reg.slotLabel ? (
+                              <p>
+                                <span className="font-semibold text-[#6e6a8a]">Slot:</span> {reg.slotLabel}
+                              </p>
+                            ) : null}
+                            {reg.unavailabilityReason ? (
+                              <p className="sm:col-span-2">
+                                <span className="font-semibold text-[#6e6a8a]">Reason:</span> {reg.unavailabilityReason}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <Pagination
+                    page={registrationPage}
+                    total={data.l1Registrations.length}
+                    onChange={setRegistrationPage}
+                  />
                 </>
               )}
             </div>

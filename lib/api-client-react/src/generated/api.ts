@@ -25,7 +25,13 @@ import type {
   DashboardAnalyticsEventRequest,
   DashboardAnalyticsEventResponse,
   DashboardAnalyticsSummary,
+  DeleteL1Registration200,
+  DeleteL1RegistrationParams,
+  GetL1RegistrationParams,
   HealthStatus,
+  L1RegistrationRequest,
+  L1RegistrationResponse,
+  L1RegistrationSubmitResponse,
   Student,
   StudentActivity,
   StudentAssessments,
@@ -655,6 +661,241 @@ export const useLogDashboardAnalyticsEvent = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLogDashboardAnalyticsEventMutationOptions(options));
+    }
+
+export const getGetL1RegistrationUrl = (params?: GetL1RegistrationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/student/l1-registration?${stringifiedParams}` : `/api/student/l1-registration`
+}
+
+/**
+ * Returns the current student's registration for the given cycle (stored in Postgres)
+ * @summary Get L1 assessment slot registration
+ */
+export const getL1Registration = async (params?: GetL1RegistrationParams, options?: RequestInit): Promise<L1RegistrationResponse> => {
+
+  return customFetch<L1RegistrationResponse>(getGetL1RegistrationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetL1RegistrationQueryKey = (params?: GetL1RegistrationParams,) => {
+    return [
+    `/api/student/l1-registration`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetL1RegistrationQueryOptions = <TData = Awaited<ReturnType<typeof getL1Registration>>, TError = ErrorType<void>>(params?: GetL1RegistrationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getL1Registration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetL1RegistrationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getL1Registration>>> = ({ signal }) => getL1Registration(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getL1Registration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetL1RegistrationQueryResult = NonNullable<Awaited<ReturnType<typeof getL1Registration>>>
+export type GetL1RegistrationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get L1 assessment slot registration
+ */
+
+export function useGetL1Registration<TData = Awaited<ReturnType<typeof getL1Registration>>, TError = ErrorType<void>>(
+ params?: GetL1RegistrationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getL1Registration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetL1RegistrationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitL1RegistrationUrl = () => {
+
+
+
+
+  return `/api/student/l1-registration`
+}
+
+/**
+ * Saves slot registration and form answers to l1_cycle_registrations
+ * @summary Submit L1 assessment slot registration
+ */
+export const submitL1Registration = async (l1RegistrationRequest: L1RegistrationRequest, options?: RequestInit): Promise<L1RegistrationSubmitResponse> => {
+
+  return customFetch<L1RegistrationSubmitResponse>(getSubmitL1RegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      l1RegistrationRequest,)
+  }
+);}
+
+
+
+
+export const getSubmitL1RegistrationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitL1Registration>>, TError,{data: BodyType<L1RegistrationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitL1Registration>>, TError,{data: BodyType<L1RegistrationRequest>}, TContext> => {
+
+const mutationKey = ['submitL1Registration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitL1Registration>>, {data: BodyType<L1RegistrationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitL1Registration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitL1RegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof submitL1Registration>>>
+    export type SubmitL1RegistrationMutationBody = BodyType<L1RegistrationRequest>
+    export type SubmitL1RegistrationMutationError = ErrorType<void>
+
+    /**
+ * @summary Submit L1 assessment slot registration
+ */
+export const useSubmitL1Registration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitL1Registration>>, TError,{data: BodyType<L1RegistrationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitL1Registration>>,
+        TError,
+        {data: BodyType<L1RegistrationRequest>},
+        TContext
+      > => {
+      return useMutation(getSubmitL1RegistrationMutationOptions(options));
+    }
+
+export const getDeleteL1RegistrationUrl = (params?: DeleteL1RegistrationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/student/l1-registration?${stringifiedParams}` : `/api/student/l1-registration`
+}
+
+/**
+ * Removes registration for local testing — not available in production
+ * @summary Delete L1 registration (dev only)
+ */
+export const deleteL1Registration = async (params?: DeleteL1RegistrationParams, options?: RequestInit): Promise<DeleteL1Registration200> => {
+
+  return customFetch<DeleteL1Registration200>(getDeleteL1RegistrationUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteL1RegistrationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteL1Registration>>, TError,{params?: DeleteL1RegistrationParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteL1Registration>>, TError,{params?: DeleteL1RegistrationParams}, TContext> => {
+
+const mutationKey = ['deleteL1Registration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteL1Registration>>, {params?: DeleteL1RegistrationParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  deleteL1Registration(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteL1RegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteL1Registration>>>
+
+    export type DeleteL1RegistrationMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete L1 registration (dev only)
+ */
+export const useDeleteL1Registration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteL1Registration>>, TError,{params?: DeleteL1RegistrationParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteL1Registration>>,
+        TError,
+        {params?: DeleteL1RegistrationParams},
+        TContext
+      > => {
+      return useMutation(getDeleteL1RegistrationMutationOptions(options));
     }
 
 export const getGetDashboardAnalyticsUrl = () => {

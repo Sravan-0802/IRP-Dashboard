@@ -6,11 +6,16 @@ import {
   ensureAuthenticated,
   getAuthToken,
 } from "./lib/authToken";
+import { maybeResetL1RegistrationFromUrl } from "./lib/l1AssessmentSchedule";
 import "./index.css";
 
 // Pick up the SSO token from the redirect, then attach it to every API call so
 // the backend can re-verify it and resolve the current user.
 captureAuthTokenFromUrl();
+
+void maybeResetL1RegistrationFromUrl().then((didReset) => {
+  if (didReset) window.location.reload();
+});
 
 const isAnalyticsPage = window.location.pathname.startsWith("/analytics");
 

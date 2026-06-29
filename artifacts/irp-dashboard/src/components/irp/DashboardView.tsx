@@ -7,7 +7,9 @@ import {
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
+import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { getAssessmentStepStatus } from "@/lib/assessment";
+import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
@@ -15,6 +17,7 @@ import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
 import { FeProjectCallout } from "./FeProjectCallout";
+import { L1AssessmentBanner } from "./L1AssessmentBanner";
 
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -66,9 +69,26 @@ function assessmentMotivation(
   points: number,
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
+  journey: Journey,
 ): string {
-
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
+
+  if (level === 1 && isCycle1Cleared(assessments)) {
+    if (journey.projectSubmitted) {
+      return "You cleared the 14 June assessment and completed FE Project. Continue with your next interview step. 💪";
+    }
+    return "You cleared the 14 June assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪";
+  }
+
+  if (level === 1 && isCycle2Candidate(assessments)) {
+    if (assessmentStatus === "attempted_not_cleared") {
+      return `The assessment is on ${L1_CYCLE2_EXAM_DATE_LABEL}. Register via the Assessment Calendar and keep preparing. 🔥`;
+    }
+    if (days > 0) {
+      return `${days} ${days === 1 ? "day" : "days"} until the assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}. Keep preparing. 🔥`;
+    }
+    return `IRP 2.0 assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}. Register your slot when ready. 🔥`;
+  }
 
   switch (phase) {
     case "EXAM_OPEN":
@@ -132,7 +152,7 @@ export function DashboardView({
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
 
-  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level);
+  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey);
 
   return (
     <div className="space-y-6">
@@ -144,6 +164,10 @@ export function DashboardView({
           <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
         ) : null}
       </div>
+
+      {level === 1 && !journey.isWildcard ? (
+        <L1AssessmentBanner assessments={assessments} onRegisterClick={onOpenAssessmentCalendar} />
+      ) : null}
 
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
 

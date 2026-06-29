@@ -1,31 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Clock, Trophy, CheckCircle2 } from "lucide-react";
+import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard } from "@/components/irp/ui";
 import { ComingSoonPanel } from "@/components/irp/ComingSoonPanel";
 import { L1AssessmentBanner } from "@/components/irp/L1AssessmentBanner";
 import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
 import {
-  L1_ASSESSMENT_CALENDAR_VISIBLE,
   L1_HUSTLER_CALENDAR,
   getL1HustlerSlot,
-  loadL1Registration,
+  syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
+import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
+import { useL1Registration } from "@/lib/useL1Registration";
 
 function AssessmentCalendarContent() {
+  const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const [selectedSlot, setSelectedSlot] = useState<string | undefined>(getL1HustlerSlot);
   const [registerOpen, setRegisterOpen] = useState(false);
-  const [registration, setRegistration] = useState<L1RegistrationRecord | null>(loadL1Registration);
 
-  const selectedLabel = L1_HUSTLER_CALENDAR.slots.find((s) => s.id === selectedSlot)?.label;
+  useEffect(() => {
+    if (registration?.slotId) {
+      setSelectedSlot(registration.slotId);
+    }
+  }, [registration?.slotId]);
 
   function openRegister() {
-    if (!selectedSlot) return;
+    if (!selectedSlot || isSubmitted) return;
     setRegisterOpen(true);
   }
 
+  async function handleSubmit(record: L1RegistrationRecord) {
+    return submit(record);
+  }
+
   function handleComplete(record: L1RegistrationRecord) {
-    setRegistration(record);
+    syncL1HustlerSlotFromRegistration(record);
     if (record.slotId) {
       setSelectedSlot(record.slotId);
     }
@@ -44,7 +55,7 @@ function AssessmentCalendarContent() {
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted2">
-                {L1_HUSTLER_CALENDAR.subtitle} · {L1_HUSTLER_CALENDAR.cycleLabel}
+                {L1_HUSTLER_CALENDAR.subtitle}
               </p>
               <h2 className="font-display text-xl font-extrabold text-ink">{L1_HUSTLER_CALENDAR.title}</h2>
             </div>
@@ -81,11 +92,12 @@ function AssessmentCalendarContent() {
                   <button
                     key={slot.id}
                     type="button"
+                    disabled={isSubmitted}
                     onClick={() => setSelectedSlot(slot.id)}
                     className={
                       selected
                         ? "rounded-xl border-2 border-[#3b5bdb] bg-[#eef2ff] px-4 py-2.5 text-sm font-bold text-[#3b5bdb]"
-                        : "rounded-xl border-2 border-[#dee2e6] bg-white px-4 py-2.5 text-sm font-semibold text-muted2 transition-colors hover:border-[#3b5bdb]/40"
+                        : "rounded-xl border-2 border-[#dee2e6] bg-white px-4 py-2.5 text-sm font-semibold text-muted2 transition-colors hover:border-[#3b5bdb]/40 disabled:cursor-default disabled:opacity-70"
                     }
                   >
                     {slot.label}
@@ -96,29 +108,27 @@ function AssessmentCalendarContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              disabled={!selectedSlot}
-              onClick={openRegister}
-              className="btn-pop rounded-xl px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Book · Register for slot
-            </button>
-            {!selectedSlot ? (
+            {isSubmitted ? (
+              <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-5 py-2.5 text-sm font-bold text-teal">
+                <CheckCircle2 className="h-4 w-4" />
+                Submitted
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={!selectedSlot}
+                onClick={openRegister}
+                className="btn-pop rounded-xl px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Book · Register for slot
+              </button>
+            )}
+            {!isSubmitted && !selectedSlot ? (
               <span className="text-sm font-medium text-muted2">Select a slot, then complete registration.</span>
             ) : null}
           </div>
 
           {registration ? <L1RegistrationSuccess record={registration} /> : null}
-
-          {selectedLabel && registration?.availability === "yes" ? (
-            <div className="flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.25)] bg-[#e8faf0] px-4 py-3">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-teal" />
-              <p className="text-sm font-semibold text-teal">
-                Slot reserved: <span className="font-bold">{selectedLabel}</span> on {L1_HUSTLER_CALENDAR.dateLabel}
-              </p>
-            </div>
-          ) : null}
 
           <p className="text-xs text-muted2">
             The assessment link will be shared on exam day via the Assessments Hub. Attempt the mock assessment before
@@ -131,32 +141,43 @@ function AssessmentCalendarContent() {
         open={registerOpen}
         onOpenChange={setRegisterOpen}
         slotId={selectedSlot}
+        submitting={submitting}
+        onSubmit={handleSubmit}
         onComplete={handleComplete}
       />
     </>
   );
 }
 
-export function BookSlot() {
+export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[] }) {
+  const showCalendar = shouldShowCycle2Calendar(assessments);
+  const cleared = isCycle1Cleared(assessments);
+
   return (
     <div className="space-y-6">
-      <L1AssessmentBanner />
+      <L1AssessmentBanner assessments={assessments} />
 
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
         <p className="mt-1 text-sm text-muted2">
-          {L1_ASSESSMENT_CALENDAR_VISIBLE
-            ? "Choose your slot for the L1 Hustler assessment, then complete the registration form."
-            : "Slot registration for the next assessment cycle will appear here when it opens."}
+          {showCalendar
+            ? `Choose your slot for the assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}, then complete registration.`
+            : cleared
+              ? "You cleared the 14 June assessment and are on the post-assessment track."
+              : "Slot registration will appear here when it opens."}
         </p>
       </div>
 
-      {L1_ASSESSMENT_CALENDAR_VISIBLE ? (
+      {showCalendar ? (
         <AssessmentCalendarContent />
       ) : (
         <ComingSoonPanel
-          title="Assessment calendar — coming soon"
-          description="Cycle 2 online assessment registration is closed. The next cycle's dates and slots will be published here. Cleared students can continue with IRP 2.0 FE Project Main II from the dashboard or Assessments Hub."
+          title={cleared ? "You're on the post-assessment track" : "Assessment calendar — coming soon"}
+          description={
+            cleared
+              ? "You cleared the Cycle 1 assessment on 14 June 2026. Continue with IRP 2.0 FE Project Main II from the dashboard or Assessments Hub."
+              : "Registration is not open for you yet. Check back for updates on the 5 July assessment."
+          }
         />
       )}
     </div>

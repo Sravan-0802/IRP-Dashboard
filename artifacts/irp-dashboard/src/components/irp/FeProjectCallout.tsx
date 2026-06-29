@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { ArrowRight, ExternalLink, FileCode2 } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
-import { hasClearedAssessment } from "@/lib/assessment";
+import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   FE_PROJECT_MAIN_II_BODY,
   FE_PROJECT_MAIN_II_LABEL,
@@ -20,7 +20,7 @@ export function FeProjectCallout({
   assessments: AssessmentResult[];
   className?: string;
 }) {
-  const clearedL1 = hasClearedAssessment(assessments, 1);
+  const clearedL1 = isCycle1Cleared(assessments);
   const feDone = journey.projectSubmitted;
 
   if (!clearedL1 || feDone) return null;

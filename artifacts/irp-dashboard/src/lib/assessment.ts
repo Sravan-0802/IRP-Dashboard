@@ -1,5 +1,9 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { LEVEL_META } from "@/lib/journey";
+import {
+  EXAM_DATE_LABEL,
+  L1_CYCLE1_EXAM_DATE_LABEL,
+} from "@/lib/irpDates";
 
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
@@ -89,6 +93,21 @@ export function hasClearedAssessment(
   const assessment = pickAssessmentForLevel(assessments, level);
   if (!assessment || !assessmentWasWritten(assessment)) return false;
   return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
+}
+
+/** Date label for assessment results — Cycle 1 sit vs Cycle 2 upcoming. */
+export function getAssessmentCompletedDateLabel(
+  assessments: AssessmentResult[],
+  level: 1 | 2 | 3,
+  upcomingLabel = EXAM_DATE_LABEL,
+): string {
+  if (level === 1 && hasClearedAssessment(assessments, 1)) {
+    return L1_CYCLE1_EXAM_DATE_LABEL;
+  }
+  if (level === 1 && hasWrittenAssessment(assessments, 1)) {
+    return L1_CYCLE1_EXAM_DATE_LABEL;
+  }
+  return upcomingLabel;
 }
 
 export function resultLabel(pct: number): "Cleared" | "Not cleared" {

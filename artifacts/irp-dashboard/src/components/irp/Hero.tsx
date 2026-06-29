@@ -6,13 +6,19 @@ import {
   areAssignmentResultsVisible,
   isAssessmentLive,
   isExamWindowClosed,
+  L1_CYCLE1_EXAM_DATE_LABEL,
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
   getAssessmentStepStatus,
+  getAssessmentCompletedDateLabel,
   pickAssessmentForLevel,
 } from "@/lib/assessment";
+import {
+  getL1UpcomingExamDateLabel,
+  isCycle1Cleared,
+} from "@/lib/l1StudentTrack";
 import { CountdownRing } from "./CountdownRing";
 
 const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
@@ -149,10 +155,29 @@ export function Hero({
   const level = getLevel(journey.journeyState);
   const meta = LEVEL_META[level];
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
+  const l1UpcomingDateLabel =
+    level === 1 ? getL1UpcomingExamDateLabel(assessments) : examDateLabel;
+  const activeDateLabel = l1UpcomingDateLabel;
+  const completedDateLabel = getAssessmentCompletedDateLabel(
+    assessments,
+    level,
+    l1UpcomingDateLabel,
+  );
   const resultsVisible = areAssignmentResultsVisible();
   const showPostExamHero =
     (isExamWindowClosed() || resultsVisible) &&
     (phase === "PREP" || phase === "EXAM_OPEN");
+
+  // Cycle 1 cleared → post-assessment track (14 June). Never show Cycle 2 countdown.
+  if (level === 1 && isCycle1Cleared(assessments)) {
+    return (
+      <ClearedAssessmentHero
+        level={level}
+        examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
+        assessments={assessments}
+      />
+    );
+  }
 
   if (showPostExamHero) {
     const cleared = assessmentStatus === "done";
@@ -162,7 +187,7 @@ export function Hero({
       return (
         <ClearedAssessmentHero
           level={level}
-          examDateLabel={examDateLabel}
+          examDateLabel={completedDateLabel}
           assessments={assessments}
         />
       );
@@ -204,18 +229,18 @@ export function Hero({
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
               {attempted ? (
-                <>You attempted the {examDateLabel} assessment. Review your score below — you need 70% to clear.</>
+                <>You attempted the {completedDateLabel} assessment. Review your score below — you need 70% to clear.</>
               ) : resultsVisible ? (
                 <>Assessment completed. New assessment dates will be announced soon—stay tuned.</>
               ) : (
-                <>The assessment on {examDateLabel} has ended. Results unlock on {PROGRESS_UNLOCK_LABEL}.</>
+                <>The assessment on {l1UpcomingDateLabel} has ended. Results unlock on {PROGRESS_UNLOCK_LABEL}.</>
               )}
             </p>
           </div>
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {l1UpcomingDateLabel}
             </span>
           </div>
         </div>
@@ -265,13 +290,13 @@ export function Hero({
     );
   }
 
-  // ── POST_ASSESSMENT (cleared) ──
+  // ── POST_ASSESSMENT (non-cleared path — rare if journey state ahead of scores) ──
   if (phase === "POST_ASSESSMENT") {
     if (assessmentStatus === "done") {
       return (
         <ClearedAssessmentHero
           level={level}
-          examDateLabel={examDateLabel}
+          examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
           assessments={assessments}
         />
       );
@@ -297,7 +322,7 @@ export function Hero({
           </div>
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {l1UpcomingDateLabel}
             </span>
           </div>
         </div>
@@ -320,14 +345,14 @@ export function Hero({
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
               This round didn't go through — that happens. Next attempt window opens on{" "}
-              <span className="font-bold text-ink">{journey.reattemptDate ?? examDateLabel}</span>.
+              <span className="font-bold text-ink">{journey.reattemptDate ?? activeDateLabel}</span>.
             </p>
           </div>
           <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-[rgba(59,91,219,0.18)] bg-l1-bg px-6 py-5">
             <CalendarClock className="h-6 w-6 text-l1" />
             <p className="text-[11px] font-bold uppercase tracking-widest text-l1">Next attempt</p>
             <p className="font-display text-base font-extrabold text-ink">
-              {journey.reattemptDate ?? examDateLabel}
+              {journey.reattemptDate ?? activeDateLabel}
             </p>
           </div>
         </div>
@@ -361,7 +386,7 @@ export function Hero({
               </h2>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
                 Your {meta.name} assessment goes live on{" "}
-                <span className="font-bold text-brand-2">{examDateLabel}</span>. Keep prepping — MCQs &amp; coding. 🔥
+                <span className="font-bold text-brand-2">{activeDateLabel}</span>. Keep prepping — MCQs &amp; coding. 🔥
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="genz-chip-violet rounded-lg px-2.5 py-1 text-[10px] font-bold">MCQs</span>
@@ -372,7 +397,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Goes live in</p>
             <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
@@ -429,7 +454,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand-2" /> {examDateLabel}
+              <Calendar className="h-3.5 w-3.5 text-brand-2" /> {activeDateLabel}
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-2/80">Closes in</p>
             <CountdownRing value={days} unit="Days" total={14} tone="neon" size={96} showUnit />
@@ -471,7 +496,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+              <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Closes in</p>
             <CountdownRing value={days} unit="Days" tone="pink" size={96} showUnit />
@@ -521,7 +546,7 @@ export function Hero({
         </div>
         <div className="flex shrink-0 flex-col items-center gap-2">
           <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-            <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+            <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
           </span>
           <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
         </div>

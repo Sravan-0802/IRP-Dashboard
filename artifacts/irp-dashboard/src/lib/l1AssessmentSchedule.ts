@@ -1,14 +1,11 @@
 import { EXAM_DATE_LABEL } from "@/lib/irpDates";
 
 /**
- * L1 Cycle 2 phase controls — flip these when the next assessment cycle opens.
- *
- * Current phase (post Cycle 2 online assessment):
- * - Online assessment is complete; ~14 FE-selected students moved to AI Mock Interview.
- * - Cleared-but-not-selected students see IRP 2.0 FE Project Main II on the dashboard.
+ * L1 Cycle 2 UI flags — banner & calendar apply only to cycle2_pending students
+ * (see l1StudentTrack.ts). Cleared Cycle 1 students never see Cycle 2 registration.
  */
-export const L1_CYCLE2_BANNER_VISIBLE = false;
-export const L1_ASSESSMENT_CALENDAR_VISIBLE = false;
+export const L1_CYCLE2_BANNER_VISIBLE = true;
+export const L1_ASSESSMENT_CALENDAR_VISIBLE = true;
 
 export const L1_HUSTLER_SLOTS = [
   { id: "slot-1", label: "3:00 PM – 5:00 PM IST" },
@@ -27,8 +24,10 @@ export const L1_HUSTLER_CALENDAR = {
   slots: L1_HUSTLER_SLOTS,
 } as const;
 
+export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
+export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 5th July 2026";
 export const L1_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler (Cycle 2) on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
 
 export const AVAILABILITY_OPTIONS = [
   { value: "yes", label: "Yes, I can attend" },
@@ -49,7 +48,6 @@ export interface L1RegistrationRecord {
 }
 
 export const ASSESSMENT_STATUS_STORAGE_KEY = "irp-assessment-status";
-export const L1_REGISTRATION_STORAGE_KEY = "irp-l1-cycle2-registration";
 
 type StatusMap = Record<string, { status: string; slot?: string }>;
 
@@ -61,23 +59,17 @@ export function loadAssessmentStatuses(): StatusMap {
   }
 }
 
+/** @deprecated Registration is stored in Postgres (l1_cycle_registrations). */
 export function loadL1Registration(): L1RegistrationRecord | null {
-  try {
-    const raw = localStorage.getItem(L1_REGISTRATION_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as L1RegistrationRecord) : null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
-export function saveL1Registration(record: L1RegistrationRecord): void {
-  localStorage.setItem(L1_REGISTRATION_STORAGE_KEY, JSON.stringify(record));
-
+/** Syncs assessment card UI slot after a successful API registration. */
+export function syncL1HustlerSlotFromRegistration(record: L1RegistrationRecord): void {
+  if (record.availability !== "yes" || !record.slotId) return;
   const map = loadAssessmentStatuses();
-  if (record.availability === "yes" && record.slotId) {
-    map[L1_HUSTLER_CALENDAR.id] = { ...map[L1_HUSTLER_CALENDAR.id], status: "todo", slot: record.slotId };
-    localStorage.setItem(ASSESSMENT_STATUS_STORAGE_KEY, JSON.stringify(map));
-  }
+  map[L1_HUSTLER_CALENDAR.id] = { ...map[L1_HUSTLER_CALENDAR.id], status: "todo", slot: record.slotId };
+  localStorage.setItem(ASSESSMENT_STATUS_STORAGE_KEY, JSON.stringify(map));
 }
 
 export function saveL1HustlerSlot(slotId: string): void {
@@ -88,4 +80,26 @@ export function saveL1HustlerSlot(slotId: string): void {
 
 export function getL1HustlerSlot(): string | undefined {
   return loadAssessmentStatuses()[L1_HUSTLER_CALENDAR.id]?.slot;
+}
+
+/** Clears legacy browser keys (dev). Registration lives in l1_cycle_registrations. */
+export function clearL1RegistrationLocal(): void {
+  localStorage.removeItem("irp-l1-cycle2-registration");
+  const map = loadAssessmentStatuses();
+  delete map[L1_HUSTLER_CALENDAR.id];
+  localStorage.setItem(ASSESSMENT_STATUS_STORAGE_KEY, JSON.stringify(map));
+}
+
+/** Dev helper: ?resetL1Registration=1 clears API + legacy local keys, then reloads. */
+export async function maybeResetL1RegistrationFromUrl(): Promise<boolean> {
+  if (import.meta.env.PROD) return false;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("resetL1Registration") !== "1") return false;
+  const { deleteL1RegistrationDev } = await import("@/lib/l1RegistrationApi");
+  await deleteL1RegistrationDev().catch(() => undefined);
+  clearL1RegistrationLocal();
+  url.searchParams.delete("resetL1Registration");
+  const next = url.pathname + (url.search || "") + url.hash;
+  window.history.replaceState({}, "", next);
+  return true;
 }

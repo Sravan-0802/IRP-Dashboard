@@ -1,14 +1,22 @@
 import { CalendarClock, Megaphone } from "lucide-react";
-import { L1_CYCLE2_BANNER_VISIBLE } from "@/lib/l1AssessmentSchedule";
+import type { AssessmentResult } from "@workspace/api-client-react";
+import {
+  L1_BANNER_TEXT,
+  L1_REGISTRATION_BANNER_EYEBROW,
+  L1_REGISTRATION_BANNER_TITLE,
+} from "@/lib/l1AssessmentSchedule";
+import { shouldShowCycle2Banner } from "@/lib/l1StudentTrack";
 
 export function L1AssessmentBanner({
+  assessments = [],
   onRegisterClick,
   compact = false,
 }: {
+  assessments?: AssessmentResult[];
   onRegisterClick?: () => void;
   compact?: boolean;
 }) {
-  if (!L1_CYCLE2_BANNER_VISIBLE) return null;
+  if (!shouldShowCycle2Banner(assessments)) return null;
 
   return (
     <div
@@ -23,16 +31,12 @@ export function L1AssessmentBanner({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">
-              Level 1 · The Hustler · Cycle 2
+              {L1_REGISTRATION_BANNER_EYEBROW}
             </p>
             <p className={`mt-1 font-display font-extrabold text-ink ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
-              IRP 2.0 Assessment — 5th July 2026
+              {L1_REGISTRATION_BANNER_TITLE}
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted2">
-              We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler (Cycle 2) on 5th July 2026. If you
-              are interested and willing to appear, please confirm your availability by registering through the
-              Assessments Calendar.
-            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted2">{L1_BANNER_TEXT}</p>
           </div>
         </div>
         {onRegisterClick ? (

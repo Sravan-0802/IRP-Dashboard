@@ -133,6 +133,50 @@ export interface DashboardAnalyticsEventResponse {
   ok: boolean;
 }
 
+export type L1RegistrationRequestAvailability = typeof L1RegistrationRequestAvailability[keyof typeof L1RegistrationRequestAvailability];
+
+
+export const L1RegistrationRequestAvailability = {
+  yes: 'yes',
+  'no-not-prepared': 'no-not-prepared',
+  'no-conflict': 'no-conflict',
+} as const;
+
+export interface L1RegistrationRequest {
+  cycle?: number;
+  availability: L1RegistrationRequestAvailability;
+  slotId?: string;
+  understandsGc?: boolean;
+  willAttend?: boolean;
+  unavailabilityReason?: string;
+  notifyNextCycle?: boolean;
+}
+
+export interface L1Registration {
+  id: number;
+  academyUserId: string;
+  userName?: string | null;
+  cycle: number;
+  level: number;
+  assessmentDate: string;
+  availability: string;
+  slotId?: string;
+  slotLabel?: string;
+  understandsGc?: boolean;
+  willAttend?: boolean;
+  unavailabilityReason?: string;
+  notifyNextCycle?: boolean;
+  submittedAt: string;
+}
+
+export interface L1RegistrationResponse {
+  registration: L1Registration | null;
+}
+
+export interface L1RegistrationSubmitResponse {
+  registration: L1Registration;
+}
+
 export interface DashboardAnalyticsMetric {
   eventType: string;
   label: string;
@@ -156,5 +200,19 @@ export interface DashboardAnalyticsSummary {
   generatedAt: string;
   events: DashboardAnalyticsMetric[];
   daily: DashboardAnalyticsDailyRow[];
+  l1Registrations: L1Registration[];
+  l1RegistrationCount: number;
 }
+
+export type GetL1RegistrationParams = {
+cycle?: number;
+};
+
+export type DeleteL1RegistrationParams = {
+cycle?: number;
+};
+
+export type DeleteL1Registration200 = {
+  ok: boolean;
+};
 

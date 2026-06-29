@@ -142,6 +142,68 @@ export const LogDashboardAnalyticsEventBody = zod.object({
 
 
 /**
+ * Returns the current student's registration for the given cycle (stored in Postgres)
+ * @summary Get L1 assessment slot registration
+ */
+export const getL1RegistrationQueryCycleDefault = 2;
+
+export const GetL1RegistrationQueryParams = zod.object({
+  "cycle": zod.coerce.number().default(getL1RegistrationQueryCycleDefault)
+})
+
+export const GetL1RegistrationResponse = zod.object({
+  "registration": zod.object({
+  "id": zod.number(),
+  "academyUserId": zod.string(),
+  "userName": zod.string().nullish(),
+  "cycle": zod.number(),
+  "level": zod.number(),
+  "assessmentDate": zod.string(),
+  "availability": zod.string(),
+  "slotId": zod.string().optional(),
+  "slotLabel": zod.string().optional(),
+  "understandsGc": zod.boolean().optional(),
+  "willAttend": zod.boolean().optional(),
+  "unavailabilityReason": zod.string().optional(),
+  "notifyNextCycle": zod.boolean().optional(),
+  "submittedAt": zod.string()
+}).nullable()
+})
+
+
+/**
+ * Saves slot registration and form answers to l1_cycle_registrations
+ * @summary Submit L1 assessment slot registration
+ */
+export const submitL1RegistrationBodyCycleDefault = 2;
+
+export const SubmitL1RegistrationBody = zod.object({
+  "cycle": zod.number().default(submitL1RegistrationBodyCycleDefault),
+  "availability": zod.enum(['yes', 'no-not-prepared', 'no-conflict']),
+  "slotId": zod.string().optional(),
+  "understandsGc": zod.boolean().optional(),
+  "willAttend": zod.boolean().optional(),
+  "unavailabilityReason": zod.string().optional(),
+  "notifyNextCycle": zod.boolean().optional()
+})
+
+
+/**
+ * Removes registration for local testing — not available in production
+ * @summary Delete L1 registration (dev only)
+ */
+export const deleteL1RegistrationQueryCycleDefault = 2;
+
+export const DeleteL1RegistrationQueryParams = zod.object({
+  "cycle": zod.coerce.number().default(deleteL1RegistrationQueryCycleDefault)
+})
+
+export const DeleteL1RegistrationResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
  * Returns aggregate click and visit stats (requires admin API key)
  * @summary Get dashboard usage analytics
  */
@@ -161,7 +223,24 @@ export const GetDashboardAnalyticsResponse = zod.object({
   "clicks": zod.number(),
   "users": zod.number()
 }))
-}))
+})),
+  "l1Registrations": zod.array(zod.object({
+  "id": zod.number(),
+  "academyUserId": zod.string(),
+  "userName": zod.string().nullish(),
+  "cycle": zod.number(),
+  "level": zod.number(),
+  "assessmentDate": zod.string(),
+  "availability": zod.string(),
+  "slotId": zod.string().optional(),
+  "slotLabel": zod.string().optional(),
+  "understandsGc": zod.boolean().optional(),
+  "willAttend": zod.boolean().optional(),
+  "unavailabilityReason": zod.string().optional(),
+  "notifyNextCycle": zod.boolean().optional(),
+  "submittedAt": zod.string()
+})),
+  "l1RegistrationCount": zod.number()
 })
 
 

@@ -149,6 +149,76 @@ paths:
         "401":
           description: Unauthorized
 
+  /student/l1-registration:
+    get:
+      operationId: getL1Registration
+      tags: [student]
+      summary: Get L1 assessment slot registration
+      description: Returns the current student's registration for the given cycle (stored in Postgres)
+      parameters:
+        - name: cycle
+          in: query
+          schema:
+            type: integer
+            default: 2
+      responses:
+        "200":
+          description: Registration state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/L1RegistrationResponse"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: submitL1Registration
+      tags: [student]
+      summary: Submit L1 assessment slot registration
+      description: Saves slot registration and form answers to l1_cycle_registrations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/L1RegistrationRequest"
+      responses:
+        "201":
+          description: Registration saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/L1RegistrationSubmitResponse"
+        "400":
+          description: Invalid registration
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: deleteL1Registration
+      tags: [student]
+      summary: Delete L1 registration (dev only)
+      description: Removes registration for local testing — not available in production
+      parameters:
+        - name: cycle
+          in: query
+          schema:
+            type: integer
+            default: 2
+      responses:
+        "200":
+          description: Registration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+
   /analytics/dashboard:
     get:
       operationId: getDashboardAnalytics
@@ -456,6 +526,87 @@ components:
         ok:
           type: boolean
 
+    L1RegistrationRequest:
+      type: object
+      required:
+        - availability
+      properties:
+        cycle:
+          type: integer
+          default: 2
+        availability:
+          type: string
+          enum: [yes, no-not-prepared, no-conflict]
+        slotId:
+          type: string
+        understandsGc:
+          type: boolean
+        willAttend:
+          type: boolean
+        unavailabilityReason:
+          type: string
+        notifyNextCycle:
+          type: boolean
+
+    L1Registration:
+      type: object
+      required:
+        - id
+        - academyUserId
+        - cycle
+        - level
+        - assessmentDate
+        - availability
+        - submittedAt
+      properties:
+        id:
+          type: integer
+        academyUserId:
+          type: string
+        userName:
+          type: string
+          nullable: true
+        cycle:
+          type: integer
+        level:
+          type: integer
+        assessmentDate:
+          type: string
+        availability:
+          type: string
+        slotId:
+          type: string
+        slotLabel:
+          type: string
+        understandsGc:
+          type: boolean
+        willAttend:
+          type: boolean
+        unavailabilityReason:
+          type: string
+        notifyNextCycle:
+          type: boolean
+        submittedAt:
+          type: string
+
+    L1RegistrationResponse:
+      type: object
+      required:
+        - registration
+      properties:
+        registration:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/L1Registration"
+
+    L1RegistrationSubmitResponse:
+      type: object
+      required:
+        - registration
+      properties:
+        registration:
+          $ref: "#/components/schemas/L1Registration"
+
     DashboardAnalyticsMetric:
       type: object
       required:
@@ -507,6 +658,8 @@ components:
         - generatedAt
         - events
         - daily
+        - l1Registrations
+        - l1RegistrationCount
       properties:
         trackingSince:
           type: string
@@ -521,3 +674,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashboardAnalyticsDailyRow"
+        l1Registrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/L1Registration"
+        l1RegistrationCount:
+          type: integer

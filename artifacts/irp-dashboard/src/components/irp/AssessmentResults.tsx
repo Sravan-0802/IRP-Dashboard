@@ -6,6 +6,7 @@ import { areAssignmentResultsVisible } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
   formatAssessmentTitle,
+  getAssessmentCompletedDateLabel,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   pickAssessmentForLevel,
@@ -30,6 +31,7 @@ export function AssessmentResults({
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
   const assessment = pickAssessmentForLevel(assessments, level);
+  const completedDateLabel = getAssessmentCompletedDateLabel(assessments, level, examDateLabel);
   const locked = isAssessmentResultsLocked(assessments, level, resultsUnlockedByDate);
   const showResults = !locked;
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
@@ -58,7 +60,7 @@ export function AssessmentResults({
             <span className="text-gradient-brand">Assessment Results</span>
           </h3>
           <p className="mt-0.5 text-xs text-muted2">
-            {formatAssessmentTitle(assessment?.assessmentTitle, level)} · {examDateLabel}
+            {formatAssessmentTitle(assessment?.assessmentTitle, level)} · {completedDateLabel}
           </p>
         </div>
         {showResults && assessment && (

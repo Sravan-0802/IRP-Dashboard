@@ -12,10 +12,19 @@ import {
   contactUsMessagesTable,
   dashboardFeedbackTable,
   dashboardAnalyticsEventsTable,
+  l1CycleRegistrationsTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
-import { getStudentForUser, userHasAssessmentData } from "../lib/student";
+import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
+import {
+  L1_REGISTRATION_ASSESSMENT_DATE,
+  L1_REGISTRATION_CYCLE,
+  L1_REGISTRATION_LEVEL,
+  rowToL1RegistrationResponse,
+  slotLabelFor,
+  validateL1RegistrationPayload,
+} from "../lib/l1Registration";
 
 const router = Router();
 
@@ -483,6 +492,166 @@ router.post("/student/analytics/event", async (req, res) => {
     res.status(201).json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to log dashboard analytics event");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+function parseRegistrationCycle(raw: unknown): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : L1_REGISTRATION_CYCLE;
+}
+
+router.get("/student/l1-registration", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const cycle = parseRegistrationCycle(req.query.cycle);
+    const [row] = await db
+      .select()
+      .from(l1CycleRegistrationsTable)
+      .where(
+        and(
+          eq(l1CycleRegistrationsTable.academyUserId, userId),
+          eq(l1CycleRegistrationsTable.cycle, cycle),
+          eq(l1CycleRegistrationsTable.level, L1_REGISTRATION_LEVEL),
+        ),
+      )
+      .limit(1);
+
+    res.json({ registration: row ? rowToL1RegistrationResponse(row) : null });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get L1 registration");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/student/l1-registration", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const cycle = parseRegistrationCycle(req.body?.cycle);
+    const validationError = validateL1RegistrationPayload({
+      cycle,
+      availability: req.body?.availability,
+      slotId: req.body?.slotId,
+      understandsGc: req.body?.understandsGc,
+      willAttend: req.body?.willAttend,
+      unavailabilityReason: req.body?.unavailabilityReason,
+      notifyNextCycle: req.body?.notifyNextCycle,
+    });
+    if (validationError) {
+      res.status(400).json({ error: validationError });
+      return;
+    }
+
+    const availability = String(req.body.availability).trim();
+    const isYes = availability === "yes";
+    const slotId = isYes ? String(req.body.slotId).trim() : null;
+    const slotLabel = isYes ? slotLabelFor(slotId!) : null;
+
+    const student = await getOrCreateStudentForUser(userId);
+    const [basic] = await db
+      .select({ userName: academyUserBasicDetailsTable.userName })
+      .from(academyUserBasicDetailsTable)
+      .where(eq(academyUserBasicDetailsTable.userId, userId))
+      .limit(1);
+
+    const displayName = resolveStudentName(
+      basic?.userName,
+      student?.name,
+      userId,
+      student?.email,
+    );
+
+    const now = new Date();
+    const values = {
+      academyUserId: userId,
+      studentId: student?.id ?? null,
+      userName: displayName,
+      cycle,
+      level: L1_REGISTRATION_LEVEL,
+      assessmentDate: L1_REGISTRATION_ASSESSMENT_DATE,
+      availability,
+      slotId,
+      slotLabel,
+      understandsGc: isYes && req.body.understandsGc === true ? 1 : null,
+      willAttend: isYes && req.body.willAttend === true ? 1 : null,
+      unavailabilityReason: !isYes
+        ? String(req.body.unavailabilityReason).trim()
+        : null,
+      notifyNextCycle: !isYes && req.body.notifyNextCycle === true ? 1 : 0,
+      submittedAt: now,
+      updatedAt: now,
+    };
+
+    const [row] = await db
+      .insert(l1CycleRegistrationsTable)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [
+          l1CycleRegistrationsTable.academyUserId,
+          l1CycleRegistrationsTable.cycle,
+          l1CycleRegistrationsTable.level,
+        ],
+        set: {
+          studentId: values.studentId,
+          userName: values.userName,
+          assessmentDate: values.assessmentDate,
+          availability: values.availability,
+          slotId: values.slotId,
+          slotLabel: values.slotLabel,
+          understandsGc: values.understandsGc,
+          willAttend: values.willAttend,
+          unavailabilityReason: values.unavailabilityReason,
+          notifyNextCycle: values.notifyNextCycle,
+          submittedAt: values.submittedAt,
+          updatedAt: values.updatedAt,
+        },
+      })
+      .returning();
+
+    res.status(201).json({ registration: rowToL1RegistrationResponse(row) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to save L1 registration");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/student/l1-registration", async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === "production") {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const cycle = parseRegistrationCycle(req.query.cycle);
+    await db
+      .delete(l1CycleRegistrationsTable)
+      .where(
+        and(
+          eq(l1CycleRegistrationsTable.academyUserId, userId),
+          eq(l1CycleRegistrationsTable.cycle, cycle),
+          eq(l1CycleRegistrationsTable.level, L1_REGISTRATION_LEVEL),
+        ),
+      );
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete L1 registration");
     res.status(500).json({ error: "Internal server error" });
   }
 });

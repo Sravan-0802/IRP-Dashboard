@@ -19,7 +19,6 @@ import {
   L1_HUSTLER_SLOTS,
   type AvailabilityValue,
   type L1RegistrationRecord,
-  saveL1Registration,
 } from "@/lib/l1AssessmentSchedule";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +26,8 @@ interface L1RegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   slotId?: string;
+  submitting?: boolean;
+  onSubmit?: (record: L1RegistrationRecord) => Promise<L1RegistrationRecord | void>;
   onComplete?: (record: L1RegistrationRecord) => void;
 }
 
@@ -91,6 +92,8 @@ export function L1RegistrationModal({
   open,
   onOpenChange,
   slotId,
+  submitting = false,
+  onSubmit,
   onComplete,
 }: L1RegistrationModalProps) {
   const [availability, setAvailability] = useState<AvailabilityValue | "">("");
@@ -99,6 +102,7 @@ export function L1RegistrationModal({
   const [unavailabilityReason, setUnavailabilityReason] = useState("");
   const [notifyNextCycle, setNotifyNextCycle] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   const isYes = availability === "yes";
   const isNo = availability === "no-not-prepared" || availability === "no-conflict";
@@ -120,7 +124,7 @@ export function L1RegistrationModal({
     setError(null);
   }
 
-  function submit() {
+  async function submit() {
     setError(null);
 
     if (!availability) {
@@ -152,10 +156,19 @@ export function L1RegistrationModal({
       submittedAt: new Date().toISOString(),
     };
 
-    saveL1Registration(record);
-    onComplete?.(record);
-    onOpenChange(false);
+    setPending(true);
+    try {
+      const saved = onSubmit ? await onSubmit(record) : record;
+      onComplete?.(saved ?? record);
+      onOpenChange(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
+
+  const isSaving = submitting || pending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,7 +186,7 @@ export function L1RegistrationModal({
             <div className="min-w-0 pt-0.5">
               <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-[rgba(103,65,217,0.15)] bg-white/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
                 <Sparkles className="h-3 w-3" />
-                {L1_HUSTLER_CALENDAR.subtitle} · {L1_HUSTLER_CALENDAR.cycleLabel}
+                {L1_HUSTLER_CALENDAR.subtitle}
               </div>
               <h2 className="font-display text-xl font-extrabold leading-tight text-ink sm:text-2xl">
                 {L1_HUSTLER_CALENDAR.title}
@@ -196,7 +209,7 @@ export function L1RegistrationModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
           <QuestionCard step={1} title="Availability">
             <p className="mb-3 text-sm leading-relaxed text-muted2">
-              Are you available to attend the Internship Readiness Path 2.0 Assessment (Cycle 2) on 5th July 2026?
+              Are you available to attend the Internship Readiness Path 2.0 Assessment on 5th July 2026?
             </p>
             <select
               id="l1-availability"
@@ -302,9 +315,10 @@ export function L1RegistrationModal({
           <button
             type="button"
             onClick={submit}
-            className="btn-pop rounded-xl px-6 py-2.5 text-sm font-bold shadow-[0_8px_20px_-8px_rgba(103,65,217,0.55)]"
+            disabled={isSaving}
+            className="btn-pop rounded-xl px-6 py-2.5 text-sm font-bold shadow-[0_8px_20px_-8px_rgba(103,65,217,0.55)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Submit registration
+            {isSaving ? "Submitting…" : "Submit registration"}
           </button>
         </DialogFooter>
       </DialogContent>
