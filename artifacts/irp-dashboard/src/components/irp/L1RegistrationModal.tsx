@@ -262,6 +262,11 @@ export function L1RegistrationModal({
                 <CommitCheckbox checked={willAttend} onChange={setWillAttend}>
                   Yes, I will definitely attend!
                 </CommitCheckbox>
+                <p className="mt-3 rounded-xl border border-[rgba(245,159,0,0.3)] bg-[#fff9db] px-4 py-3 text-xs leading-relaxed text-[#9c6500]">
+                  Please note that if you register for the assessment and do not attend without prior communication, it
+                  may adversely impact your eligibility for future opportunities. Attendance for assessments is taken
+                  very seriously under IRP 2.0, and all absences are recorded.
+                </p>
               </QuestionCard>
             </>
           ) : null}
