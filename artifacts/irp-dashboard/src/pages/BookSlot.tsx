@@ -3,7 +3,6 @@ import { Calendar, Clock, Trophy, CheckCircle2 } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard } from "@/components/irp/ui";
 import { ComingSoonPanel } from "@/components/irp/ComingSoonPanel";
-import { L1AssessmentBanner } from "@/components/irp/L1AssessmentBanner";
 import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
 import {
   L1_HUSTLER_CALENDAR,
@@ -159,8 +158,6 @@ export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[
 
   return (
     <div className="space-y-6">
-      <L1AssessmentBanner assessments={assessments} registration={registration} />
-
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
         <p className="mt-1 text-sm text-muted2">

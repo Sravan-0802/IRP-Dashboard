@@ -1,7 +1,12 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getPhase } from "@/lib/journey";
-import { getAssessmentStepStatus, hasClearedAssessment } from "@/lib/assessment";
+import {
+  getAssessmentStepStatus,
+  hasAttemptedFeProject,
+  hasClearedAssessment,
+  hasWrittenAssessment,
+} from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
 
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
@@ -22,8 +27,10 @@ export function l1HustlerJourneySteps(
   const state = journey.journeyState;
   const assessmentCleared = hasClearedAssessment(assessments, 1);
   const feDone = journey.projectSubmitted;
+  const feAttemptedNotCleared = !feDone && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
+  const pastAiMock = state === "L1_HUMAN_INTERVIEW" || advancedToL2;
 
   const onlineStatus: JourneyStep["status"] =
     phase === "REATTEMPT_WAITING" || phase === "REATTEMPT_ACTIVE"
@@ -32,15 +39,16 @@ export function l1HustlerJourneySteps(
 
   let feProjectStatus: JourneyStep["status"] = "locked";
   if (feDone) feProjectStatus = "done";
+  else if (feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
   let aiMockStatus: JourneyStep["status"] = "locked";
-  if (advancedToL2) aiMockStatus = "done";
+  if (pastAiMock) aiMockStatus = "done";
   else if (feDone) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";
   if (phase === "PLACED" || state.startsWith("L3_")) humanInterviewStatus = "done";
-  else if (advancedToL2) humanInterviewStatus = "active";
+  else if (pastAiMock) humanInterviewStatus = "active";
 
   let level2AccessStatus: JourneyStep["status"] = "locked";
   if (phase === "PLACED") level2AccessStatus = "done";
@@ -57,11 +65,17 @@ export function l1HustlerJourneySteps(
   }
 
   return [
-    { ...L1_STEPS[0], status: onlineStatus },
+    {
+      ...L1_STEPS[0],
+      status: onlineStatus,
+      ...(onlineStatus === "active" && !hasWrittenAssessment(assessments, 1)
+        ? { badgeLabel: "Not attempted" }
+        : {}),
+    },
     {
       ...L1_STEPS[1],
       status: feProjectStatus,
-      ...(feProjectStatus === "active" ? { badgeLabel: "Unlocked" } : {}),
+      ...(feProjectStatus === "active" ? { badgeLabel: "In progress" } : {}),
     },
     { ...L1_STEPS[2], status: aiMockStatus },
     { ...L1_STEPS[3], status: humanInterviewStatus },

@@ -46,10 +46,86 @@ function scoreRank(assessment: AssessmentResult): number {
   return -1;
 }
 
+/** True for L1 Hustler online assessment rows — excludes FE Project attempts. */
+export function isL1OnlineAssessment(a: AssessmentResult): boolean {
+  const level = (a.level ?? "").toUpperCase();
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  if (level.includes("FE-PROJECT") || level.includes("FE_PROJECT") || tag.includes("FE-PROJECT")) {
+    return false;
+  }
+  if (level.includes("ASSESSMENT") || tag.includes("ASSESSMENT")) return true;
+  return parseAssessmentLevel(a.level) === 1 && !level.includes("FE");
+}
+
+/** True for FE Project assessment rows (Main / Main II). */
+export function isFeProjectAssessment(a: AssessmentResult): boolean {
+  const level = (a.level ?? "").toUpperCase();
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  const title = (a.assessmentTitle ?? "").toUpperCase();
+  return (
+    level.includes("FE-PROJECT") ||
+    level.includes("FE_PROJECT") ||
+    tag.includes("FE-PROJECT") ||
+    title.includes("FE PROJECT")
+  );
+}
+
+export function pickFeProjectAssessment(assessments: AssessmentResult[]): AssessmentResult | null {
+  const fe = assessments
+    .filter(isFeProjectAssessment)
+    .sort((a, b) => {
+      const aMainII = (a.assessmentTitle ?? "").toLowerCase().includes("main ii") ? 1 : 0;
+      const bMainII = (b.assessmentTitle ?? "").toLowerCase().includes("main ii") ? 1 : 0;
+      if (bMainII !== aMainII) return bMainII - aMainII;
+      return scoreRank(b) - scoreRank(a);
+    });
+  return fe[0] ?? null;
+}
+
+/**
+ * FE Project counts as *attempted* only with a positive score. A synced row that
+ * exists with score 0 (and no section scores) means the student was registered /
+ * assigned the project but has not submitted — treated as "in progress", not attempted.
+ */
+function feAssessmentWasWritten(assessment: AssessmentResult): boolean {
+  return (
+    (assessment.overallScore ?? 0) > 0 ||
+    (assessment.mcqScore ?? 0) > 0 ||
+    (assessment.codingScore ?? 0) > 0
+  );
+}
+
+export function hasAttemptedFeProject(assessments: AssessmentResult[]): boolean {
+  const fe = pickFeProjectAssessment(assessments);
+  return fe != null && feAssessmentWasWritten(fe);
+}
+
+/**
+ * Student has an FE Project row (assigned / registered) but has not attempted it yet
+ * (no positive score). These students see the FE Project step as "In progress".
+ */
+export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult[]): boolean {
+  const fe = pickFeProjectAssessment(assessments);
+  return fe != null && !feAssessmentWasWritten(fe);
+}
+
+export function hasClearedFeProject(assessments: AssessmentResult[]): boolean {
+  const fe = pickFeProjectAssessment(assessments);
+  if (!fe || !feAssessmentWasWritten(fe)) return false;
+  return assessmentOverallPct(fe) >= ASSESSMENT_CLEAR_THRESHOLD;
+}
+
 export function pickAssessmentForLevel(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
 ): AssessmentResult | null {
+  if (level === 1) {
+    const online = assessments
+      .filter(isL1OnlineAssessment)
+      .sort((a, b) => scoreRank(b) - scoreRank(a));
+    if (online.length > 0) return online[0];
+  }
+
   const forLevel = assessments
     .filter((a) => parseAssessmentLevel(a.level) === level)
     .sort((a, b) => scoreRank(b) - scoreRank(a));
@@ -133,7 +209,7 @@ export function isAssessmentResultsLocked(
   resultsUnlockedByDate: boolean,
 ): boolean {
   if (!hasWrittenAssessment(assessments, level)) return true;
-  // Cycle 1 sit complete but below clear threshold — show scores immediately on dashboard.
-  if (getAssessmentStepStatus(assessments, level) === "attempted_not_cleared") return false;
+  // L1 Cycle 1 sit complete (cleared or attempted-not-cleared) — show scores immediately.
+  if (level === 1 && hasWrittenAssessment(assessments, 1)) return false;
   return !resultsUnlockedByDate;
 }

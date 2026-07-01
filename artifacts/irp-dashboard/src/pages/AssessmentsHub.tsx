@@ -2,9 +2,7 @@ import { useState } from "react";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
-import { L1AssessmentBanner } from "@/components/irp/L1AssessmentBanner";
 import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
-import { FeProjectCallout } from "@/components/irp/FeProjectCallout";
 import { LEVEL_META, type Journey } from "@/lib/journey";
 import {
   hasClearedAssessment,
@@ -22,7 +20,7 @@ import {
   L1_REGISTRATION_CLOSE_DATE_LABEL,
   isL1RegistrationOpen,
 } from "@/lib/irpDates";
-import { isCycle1Cleared, shouldShowCycle2Banner, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
+import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -320,24 +318,16 @@ export function AssessmentsHub({
 
   return (
     <div className="space-y-6">
-      {level === 1 && shouldShowCycle2Banner(assessments) ? (
-        <L1AssessmentBanner assessments={assessments} registration={registration} />
-      ) : null}
-
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
           {level === 1 && isCycle1Cleared(assessments)
-            ? "You cleared the 14 June assessment. Complete IRP 2.0 FE Project Main II below."
+            ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
             : level === 1
               ? `The assessment on ${L1_CYCLE2_EXAM_DATE_LABEL} — attempt the mock first, then register for your slot.`
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
-
-      {level === 1 && journey ? (
-        <FeProjectCallout journey={journey} assessments={assessments} className="mt-0" />
-      ) : null}
 
       {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
@@ -366,7 +356,7 @@ export function AssessmentsHub({
               registrationClosed={a.id === "l1-hustler" && !shouldShowCycle2Calendar(assessments)}
               registrationClosedNote={
                 a.id === "l1-hustler" && isCycle1Cleared(assessments)
-                  ? "You cleared the 14 June assessment. Continue with IRP 2.0 FE Project Main II on the dashboard."
+                  ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
                   : a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)
                     ? "Your slot is confirmed. Wait for the mock assessment link before exam day."
                     : a.id === "l1-hustler" && !isL1RegistrationOpen()

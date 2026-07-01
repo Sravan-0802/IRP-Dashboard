@@ -16,7 +16,6 @@ import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
-import { FeProjectCallout } from "./FeProjectCallout";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 
@@ -75,6 +74,9 @@ function assessmentMotivation(
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
   if (level === 1 && isCycle1Cleared(assessments)) {
+    if (journey.journeyState === "L1_HUMAN_INTERVIEW") {
+      return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
+    }
     if (journey.projectSubmitted) {
       return "You cleared the 14 June assessment and completed FE Project. Continue with your next interview step. 💪";
     }
@@ -188,7 +190,6 @@ export function DashboardView({
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
-        <FeProjectCallout journey={journey} assessments={assessments} />
       </IrpCard>
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />

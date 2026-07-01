@@ -8,3 +8,8 @@ export const FE_PROJECT_MAIN_II_LABEL = "Start assessment";
 
 export const FE_PROJECT_MAIN_II_BODY =
   "You cleared the L1 online assessment. Complete IRP 2.0 FE Project Main II on Topin to continue in the IRP journey.";
+
+export const FE_PROJECT_REATTEMPT_LABEL = "Re-attempt assessment";
+
+export const FE_PROJECT_REATTEMPT_BODY =
+  "You attempted FE Project Main II but did not clear yet. Re-attempt on Topin when you are ready — you need 70% to move forward.";

@@ -6,6 +6,7 @@ export type JourneyState =
   | "L1_POST_ASSESSMENT"
   | "L1_POST_REATTEMPT_WAITING"
   | "L1_POST_REATTEMPT_ACTIVE"
+  | "L1_HUMAN_INTERVIEW"
   | "L2_PREP"
   | "L2_EXAM_OPEN"
   | "L2_REATTEMPT_WAITING"
@@ -54,6 +55,7 @@ export function getLevel(state: JourneyState): 1 | 2 | 3 {
 export function getPhase(state: JourneyState): Phase {
   if (state === "PLACED") return "PLACED";
   if (state === "WILDCARD_ACTIVE") return "WILDCARD";
+  if (state === "L1_HUMAN_INTERVIEW") return "POST_ASSESSMENT";
   if (state.endsWith("_PREP")) return "PREP";
   if (state.endsWith("_EXAM_OPEN")) return "EXAM_OPEN";
   if (state.endsWith("_REATTEMPT_WAITING") || state.endsWith("_POST_REATTEMPT_WAITING"))

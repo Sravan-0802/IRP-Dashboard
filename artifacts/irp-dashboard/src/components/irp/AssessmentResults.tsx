@@ -2,17 +2,18 @@ import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible } from "@/lib/irpDates";
+import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
   formatAssessmentTitle,
-  getAssessmentCompletedDateLabel,
+  getAssessmentStepStatus,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   pickAssessmentForLevel,
   resultLabel,
   resultTone,
 } from "@/lib/assessment";
+import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { ProgressRing, Pill } from "./ui";
 
 export function AssessmentResults({
@@ -31,22 +32,46 @@ export function AssessmentResults({
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
   const assessment = pickAssessmentForLevel(assessments, level);
-  const completedDateLabel = getAssessmentCompletedDateLabel(assessments, level, examDateLabel);
+  const assessmentStatus = getAssessmentStepStatus(assessments, level);
+  const cycle1Cleared = level === 1 && isCycle1Cleared(assessments);
+  const cycle2Track = level === 1 && isCycle2Candidate(assessments);
+  const title = formatAssessmentTitle(assessment?.assessmentTitle, level);
+
+  const resultsDateLabel = (() => {
+    if (cycle1Cleared) return L1_CYCLE1_EXAM_DATE_LABEL;
+    if (cycle2Track && assessmentStatus === "attempted_not_cleared") {
+      return `${L1_CYCLE1_EXAM_DATE_LABEL} · Next: ${L1_CYCLE2_EXAM_DATE_LABEL}`;
+    }
+    if (cycle2Track) return L1_CYCLE2_EXAM_DATE_LABEL;
+    return examDateLabel;
+  })();
+
   const locked = isAssessmentResultsLocked(assessments, level, resultsUnlockedByDate);
   const showResults = !locked;
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   const lockedMessage = (() => {
-    if (!resultsUnlockedByDate) {
+    if (!resultsUnlockedByDate && !hasWrittenAssessment(assessments, level)) {
       return (
         <>
-          Marks unlock after your assessment on{" "}
-          <span className="font-bold text-ink">{examDateLabel}</span>.
+          Your assessment is on{" "}
+          <span className="font-bold text-ink">
+            {cycle2Track ? L1_CYCLE2_EXAM_DATE_LABEL : examDateLabel}
+          </span>
+          . Results will appear here after you complete it.
         </>
       );
     }
     if (!hasWrittenAssessment(assessments, level)) {
-      return <>Complete your online assessment to unlock your results.</>;
+      return (
+        <>
+          Complete your online assessment on{" "}
+          <span className="font-bold text-ink">
+            {cycle2Track ? L1_CYCLE2_EXAM_DATE_LABEL : examDateLabel}
+          </span>{" "}
+          to unlock your results.
+        </>
+      );
     }
     return "Your assessment results are syncing. Check back shortly.";
   })();
@@ -60,8 +85,14 @@ export function AssessmentResults({
             <span className="text-gradient-brand">Assessment Results</span>
           </h3>
           <p className="mt-0.5 text-xs text-muted2">
-            {formatAssessmentTitle(assessment?.assessmentTitle, level)} · {completedDateLabel}
+            {title} · {resultsDateLabel}
           </p>
+          {cycle2Track && assessmentStatus === "attempted_not_cleared" ? (
+            <p className="mt-1 text-xs text-muted2">
+              Scores below are from your Cycle 1 sit on {L1_CYCLE1_EXAM_DATE_LABEL}. Register for{" "}
+              {L1_CYCLE2_EXAM_DATE_LABEL} to reattempt.
+            </p>
+          ) : null}
         </div>
         {showResults && assessment && (
           <Pill tone={resultTone(overallPct)}>{resultLabel(overallPct)}</Pill>
