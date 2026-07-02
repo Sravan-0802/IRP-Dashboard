@@ -13,3 +13,11 @@ export const FE_PROJECT_REATTEMPT_LABEL = "Re-attempt assessment";
 
 export const FE_PROJECT_REATTEMPT_BODY =
   "You attempted FE Project Main II but did not clear yet. Re-attempt on Topin when you are ready — you need 70% to move forward.";
+
+/** Eyebrow + copy for the FE Project "not cleared" notice shown on the dashboard. */
+export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
+
+export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 100% to unlock the AI Mock Interview";
+
+export const FE_PROJECT_NOT_CLEARED_BODY =
+  "You attempted the FE Project but haven't cleared it yet. You must pass all test cases — a perfect 20/20 (100%) — to advance to the AI Mock Interview.";

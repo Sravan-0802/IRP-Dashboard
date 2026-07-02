@@ -16,6 +16,7 @@ import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
+import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 
@@ -191,6 +192,10 @@ export function DashboardView({
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
       </IrpCard>
+
+      {level === 1 && !journey.isWildcard ? (
+        <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
+      ) : null}
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
 

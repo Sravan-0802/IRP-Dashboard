@@ -109,10 +109,14 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
+/**
+ * FE Project clears only on a perfect score — every test case must pass
+ * (e.g. 20/20). A partial score counts as attempted-but-not-cleared.
+ */
 export function hasClearedFeProject(assessments: AssessmentResult[]): boolean {
   const fe = pickFeProjectAssessment(assessments);
   if (!fe || !feAssessmentWasWritten(fe)) return false;
-  return assessmentOverallPct(fe) >= ASSESSMENT_CLEAR_THRESHOLD;
+  return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
 }
 
 export function pickAssessmentForLevel(

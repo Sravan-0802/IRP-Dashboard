@@ -5,6 +5,7 @@ import {
   getAssessmentStepStatus,
   hasAttemptedFeProject,
   hasClearedAssessment,
+  hasClearedFeProject,
   hasWrittenAssessment,
 } from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
@@ -26,7 +27,8 @@ export function l1HustlerJourneySteps(
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
   const assessmentCleared = hasClearedAssessment(assessments, 1);
-  const feDone = journey.projectSubmitted;
+  // FE clears only on a perfect score (20/20) or an explicit portal flag.
+  const feDone = journey.projectSubmitted || hasClearedFeProject(assessments);
   const feAttemptedNotCleared = !feDone && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
