@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail, Info } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -89,6 +89,15 @@ export function SidebarContent({
             {label}
           </button>
         ))}
+        <a
+          href="https://irp.nxtwave.academy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-[9px] border-[1.5px] border-transparent px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-all hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]"
+        >
+          <Info className="h-4 w-4 shrink-0" />
+          About
+        </a>
       </nav>
 
       <div className="space-y-2 border-t border-[#6741d9]/10 px-3 py-3">
