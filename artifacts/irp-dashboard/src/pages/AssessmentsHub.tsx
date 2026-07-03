@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink, Info } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
 import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
@@ -166,6 +166,17 @@ function AssessmentCard({
           <div>
             <h3 className="font-display text-lg font-extrabold text-ink">{config.title}</h3>
             <p className="mt-1 text-sm text-muted2">{config.description}</p>
+            {config.kind === "mock" && (
+              <a
+                href="https://irp.nxtwave.academy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#3b5bdb] hover:underline"
+              >
+                <Info className="h-3.5 w-3.5" />
+                About this assessment
+              </a>
+            )}
           </div>
         </div>
         {statusPill(status, config.kind)}
@@ -228,15 +239,18 @@ function AssessmentCard({
           </button>
         ) : null}
         {status === "todo" && config.kind !== "main" && (
-          <button
-            type="button"
-            disabled={!canStart}
-            onClick={openAssessment}
-            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed"
-          >
-            <ExternalLink className="h-4 w-4" />
-            {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
-          </button>
+          canStart ? (
+            <button
+              type="button"
+              onClick={openAssessment}
+              className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
+            </button>
+          ) : (
+            <span className="text-xs font-semibold text-muted2">🔗 Link will be updated soon</span>
+          )
         )}
         {status === "todo" && config.kind === "main" && needsSlot && !onBook && (
           <button
