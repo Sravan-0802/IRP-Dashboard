@@ -42,11 +42,8 @@ interface AssessmentConfig {
   kind: "mock" | "main";
   /** Single assessment URL (used when there are no slots, e.g. mock). */
   url?: string;
-  slots?: SlotConfig[];
+  slots?: readonly SlotConfig[];
 }
-
-const L1_MOCK_ASSESSMENT_URL =
-  "https://config.topin.tech/edit-assessment/77f9f450-9c8b-4205-aa34-78c2fd978f89";
 
 function resolveAssessmentUrl(config: AssessmentConfig, slotId?: string): string | undefined {
   if (slotId && config.slots) {
@@ -62,7 +59,6 @@ const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
       title: "Mock Assessment",
       description: "A practice run that mirrors the real L1 exam format. Attempt it before your Hustler assessment.",
       kind: "mock",
-      url: L1_MOCK_ASSESSMENT_URL,
     },
     {
       id: "l1-hustler",
