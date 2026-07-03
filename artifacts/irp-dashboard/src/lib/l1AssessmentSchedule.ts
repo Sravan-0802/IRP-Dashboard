@@ -35,7 +35,7 @@ export const L1_REGISTRATION_SUCCESS_BANNER_TEXT =
 
 export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
 export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
-  `Slot registration for the 5 July assessment closed on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+  `Registrations for the 5th July L1 Hustler Assessment are now closed as of ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
 
 export function hasSuccessfulSlotRegistration(
   record: L1RegistrationRecord | null | undefined,
