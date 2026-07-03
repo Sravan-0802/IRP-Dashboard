@@ -166,6 +166,9 @@ function AssessmentCard({
           <div>
             <h3 className="font-display text-lg font-extrabold text-ink">{config.title}</h3>
             <p className="mt-1 text-sm text-muted2">{config.description}</p>
+            {config.kind === "mock" && !resolveAssessmentUrl(config, undefined) && (
+              <p className="mt-2 text-xs font-semibold text-muted2">Mock Assessment link will be updated soon.</p>
+            )}
           </div>
         </div>
         {statusPill(status, config.kind)}
@@ -227,19 +230,15 @@ function AssessmentCard({
             Book · Register for slot
           </button>
         ) : null}
-        {status === "todo" && config.kind !== "main" && (
-          canStart ? (
-            <button
-              type="button"
-              onClick={openAssessment}
-              className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-            >
-              <ExternalLink className="h-4 w-4" />
-              {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
-            </button>
-          ) : (
-            <span className="text-xs font-semibold text-muted2">We will update the assessment link soon</span>
-          )
+        {status === "todo" && config.kind !== "main" && canStart && (
+          <button
+            type="button"
+            onClick={openAssessment}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
+          </button>
         )}
         {status === "todo" && config.kind === "main" && needsSlot && !onBook && (
           <button
