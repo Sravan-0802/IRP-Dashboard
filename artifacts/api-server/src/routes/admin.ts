@@ -4,8 +4,9 @@ import {
   studentsTable,
   academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
+  l1CycleRegistrationsTable,
 } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { inArray, eq, and } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { emailForUser } from "../lib/student";
 
@@ -159,6 +160,37 @@ router.post("/admin/students/ai-mock-cleared", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to mark AI mock cleared");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/students/reset-l1-registration — delete a student's L1 cycle
+// registration so they can re-register with a different slot (admin key required).
+// Body: { academyUserId: string, cycle?: number }
+router.post("/admin/students/reset-l1-registration", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const academyUserId = String(req.body?.academyUserId ?? "").trim();
+    if (!academyUserId) {
+      res.status(400).json({ error: "academyUserId is required" });
+      return;
+    }
+    const cycle = Number(req.body?.cycle ?? 2);
+    const deleted = await db
+      .delete(l1CycleRegistrationsTable)
+      .where(
+        and(
+          eq(l1CycleRegistrationsTable.academyUserId, academyUserId),
+          eq(l1CycleRegistrationsTable.cycle, cycle),
+        ),
+      )
+      .returning({ id: l1CycleRegistrationsTable.id });
+    res.json({ reset: deleted.length > 0, deletedRows: deleted.length, academyUserId, cycle });
+  } catch (err) {
+    req.log.error({ err }, "Failed to reset L1 registration");
     res.status(500).json({ error: "Internal server error" });
   }
 });
