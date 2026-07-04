@@ -14,6 +14,24 @@ export const L1_HUSTLER_SLOTS = [
 
 export const L1_CYCLE = 2;
 
+/**
+ * Exam-platform (topin.tech) assessment links for the 5th July L1 Hustler exam.
+ * The mock link is COMMON to every student; the MAIN link is slot-specific and
+ * is only revealed on exam day (see isAssessmentLive). Slot assignment comes
+ * from the authoritative exam-platform list (l1_exam_access), not registration.
+ */
+export const L1_MOCK_ASSESSMENT_URL =
+  "https://assessment.topin.tech/assessment?org_id=c0f84aa6-6b84-4737-925f-a8ef13edade7&auto_redirect=1";
+
+export const L1_HUSTLER_MAIN_URLS: Record<string, string> = {
+  "slot-1": "https://assessment.topin.tech/assessment?org_id=21dfe789-c72a-4310-9636-9d533886e172&auto_redirect=1",
+  "slot-2": "https://assessment.topin.tech/assessment?org_id=49a060c5-b2d6-4159-a02a-85558462d8b1&auto_redirect=1",
+};
+
+export function l1HustlerSlotLabel(slotId: string | null | undefined): string | undefined {
+  return L1_HUSTLER_SLOTS.find((s) => s.id === slotId)?.label;
+}
+
 export const L1_HUSTLER_CALENDAR = {
   id: "l1-hustler",
   title: "L1 Hustler Assessment",

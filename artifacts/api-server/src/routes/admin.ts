@@ -5,8 +5,9 @@ import {
   academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
   l1CycleRegistrationsTable,
+  l1ExamAccessTable,
 } from "@workspace/db";
-import { inArray, eq, and } from "drizzle-orm";
+import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { emailForUser } from "../lib/student";
 
@@ -191,6 +192,75 @@ router.post("/admin/students/reset-l1-registration", async (req, res) => {
     res.json({ reset: deleted.length > 0, deletedRows: deleted.length, academyUserId, cycle });
   } catch (err) {
     req.log.error({ err }, "Failed to reset L1 registration");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/l1-exam-access/import — bulk upsert the authoritative
+// exam-platform slot mapping (admin API key required). This is the source of
+// truth for which slot's MAIN assessment link each student sees.
+// Body: { cycle?: number, entries: { academyUserId: string, slotId: "slot-1" | "slot-2" }[] }
+router.post("/admin/l1-exam-access/import", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const cycle = Number(req.body?.cycle ?? 2);
+    if (!Number.isInteger(cycle) || cycle <= 0) {
+      res.status(400).json({ error: "cycle must be a positive integer" });
+      return;
+    }
+
+    const rawEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const ALLOWED_SLOTS = new Set(["slot-1", "slot-2"]);
+    const seen = new Set<string>();
+    const values: { academyUserId: string; cycle: number; slotId: string }[] = [];
+    const invalid: unknown[] = [];
+
+    for (const entry of rawEntries) {
+      const academyUserId =
+        entry && typeof entry === "object" && typeof entry.academyUserId === "string"
+          ? entry.academyUserId.trim()
+          : "";
+      const slotId =
+        entry && typeof entry === "object" && typeof entry.slotId === "string"
+          ? entry.slotId.trim()
+          : "";
+      if (!academyUserId || !ALLOWED_SLOTS.has(slotId) || seen.has(academyUserId)) {
+        if (!academyUserId || !ALLOWED_SLOTS.has(slotId)) invalid.push(entry);
+        continue;
+      }
+      seen.add(academyUserId);
+      values.push({ academyUserId, cycle, slotId });
+    }
+
+    if (values.length === 0) {
+      res.status(400).json({ error: "entries must contain at least one valid { academyUserId, slotId }", invalid: invalid.length });
+      return;
+    }
+
+    const now = new Date();
+    let upserted = 0;
+    // Chunk to keep parameter counts well under Postgres limits.
+    const CHUNK = 500;
+    for (let i = 0; i < values.length; i += CHUNK) {
+      const chunk = values.slice(i, i + CHUNK).map((v) => ({ ...v, createdAt: now, updatedAt: now }));
+      const rows = await db
+        .insert(l1ExamAccessTable)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: [l1ExamAccessTable.academyUserId, l1ExamAccessTable.cycle],
+          set: { slotId: sql`excluded.slot_id`, updatedAt: now },
+        })
+        .returning({ id: l1ExamAccessTable.id });
+      upserted += rows.length;
+    }
+
+    res.json({ requested: rawEntries.length, upserted, invalid: invalid.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to import L1 exam access");
     res.status(500).json({ error: "Internal server error" });
   }
 });

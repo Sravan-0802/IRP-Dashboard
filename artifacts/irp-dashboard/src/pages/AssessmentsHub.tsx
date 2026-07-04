@@ -11,6 +11,9 @@ import {
 import {
   ASSESSMENT_STATUS_STORAGE_KEY,
   L1_HUSTLER_SLOTS,
+  L1_MOCK_ASSESSMENT_URL,
+  L1_HUSTLER_MAIN_URLS,
+  l1HustlerSlotLabel,
   hasSuccessfulSlotRegistration,
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
@@ -18,10 +21,13 @@ import {
 import {
   L1_CYCLE2_EXAM_DATE_LABEL,
   L1_REGISTRATION_CLOSE_DATE_LABEL,
+  EXAM_DATE_LABEL,
   isL1RegistrationOpen,
+  isAssessmentLive,
 } from "@/lib/irpDates";
 import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
+import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -126,6 +132,9 @@ function AssessmentCard({
   slotRegistrationSubmitted = false,
   registrationClosed = false,
   registrationClosedNote,
+  examMainUrl,
+  examMainSlotLabel,
+  examMainPendingNote,
 }: {
   config: AssessmentConfig;
   state: { status: AssessmentStatus; slot?: string };
@@ -134,12 +143,27 @@ function AssessmentCard({
   slotRegistrationSubmitted?: boolean;
   registrationClosed?: boolean;
   registrationClosedNote?: string;
+  /** Slot-specific MAIN assessment URL — only set on exam day for students with exam access. */
+  examMainUrl?: string;
+  /** Confirmed slot label for a student with exam access (drives the main card). */
+  examMainSlotLabel?: string;
+  /** Note shown when a student has exam access but the main link isn't live yet. */
+  examMainPendingNote?: string;
 }) {
   const { status, slot } = state;
   const Icon = config.kind === "mock" ? FlaskConical : Trophy;
   const needsSlot = (config.slots?.length ?? 0) > 0 && !registrationClosed;
   const assessmentUrl = resolveAssessmentUrl(config, slot);
   const canStart = (!needsSlot || !!slot) && !!assessmentUrl;
+  // Exam-access rendering path for the MAIN card (registration is closed; the
+  // slot + link come from the authoritative exam-platform list).
+  const isExamMain = config.kind === "main" && !!examMainSlotLabel && status !== "done";
+
+  function openExamMain() {
+    if (!examMainUrl) return;
+    window.open(examMainUrl, "_blank", "noopener,noreferrer");
+    if (status === "todo") onUpdate({ status: "in-progress", slot });
+  }
 
   function openAssessment() {
     const url = resolveAssessmentUrl(config, slot);
@@ -209,11 +233,31 @@ function AssessmentCard({
         </p>
       )}
 
-      {registrationClosed && config.kind === "main" && status !== "done" && registrationClosedNote ? (
+      {isExamMain && (
+        <p className="mt-4 text-sm font-semibold text-ink">
+          Your slot: <span className="text-l1">{examMainSlotLabel}</span>
+        </p>
+      )}
+
+      {isExamMain && !examMainUrl && examMainPendingNote ? (
+        <p className="mt-2 text-sm text-muted2">{examMainPendingNote}</p>
+      ) : null}
+
+      {!isExamMain && registrationClosed && config.kind === "main" && status !== "done" && registrationClosedNote ? (
         <p className="mt-4 text-sm text-muted2">{registrationClosedNote}</p>
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
+        {isExamMain && examMainUrl ? (
+          <button
+            type="button"
+            onClick={openExamMain}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Start Assessment
+          </button>
+        ) : null}
         {status === "todo" && config.kind === "main" && needsSlot && onBook && slotRegistrationSubmitted ? (
           <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-4 py-2.5 text-sm font-bold text-teal">
             <CheckCircle2 className="h-4 w-4" />
@@ -290,10 +334,20 @@ export function AssessmentsHub({
   const [statuses, setStatuses] = useState<StatusMap>(loadStatuses);
   const [registerOpen, setRegisterOpen] = useState(false);
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
+  const { examAccess } = useL1ExamAccess();
   const hustlerState = statuses["l1-hustler"] ?? { status: "todo" as AssessmentStatus };
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
+
+  // Exam access is the authoritative slot mapping from the exam-platform list.
+  // When a student is on it, we show the COMMON mock link now and reveal the
+  // slot-specific MAIN link only on exam day (isAssessmentLive).
+  const hasExamAccess = level === 1 && !!examAccess;
+  const examSlotId = examAccess?.slotId;
+  const examLive = isAssessmentLive();
+  const examMainUrl = hasExamAccess && examLive && examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined;
+  const examMainSlotLabel = hasExamAccess ? l1HustlerSlotLabel(examSlotId) : undefined;
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
     setStatuses((prev) => {
@@ -339,19 +393,42 @@ export function AssessmentsHub({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {assessmentsForLevel.map((a) => (
+          {assessmentsForLevel.map((a) => {
+            // Inject the COMMON mock link for students who are on the exam-platform list.
+            const config =
+              a.id === "l1-mock" && hasExamAccess ? { ...a, url: L1_MOCK_ASSESSMENT_URL } : a;
+            const derived = deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" });
+            // The common mock link must stay startable for exam-access students even
+            // if they already wrote the earlier (cycle-1) assessment, which would
+            // otherwise mark the mock "done". Fall back to their local mock state.
+            const state =
+              a.id === "l1-mock" && hasExamAccess && derived.status === "done"
+                ? statuses[a.id] ?? { status: "todo" as AssessmentStatus }
+                : derived;
+            return (
             <AssessmentCard
               key={a.id}
-              config={a}
-              state={deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" })}
+              config={config}
+              state={state}
               onUpdate={(next) => update(a.id, next)}
+              examMainUrl={a.id === "l1-hustler" ? examMainUrl : undefined}
+              examMainSlotLabel={a.id === "l1-hustler" ? examMainSlotLabel : undefined}
+              examMainPendingNote={
+                a.id === "l1-hustler"
+                  ? `Your L1 Hustler assessment link will be available here on exam day (${EXAM_DATE_LABEL}).`
+                  : undefined
+              }
               onBook={
-                a.id === "l1-hustler" && shouldShowCycle2Calendar(assessments)
+                a.id === "l1-hustler" && !hasExamAccess && shouldShowCycle2Calendar(assessments)
                   ? () => setRegisterOpen(true)
                   : undefined
               }
-              slotRegistrationSubmitted={a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)}
-              registrationClosed={a.id === "l1-hustler" && !shouldShowCycle2Calendar(assessments)}
+              slotRegistrationSubmitted={
+                a.id === "l1-hustler" && !hasExamAccess && hasSuccessfulSlotRegistration(registration)
+              }
+              registrationClosed={
+                a.id === "l1-hustler" && (hasExamAccess || !shouldShowCycle2Calendar(assessments))
+              }
               registrationClosedNote={
                 a.id === "l1-hustler" && isCycle1Cleared(assessments)
                   ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
@@ -364,7 +441,8 @@ export function AssessmentsHub({
                         : undefined
               }
             />
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -8,3 +8,4 @@
 - [Drizzle pkey retry detection](drizzle-pkey-retry.md) — Drizzle wraps PG errors so err.message is "Failed query:…"; check err.cause.message too for constraint names like students_pkey.
 - [Dev seeding flow](dev-seeding-flow.md) — to run locally: curl /api/auth/me to find ACADEMY_USER_ID, then seed academy_user_basic_details + academy_user_assessment_details for that UUID.
 - [Analytics admin-key auth](analytics-admin-key-auth.md) — `dev` key fails locally because TOKEN_SECRET is set; secret values are redacted, so test admin routes via SQL not curl.
+- [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.

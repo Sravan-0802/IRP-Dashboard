@@ -13,6 +13,7 @@ import {
   dashboardFeedbackTable,
   dashboardAnalyticsEventsTable,
   l1CycleRegistrationsTable,
+  l1ExamAccessTable,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -640,6 +641,36 @@ router.post("/student/l1-registration", async (req, res) => {
     res.status(201).json({ registration: rowToL1RegistrationResponse(row) });
   } catch (err) {
     req.log.error({ err }, "Failed to save L1 registration");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Returns the logged-in student's authoritative exam-platform slot for a cycle,
+// used to show the slot-specific MAIN assessment link. Source of truth is the
+// uploaded exam-platform list (l1_exam_access), not the self-service registration.
+router.get("/student/l1-exam-access", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const cycle = parseRegistrationCycle(req.query.cycle);
+    const [row] = await db
+      .select({ slotId: l1ExamAccessTable.slotId })
+      .from(l1ExamAccessTable)
+      .where(
+        and(
+          eq(l1ExamAccessTable.academyUserId, userId),
+          eq(l1ExamAccessTable.cycle, cycle),
+        ),
+      )
+      .limit(1);
+
+    res.json({ examAccess: row ? { slotId: row.slotId } : null });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get L1 exam access");
     res.status(500).json({ error: "Internal server error" });
   }
 });

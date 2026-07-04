@@ -150,6 +150,26 @@ export const l1CycleRegistrationsTable = pgTable(
   }),
 );
 
+/**
+ * Authoritative exam-platform (topin.tech) access list per cycle.
+ * Source of truth for which slot's MAIN assessment link a student sees.
+ * Populated from the uploaded exam-platform export, mapped by academyUserId.
+ */
+export const l1ExamAccessTable = pgTable(
+  "l1_exam_access",
+  {
+    id: serial("id").primaryKey(),
+    academyUserId: text("academy_user_id").notNull(),
+    cycle: integer("cycle").notNull().default(2),
+    slotId: text("slot_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCycleUnique: unique("l1_exam_access_user_cycle").on(t.academyUserId, t.cycle),
+  }),
+);
+
 export const contactUsMessagesTable = pgTable("contact_us_messages", {
   id: serial("id").primaryKey(),
   academyUserId: text("academy_user_id").notNull(),
@@ -256,6 +276,9 @@ export type BigquerySyncStatus = typeof bigquerySyncStatusTable.$inferSelect;
 
 export type L1CycleRegistration = typeof l1CycleRegistrationsTable.$inferSelect;
 export type InsertL1CycleRegistration = typeof l1CycleRegistrationsTable.$inferInsert;
+
+export type L1ExamAccess = typeof l1ExamAccessTable.$inferSelect;
+export type InsertL1ExamAccess = typeof l1ExamAccessTable.$inferInsert;
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
