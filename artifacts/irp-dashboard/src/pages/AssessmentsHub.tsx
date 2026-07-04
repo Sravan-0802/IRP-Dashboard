@@ -23,7 +23,6 @@ import {
   L1_REGISTRATION_CLOSE_DATE_LABEL,
   EXAM_DATE_LABEL,
   isL1RegistrationOpen,
-  isAssessmentLive,
 } from "@/lib/irpDates";
 import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
@@ -341,12 +340,11 @@ export function AssessmentsHub({
   const meta = LEVEL_META[level];
 
   // Exam access is the authoritative slot mapping from the exam-platform list.
-  // When a student is on it, we show the COMMON mock link now and reveal the
-  // slot-specific MAIN link only on exam day (isAssessmentLive).
+  // When a student is on it, we show the COMMON mock link and their slot-specific
+  // MAIN link (both available now).
   const hasExamAccess = level === 1 && !!examAccess;
   const examSlotId = examAccess?.slotId;
-  const examLive = isAssessmentLive();
-  const examMainUrl = hasExamAccess && examLive && examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined;
+  const examMainUrl = hasExamAccess && examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined;
   const examMainSlotLabel = hasExamAccess ? l1HustlerSlotLabel(examSlotId) : undefined;
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
