@@ -170,6 +170,16 @@ export const l1ExamAccessTable = pgTable(
   }),
 );
 
+/**
+ * Users who have not completed their course payment. While a user is on this
+ * list, the dashboard is gated behind a "complete your payment" prompt.
+ * Populated from the uploaded unpaid-users export, keyed by academyUserId.
+ */
+export const unpaidUsersTable = pgTable("unpaid_users", {
+  academyUserId: text("academy_user_id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const contactUsMessagesTable = pgTable("contact_us_messages", {
   id: serial("id").primaryKey(),
   academyUserId: text("academy_user_id").notNull(),
@@ -279,6 +289,9 @@ export type InsertL1CycleRegistration = typeof l1CycleRegistrationsTable.$inferI
 
 export type L1ExamAccess = typeof l1ExamAccessTable.$inferSelect;
 export type InsertL1ExamAccess = typeof l1ExamAccessTable.$inferInsert;
+
+export type UnpaidUser = typeof unpaidUsersTable.$inferSelect;
+export type InsertUnpaidUser = typeof unpaidUsersTable.$inferInsert;
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true, createdAt: true });
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

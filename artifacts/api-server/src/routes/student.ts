@@ -14,6 +14,7 @@ import {
   dashboardAnalyticsEventsTable,
   l1CycleRegistrationsTable,
   l1ExamAccessTable,
+  unpaidUsersTable,
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -671,6 +672,29 @@ router.get("/student/l1-exam-access", async (req, res) => {
     res.json({ examAccess: row ? { slotId: row.slotId } : null });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 exam access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/payment-status — whether the current user has completed
+// payment. Unpaid users are gated behind a "complete your payment" prompt.
+router.get("/student/payment-status", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const [row] = await db
+      .select({ academyUserId: unpaidUsersTable.academyUserId })
+      .from(unpaidUsersTable)
+      .where(eq(unpaidUsersTable.academyUserId, userId))
+      .limit(1);
+
+    res.json({ paid: !row });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get payment status");
     res.status(500).json({ error: "Internal server error" });
   }
 });

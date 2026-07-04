@@ -8,9 +8,11 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Onboarding from "./pages/Onboarding";
 import NotEnrolled from "./pages/NotEnrolled";
+import PaymentRequired from "./pages/PaymentRequired";
 import NotFound from "@/pages/not-found";
 import { redirectToLogin, shouldRequireSsoLogin } from "@/lib/authToken";
 import { useJourney } from "@/lib/useJourney";
+import { usePaymentStatus } from "@/lib/usePaymentStatus";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,7 @@ function isUnauthorized(error: unknown): boolean {
 }
 
 function Home() {
+  const { paid, loading: paymentLoading } = usePaymentStatus();
   const { data: journey, isLoading, isError: journeyError } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
@@ -42,6 +45,20 @@ function Home() {
         <p className="text-sm font-semibold text-muted2">Redirecting to login…</p>
       </div>
     );
+  }
+
+  // Payment gate takes priority over everything else: unpaid users see a
+  // "complete your payment" prompt instead of the dashboard.
+  if (paymentLoading) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center">
+        <p className="text-sm font-semibold text-muted2">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!paid) {
+    return <PaymentRequired />;
   }
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.

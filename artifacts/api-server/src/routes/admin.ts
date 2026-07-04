@@ -6,6 +6,7 @@ import {
   academyUserAssessmentDetailsTable,
   l1CycleRegistrationsTable,
   l1ExamAccessTable,
+  unpaidUsersTable,
 } from "@workspace/db";
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
@@ -261,6 +262,62 @@ router.post("/admin/l1-exam-access/import", async (req, res) => {
     res.json({ requested: rawEntries.length, upserted, invalid: invalid.length });
   } catch (err) {
     req.log.error({ err }, "Failed to import L1 exam access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/unpaid-users/import — set the list of unpaid users who are
+// gated behind the "complete your payment" prompt (admin API key required).
+// Body: { academyUserIds: string[], replace?: boolean }
+// When replace=true the existing list is cleared first, so the payload becomes
+// the authoritative set of unpaid users.
+router.post("/admin/unpaid-users/import", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = req.body?.academyUserIds;
+    const academyUserIds = Array.isArray(raw)
+      ? [...new Set(raw.map((v) => String(v).trim()).filter(Boolean))]
+      : [];
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
+      return;
+    }
+
+    const replace = req.body?.replace === true;
+    const now = new Date();
+
+    // Run clear + insert in a single transaction so a mid-import failure can
+    // never leave the payment gate in a partial state.
+    let inserted = 0;
+    const CHUNK = 500;
+    await db.transaction(async (tx) => {
+      if (replace) {
+        await tx.delete(unpaidUsersTable);
+      }
+      for (let i = 0; i < academyUserIds.length; i += CHUNK) {
+        const chunk = academyUserIds
+          .slice(i, i + CHUNK)
+          .map((academyUserId) => ({ academyUserId, createdAt: now }));
+        const rows = await tx
+          .insert(unpaidUsersTable)
+          .values(chunk)
+          .onConflictDoNothing({ target: unpaidUsersTable.academyUserId })
+          .returning({ academyUserId: unpaidUsersTable.academyUserId });
+        inserted += rows.length;
+      }
+    });
+
+    const [{ count } = { count: 0 }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(unpaidUsersTable);
+
+    res.json({ requested: academyUserIds.length, inserted, total: count });
+  } catch (err) {
+    req.log.error({ err }, "Failed to import unpaid users");
     res.status(500).json({ error: "Internal server error" });
   }
 });
