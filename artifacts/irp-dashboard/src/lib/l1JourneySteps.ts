@@ -6,7 +6,6 @@ import {
   hasAttemptedFeProject,
   hasClearedAssessment,
   hasClearedFeProject,
-  hasWrittenAssessment,
 } from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
 
@@ -70,9 +69,6 @@ export function l1HustlerJourneySteps(
     {
       ...L1_STEPS[0],
       status: onlineStatus,
-      ...(onlineStatus === "active" && !hasWrittenAssessment(assessments, 1)
-        ? { badgeLabel: "Not attempted" }
-        : {}),
     },
     {
       ...L1_STEPS[1],
