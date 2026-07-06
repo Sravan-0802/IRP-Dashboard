@@ -13,6 +13,8 @@ const EVENT_LABELS: Record<string, string> = {
   nav_assessment_calendar: "Assessment Calendar clicks",
   feedback_open: "Feedback opens",
   contact_us_click: "Help & Support clicks",
+  mock_assessment_link_click: "Mock assessment link clicks",
+  main_assessment_link_click: "Main assessment link clicks",
 };
 
 const TRACKED_EVENTS = Object.keys(EVENT_LABELS);

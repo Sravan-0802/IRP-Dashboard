@@ -27,6 +27,7 @@ import {
 import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
+import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -160,6 +161,7 @@ function AssessmentCard({
 
   function openExamMain() {
     if (!examMainUrl) return;
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK);
     window.open(examMainUrl, "_blank", "noopener,noreferrer");
     if (status === "todo") onUpdate({ status: "in-progress", slot });
   }
@@ -167,6 +169,11 @@ function AssessmentCard({
   function openAssessment() {
     const url = resolveAssessmentUrl(config, slot);
     if (!url) return;
+    trackDashboardEvent(
+      config.kind === "mock"
+        ? DASHBOARD_ANALYTICS_EVENTS.MOCK_ASSESSMENT_LINK_CLICK
+        : DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK,
+    );
     window.open(url, "_blank", "noopener,noreferrer");
     if (status === "todo") {
       onUpdate({ status: "in-progress", slot });

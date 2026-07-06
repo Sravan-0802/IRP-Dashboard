@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
               Dashboard Analytics
             </h1>
             <p className="mt-1 text-sm text-[#6e6a8a]">
-              Tracks visits and sidebar interactions — Dashboard, Assessment Calendar, Feedback, and Help & Support.
+              Tracks visits, sidebar interactions, and assessment link clicks — Dashboard, Assessment Calendar, Feedback, Help & Support, and Mock/Main assessment links.
             </p>
           </div>
           <button

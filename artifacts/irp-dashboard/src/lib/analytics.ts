@@ -7,6 +7,8 @@ export const DASHBOARD_ANALYTICS_EVENTS = {
   NAV_ASSESSMENT_CALENDAR: "nav_assessment_calendar",
   FEEDBACK_OPEN: "feedback_open",
   CONTACT_US_CLICK: "contact_us_click",
+  MOCK_ASSESSMENT_LINK_CLICK: "mock_assessment_link_click",
+  MAIN_ASSESSMENT_LINK_CLICK: "main_assessment_link_click",
 } as const;
 
 export type DashboardAnalyticsEvent =

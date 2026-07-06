@@ -468,6 +468,8 @@ const ANALYTICS_EVENT_TYPES = new Set([
   "nav_assessment_calendar",
   "feedback_open",
   "contact_us_click",
+  "mock_assessment_link_click",
+  "main_assessment_link_click",
 ]);
 
 router.post("/student/analytics/event", async (req, res) => {
