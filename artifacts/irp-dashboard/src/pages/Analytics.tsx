@@ -73,6 +73,8 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support";
+
 const STORAGE_KEY = "irp_analytics_admin_key";
 
 function getStoredKey(): string {
@@ -210,6 +212,21 @@ export default function AnalyticsPage() {
     }));
   }, [data]);
 
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
+  const tabs = useMemo(
+    () =>
+      data
+        ? [
+            { id: "overview" as const, label: "Overview", count: undefined },
+            { id: "visitors" as const, label: "Visitors", count: data.totalVisitors },
+            { id: "registrations" as const, label: "Registrations", count: data.l1RegistrationCount },
+            { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
+            { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
+          ]
+        : [],
+    [data],
+  );
+
   const [visitorsPage, setVisitorsPage] = useState(1);
   const [feedbackPage, setFeedbackPage] = useState(1);
   const [registrationPage, setRegistrationPage] = useState(1);
@@ -294,6 +311,33 @@ export default function AnalyticsPage() {
 
         {data && (
           <>
+            <div className="flex flex-wrap gap-1 border-b border-[rgba(103,65,217,0.12)]">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-bold transition-colors ${
+                    activeTab === tab.id
+                      ? "border-[#6741d9] text-[#6741d9]"
+                      : "border-transparent text-[#6e6a8a] hover:text-[#0d1117]"
+                  }`}
+                >
+                  {tab.label}
+                  {typeof tab.count === "number" && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        activeTab === tab.id ? "bg-[#f3f0ff] text-[#6741d9]" : "bg-[#eceaf5] text-[#6e6a8a]"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === "overview" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {data.events.map((metric) => (
                 <div key={metric.eventType} className="irp-card p-5">
@@ -313,7 +357,9 @@ export default function AnalyticsPage() {
                 </div>
               ))}
             </div>
+            )}
 
+            {activeTab === "visitors" && (
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -415,7 +461,9 @@ export default function AnalyticsPage() {
                 </>
               )}
             </div>
+            )}
 
+            {activeTab === "feedback" && (
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -517,7 +565,9 @@ export default function AnalyticsPage() {
                 </>
               )}
             </div>
+            )}
 
+            {activeTab === "registrations" && (
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -620,7 +670,9 @@ export default function AnalyticsPage() {
                 </>
               )}
             </div>
+            )}
 
+            {activeTab === "support" && (
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -686,7 +738,9 @@ export default function AnalyticsPage() {
                 </>
               )}
             </div>
+            )}
 
+            {activeTab === "overview" && (
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -742,6 +796,7 @@ export default function AnalyticsPage() {
                 </div>
               )}
             </div>
+            )}
           </>
         )}
       </div>
