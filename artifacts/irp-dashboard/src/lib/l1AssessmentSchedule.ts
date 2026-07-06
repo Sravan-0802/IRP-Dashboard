@@ -47,10 +47,6 @@ export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 5th July 202
 export const L1_BANNER_TEXT =
   `We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar. Registration closes on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
 
-export const L1_REGISTRATION_SUCCESS_BANNER_TITLE = "Registration confirmed";
-export const L1_REGISTRATION_SUCCESS_BANNER_TEXT =
-  "You successfully registered for your slot. Wait for the mock assessment link — we'll share it before the exam.";
-
 export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
 export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
   `Registrations for the 5th July L1 Hustler Assessment are now closed as of ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
