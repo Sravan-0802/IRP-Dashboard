@@ -242,9 +242,14 @@ router.get("/analytics/dashboard", async (req, res) => {
       .select()
       .from(l1CycleRegistrationsTable)
       .orderBy(desc(l1CycleRegistrationsTable.submittedAt))
-      .limit(500);
+      .limit(20000);
 
     const l1Registrations = registrationRows.map((r) => rowToL1RegistrationResponse(r));
+
+    const [registrationTotal] = await db
+      .select({ n: count() })
+      .from(l1CycleRegistrationsTable);
+    const l1RegistrationCount = Number(registrationTotal?.n ?? l1Registrations.length);
 
     const [firstEvent] = await db
       .select({ createdAt: dashboardAnalyticsEventsTable.createdAt })
@@ -265,7 +270,7 @@ router.get("/analytics/dashboard", async (req, res) => {
       contactMessages,
       contactMessageCount: contactMessages.length,
       l1Registrations,
-      l1RegistrationCount: l1Registrations.length,
+      l1RegistrationCount,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");

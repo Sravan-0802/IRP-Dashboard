@@ -1,8 +1,10 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { LEVEL_META } from "@/lib/journey";
 import {
+  areL1Cycle2ResultsVisible,
   EXAM_DATE_LABEL,
   L1_CYCLE1_EXAM_DATE_LABEL,
+  L1_CYCLE2_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
@@ -175,6 +177,23 @@ export function hasClearedAssessment(
   return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
 }
 
+function assessmentCycle(assessment: AssessmentResult | null | undefined): string {
+  return (assessment?.cycle ?? "").trim().toUpperCase();
+}
+
+/** True when the student's best L1 online sit is a cleared Cycle 2 row. */
+export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
+  const assessment = pickAssessmentForLevel(assessments, 1);
+  if (!assessment || !assessmentWasWritten(assessment)) return false;
+  if (assessmentOverallPct(assessment) < ASSESSMENT_CLEAR_THRESHOLD) return false;
+  return assessmentCycle(assessment) === "C2";
+}
+
+/** Exam date label for the sit that cleared L1 (Cycle 1 vs Cycle 2). */
+export function getL1ClearedExamDateLabel(assessments: AssessmentResult[]): string {
+  return clearedL1ViaC2(assessments) ? L1_CYCLE2_EXAM_DATE_LABEL : L1_CYCLE1_EXAM_DATE_LABEL;
+}
+
 /** Date label for assessment results — Cycle 1 sit vs Cycle 2 upcoming. */
 export function getAssessmentCompletedDateLabel(
   assessments: AssessmentResult[],
@@ -182,9 +201,11 @@ export function getAssessmentCompletedDateLabel(
   upcomingLabel = EXAM_DATE_LABEL,
 ): string {
   if (level === 1 && hasClearedAssessment(assessments, 1)) {
-    return L1_CYCLE1_EXAM_DATE_LABEL;
+    return getL1ClearedExamDateLabel(assessments);
   }
   if (level === 1 && hasWrittenAssessment(assessments, 1)) {
+    const assessment = pickAssessmentForLevel(assessments, 1);
+    if (assessmentCycle(assessment) === "C2") return L1_CYCLE2_EXAM_DATE_LABEL;
     return L1_CYCLE1_EXAM_DATE_LABEL;
   }
   return upcomingLabel;
@@ -213,6 +234,9 @@ export function isAssessmentResultsLocked(
   resultsUnlockedByDate: boolean,
 ): boolean {
   if (!hasWrittenAssessment(assessments, level)) return true;
+  if (level === 1 && clearedL1ViaC2(assessments) && !areL1Cycle2ResultsVisible()) {
+    return true;
+  }
   // L1 Cycle 1 sit complete (cleared or attempted-not-cleared) — show scores immediately.
   if (level === 1 && hasWrittenAssessment(assessments, 1)) return false;
   return !resultsUnlockedByDate;

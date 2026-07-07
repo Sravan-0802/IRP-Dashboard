@@ -4,14 +4,20 @@ import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import {
   areAssignmentResultsVisible,
+  areL1Cycle2ResultsVisible,
   isAssessmentLive,
   isExamWindowClosed,
+  isL1July12AssessmentLive,
   L1_CYCLE1_EXAM_DATE_LABEL,
+  L1_CYCLE2_EXAM_DATE_LABEL,
+  L1_CYCLE2_RESULTS_UNLOCK_LABEL,
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import {
+  clearedL1ViaC2,
   getAssessmentStepStatus,
   getAssessmentCompletedDateLabel,
+  getL1ClearedExamDateLabel,
   assessmentOverallPct,
   pickAssessmentForLevel,
   resultLabel,
@@ -19,6 +25,7 @@ import {
 import {
   getL1UpcomingExamDateLabel,
   isCycle1Cleared,
+  isCycle2Candidate,
 } from "@/lib/l1StudentTrack";
 import { CountdownRing } from "./CountdownRing";
 import { Pill } from "./ui";
@@ -111,16 +118,49 @@ export function Hero({
     l1UpcomingDateLabel,
   );
   const resultsVisible = areAssignmentResultsVisible();
+  const cycle2Track = level === 1 && isCycle2Candidate(assessments);
+  const assessmentLive = cycle2Track ? isL1July12AssessmentLive() : isAssessmentLive();
   const showPostExamHero =
+    !cycle2Track &&
     (isExamWindowClosed() || resultsVisible) &&
     (phase === "PREP" || phase === "EXAM_OPEN");
 
-  // Cycle 1 cleared → post-assessment track (14 June). Never show Cycle 2 countdown.
+  // Cycle 1 cleared → post-assessment track. Cycle 2 clears unlock on 8 July.
   if (level === 1 && isCycle1Cleared(assessments)) {
+    if (clearedL1ViaC2(assessments) && !areL1Cycle2ResultsVisible()) {
+      return (
+        <div
+          className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-5 shadow-soft sm:p-6 md:p-8"
+          style={{ background: "linear-gradient(130deg, #ede9fe, #f8f7ff)" }}
+        >
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(103,65,217,0.2)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+                <PulsingDot color="#6741d9" /> Assessment completed
+              </div>
+              <LevelHeading name={meta.name} level={level} />
+              <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
+                Results coming soon
+              </h2>
+              <p className="mt-2 max-w-md text-sm text-muted2">
+                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results will appear here on{" "}
+                {L1_CYCLE2_RESULTS_UNLOCK_LABEL}.
+              </p>
+            </div>
+            <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
+              <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+                <Calendar className="h-3.5 w-3.5 text-brand" /> {L1_CYCLE2_EXAM_DATE_LABEL}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <ClearedAssessmentHero
         level={level}
-        examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
+        examDateLabel={getL1ClearedExamDateLabel(assessments)}
       />
     );
   }
@@ -350,7 +390,7 @@ export function Hero({
 
   // ── EXAM_OPEN but assessment day hasn't arrived yet (approaching) ──
   // "Live" must only ever show on the assessment date itself — never before.
-  if (phase === "EXAM_OPEN" && !isAssessmentLive()) {
+  if (phase === "EXAM_OPEN" && !assessmentLive) {
     return (
       <div
         className="relative overflow-hidden rounded-2xl border border-[rgba(168,85,247,0.22)] p-6 shadow-soft-md animate-pop-in sm:p-8"

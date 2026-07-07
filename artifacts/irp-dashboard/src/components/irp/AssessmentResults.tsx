@@ -2,11 +2,13 @@ import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
+  clearedL1ViaC2,
   formatAssessmentTitle,
   getAssessmentStepStatus,
+  getL1ClearedExamDateLabel,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   pickAssessmentForLevel,
@@ -38,11 +40,11 @@ export function AssessmentResults({
   const title = formatAssessmentTitle(assessment?.assessmentTitle, level);
 
   const resultsDateLabel = (() => {
-    if (cycle1Cleared) return L1_CYCLE1_EXAM_DATE_LABEL;
+    if (cycle1Cleared) return getL1ClearedExamDateLabel(assessments);
     if (cycle2Track && assessmentStatus === "attempted_not_cleared") {
-      return `${L1_CYCLE1_EXAM_DATE_LABEL} · Next: ${L1_CYCLE2_EXAM_DATE_LABEL}`;
+      return `${L1_CYCLE1_EXAM_DATE_LABEL} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
     }
-    if (cycle2Track) return L1_CYCLE2_EXAM_DATE_LABEL;
+    if (cycle2Track) return L1_JULY12_EXAM_DATE_LABEL;
     return examDateLabel;
   })();
 
@@ -51,12 +53,20 @@ export function AssessmentResults({
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   const lockedMessage = (() => {
+    if (cycle1Cleared && clearedL1ViaC2(assessments) && locked) {
+      return (
+        <>
+          You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on{" "}
+          <span className="font-bold text-ink">{L1_CYCLE2_RESULTS_UNLOCK_LABEL}</span>.
+        </>
+      );
+    }
     if (!resultsUnlockedByDate && !hasWrittenAssessment(assessments, level)) {
       return (
         <>
           Your assessment is on{" "}
           <span className="font-bold text-ink">
-            {cycle2Track ? L1_CYCLE2_EXAM_DATE_LABEL : examDateLabel}
+            {cycle2Track ? L1_JULY12_EXAM_DATE_LABEL : examDateLabel}
           </span>
           . Results will appear here after you complete it.
         </>
@@ -67,7 +77,7 @@ export function AssessmentResults({
         <>
           Complete your online assessment on{" "}
           <span className="font-bold text-ink">
-            {cycle2Track ? L1_CYCLE2_EXAM_DATE_LABEL : examDateLabel}
+            {cycle2Track ? L1_JULY12_EXAM_DATE_LABEL : examDateLabel}
           </span>{" "}
           to unlock your results.
         </>
@@ -90,7 +100,7 @@ export function AssessmentResults({
           {cycle2Track && assessmentStatus === "attempted_not_cleared" ? (
             <p className="mt-1 text-xs text-muted2">
               Scores below are from your Cycle 1 sit on {L1_CYCLE1_EXAM_DATE_LABEL}. Register for{" "}
-              {L1_CYCLE2_EXAM_DATE_LABEL} to reattempt.
+              {L1_JULY12_EXAM_DATE_LABEL} to reattempt.
             </p>
           ) : null}
         </div>

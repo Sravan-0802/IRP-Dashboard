@@ -10,23 +10,27 @@ import {
 } from "@/lib/assessment";
 import {
   ASSESSMENT_STATUS_STORAGE_KEY,
-  L1_HUSTLER_SLOTS,
+  L1_JULY12_HUSTLER_CALENDAR,
+  L1_JULY12_HUSTLER_SLOTS,
   L1_MOCK_ASSESSMENT_URL,
   L1_HUSTLER_MAIN_URLS,
+  L1_JULY12_REGISTERED_HUB_NOTE,
   l1HustlerSlotLabel,
   hasSuccessfulSlotRegistration,
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
 import {
-  L1_CYCLE2_EXAM_DATE_LABEL,
-  L1_REGISTRATION_CLOSE_DATE_LABEL,
-  EXAM_DATE_LABEL,
-  isL1RegistrationOpen,
+  L1_JULY12_EXAM_DATE_LABEL,
+  L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL,
+  L1_JULY12_REGISTRATION_OPEN_DATE_LABEL,
+  isL1July12RegistrationOpen,
+  hasL1July12RegistrationStarted,
 } from "@/lib/irpDates";
-import { isCycle1Cleared, shouldShowCycle2Calendar } from "@/lib/l1StudentTrack";
+import { isCycle1Cleared, shouldShowJuly12SlotCalendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
+import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -71,7 +75,7 @@ const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
       title: "L1 Hustler",
       description: "The official Level 1 assessment. Pick a slot and give it your best shot.",
       kind: "main",
-      slots: L1_HUSTLER_SLOTS,
+      slots: L1_JULY12_HUSTLER_SLOTS,
     },
   ],
   2: [],
@@ -341,7 +345,16 @@ export function AssessmentsHub({
   const [registerOpen, setRegisterOpen] = useState(false);
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const { examAccess } = useL1ExamAccess();
-  const hustlerState = statuses["l1-hustler"] ?? { status: "todo" as AssessmentStatus };
+  const { registered: july12Registered } = useL1July12Cohort();
+  const hustlerState = statuses["l1-hustler"] ?? {
+    status: "todo" as AssessmentStatus,
+    slot: L1_JULY12_HUSTLER_SLOTS[0]?.id,
+  };
+  const showJuly12SlotCalendar = shouldShowJuly12SlotCalendar(
+    assessments,
+    july12Registered,
+    hasSuccessfulSlotRegistration(registration),
+  );
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
@@ -378,10 +391,12 @@ export function AssessmentsHub({
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {level === 1 && isCycle1Cleared(assessments)
+          {level === 1 && july12Registered
+            ? `Already registered for ${L1_JULY12_EXAM_DATE_LABEL}. Your 6:00 PM – 8:00 PM IST slot is booked — details will appear closer to the exam.`
+            : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
             : level === 1
-              ? `The assessment on ${L1_CYCLE2_EXAM_DATE_LABEL} — attempt the mock first, then register for your slot.`
+              ? `The assessment on ${L1_JULY12_EXAM_DATE_LABEL} — attempt the mock first, then register for your slot (6:00 PM – 8:00 PM IST).`
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
@@ -420,29 +435,33 @@ export function AssessmentsHub({
               examMainSlotLabel={a.id === "l1-hustler" ? examMainSlotLabel : undefined}
               examMainPendingNote={
                 a.id === "l1-hustler"
-                  ? `Your L1 Hustler assessment link will be available here on exam day (${EXAM_DATE_LABEL}).`
+                  ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
                   : undefined
               }
               onBook={
-                a.id === "l1-hustler" && !hasExamAccess && shouldShowCycle2Calendar(assessments)
+                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && isL1July12RegistrationOpen()
                   ? () => setRegisterOpen(true)
                   : undefined
               }
               slotRegistrationSubmitted={
-                a.id === "l1-hustler" && !hasExamAccess && hasSuccessfulSlotRegistration(registration)
+                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && hasSuccessfulSlotRegistration(registration)
               }
               registrationClosed={
-                a.id === "l1-hustler" && (hasExamAccess || !shouldShowCycle2Calendar(assessments))
+                a.id === "l1-hustler" && (hasExamAccess || july12Registered || !showJuly12SlotCalendar)
               }
               registrationClosedNote={
-                a.id === "l1-hustler" && isCycle1Cleared(assessments)
+                a.id === "l1-hustler" && july12Registered
+                  ? L1_JULY12_REGISTERED_HUB_NOTE
+                  : a.id === "l1-hustler" && isCycle1Cleared(assessments)
                   ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
                   : a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)
-                    ? "Your slot is confirmed. Wait for the mock assessment link before exam day."
-                    : a.id === "l1-hustler" && !isL1RegistrationOpen()
-                      ? `Registration closed on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`
+                    ? "Your slot is confirmed for 12th July (6:00 PM – 8:00 PM IST). Wait for the mock assessment link before exam day."
+                    : a.id === "l1-hustler" && !hasL1July12RegistrationStarted()
+                      ? `Registration opens at ${L1_JULY12_REGISTRATION_OPEN_DATE_LABEL}.`
+                      : a.id === "l1-hustler" && !isL1July12RegistrationOpen()
+                      ? `Registration closed on ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL}.`
                       : a.id === "l1-hustler"
-                        ? `Register by ${L1_REGISTRATION_CLOSE_DATE_LABEL} via the Assessment Calendar.`
+                        ? `Register by ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL} via the Assessment Calendar.`
                         : undefined
               }
             />
@@ -454,7 +473,8 @@ export function AssessmentsHub({
       <L1RegistrationModal
         open={registerOpen}
         onOpenChange={setRegisterOpen}
-        slotId={hustlerState.slot}
+        slotId={hustlerState.slot ?? L1_JULY12_HUSTLER_SLOTS[0]?.id}
+        calendar={L1_JULY12_HUSTLER_CALENDAR}
         submitting={submitting}
         onSubmit={handleRegistrationSubmit}
         onComplete={handleRegistrationComplete}

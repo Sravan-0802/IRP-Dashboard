@@ -8,6 +8,32 @@ export const EXAM_DATE_LABEL = "5th July 2026";
 export const L1_CYCLE2_EXAM_DATE = EXAM_DATE;
 export const L1_CYCLE2_EXAM_DATE_LABEL = EXAM_DATE_LABEL;
 
+/** L1 Cycle 2 re-conduction — upcoming sit for cycle2_pending students. */
+export const L1_JULY12_EXAM_DATE = new Date("2026-07-12T00:00:00+05:30");
+export const L1_JULY12_EXAM_DATE_LABEL = "12th July 2026";
+
+/** July 12 results unlock the day after the assessment. */
+export const L1_JULY12_RESULTS_UNLOCK_DATE = new Date("2026-07-13T00:00:00+05:30");
+
+/** Slot registration for the 12 July re-conduction opens 7 July 2026, 9:00 PM IST. */
+export const L1_JULY12_REGISTRATION_OPEN_DATE = new Date("2026-07-07T21:00:00+05:30");
+export const L1_JULY12_REGISTRATION_OPEN_DATE_LABEL = "7th July 2026, 9:00 PM IST";
+
+/** Slot registration for the 12 July re-conduction closes 30 minutes before the slot. */
+export const L1_JULY12_REGISTRATION_CLOSE_DATE = new Date("2026-07-12T17:30:00+05:30");
+export const L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL = "12th July 2026, 5:30 PM IST";
+
+export function hasL1July12RegistrationStarted(now = new Date()): boolean {
+  return now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
+}
+
+export function isL1July12RegistrationOpen(now = new Date()): boolean {
+  return (
+    hasL1July12RegistrationStarted(now) &&
+    now.getTime() < L1_JULY12_REGISTRATION_CLOSE_DATE.getTime()
+  );
+}
+
 /** Slot registration closed at 6:00 PM IST on 3 July 2026. */
 export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T18:00:00+05:30");
 export const L1_REGISTRATION_CLOSE_DATE_LABEL = "3rd July 2026, 6:00 PM IST";
@@ -16,8 +42,12 @@ export function isL1RegistrationOpen(now = new Date()): boolean {
   return now.getTime() < L1_REGISTRATION_CLOSE_DATE.getTime();
 }
 
-/** Assignment results unlock the day after the L1 assessment. */
+/** Assignment results unlock the day after the L1 Cycle 2 assessment (5 July). */
 export const RESULTS_UNLOCK_DATE = new Date("2026-07-06T00:00:00");
+
+/** L1 scores for students who cleared on the 5 July Cycle 2 sit go live on 8 July. */
+export const L1_CYCLE2_RESULTS_UNLOCK_DATE = new Date("2026-07-08T00:00:00+05:30");
+export const L1_CYCLE2_RESULTS_UNLOCK_LABEL = "8th July 2026";
 
 /**
  * Course-progress and practice stats are hidden until this date.
@@ -40,6 +70,10 @@ export function areAssignmentResultsVisible(now = new Date()): boolean {
   return now >= RESULTS_UNLOCK_DATE;
 }
 
+export function areL1Cycle2ResultsVisible(now = new Date()): boolean {
+  return now >= L1_CYCLE2_RESULTS_UNLOCK_DATE;
+}
+
 /** Progress data (MCQs, coding, course stats) is visible only on/after PROGRESS_UNLOCK_DATE. */
 export function isProgressVisible(now = new Date()): boolean {
   return now >= PROGRESS_UNLOCK_DATE;
@@ -48,4 +82,13 @@ export function isProgressVisible(now = new Date()): boolean {
 /** True after the assessment day window has ended (from 15 June 2026 onward). */
 export function isExamWindowClosed(now = new Date()): boolean {
   return now >= EXAM_DATE && !isAssessmentLive(now);
+}
+
+/** July 12 re-conduction — live only on assessment day until results unlock. */
+export function isL1July12AssessmentLive(now = new Date()): boolean {
+  return now >= L1_JULY12_EXAM_DATE && now < L1_JULY12_RESULTS_UNLOCK_DATE;
+}
+
+export function isL1July12ExamWindowClosed(now = new Date()): boolean {
+  return now >= L1_JULY12_EXAM_DATE && !isL1July12AssessmentLive(now);
 }

@@ -7,9 +7,9 @@ import {
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
-import { L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
-import { getAssessmentStepStatus } from "@/lib/assessment";
-import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { clearedL1ViaC2, getAssessmentStepStatus, getL1ClearedExamDateLabel } from "@/lib/assessment";
+import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
@@ -18,7 +18,9 @@ import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
+import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
+import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 
 function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
@@ -75,23 +77,28 @@ function assessmentMotivation(
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
   if (level === 1 && isCycle1Cleared(assessments)) {
+    if (clearedL1ViaC2(assessments)) {
+      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
+    }
+    const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
     if (journey.journeyState === "L1_HUMAN_INTERVIEW") {
       return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
     }
     if (journey.projectSubmitted) {
-      return "You cleared the 14 June assessment and completed FE Project. Continue with your next interview step. 💪";
+      return `You cleared the ${clearedDateLabel} assessment and completed FE Project. Continue with your next interview step. 💪`;
     }
-    return "You cleared the 14 June assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪";
+    return `You cleared the ${clearedDateLabel} assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪`;
   }
 
   if (level === 1 && isCycle2Candidate(assessments)) {
+    const upcomingLabel = getL1UpcomingExamDateLabel(assessments);
     if (assessmentStatus === "attempted_not_cleared") {
-      return `The assessment is on ${L1_CYCLE2_EXAM_DATE_LABEL}. Register via the Assessment Calendar and keep preparing. 🔥`;
+      return `The assessment is on ${upcomingLabel}. Register via the Assessment Calendar and keep preparing. 🔥`;
     }
     if (days > 0) {
-      return `${days} ${days === 1 ? "day" : "days"} until the assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}. Keep preparing. 🔥`;
+      return `${days} ${days === 1 ? "day" : "days"} until the assessment on ${upcomingLabel}. Keep preparing. 🔥`;
     }
-    return `IRP 2.0 assessment on ${L1_CYCLE2_EXAM_DATE_LABEL}. Register your slot when ready. 🔥`;
+    return `IRP 2.0 assessment on ${upcomingLabel}. Register your slot when ready. 🔥`;
   }
 
   switch (phase) {
@@ -156,6 +163,7 @@ export function DashboardView({
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
   const { registration } = useL1Registration();
+  const { registered: july12Registered } = useL1July12Cohort();
 
   const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey);
 
@@ -170,7 +178,9 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {level === 1 && !journey.isWildcard ? (
+      {level === 1 && !journey.isWildcard && july12Registered ? (
+        <L1July12RegisteredBanner />
+      ) : level === 1 && !journey.isWildcard ? (
         <L1AssessmentBanner
           assessments={assessments}
           registration={registration}

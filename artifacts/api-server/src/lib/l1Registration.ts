@@ -1,18 +1,37 @@
 export const L1_REGISTRATION_CYCLE = 2;
 export const L1_REGISTRATION_LEVEL = 1;
 export const L1_REGISTRATION_ASSESSMENT_DATE = "5th July 2026";
+export const L1_JULY12_REGISTRATION_ASSESSMENT_DATE = "12th July 2026";
 
 /** Slot registration closes at end of 3 July 2026 (IST). */
 export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T23:59:59+05:30");
 
+/** 12 July re-conduction slot booking (non-cohort students only). */
+export const L1_JULY12_REGISTRATION_CLOSE_DATE = new Date("2026-07-12T17:30:00+05:30");
+export const L1_JULY12_REGISTRATION_OPEN_DATE = new Date("2026-07-07T21:00:00+05:30");
+
+export function hasL1July12RegistrationStarted(now = new Date()): boolean {
+  return now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
+}
+
 export function isL1RegistrationOpen(now = new Date()): boolean {
   return now.getTime() <= L1_REGISTRATION_CLOSE_DATE.getTime();
+}
+
+export function isL1July12RegistrationOpen(now = new Date()): boolean {
+  return (
+    hasL1July12RegistrationStarted(now) &&
+    now.getTime() < L1_JULY12_REGISTRATION_CLOSE_DATE.getTime()
+  );
 }
 
 export const L1_SLOT_LABELS: Record<string, string> = {
   "slot-1": "3:00 PM – 5:00 PM IST",
   "slot-2": "6:00 PM – 8:00 PM IST",
 };
+
+/** Only slot offered for the 12 July re-conduction calendar. */
+export const L1_JULY12_SLOT_IDS = new Set(["slot-2"]);
 
 export const L1_AVAILABILITY_VALUES = new Set([
   "yes",

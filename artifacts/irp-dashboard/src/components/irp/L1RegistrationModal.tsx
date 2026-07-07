@@ -15,8 +15,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AVAILABILITY_OPTIONS,
-  L1_HUSTLER_CALENDAR,
-  L1_HUSTLER_SLOTS,
+  L1_JULY12_HUSTLER_CALENDAR,
   type AvailabilityValue,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
@@ -26,6 +25,7 @@ interface L1RegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   slotId?: string;
+  calendar?: typeof L1_JULY12_HUSTLER_CALENDAR;
   submitting?: boolean;
   onSubmit?: (record: L1RegistrationRecord) => Promise<L1RegistrationRecord | void>;
   onComplete?: (record: L1RegistrationRecord) => void;
@@ -92,6 +92,7 @@ export function L1RegistrationModal({
   open,
   onOpenChange,
   slotId,
+  calendar = L1_JULY12_HUSTLER_CALENDAR,
   submitting = false,
   onSubmit,
   onComplete,
@@ -106,7 +107,7 @@ export function L1RegistrationModal({
 
   const isYes = availability === "yes";
   const isNo = availability === "no-not-prepared" || availability === "no-conflict";
-  const selectedSlotLabel = L1_HUSTLER_SLOTS.find((s) => s.id === slotId)?.label;
+  const selectedSlotLabel = calendar.slots.find((s) => s.id === slotId)?.label;
 
   useEffect(() => {
     if (!open) {
@@ -186,19 +187,19 @@ export function L1RegistrationModal({
             <div className="min-w-0 pt-0.5">
               <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-[rgba(103,65,217,0.15)] bg-white/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
                 <Sparkles className="h-3 w-3" />
-                {L1_HUSTLER_CALENDAR.subtitle}
+                {calendar.subtitle}
               </div>
               <h2 className="font-display text-xl font-extrabold leading-tight text-ink sm:text-2xl">
-                {L1_HUSTLER_CALENDAR.title}
+                {calendar.title}
               </h2>
               <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted2">
                 <span className="inline-flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5 text-brand" />
-                  {L1_HUSTLER_CALENDAR.dateLabel}
+                  {calendar.dateLabel}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 text-brand" />
-                  {L1_HUSTLER_CALENDAR.duration}
+                  {calendar.duration}
                 </span>
               </p>
             </div>
@@ -209,7 +210,7 @@ export function L1RegistrationModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
           <QuestionCard step={1} title="Availability">
             <p className="mb-3 text-sm leading-relaxed text-muted2">
-              Are you available to attend the Internship Readiness Path 2.0 Assessment on 5th July 2026?
+              Are you available to attend the Internship Readiness Path 2.0 Assessment on {calendar.dateLabel}?
             </p>
             <select
               id="l1-availability"
@@ -331,8 +332,14 @@ export function L1RegistrationModal({
   );
 }
 
-export function L1RegistrationSuccess({ record }: { record: L1RegistrationRecord }) {
-  const slotLabel = L1_HUSTLER_SLOTS.find((s) => s.id === record.slotId)?.label;
+export function L1RegistrationSuccess({
+  record,
+  calendar = L1_JULY12_HUSTLER_CALENDAR,
+}: {
+  record: L1RegistrationRecord;
+  calendar?: typeof L1_JULY12_HUSTLER_CALENDAR;
+}) {
+  const slotLabel = calendar.slots.find((s) => s.id === record.slotId)?.label;
 
   if (record.availability !== "yes") {
     return (
@@ -350,7 +357,7 @@ export function L1RegistrationSuccess({ record }: { record: L1RegistrationRecord
     <div className="flex items-start gap-3 rounded-2xl border border-[rgba(12,166,120,0.25)] bg-gradient-to-r from-[#e8faf0] to-white px-4 py-3.5">
       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal" />
       <p className="text-sm font-semibold text-teal">
-        Registered for {slotLabel ?? "your slot"} on {L1_HUSTLER_CALENDAR.dateLabel}.
+        Registered for {slotLabel ?? "your slot"} on {calendar.dateLabel}.
       </p>
     </div>
   );

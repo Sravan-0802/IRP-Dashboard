@@ -12,6 +12,13 @@ export const L1_HUSTLER_SLOTS = [
   { id: "slot-2", label: "6:00 PM – 8:00 PM IST" },
 ] as const;
 
+/** Single slot for the 12 July re-conduction (non-cohort students). */
+export const L1_JULY12_HUSTLER_SLOTS = [
+  { id: "slot-2", label: "6:00 PM – 8:00 PM IST" },
+] as const;
+
+export const L1_JULY12_CONFIRMED_SLOT_LABEL = L1_JULY12_HUSTLER_SLOTS[0].label;
+
 export const L1_CYCLE = 2;
 
 /**
@@ -29,7 +36,10 @@ export const L1_HUSTLER_MAIN_URLS: Record<string, string> = {
 };
 
 export function l1HustlerSlotLabel(slotId: string | null | undefined): string | undefined {
-  return L1_HUSTLER_SLOTS.find((s) => s.id === slotId)?.label;
+  return (
+    L1_JULY12_HUSTLER_SLOTS.find((s) => s.id === slotId)?.label ??
+    L1_HUSTLER_SLOTS.find((s) => s.id === slotId)?.label
+  );
 }
 
 export const L1_HUSTLER_CALENDAR = {
@@ -42,6 +52,16 @@ export const L1_HUSTLER_CALENDAR = {
   slots: L1_HUSTLER_SLOTS,
 } as const;
 
+export const L1_JULY12_HUSTLER_CALENDAR = {
+  id: "l1-hustler",
+  title: "L1 Hustler Assessment",
+  subtitle: "Level 1 · The Hustler",
+  cycleLabel: `Cycle ${L1_CYCLE}`,
+  dateLabel: "12th July 2026",
+  duration: "~2 hours",
+  slots: L1_JULY12_HUSTLER_SLOTS,
+} as const;
+
 export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
 export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 5th July 2026";
 export const L1_BANNER_TEXT =
@@ -50,6 +70,27 @@ export const L1_BANNER_TEXT =
 export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
 export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
   `Registrations for the 5th July L1 Hustler Assessment are now closed as of ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+
+export const L1_JULY12_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 12th July 2026";
+export const L1_JULY12_BANNER_TEXT =
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 12th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessment Calendar.";
+export const L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE = "Registration opens tonight";
+export const L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT =
+  "Slot registration for the 12th July L1 Hustler Assessment opens at 9:00 PM IST today (7th July 2026). Please return then to book your 6:00 PM – 8:00 PM IST slot.";
+export const L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT =
+  "Registrations for the 12th July L1 Hustler Assessment are now closed.";
+
+/** Confirmation shown to the fixed 12 July (Cycle 2) assessment cohort. */
+export const L1_JULY12_REGISTERED_BANNER_EYEBROW = "Level 1 · The Hustler";
+export const L1_JULY12_REGISTERED_BANNER_TITLE =
+  "Already registered for the 12th July 2026 assessment";
+export const L1_JULY12_REGISTERED_BANNER_TEXT =
+  "You registered for the 5th July L1 Hustler assessment. Due to technical issues, the assessment is being conducted again on 12th July 2026. Your 6:00 PM – 8:00 PM IST slot is already booked — no further action is needed. Your assessment details will appear here closer to the exam.";
+export const L1_JULY12_REGISTERED_HUB_NOTE =
+  "Already registered for 12th July 2026. Your 6:00 PM – 8:00 PM IST slot is booked.";
+export const L1_JULY12_REGISTERED_CALENDAR_TITLE = "Already registered for 12th July 2026";
+export const L1_JULY12_REGISTERED_CALENDAR_DESCRIPTION =
+  "Your assessment registration is confirmed. The 6:00 PM – 8:00 PM IST slot on 12th July 2026 is already booked for you.";
 
 export function hasSuccessfulSlotRegistration(
   record: L1RegistrationRecord | null | undefined,

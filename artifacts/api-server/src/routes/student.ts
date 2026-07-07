@@ -18,10 +18,13 @@ import {
 } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
+import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import {
-  isL1RegistrationOpen,
-  L1_REGISTRATION_ASSESSMENT_DATE,
+  hasL1July12RegistrationStarted,
+  isL1July12RegistrationOpen,
+  L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
+  L1_JULY12_SLOT_IDS,
   L1_REGISTRATION_CYCLE,
   L1_REGISTRATION_LEVEL,
   rowToL1RegistrationResponse,
@@ -558,6 +561,11 @@ router.post("/student/l1-registration", async (req, res) => {
       return;
     }
 
+    if (isInL1July12Cohort(userId)) {
+      res.status(403).json({ error: "You are already registered for the 12 July assessment" });
+      return;
+    }
+
     const [existing] = await db
       .select({ id: l1CycleRegistrationsTable.id })
       .from(l1CycleRegistrationsTable)
@@ -570,14 +578,24 @@ router.post("/student/l1-registration", async (req, res) => {
       )
       .limit(1);
 
-    if (!isL1RegistrationOpen() && !existing) {
-      res.status(403).json({ error: "Slot registration closed on 3rd July 2026" });
+    if (!isL1July12RegistrationOpen() && !existing) {
+      res.status(403).json({
+        error: hasL1July12RegistrationStarted()
+          ? "Slot registration for the 12 July assessment is closed"
+          : "Slot registration opens at 9:00 PM IST on 7th July 2026",
+      });
       return;
     }
 
     const availability = String(req.body.availability).trim();
     const isYes = availability === "yes";
     const slotId = isYes ? String(req.body.slotId).trim() : null;
+
+    if (isYes && (!slotId || !L1_JULY12_SLOT_IDS.has(slotId))) {
+      res.status(400).json({ error: "Only the 6:00 PM – 8:00 PM IST slot is available on 12th July" });
+      return;
+    }
+
     const slotLabel = isYes ? slotLabelFor(slotId!) : null;
 
     const student = await getOrCreateStudentForUser(userId);
@@ -601,7 +619,7 @@ router.post("/student/l1-registration", async (req, res) => {
       userName: displayName,
       cycle,
       level: L1_REGISTRATION_LEVEL,
-      assessmentDate: L1_REGISTRATION_ASSESSMENT_DATE,
+      assessmentDate: L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
       availability,
       slotId,
       slotLabel,
@@ -674,6 +692,24 @@ router.get("/student/l1-exam-access", async (req, res) => {
     res.json({ examAccess: row ? { slotId: row.slotId } : null });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 exam access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Whether the logged-in student is part of the fixed 12 July 2026 (Cycle 2)
+// assessment cohort. These students see an "already registered" confirmation.
+// Membership is an uploaded list, not self-service registration.
+router.get("/student/l1-july12-cohort", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    res.json({ registered: isInL1July12Cohort(userId) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get L1 July 12 cohort status");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -6,10 +6,10 @@ import {
   useGetStudentProgress, getGetStudentProgressQueryKey,
   useGetStudentAssessments, getGetStudentAssessmentsQueryKey,
 } from "@workspace/api-client-react";
-import { L1_CYCLE2_EXAM_DATE, L1_CYCLE2_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { useJourney } from "@/lib/useJourney";
 import { getLevel } from "@/lib/journey";
-import { isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { getL1UpcomingExamDate, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { DEMO_STUDENT, DEMO_PROGRESS, DEMO_ASSESSMENTS } from "@/lib/demoData";
 import {
   DASHBOARD_ANALYTICS_EVENTS,
@@ -87,7 +87,7 @@ export default function Dashboard() {
         setCountdown({ days: 0 });
         return;
       }
-      const dist = L1_CYCLE2_EXAM_DATE.getTime() - Date.now();
+      const dist = getL1UpcomingExamDate(displayAssessments).getTime() - Date.now();
       if (dist < 0) return setCountdown({ days: 0 });
       setCountdown({
         days: Math.floor(dist / 86_400_000),
@@ -193,7 +193,7 @@ export default function Dashboard() {
                 journey={journey}
                 firstName={firstName}
                 days={countdown.days}
-                examDateLabel={L1_CYCLE2_EXAM_DATE_LABEL}
+                examDateLabel={L1_JULY12_EXAM_DATE_LABEL}
                 progress={progressProps}
                 assessments={displayAssessments}
                 onSwitchToStandard={openSwitchToStandard}
