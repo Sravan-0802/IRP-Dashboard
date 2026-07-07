@@ -10,8 +10,15 @@ export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T23:59:59+05:30");
 export const L1_JULY12_REGISTRATION_CLOSE_DATE = new Date("2026-07-12T17:30:00+05:30");
 export const L1_JULY12_REGISTRATION_OPEN_DATE = new Date("2026-07-07T21:00:00+05:30");
 
+function isJuly12RegistrationForceOpen(): boolean {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.L1_JULY12_REGISTRATION_FORCE_OPEN === "1"
+  );
+}
+
 export function hasL1July12RegistrationStarted(now = new Date()): boolean {
-  return now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
+  return isJuly12RegistrationForceOpen() || now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
 }
 
 export function isL1RegistrationOpen(now = new Date()): boolean {

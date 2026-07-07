@@ -23,8 +23,15 @@ export const L1_JULY12_REGISTRATION_OPEN_DATE_LABEL = "7th July 2026, 9:00 PM IS
 export const L1_JULY12_REGISTRATION_CLOSE_DATE = new Date("2026-07-12T17:30:00+05:30");
 export const L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL = "12th July 2026, 5:30 PM IST";
 
+function isJuly12RegistrationForceOpen(): boolean {
+  return (
+    import.meta.env.DEV &&
+    import.meta.env.VITE_L1_JULY12_REGISTRATION_FORCE_OPEN === "1"
+  );
+}
+
 export function hasL1July12RegistrationStarted(now = new Date()): boolean {
-  return now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
+  return isJuly12RegistrationForceOpen() || now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
 }
 
 export function isL1July12RegistrationOpen(now = new Date()): boolean {
