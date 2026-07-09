@@ -177,7 +177,11 @@ function StepConnector({
   const tone = connectorTone(fromStatus);
   if (layout === "horizontal") {
     return (
-      <div className={cn("flex w-6 shrink-0 items-center gap-0 self-start px-0.5 pt-7 sm:w-8", tone)}>
+      <div className={cn(
+        "flex w-6 shrink-0 items-center gap-0 self-start px-0.5 pt-7 sm:w-8",
+        "lg:min-w-6 lg:max-w-20 lg:flex-1",
+        tone,
+      )}>
         <div className="h-0.5 flex-1 rounded-full bg-current opacity-40" />
         <ChevronRight className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={2.5} aria-hidden />
         <div className="h-0.5 flex-1 rounded-full bg-current opacity-40" />
@@ -217,16 +221,16 @@ export function JourneyBar({
   return (
     <div
       className={cn(
-        "w-full pb-1",
+        "w-full pb-1 overscroll-x-contain [-webkit-overflow-scrolling:touch]",
         horizontal
-          ? undefined
-          : "-mx-1 overflow-x-auto px-1 overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+          ? "-mx-1 overflow-x-auto px-1 lg:mx-0 lg:overflow-x-visible lg:px-0"
+          : "-mx-1 overflow-x-auto px-1",
       )}
     >
       <div
         className={cn(
           horizontal
-            ? "flex w-full flex-row items-start"
+            ? "flex w-max min-w-full flex-row flex-nowrap items-start lg:w-full lg:min-w-0"
             : "flex min-w-[min(100%,720px)] flex-col md:min-w-0 md:w-full md:flex-row md:items-start",
         )}
       >
@@ -243,25 +247,30 @@ export function JourneyBar({
                   : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
         const badge =
           step.status === "done"
-            ? <Pill tone="green">Completed</Pill>
+            ? <Pill tone="green" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>Completed</Pill>
             : step.status === "attempted_not_cleared"
               ? (
                 <Pill
                   tone="amber"
-                  className="px-2 py-0.5 text-[9px] normal-case leading-snug tracking-normal"
+                  className={cn(
+                    "leading-snug tracking-normal",
+                    horizontal
+                      ? "px-2 py-0.5 text-[9px] normal-case"
+                      : "px-2 py-0.5 text-[9px] normal-case",
+                  )}
                 >
-                  Attempted but not cleared
+                  {horizontal ? "Not cleared" : "Attempted but not cleared"}
                 </Pill>
               )
               : step.status === "active"
                 ? (
-                  <Pill tone="purple">
+                  <Pill tone="purple" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>
                     {step.badgeLabel ?? "In Progress"}
                   </Pill>
                 )
                 : step.status === "reattempt"
-                  ? <Pill tone="purple">Reattempt</Pill>
-                  : <Pill tone="grey">Locked</Pill>;
+                  ? <Pill tone="purple" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>Reattempt</Pill>
+                  : <Pill tone="grey" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>Locked</Pill>;
 
         const StepIcon =
           step.status === "done" || step.status === "attempted_not_cleared"
@@ -276,8 +285,10 @@ export function JourneyBar({
           <React.Fragment key={`${step.label}-${i}`}>
             <div
               className={cn(
-                "relative z-10 flex min-w-0 flex-col items-center text-center",
-                horizontal ? "flex-1 px-0.5" : "flex-1 items-start gap-3 md:flex-col md:items-center md:gap-0 md:text-center",
+                "relative z-10 flex shrink-0 flex-col items-center text-center",
+                horizontal
+                  ? "w-[7.25rem] px-1 sm:w-[8.25rem] lg:min-w-0 lg:w-auto lg:flex-1"
+                  : "min-w-0 flex-1 items-start gap-3 md:flex-col md:items-center md:gap-0 md:text-center",
               )}
             >
               <div
@@ -297,10 +308,17 @@ export function JourneyBar({
                 </span>
               </div>
               <div className={cn("min-w-0 w-full", horizontal ? "px-0" : "flex-1 md:flex-none")}>
-                <p className={cn("font-bold leading-tight", labelClass, step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]")}>
+                <p className={cn(
+                  "font-bold leading-tight",
+                  labelClass,
+                  horizontal && "px-0.5",
+                  step.status === "locked" ? "text-[#aaa5c0]" : "text-[#0d1117]",
+                )}>
                   {step.label}
                 </p>
-                <div className={cn(horizontal ? "mt-1 flex justify-center" : compact ? "mt-1 scale-90 origin-left md:origin-center" : "mt-1.5")}>
+                <div className={cn(
+                  horizontal ? "mt-1 flex max-w-full justify-center" : compact ? "mt-1 scale-90 origin-left md:origin-center" : "mt-1.5",
+                )}>
                   {badge}
                 </div>
                 {step.status === "attempted_not_cleared" && (
@@ -326,7 +344,7 @@ export function JourneyBar({
               step.status !== "attempted_not_cleared" ? (
                 <StepConnector fromStatus={step.status} layout={horizontal ? "horizontal" : "vertical"} />
               ) : horizontal ? (
-                <div className="w-6 shrink-0 self-start sm:w-8" aria-hidden />
+                <div className="w-6 shrink-0 self-start sm:w-8 lg:min-w-6 lg:max-w-20 lg:flex-1" aria-hidden />
               ) : null
             )}
           </React.Fragment>

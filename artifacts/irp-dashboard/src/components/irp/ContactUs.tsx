@@ -64,12 +64,12 @@ export function ContactUs() {
             }}
             placeholder="Type your message here…"
             rows={4}
-            maxLength={2000}
+            maxLength={5000}
             disabled={status === "sending"}
             className="w-full resize-none rounded-xl border border-[rgba(103,65,217,0.15)] bg-white px-4 py-3 text-sm text-ink placeholder:text-muted2 focus:border-[#6741d9] focus:outline-none focus:ring-2 focus:ring-[rgba(103,65,217,0.12)] disabled:opacity-60"
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[11px] font-medium text-muted2">{message.length}/2000</span>
+            <span className="text-[11px] font-medium text-muted2">{message.length}/5000</span>
             <button
               type="submit"
               disabled={status === "sending" || !message.trim()}

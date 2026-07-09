@@ -243,6 +243,31 @@ export const academyUserAssessmentDetailsTable = pgTable(
   }),
 );
 
+// Mirror of BigQuery `y_academy_users_irp_main_nxtmock_details_for_irp_portal`
+export const academyUserNxtmockDetailsTable = pgTable(
+  "academy_user_nxtmock_details",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    interviewId: text("interview_id").notNull(),
+    interviewTitle: text("interview_title"),
+    examType: text("exam_type"),
+    level: text("level"),
+    cycle: text("cycle"),
+    selfIntroRating: integer("self_intro_rating"),
+    javascriptCodingRating: integer("javascript_coding_rating"),
+    javascriptRating: integer("javascript_rating"),
+    cssRating: integer("css_rating"),
+    htmlRating: integer("html_rating"),
+    reactJsRating: integer("react_js_rating"),
+    averageRating: real("average_rating"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userInterviewUnique: unique("academy_user_nxtmock_unique").on(t.userId, t.interviewId),
+  }),
+);
+
 // Mirror of BigQuery `academy_users_course_progress_data_for_irp_portal`
 export const academyUserCourseProgressTable = pgTable(
   "academy_user_course_progress",
@@ -281,6 +306,7 @@ export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
 
 export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
 export type AcademyUserAssessmentDetails = typeof academyUserAssessmentDetailsTable.$inferSelect;
+export type AcademyUserNxtmockDetails = typeof academyUserNxtmockDetailsTable.$inferSelect;
 export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;
 export type BigquerySyncStatus = typeof bigquerySyncStatusTable.$inferSelect;
 

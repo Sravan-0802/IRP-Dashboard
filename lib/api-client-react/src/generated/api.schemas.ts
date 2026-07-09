@@ -104,7 +104,7 @@ export interface StudentActivity {
 export interface ContactMessageRequest {
   /**
      * @minLength 1
-     * @maxLength 2000
+     * @maxLength 5000
      */
   message: string;
 }

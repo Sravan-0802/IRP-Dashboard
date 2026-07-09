@@ -51,6 +51,10 @@ const COURSE_PROGRESS_TABLE = "academy_users_course_progress_data_for_irp_portal
 const ASSESSMENT_PHYSICAL_TABLE = "academy_users_irp_main_assessment_details_for_irp_portal";
 /** View over retention_academy_analytics — requires access to the underlying table. */
 const ASSESSMENT_VIEW_TABLE = "y_academy_users_irp_main_assessment_details_for_irp_portal";
+/** Physical copy in the portal dataset (preferred). */
+const NXTMOCK_PHYSICAL_TABLE = "academy_users_irp_main_nxtmock_details_for_irp_portal";
+/** View — AI Mock Interview ratings per user. */
+const NXTMOCK_VIEW_TABLE = "y_academy_users_irp_main_nxtmock_details_for_irp_portal";
 
 const ASSESSMENT_SELECT = `SELECT
       user_id, organisation_assessment_id, assessment_title,
@@ -116,7 +120,9 @@ async function resolveDataset(bq: BigQuery): Promise<string> {
       ids.includes(BASIC_DETAILS_TABLE) ||
       ids.includes(COURSE_PROGRESS_TABLE) ||
       ids.includes(ASSESSMENT_PHYSICAL_TABLE) ||
-      ids.includes(ASSESSMENT_VIEW_TABLE)
+      ids.includes(ASSESSMENT_VIEW_TABLE) ||
+      ids.includes(NXTMOCK_PHYSICAL_TABLE) ||
+      ids.includes(NXTMOCK_VIEW_TABLE)
     ) {
       logger.info({ dataset: ds.id }, "Auto-discovered BigQuery dataset for IRP tables");
       return ds.id;
@@ -165,6 +171,59 @@ export interface MainAssessmentDetailsRow {
   assessment_user_score: number | null;
 }
 
+export interface NxtmockDetailsRow {
+  user_id: string | null;
+  interview_id: string | null;
+  interview_title: string | null;
+  exam_type: string | null;
+  level: string | null;
+  cycle: string | null;
+  self_intro_rating: number | null;
+  javascript_coding_rating: number | null;
+  javascript_rating: number | null;
+  css_rating: number | null;
+  html_rating: number | null;
+  react_js_rating: number | null;
+  average_rating: number | null;
+}
+
+const NXTMOCK_SELECT = `SELECT
+      user_id, interview_id, interview_title, exam_type, level, cycle,
+      self_intro_rating, javascript_coding_rating, javascript_rating,
+      css_rating, html_rating, react_js_rating, average_rating`;
+
+function nxtmockTableCandidates(): string[] {
+  const configured = process.env["BQ_NXTMOCK_TABLE"]?.trim();
+  const candidates = [configured, NXTMOCK_PHYSICAL_TABLE, NXTMOCK_VIEW_TABLE].filter(
+    (v): v is string => Boolean(v),
+  );
+  return [...new Set(candidates)];
+}
+
+async function resolveNxtmockTable(bq: BigQuery, dataset: string): Promise<string> {
+  const projectId = process.env["project_id"];
+  let lastError: Error | null = null;
+
+  for (const table of nxtmockTableCandidates()) {
+    try {
+      await bq.query({
+        query: `SELECT 1 FROM \`${projectId}.${dataset}.${table}\` LIMIT 1`,
+      });
+      logger.info({ table, dataset }, "Resolved BigQuery nxtmock table");
+      return table;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      logger.warn({ table, err: lastError.message }, "Nxtmock table not queryable");
+    }
+  }
+
+  throw new Error(
+    `No queryable nxtmock table found in ${dataset}. ` +
+      `Set BQ_NXTMOCK_TABLE or materialize academy_users_irp_main_nxtmock_details_for_irp_portal. ` +
+      `Last error: ${lastError?.message ?? "unknown"}`
+  );
+}
+
 export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   const bq = getBigQueryClient();
   const dataset = await resolveDataset(bq);
@@ -198,4 +257,15 @@ export async function fetchMainAssessmentDetails(): Promise<MainAssessmentDetail
     FROM \`${projectId}.${dataset}.${table}\``;
   const [rows] = await bq.query({ query });
   return rows as MainAssessmentDetailsRow[];
+}
+
+export async function fetchNxtmockDetails(): Promise<NxtmockDetailsRow[]> {
+  const bq = getBigQueryClient();
+  const dataset = await resolveDataset(bq);
+  const projectId = process.env["project_id"];
+  const table = await resolveNxtmockTable(bq, dataset);
+  const query = `${NXTMOCK_SELECT}
+    FROM \`${projectId}.${dataset}.${table}\``;
+  const [rows] = await bq.query({ query });
+  return rows as NxtmockDetailsRow[];
 }

@@ -8,6 +8,11 @@ import {
   hasClearedFeProject,
 } from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
+import {
+  hasNxtmockAttempt,
+  isNxtmockCleared,
+  type NxtmockInterview,
+} from "@/lib/nxtmockInterview";
 
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
   { label: "Online Assessment", icon: "assessment" },
@@ -21,6 +26,7 @@ const L1_STEPS: Omit<JourneyStep, "status">[] = [
 export function l1HustlerJourneySteps(
   journey: Journey,
   assessments: AssessmentResult[],
+  nxtmock?: NxtmockInterview | null,
 ): JourneyStep[] {
   const assessmentStatus = getAssessmentStepStatus(assessments, 1);
   const phase = getPhase(journey.journeyState);
@@ -31,7 +37,9 @@ export function l1HustlerJourneySteps(
   const feAttemptedNotCleared = !feDone && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
-  const pastAiMock = state === "L1_HUMAN_INTERVIEW" || advancedToL2;
+  const nxtmockCleared = isNxtmockCleared(nxtmock);
+  const nxtmockAttemptedNotCleared = hasNxtmockAttempt(nxtmock) && !nxtmockCleared;
+  const pastAiMock = state === "L1_HUMAN_INTERVIEW" || advancedToL2 || nxtmockCleared;
 
   const onlineStatus: JourneyStep["status"] =
     phase === "REATTEMPT_WAITING" || phase === "REATTEMPT_ACTIVE"
@@ -45,6 +53,7 @@ export function l1HustlerJourneySteps(
 
   let aiMockStatus: JourneyStep["status"] = "locked";
   if (pastAiMock) aiMockStatus = "done";
+  else if (nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
   else if (feDone) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";

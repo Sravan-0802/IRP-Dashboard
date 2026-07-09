@@ -11,23 +11,35 @@ import { L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EX
 import { clearedL1ViaC2, getAssessmentStepStatus, getL1ClearedExamDateLabel } from "@/lib/assessment";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
+import {
+  hasNxtmockAttempt,
+  isNxtmockCleared,
+  type NxtmockInterview,
+} from "@/lib/nxtmockInterview";
+import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
+import { FeProjectResults } from "./FeProjectResults";
+import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 
-function journeySteps(journey: Journey, assessments: AssessmentResult[]): JourneyStep[] {
+function journeySteps(
+  journey: Journey,
+  assessments: AssessmentResult[],
+  nxtmock: NxtmockInterview | null | undefined,
+): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
 
   if (level === 1 && !journey.isWildcard) {
-    return l1HustlerJourneySteps(journey, assessments);
+    return l1HustlerJourneySteps(journey, assessments, nxtmock);
   }
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
@@ -73,6 +85,7 @@ function assessmentMotivation(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
   journey: Journey,
+  nxtmock: NxtmockInterview | null | undefined,
 ): string {
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
@@ -81,8 +94,11 @@ function assessmentMotivation(
       return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
     }
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
-    if (journey.journeyState === "L1_HUMAN_INTERVIEW") {
+    if (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") {
       return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
+    }
+    if (hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
+      return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
     if (journey.projectSubmitted) {
       return `You cleared the ${clearedDateLabel} assessment and completed FE Project. Continue with your next interview step. 💪`;
@@ -164,8 +180,10 @@ export function DashboardView({
   const level = getLevel(journey.journeyState);
   const { registration } = useL1Registration();
   const { registered: july12Registered } = useL1July12Cohort();
+  const { data: nxtmockData } = useNxtmockInterview();
+  const nxtmock = nxtmockData?.interview ?? null;
 
-  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey);
+  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey, nxtmock);
 
   return (
     <div className="space-y-6">
@@ -197,7 +215,7 @@ export function DashboardView({
           </p>
         )}
         <JourneyBar
-          steps={journeySteps(journey, assessments)}
+          steps={journeySteps(journey, assessments, nxtmock)}
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
@@ -205,6 +223,12 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard ? (
         <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? <NxtmockResults interview={nxtmock} /> : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <FeProjectResults journey={journey} assessments={assessments} />
       ) : null}
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />

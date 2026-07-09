@@ -123,7 +123,7 @@ export const GetStudentActivityResponse = zod.object({
  * Stores a message from the student for the IRP team
  * @summary Submit a contact us message
  */
-export const submitContactMessageBodyMessageMax = 2000;
+export const submitContactMessageBodyMessageMax = 5000;
 
 
 

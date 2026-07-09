@@ -20,6 +20,7 @@ import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
+import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import {
   hasL1July12RegistrationStarted,
   isL1July12RegistrationOpen,
@@ -378,8 +379,8 @@ router.post("/student/contact", async (req, res) => {
     }
 
     const raw = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-    if (!raw || raw.length > 2000) {
-      res.status(400).json({ error: "Message must be 1–2000 characters" });
+    if (!raw || raw.length > 5000) {
+      res.status(400).json({ error: "Message must be 1–5000 characters" });
       return;
     }
 
@@ -710,6 +711,23 @@ router.get("/student/l1-july12-cohort", async (req, res) => {
     res.json({ registered: isInL1July12Cohort(userId) });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 July 12 cohort status");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/nxtmock-interview — AI Mock Interview ratings synced from BigQuery.
+router.get("/student/nxtmock-interview", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const interview = await getNxtmockInterviewForUser(userId);
+    res.json({ interview });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get NxtMock interview");
     res.status(500).json({ error: "Internal server error" });
   }
 });

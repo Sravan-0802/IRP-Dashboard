@@ -3,6 +3,7 @@ import { db, studentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { getOrCreateStudentForUser, userHasAssessmentData } from "../lib/student";
+import { maybeAdvanceJourneyFromNxtmock } from "../lib/nxtmockInterview";
 
 const router = Router();
 
@@ -123,11 +124,12 @@ router.get("/student/journey", async (req, res) => {
       return;
     }
 
-    const student = await getOrCreateStudentForUser(userId);
+    let student = await getOrCreateStudentForUser(userId);
     if (!student) {
       res.status(404).json({ error: "Student not found" });
       return;
     }
+    student = await maybeAdvanceJourneyFromNxtmock(userId, student);
     res.json(serialize(student, clamp));
   } catch (err) {
     req.log.error({ err }, "Failed to get journey");

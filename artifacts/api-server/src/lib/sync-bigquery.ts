@@ -3,6 +3,7 @@ import {
   db,
   academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
+  academyUserNxtmockDetailsTable,
   academyUserCourseProgressTable,
   bigquerySyncStatusTable,
 } from "@workspace/db";
@@ -11,12 +12,14 @@ import {
   fetchBasicDetails,
   fetchCourseProgress,
   fetchMainAssessmentDetails,
+  fetchNxtmockDetails,
   isBigQueryConfigured,
 } from "./bigquery";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
 const ASSESSMENT_DETAILS_KEY = "academy_user_assessment_details";
+const NXTMOCK_DETAILS_KEY = "academy_user_nxtmock_details";
 const BATCH_SIZE = 500;
 
 function toInt(v: unknown): number | null {
@@ -221,6 +224,65 @@ async function syncMainAssessmentDetails(): Promise<number> {
   return mapped.length;
 }
 
+async function syncNxtmockDetails(): Promise<number> {
+  const rows = await fetchNxtmockDetails();
+  const mapped = dedupeByKey(
+    rows
+      .filter(
+        (r) =>
+          r.user_id != null &&
+          String(r.user_id).trim() !== "" &&
+          r.interview_id != null &&
+          String(r.interview_id).trim() !== "",
+      )
+      .map((r) => ({
+        userId: String(r.user_id),
+        interviewId: String(r.interview_id),
+        interviewTitle: toStr(r.interview_title),
+        examType: toStr(r.exam_type),
+        level: toStr(r.level),
+        cycle: toStr(r.cycle),
+        selfIntroRating: toInt(r.self_intro_rating),
+        javascriptCodingRating: toInt(r.javascript_coding_rating),
+        javascriptRating: toInt(r.javascript_rating),
+        cssRating: toInt(r.css_rating),
+        htmlRating: toInt(r.html_rating),
+        reactJsRating: toInt(r.react_js_rating),
+        averageRating: toReal(r.average_rating),
+        syncedAt: new Date(),
+      })),
+    (r) => `${r.userId}:${r.interviewId}`,
+  );
+
+  for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
+    const batch = mapped.slice(i, i + BATCH_SIZE);
+    await db
+      .insert(academyUserNxtmockDetailsTable)
+      .values(batch)
+      .onConflictDoUpdate({
+        target: [
+          academyUserNxtmockDetailsTable.userId,
+          academyUserNxtmockDetailsTable.interviewId,
+        ],
+        set: {
+          interviewTitle: sql`excluded.interview_title`,
+          examType: sql`excluded.exam_type`,
+          level: sql`excluded.level`,
+          cycle: sql`excluded.cycle`,
+          selfIntroRating: sql`excluded.self_intro_rating`,
+          javascriptCodingRating: sql`excluded.javascript_coding_rating`,
+          javascriptRating: sql`excluded.javascript_rating`,
+          cssRating: sql`excluded.css_rating`,
+          htmlRating: sql`excluded.html_rating`,
+          reactJsRating: sql`excluded.react_js_rating`,
+          averageRating: sql`excluded.average_rating`,
+          syncedAt: sql`excluded.synced_at`,
+        },
+      });
+  }
+  return mapped.length;
+}
+
 async function runOne(
   key: string,
   fn: () => Promise<number>
@@ -276,6 +338,7 @@ export async function runBigQuerySync(): Promise<SyncResult> {
       await runOne(BASIC_DETAILS_KEY, syncBasicDetails),
       await runOne(COURSE_PROGRESS_KEY, syncCourseProgress),
       await runOne(ASSESSMENT_DETAILS_KEY, syncMainAssessmentDetails),
+      await runOne(NXTMOCK_DETAILS_KEY, syncNxtmockDetails),
     ];
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {

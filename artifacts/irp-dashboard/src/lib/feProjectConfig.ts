@@ -21,3 +21,10 @@ export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 100% to unlock the AI Mock In
 
 export const FE_PROJECT_NOT_CLEARED_BODY =
   "You attempted the FE Project but haven't cleared it yet. You must pass all test cases — a perfect 20/20 (100%) — to advance to the AI Mock Interview.";
+
+export const FE_PROJECT_RESULTS_TITLE = "FE Project Results";
+
+export const FE_PROJECT_CLEARED_TITLE = "You cleared the FE Project";
+
+export const FE_PROJECT_CLEARED_BODY =
+  "Perfect score — all test cases passed. Continue with your AI Mock Interview.";
