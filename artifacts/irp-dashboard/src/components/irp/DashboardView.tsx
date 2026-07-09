@@ -188,7 +188,7 @@ export function DashboardView({
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
   const { registration } = useL1Registration();
-  const { registered: july12Registered } = useL1July12Cohort();
+  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const { data: nxtmockData } = useNxtmockInterview();
   const nxtmock = nxtmockData?.interview ?? null;
 
@@ -211,6 +211,7 @@ export function DashboardView({
         <L1AssessmentBanner
           assessments={assessments}
           registration={registration}
+          registrationUnlocked={registrationUnlocked}
           onRegisterClick={onOpenAssessmentCalendar}
         />
       ) : null}

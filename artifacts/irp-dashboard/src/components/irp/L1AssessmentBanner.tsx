@@ -17,19 +17,21 @@ import { shouldShowCycle2Banner } from "@/lib/l1StudentTrack";
 export function L1AssessmentBanner({
   assessments = [],
   registration = null,
+  registrationUnlocked = false,
   onRegisterClick,
   compact = false,
 }: {
   assessments?: AssessmentResult[];
   registration?: L1RegistrationRecord | null;
+  registrationUnlocked?: boolean;
   onRegisterClick?: () => void;
   compact?: boolean;
 }) {
   if (!shouldShowCycle2Banner(assessments)) return null;
 
   const slotBooked = hasSuccessfulSlotRegistration(registration);
-  const registrationOpen = isL1July12RegistrationOpen();
-  const registrationStarted = hasL1July12RegistrationStarted();
+  const registrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
+  const registrationStarted = hasL1July12RegistrationStarted() || registrationUnlocked;
 
   if (slotBooked) return null;
 

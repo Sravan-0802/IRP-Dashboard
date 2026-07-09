@@ -345,7 +345,7 @@ export function AssessmentsHub({
   const [registerOpen, setRegisterOpen] = useState(false);
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const { examAccess } = useL1ExamAccess();
-  const { registered: july12Registered } = useL1July12Cohort();
+  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const hustlerState = statuses["l1-hustler"] ?? {
     status: "todo" as AssessmentStatus,
     slot: L1_JULY12_HUSTLER_SLOTS[0]?.id,
@@ -354,7 +354,9 @@ export function AssessmentsHub({
     assessments,
     july12Registered,
     hasSuccessfulSlotRegistration(registration),
+    registrationUnlocked,
   );
+  const july12RegistrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
@@ -439,7 +441,7 @@ export function AssessmentsHub({
                   : undefined
               }
               onBook={
-                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && isL1July12RegistrationOpen()
+                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && july12RegistrationOpen
                   ? () => setRegisterOpen(true)
                   : undefined
               }
@@ -458,7 +460,7 @@ export function AssessmentsHub({
                     ? "Your slot is confirmed for 12th July (6:00 PM – 8:00 PM IST). Wait for the mock assessment link before exam day."
                     : a.id === "l1-hustler" && !hasL1July12RegistrationStarted()
                       ? `Registration opens at ${L1_JULY12_REGISTRATION_OPEN_DATE_LABEL}.`
-                      : a.id === "l1-hustler" && !isL1July12RegistrationOpen()
+                      : a.id === "l1-hustler" && !july12RegistrationOpen
                       ? `Registration closed on ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL}.`
                       : a.id === "l1-hustler"
                         ? `Register by ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL} via the Assessment Calendar.`

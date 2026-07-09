@@ -229,11 +229,16 @@ function AssessmentCalendarContent() {
 
 export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[] }) {
   const { registration } = useL1Registration();
-  const { registered: july12Registered } = useL1July12Cohort();
+  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const slotBooked = hasSuccessfulSlotRegistration(registration);
-  const showCalendar = shouldShowCycle2CalendarPage(assessments, slotBooked, july12Registered);
+  const showCalendar = shouldShowCycle2CalendarPage(
+    assessments,
+    slotBooked,
+    july12Registered,
+    registrationUnlocked,
+  );
   const cleared = isCycle1Cleared(assessments);
-  const registrationOpen = isL1July12RegistrationOpen();
+  const registrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
 
   return (
     <div className="space-y-6">

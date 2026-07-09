@@ -60,12 +60,13 @@ export function shouldShowJuly12SlotCalendar(
   assessments: AssessmentResult[],
   july12CohortRegistered: boolean,
   hasSlotRegistration = false,
+  registrationUnlocked = false,
 ): boolean {
   return (
     L1_ASSESSMENT_CALENDAR_VISIBLE &&
     isCycle2Candidate(assessments) &&
     !july12CohortRegistered &&
-    (isL1July12RegistrationOpen() || hasSlotRegistration)
+    (isL1July12RegistrationOpen() || registrationUnlocked || hasSlotRegistration)
   );
 }
 
@@ -79,6 +80,12 @@ export function shouldShowCycle2CalendarPage(
   assessments: AssessmentResult[],
   hasSlotRegistration: boolean,
   july12CohortRegistered = false,
+  registrationUnlocked = false,
 ): boolean {
-  return shouldShowJuly12SlotCalendar(assessments, july12CohortRegistered, hasSlotRegistration);
+  return shouldShowJuly12SlotCalendar(
+    assessments,
+    july12CohortRegistered,
+    hasSlotRegistration,
+    registrationUnlocked,
+  );
 }

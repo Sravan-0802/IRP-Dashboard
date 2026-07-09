@@ -19,11 +19,13 @@ import {
 import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
+import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import {
   hasL1July12RegistrationStarted,
   isL1July12RegistrationOpen,
+  canRegisterForL1July12,
   L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
   L1_JULY12_SLOT_IDS,
   L1_REGISTRATION_CYCLE,
@@ -579,7 +581,7 @@ router.post("/student/l1-registration", async (req, res) => {
       )
       .limit(1);
 
-    if (!isL1July12RegistrationOpen() && !existing) {
+    if (!canRegisterForL1July12(userId) && !existing) {
       res.status(403).json({
         error: hasL1July12RegistrationStarted()
           ? "Slot registration for the 12 July assessment is closed"
@@ -708,7 +710,10 @@ router.get("/student/l1-july12-cohort", async (req, res) => {
       return;
     }
 
-    res.json({ registered: isInL1July12Cohort(userId) });
+    res.json({
+      registered: isInL1July12Cohort(userId),
+      registrationUnlocked: isInL1July12RegistrationUnlock(userId),
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 July 12 cohort status");
     res.status(500).json({ error: "Internal server error" });

@@ -1,3 +1,5 @@
+import { isInL1July12RegistrationUnlock } from "./l1July12RegistrationUnlock";
+
 export const L1_REGISTRATION_CYCLE = 2;
 export const L1_REGISTRATION_LEVEL = 1;
 export const L1_REGISTRATION_ASSESSMENT_DATE = "5th July 2026";
@@ -30,6 +32,16 @@ export function isL1July12RegistrationOpen(now = new Date()): boolean {
     hasL1July12RegistrationStarted(now) &&
     now.getTime() < L1_JULY12_REGISTRATION_CLOSE_DATE.getTime()
   );
+}
+
+/** True when this student may book a 12 July slot (global window or unlock list). */
+export function canRegisterForL1July12(
+  userId: string | null | undefined,
+  now = new Date(),
+): boolean {
+  if (now.getTime() >= L1_JULY12_REGISTRATION_CLOSE_DATE.getTime()) return false;
+  if (isInL1July12RegistrationUnlock(userId)) return true;
+  return isL1July12RegistrationOpen(now);
 }
 
 export const L1_SLOT_LABELS: Record<string, string> = {
