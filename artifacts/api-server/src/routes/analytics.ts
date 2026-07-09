@@ -224,7 +224,7 @@ router.get("/analytics/dashboard", async (req, res) => {
       })
       .from(contactUsMessagesTable)
       .orderBy(desc(contactUsMessagesTable.createdAt))
-      .limit(200);
+      .limit(20000);
 
     const contactMessages = [...contactRows]
       .sort((a, b) =>
