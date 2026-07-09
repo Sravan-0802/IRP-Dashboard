@@ -28,10 +28,10 @@ export function FeProjectNotClearedNotice({
   assessments: AssessmentResult[];
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feDone = journey.projectSubmitted || hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments);
   const feAttempted = hasAttemptedFeProject(assessments);
 
-  if (!clearedL1 || feDone || !feAttempted) return null;
+  if (!clearedL1 || feCleared || !feAttempted) return null;
 
   const fe = pickFeProjectAssessment(assessments);
   const pct = fe ? assessmentOverallPct(fe) : 0;

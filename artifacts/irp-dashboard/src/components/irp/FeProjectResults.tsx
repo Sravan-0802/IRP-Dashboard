@@ -22,7 +22,7 @@ export function FeProjectResults({
   assessments: AssessmentResult[];
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = journey.projectSubmitted || hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments);
   const fe = pickFeProjectAssessment(assessments);
   const hasScoreData = fe != null && hasClearedFeProject(assessments);
 

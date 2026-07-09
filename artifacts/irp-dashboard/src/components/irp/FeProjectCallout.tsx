@@ -31,13 +31,13 @@ export function FeProjectCallout({
   className?: string;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feDone = journey.projectSubmitted || hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments);
   const feAttempted = hasAttemptedFeProject(assessments);
   const feAssessment = pickFeProjectAssessment(assessments);
   const fePct = feAssessment ? assessmentOverallPct(feAssessment) : 0;
-  const isReattempt = feAttempted && !feDone;
+  const isReattempt = feAttempted && !feCleared;
 
-  if (!clearedL1 || feDone) return null;
+  if (!clearedL1 || feCleared) return null;
 
   return (
     <div

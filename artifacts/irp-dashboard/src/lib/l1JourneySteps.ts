@@ -32,9 +32,9 @@ export function l1HustlerJourneySteps(
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
   const assessmentCleared = hasClearedAssessment(assessments, 1);
-  // FE clears only on a perfect score (20/20) or an explicit portal flag.
-  const feDone = journey.projectSubmitted || hasClearedFeProject(assessments);
-  const feAttemptedNotCleared = !feDone && hasAttemptedFeProject(assessments);
+  // FE clears only on a perfect score (20/20).
+  const feCleared = hasClearedFeProject(assessments);
+  const feAttemptedNotCleared = !feCleared && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
   const nxtmockCleared = isNxtmockCleared(nxtmock);
@@ -47,14 +47,14 @@ export function l1HustlerJourneySteps(
       : assessmentStatus;
 
   let feProjectStatus: JourneyStep["status"] = "locked";
-  if (feDone) feProjectStatus = "done";
+  if (feCleared) feProjectStatus = "done";
   else if (feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
   let aiMockStatus: JourneyStep["status"] = "locked";
   if (pastAiMock) aiMockStatus = "done";
   else if (nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
-  else if (feDone) aiMockStatus = "active";
+  else if (feCleared) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";
   if (phase === "PLACED" || state.startsWith("L3_")) humanInterviewStatus = "done";

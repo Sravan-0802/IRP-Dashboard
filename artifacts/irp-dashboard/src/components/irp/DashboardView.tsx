@@ -8,7 +8,13 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import { L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
-import { clearedL1ViaC2, getAssessmentStepStatus, getL1ClearedExamDateLabel } from "@/lib/assessment";
+import {
+  clearedL1ViaC2,
+  getAssessmentStepStatus,
+  getL1ClearedExamDateLabel,
+  hasAttemptedFeProject,
+  hasClearedFeProject,
+} from "@/lib/assessment";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import {
@@ -97,11 +103,14 @@ function assessmentMotivation(
     if (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") {
       return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
     }
+    if (hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments)) {
+      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score 20/20 to unlock the AI Mock Interview. 💪`;
+    }
+    if (hasClearedFeProject(assessments)) {
+      return `You cleared the ${clearedDateLabel} assessment and FE Project. Continue with your next interview step. 💪`;
+    }
     if (hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
       return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
-    }
-    if (journey.projectSubmitted) {
-      return `You cleared the ${clearedDateLabel} assessment and completed FE Project. Continue with your next interview step. 💪`;
     }
     return `You cleared the ${clearedDateLabel} assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪`;
   }
@@ -206,7 +215,7 @@ export function DashboardView({
         />
       ) : null}
 
-      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} />
+      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} nxtmock={nxtmock} />
 
       <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
         {level === 1 && !journey.isWildcard && (

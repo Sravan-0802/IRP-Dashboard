@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock, ClipboardList, ShieldCheck } from "lucide-react";
+import { Calendar, CalendarClock, ClipboardList, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -27,6 +27,12 @@ import {
   isCycle1Cleared,
   isCycle2Candidate,
 } from "@/lib/l1StudentTrack";
+import {
+  getL1PipelineStage,
+  l1StageHeroContent,
+  type L1PipelineStage,
+} from "@/lib/l1PipelineStage";
+import type { NxtmockInterview } from "@/lib/nxtmockInterview";
 import { CountdownRing } from "./CountdownRing";
 import { Pill } from "./ui";
 
@@ -94,16 +100,86 @@ function ClearedAssessmentHero({
   );
 }
 
+function L1PipelineStageHero({
+  level,
+  stage,
+  examDateLabel,
+}: {
+  level: 1 | 2 | 3;
+  stage: L1PipelineStage;
+  examDateLabel: string;
+}) {
+  const meta = LEVEL_META[level];
+  const content = l1StageHeroContent(stage, examDateLabel);
+  const calendarIconClass =
+    content.dateAccent === "teal"
+      ? "text-teal"
+      : content.dateAccent === "blue"
+        ? "text-[#3b5bdb]"
+        : "text-brand";
+
+  const StageIcon =
+    stage === "fe_project_active" || stage === "fe_project_not_cleared"
+      ? FileCode2
+      : stage === "ai_mock_active" || stage === "ai_mock_not_cleared"
+        ? Mic
+        : stage === "human_interview_active"
+          ? UserRound
+          : ShieldCheck;
+
+  const iconColor =
+    stage === "human_interview_active"
+      ? "text-[#3b5bdb]/90"
+      : stage === "ai_mock_active"
+        ? "text-brand/90"
+        : stage === "fe_project_not_cleared" || stage === "ai_mock_not_cleared"
+          ? "text-[#e67700]/90"
+          : "text-[#0ca678]/90";
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border p-5 shadow-soft sm:p-6 md:p-8 ${content.borderClass}`}
+      style={{ background: content.background }}
+    >
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <div
+            className={`mb-3 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${content.eyebrowClass}`}
+          >
+            <PulsingDot color={content.dotColor} /> {content.eyebrow}
+          </div>
+          <LevelHeading name={meta.name} level={level} />
+          <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
+            {content.title}
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-muted2">{content.body}</p>
+        </div>
+
+        <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
+          <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
+            <Calendar className={`h-3.5 w-3.5 ${calendarIconClass}`} /> {examDateLabel}
+          </span>
+          <div className="relative flex h-28 w-36 items-center justify-center sm:h-32 sm:w-44" aria-hidden>
+            <StageIcon className={`h-20 w-20 ${iconColor}`} strokeWidth={1.25} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Hero({
   journey,
   days,
   examDateLabel,
   assessments = [],
+  nxtmock,
 }: {
   journey: Journey;
   days: number;
   examDateLabel: string;
   assessments?: AssessmentResult[];
+  nxtmock?: NxtmockInterview | null;
 }) {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
@@ -157,10 +233,22 @@ export function Hero({
       );
     }
 
+    const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
+    const pipelineStage = getL1PipelineStage(journey, assessments, nxtmock);
+    if (pipelineStage) {
+      return (
+        <L1PipelineStageHero
+          level={level}
+          stage={pipelineStage}
+          examDateLabel={clearedDateLabel}
+        />
+      );
+    }
+
     return (
       <ClearedAssessmentHero
         level={level}
-        examDateLabel={getL1ClearedExamDateLabel(assessments)}
+        examDateLabel={clearedDateLabel}
       />
     );
   }
