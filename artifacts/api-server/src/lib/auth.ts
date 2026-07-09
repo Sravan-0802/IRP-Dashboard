@@ -37,7 +37,7 @@ export function extractAuthToken(req: Request): string | null {
  */
 export async function resolveAcademyUserId(req: Request): Promise<string | null> {
   if (process.env["NODE_ENV"] !== "production") {
-    const devUser = "641fa83c-5646-4c2f-b124-6ffec90a0335";
+    const devUser = "afa8fbfa-1ae1-40e6-b0b8-2becd455a7b8";
     if (devUser) return devUser;
   }
 
