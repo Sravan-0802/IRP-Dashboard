@@ -52,9 +52,9 @@ export function isL1RegistrationOpen(now = new Date()): boolean {
 /** Assignment results unlock the day after the L1 Cycle 2 assessment (5 July). */
 export const RESULTS_UNLOCK_DATE = new Date("2026-07-06T00:00:00");
 
-/** L1 scores for students who cleared on the 5 July Cycle 2 sit go live on 8 July. */
-export const L1_CYCLE2_RESULTS_UNLOCK_DATE = new Date("2026-07-08T00:00:00+05:30");
-export const L1_CYCLE2_RESULTS_UNLOCK_LABEL = "8th July 2026";
+/** L1 scores for the 5 July Cycle 2 sit go live on 10 July. */
+export const L1_CYCLE2_RESULTS_UNLOCK_DATE = new Date("2026-07-10T00:00:00+05:30");
+export const L1_CYCLE2_RESULTS_UNLOCK_LABEL = "10th July 2026";
 
 /**
  * Course-progress and practice stats are hidden until this date.

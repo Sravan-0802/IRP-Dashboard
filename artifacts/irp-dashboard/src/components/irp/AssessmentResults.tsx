@@ -2,16 +2,18 @@ import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { areAssignmentResultsVisible, areL1Cycle2ResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
-  clearedL1ViaC2,
   formatAssessmentTitle,
   getAssessmentStepStatus,
   getL1ClearedExamDateLabel,
+  hasAttemptedL1Cycle2,
+  hasClearedAssessment,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   pickAssessmentForLevel,
+  pickL1AssessmentForResults,
   resultLabel,
   resultTone,
 } from "@/lib/assessment";
@@ -33,7 +35,8 @@ export function AssessmentResults({
     areAssignmentResultsVisible() ||
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
-  const assessment = pickAssessmentForLevel(assessments, level);
+  const assessment =
+    level === 1 ? pickL1AssessmentForResults(assessments) : pickAssessmentForLevel(assessments, level);
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
   const cycle1Cleared = level === 1 && isCycle1Cleared(assessments);
   const cycle2Track = level === 1 && isCycle2Candidate(assessments);
@@ -41,6 +44,9 @@ export function AssessmentResults({
 
   const resultsDateLabel = (() => {
     if (cycle1Cleared) return getL1ClearedExamDateLabel(assessments);
+    if (cycle2Track && hasAttemptedL1Cycle2(assessments)) {
+      return `${L1_CYCLE2_EXAM_DATE_LABEL} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
+    }
     if (cycle2Track && assessmentStatus === "attempted_not_cleared") {
       return `${L1_CYCLE1_EXAM_DATE_LABEL} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
     }
@@ -53,7 +59,7 @@ export function AssessmentResults({
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   const lockedMessage = (() => {
-    if (cycle1Cleared && clearedL1ViaC2(assessments) && locked) {
+    if (hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
       return (
         <>
           You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on{" "}
@@ -97,10 +103,17 @@ export function AssessmentResults({
           <p className="mt-0.5 text-xs text-muted2">
             {title} · {resultsDateLabel}
           </p>
-          {cycle2Track && assessmentStatus === "attempted_not_cleared" ? (
+          {cycle2Track && assessmentStatus === "attempted_not_cleared" && !hasAttemptedL1Cycle2(assessments) ? (
             <p className="mt-1 text-xs text-muted2">
               Scores below are from your Cycle 1 sit on {L1_CYCLE1_EXAM_DATE_LABEL}. Register for{" "}
               {L1_JULY12_EXAM_DATE_LABEL} to reattempt.
+            </p>
+          ) : cycle2Track && hasAttemptedL1Cycle2(assessments) ? (
+            <p className="mt-1 text-xs text-muted2">
+              Scores below are from your {L1_CYCLE2_EXAM_DATE_LABEL} assessment.
+              {!hasClearedAssessment(assessments, 1)
+                ? ` Register for ${L1_JULY12_EXAM_DATE_LABEL} to reattempt.`
+                : null}
             </p>
           ) : null}
         </div>

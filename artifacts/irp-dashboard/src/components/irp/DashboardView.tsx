@@ -7,14 +7,20 @@ import {
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
-import { L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
   clearedL1ViaC2,
   getAssessmentStepStatus,
   getL1ClearedExamDateLabel,
   hasAttemptedFeProject,
+  hasAttemptedL1Cycle2,
   hasClearedFeProject,
 } from "@/lib/assessment";
+import {
+  areL1Cycle2ResultsVisible,
+  L1_CYCLE2_EXAM_DATE_LABEL,
+  L1_CYCLE2_RESULTS_UNLOCK_LABEL,
+  L1_JULY12_EXAM_DATE_LABEL,
+} from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import {
@@ -96,7 +102,11 @@ function assessmentMotivation(
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
   if (level === 1 && isCycle1Cleared(assessments)) {
-    if (clearedL1ViaC2(assessments)) {
+    if (
+      hasAttemptedL1Cycle2(assessments) &&
+      clearedL1ViaC2(assessments) &&
+      !areL1Cycle2ResultsVisible()
+    ) {
       return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
     }
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
@@ -117,7 +127,13 @@ function assessmentMotivation(
 
   if (level === 1 && isCycle2Candidate(assessments)) {
     const upcomingLabel = getL1UpcomingExamDateLabel(assessments);
+    if (hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
+      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
+    }
     if (assessmentStatus === "attempted_not_cleared") {
+      if (hasAttemptedL1Cycle2(assessments)) {
+        return `You attempted the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment but didn't clear yet. Register for ${L1_JULY12_EXAM_DATE_LABEL} to reattempt. 🔥`;
+      }
       return `The assessment is on ${upcomingLabel}. Register via the Assessment Calendar and keep preparing. 🔥`;
     }
     if (days > 0) {

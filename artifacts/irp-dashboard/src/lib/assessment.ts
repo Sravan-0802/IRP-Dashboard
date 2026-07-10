@@ -121,6 +121,30 @@ export function hasClearedFeProject(assessments: AssessmentResult[]): boolean {
   return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
 }
 
+export function pickL1Cycle2Assessment(assessments: AssessmentResult[]): AssessmentResult | null {
+  const c2 = assessments
+    .filter(isL1OnlineAssessment)
+    .filter((a) => assessmentCycle(a) === "C2")
+    .sort((a, b) => scoreRank(b) - scoreRank(a));
+  return c2[0] ?? null;
+}
+
+/** True when the student has a written 5 July (Cycle 2) L1 online assessment row. */
+export function hasAttemptedL1Cycle2(assessments: AssessmentResult[]): boolean {
+  const c2 = pickL1Cycle2Assessment(assessments);
+  return c2 != null && assessmentWasWritten(c2);
+}
+
+/** Prefer the Cycle 2 sit for results once the 5 July release date has passed. */
+export function pickL1AssessmentForResults(assessments: AssessmentResult[]): AssessmentResult | null {
+  if (areL1Cycle2ResultsVisible() && hasAttemptedL1Cycle2(assessments)) {
+    const showCycle2Sit =
+      !hasClearedAssessment(assessments, 1) || clearedL1ViaC2(assessments);
+    if (showCycle2Sit) return pickL1Cycle2Assessment(assessments);
+  }
+  return pickAssessmentForLevel(assessments, 1);
+}
+
 export function pickAssessmentForLevel(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
@@ -234,10 +258,12 @@ export function isAssessmentResultsLocked(
   resultsUnlockedByDate: boolean,
 ): boolean {
   if (!hasWrittenAssessment(assessments, level)) return true;
-  if (level === 1 && clearedL1ViaC2(assessments) && !areL1Cycle2ResultsVisible()) {
-    return true;
+  // 5 July Cycle 2 results — held until release date for C2 attempters who rely on that sit.
+  if (level === 1 && hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
+    const awaitingCycle2Release =
+      !hasClearedAssessment(assessments, 1) || clearedL1ViaC2(assessments);
+    if (awaitingCycle2Release) return true;
   }
-  // L1 Cycle 1 sit complete (cleared or attempted-not-cleared) — show scores immediately.
   if (level === 1 && hasWrittenAssessment(assessments, 1)) return false;
   return !resultsUnlockedByDate;
 }
