@@ -15,6 +15,28 @@ export const L1_JULY12_EXAM_DATE_LABEL = "12th July 2026";
 /** July 12 results unlock the day after the assessment. */
 export const L1_JULY12_RESULTS_UNLOCK_DATE = new Date("2026-07-13T00:00:00+05:30");
 
+/**
+ * Mock link window: 11 July 2:00 PM IST → 12 July 10:00 AM IST.
+ * Cohort students can open the mock assessment only within this window.
+ */
+export const L1_JULY12_MOCK_OPEN_DATE  = new Date("2026-07-11T14:00:00+05:30");
+export const L1_JULY12_MOCK_CLOSE_DATE = new Date("2026-07-12T10:00:00+05:30");
+
+/**
+ * Main assessment window: 12 July 6:00 PM IST → 12 July 8:00 PM IST.
+ * Cohort students can open the main assessment link only within this window.
+ */
+export const L1_JULY12_MAIN_OPEN_DATE  = new Date("2026-07-12T18:00:00+05:30");
+export const L1_JULY12_MAIN_CLOSE_DATE = new Date("2026-07-12T20:00:00+05:30");
+
+export function isL1July12MockLinkOpen(now = new Date()): boolean {
+  return now >= L1_JULY12_MOCK_OPEN_DATE && now < L1_JULY12_MOCK_CLOSE_DATE;
+}
+
+export function isL1July12MainLinkOpen(now = new Date()): boolean {
+  return now >= L1_JULY12_MAIN_OPEN_DATE && now < L1_JULY12_MAIN_CLOSE_DATE;
+}
+
 /** Slot registration for the 12 July re-conduction opens 7 July 2026, 9:00 PM IST. */
 export const L1_JULY12_REGISTRATION_OPEN_DATE = new Date("2026-07-07T21:00:00+05:30");
 export const L1_JULY12_REGISTRATION_OPEN_DATE_LABEL = "7th July 2026, 9:00 PM IST";

@@ -27,6 +27,8 @@ import {
   L1_JULY12_REGISTRATION_OPEN_DATE_LABEL,
   isL1July12RegistrationOpen,
   hasL1July12RegistrationStarted,
+  isL1July12MockLinkOpen,
+  isL1July12MainLinkOpen,
 } from "@/lib/irpDates";
 import { isCycle1Cleared, shouldShowJuly12SlotCalendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
@@ -140,6 +142,8 @@ function AssessmentCard({
   examMainUrl,
   examMainSlotLabel,
   examMainPendingNote,
+  mockLinkOpen = false,
+  mainLinkOpen = false,
 }: {
   config: AssessmentConfig;
   state: { status: AssessmentStatus; slot?: string };
@@ -154,6 +158,10 @@ function AssessmentCard({
   examMainSlotLabel?: string;
   /** Note shown when a student has exam access but the main link isn't live yet. */
   examMainPendingNote?: string;
+  /** Whether the mock link window is currently open (11 Jul 2 PM – 12 Jul 10 AM IST). */
+  mockLinkOpen?: boolean;
+  /** Whether the main assessment link window is currently open (12 Jul 6 PM – 8 PM IST). */
+  mainLinkOpen?: boolean;
 }) {
   const { status, slot } = state;
   const Icon = config.kind === "mock" ? FlaskConical : Trophy;
@@ -162,7 +170,7 @@ function AssessmentCard({
   const canStart = (!needsSlot || !!slot) && !!assessmentUrl;
   // Exam-access rendering path for the MAIN card.
   const isExamMain = config.kind === "main" && !!examMainSlotLabel && status !== "done";
-  // Exam-access rendering path for the MOCK card — always show the link for
+  // Exam-access rendering path for the MOCK card — always show link/state for
   // cohort/exam-access students regardless of prior mock status.
   const isExamMock = config.kind === "mock" && !!assessmentUrl && !!examMainSlotLabel;
 
@@ -267,7 +275,7 @@ function AssessmentCard({
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        {isExamMock ? (
+        {isExamMock && mockLinkOpen ? (
           <button
             type="button"
             onClick={openExamMock}
@@ -277,7 +285,12 @@ function AssessmentCard({
             Start Mock Assessment
           </button>
         ) : null}
-        {isExamMain && examMainUrl ? (
+        {isExamMock && !mockLinkOpen ? (
+          <p className="text-sm font-semibold text-muted2">
+            Mock link available from 11th July 2:00 PM – 12th July 10:00 AM IST.
+          </p>
+        ) : null}
+        {isExamMain && examMainUrl && mainLinkOpen ? (
           <button
             type="button"
             onClick={openExamMain}
@@ -286,6 +299,11 @@ function AssessmentCard({
             <ExternalLink className="h-4 w-4" />
             Start Assessment
           </button>
+        ) : null}
+        {isExamMain && !mainLinkOpen ? (
+          <p className="text-sm font-semibold text-muted2">
+            Main assessment link opens on 12th July 6:00 PM IST.
+          </p>
         ) : null}
         {status === "todo" && config.kind === "main" && needsSlot && onBook && slotRegistrationSubmitted ? (
           <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-4 py-2.5 text-sm font-bold text-teal">
@@ -376,6 +394,8 @@ export function AssessmentsHub({
     registrationUnlocked,
   );
   const july12RegistrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
+  const mockLinkOpen = isL1July12MockLinkOpen();
+  const mainLinkOpen = isL1July12MainLinkOpen();
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
@@ -453,6 +473,8 @@ export function AssessmentsHub({
               onUpdate={(next) => update(a.id, next)}
               examMainUrl={a.id === "l1-hustler" ? examMainUrl : undefined}
               examMainSlotLabel={examMainSlotLabel}
+              mockLinkOpen={mockLinkOpen}
+              mainLinkOpen={mainLinkOpen}
               examMainPendingNote={
                 a.id === "l1-hustler"
                   ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
