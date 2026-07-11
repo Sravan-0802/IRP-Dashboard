@@ -160,15 +160,23 @@ function AssessmentCard({
   const needsSlot = (config.slots?.length ?? 0) > 0 && !registrationClosed;
   const assessmentUrl = resolveAssessmentUrl(config, slot);
   const canStart = (!needsSlot || !!slot) && !!assessmentUrl;
-  // Exam-access rendering path for the MAIN card (registration is closed; the
-  // slot + link come from the authoritative exam-platform list).
+  // Exam-access rendering path for the MAIN card.
   const isExamMain = config.kind === "main" && !!examMainSlotLabel && status !== "done";
+  // Exam-access rendering path for the MOCK card — always show the link for
+  // cohort/exam-access students regardless of prior mock status.
+  const isExamMock = config.kind === "mock" && !!assessmentUrl && !!examMainSlotLabel;
 
   function openExamMain() {
     if (!examMainUrl) return;
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK);
     window.open(examMainUrl, "_blank", "noopener,noreferrer");
     if (status === "todo") onUpdate({ status: "in-progress", slot });
+  }
+
+  function openExamMock() {
+    if (!assessmentUrl) return;
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MOCK_ASSESSMENT_LINK_CLICK);
+    window.open(assessmentUrl, "_blank", "noopener,noreferrer");
   }
 
   function openAssessment() {
@@ -201,7 +209,7 @@ function AssessmentCard({
           <div>
             <h3 className="font-display text-lg font-extrabold text-ink">{config.title}</h3>
             <p className="mt-1 text-sm text-muted2">{config.description}</p>
-            {config.kind === "mock" && !resolveAssessmentUrl(config, undefined) && (
+            {config.kind === "mock" && !resolveAssessmentUrl(config, undefined) && !isExamMock && (
               <p className="mt-2 text-xs font-semibold text-muted2">Mock Assessment link will be updated soon.</p>
             )}
           </div>
@@ -259,6 +267,16 @@ function AssessmentCard({
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
+        {isExamMock ? (
+          <button
+            type="button"
+            onClick={openExamMock}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Start Mock Assessment
+          </button>
+        ) : null}
         {isExamMain && examMainUrl ? (
           <button
             type="button"
