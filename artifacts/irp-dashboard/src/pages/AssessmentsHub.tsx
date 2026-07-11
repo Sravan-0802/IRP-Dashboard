@@ -452,7 +452,7 @@ export function AssessmentsHub({
               state={state}
               onUpdate={(next) => update(a.id, next)}
               examMainUrl={a.id === "l1-hustler" ? examMainUrl : undefined}
-              examMainSlotLabel={a.id === "l1-hustler" ? examMainSlotLabel : undefined}
+              examMainSlotLabel={examMainSlotLabel}
               examMainPendingNote={
                 a.id === "l1-hustler"
                   ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
