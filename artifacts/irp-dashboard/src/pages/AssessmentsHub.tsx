@@ -13,6 +13,7 @@ import {
   L1_JULY12_HUSTLER_CALENDAR,
   L1_JULY12_HUSTLER_SLOTS,
   L1_MOCK_ASSESSMENT_URL,
+  L1_JULY12_MAIN_URL,
   L1_HUSTLER_MAIN_URLS,
   L1_JULY12_REGISTERED_HUB_NOTE,
   l1HustlerSlotLabel,
@@ -361,13 +362,12 @@ export function AssessmentsHub({
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
-  // Exam access is the authoritative slot mapping from the exam-platform list.
-  // When a student is on it, we show the COMMON mock link and their slot-specific
-  // MAIN link (both available now).
-  const hasExamAccess = level === 1 && !!examAccess;
-  const examSlotId = examAccess?.slotId;
-  const examMainUrl = hasExamAccess && examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined;
-  const examMainSlotLabel = hasExamAccess ? l1HustlerSlotLabel(examSlotId) : undefined;
+  // Cohort members (july12Registered) OR students in the DB exam-access list get
+  // the mock + main links. The July 12 re-conduction has a single common main link.
+  const hasExamAccess = level === 1 && (!!examAccess || july12Registered);
+  const examSlotId = examAccess?.slotId ?? (july12Registered ? "slot-2" : undefined);
+  const examMainUrl = hasExamAccess ? (july12Registered ? L1_JULY12_MAIN_URL : (examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined)) : undefined;
+  const examMainSlotLabel = hasExamAccess ? (july12Registered ? "6:00 PM – 8:00 PM IST" : l1HustlerSlotLabel(examSlotId)) : undefined;
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
     setStatuses((prev) => {
@@ -440,31 +440,17 @@ export function AssessmentsHub({
                   ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
                   : undefined
               }
-              onBook={
-                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && july12RegistrationOpen
-                  ? () => setRegisterOpen(true)
-                  : undefined
-              }
-              slotRegistrationSubmitted={
-                a.id === "l1-hustler" && !hasExamAccess && showJuly12SlotCalendar && hasSuccessfulSlotRegistration(registration)
-              }
-              registrationClosed={
-                a.id === "l1-hustler" && (hasExamAccess || july12Registered || !showJuly12SlotCalendar)
-              }
+              onBook={undefined}
+              slotRegistrationSubmitted={false}
+              registrationClosed={a.id === "l1-hustler"}
               registrationClosedNote={
                 a.id === "l1-hustler" && july12Registered
                   ? L1_JULY12_REGISTERED_HUB_NOTE
                   : a.id === "l1-hustler" && isCycle1Cleared(assessments)
                   ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
-                  : a.id === "l1-hustler" && hasSuccessfulSlotRegistration(registration)
-                    ? "Your slot is confirmed for 12th July (6:00 PM – 8:00 PM IST). Wait for the mock assessment link before exam day."
-                    : a.id === "l1-hustler" && !hasL1July12RegistrationStarted()
-                      ? `Registration opens at ${L1_JULY12_REGISTRATION_OPEN_DATE_LABEL}.`
-                      : a.id === "l1-hustler" && !july12RegistrationOpen
-                      ? `Registration closed on ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL}.`
-                      : a.id === "l1-hustler"
-                        ? `Register by ${L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL} via the Assessment Calendar.`
-                        : undefined
+                  : a.id === "l1-hustler"
+                  ? `Registration for the ${L1_JULY12_EXAM_DATE_LABEL} assessment is now closed.`
+                  : undefined
               }
             />
             );

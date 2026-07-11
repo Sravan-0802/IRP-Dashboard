@@ -5,7 +5,7 @@ import { EXAM_DATE_LABEL, L1_REGISTRATION_CLOSE_DATE_LABEL } from "@/lib/irpDate
  * (see l1StudentTrack.ts). Cleared Cycle 1 students never see Cycle 2 registration.
  */
 export const L1_CYCLE2_BANNER_VISIBLE = true;
-export const L1_ASSESSMENT_CALENDAR_VISIBLE = true;
+export const L1_ASSESSMENT_CALENDAR_VISIBLE = false;
 
 export const L1_HUSTLER_SLOTS = [
   { id: "slot-1", label: "3:00 PM – 5:00 PM IST" },
@@ -27,12 +27,17 @@ export const L1_CYCLE = 2;
  * is only revealed on exam day (see isAssessmentLive). Slot assignment comes
  * from the authoritative exam-platform list (l1_exam_access), not registration.
  */
+/** 12 July 2026 mock link — common to all registered students. */
 export const L1_MOCK_ASSESSMENT_URL =
-  "https://assessment.topin.tech/assessment?org_id=c0f84aa6-6b84-4737-925f-a8ef13edade7&auto_redirect=1";
+  "https://assessment.topin.tech/assessment?org_id=248f8108-2922-46cb-9fd7-af5edd025a9a&auto_redirect=1";
+
+/** 12 July 2026 main assessment link — single link for all registered students. */
+export const L1_JULY12_MAIN_URL =
+  "https://assessment.topin.tech/assessment?org_id=52070b14-d6b1-415d-8720-65e8b2aefec0&auto_redirect=1";
 
 export const L1_HUSTLER_MAIN_URLS: Record<string, string> = {
-  "slot-1": "https://assessment.topin.tech/assessment?org_id=21dfe789-c72a-4310-9636-9d533886e172&auto_redirect=1",
-  "slot-2": "https://assessment.topin.tech/assessment?org_id=49a060c5-b2d6-4159-a02a-85558462d8b1&auto_redirect=1",
+  "slot-1": L1_JULY12_MAIN_URL,
+  "slot-2": L1_JULY12_MAIN_URL,
 };
 
 export function l1HustlerSlotLabel(slotId: string | null | undefined): string | undefined {
