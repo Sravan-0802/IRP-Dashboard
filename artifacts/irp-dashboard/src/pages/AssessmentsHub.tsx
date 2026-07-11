@@ -214,7 +214,7 @@ function AssessmentCard({
             )}
           </div>
         </div>
-        {statusPill(status, config.kind)}
+        {isExamMock ? null : statusPill(status, config.kind)}
       </div>
 
       {needsSlot && status !== "done" && (
@@ -341,7 +341,7 @@ function AssessmentCard({
             <ExternalLink className="h-4 w-4" /> Continue Assessment
           </button>
         )}
-        {status === "done" && (
+        {status === "done" && !isExamMock && (
           <span className="flex items-center gap-1.5 text-sm font-bold text-[#0ca678]">
             <CheckCircle2 className="h-4 w-4" /> Completed
           </span>
