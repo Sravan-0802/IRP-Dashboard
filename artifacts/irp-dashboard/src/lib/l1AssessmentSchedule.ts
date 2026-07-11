@@ -29,11 +29,11 @@ export const L1_CYCLE = 2;
  */
 /** 12 July 2026 mock link — common to all registered students. */
 export const L1_MOCK_ASSESSMENT_URL =
-  "https://assessment.topin.tech/assessment?org_id=248f8108-2922-46cb-9fd7-af5edd025a9a&auto_redirect=1";
+  "https://assessment.topin.tech/assessment?org_id=52070b14-d6b1-415d-8720-65e8b2aefec0&auto_redirect=1";
 
 /** 12 July 2026 main assessment link — single link for all registered students. */
 export const L1_JULY12_MAIN_URL =
-  "https://assessment.topin.tech/assessment?org_id=52070b14-d6b1-415d-8720-65e8b2aefec0&auto_redirect=1";
+  "https://assessment.topin.tech/assessment?org_id=248f8108-2922-46cb-9fd7-af5edd025a9a&auto_redirect=1";
 
 export const L1_HUSTLER_MAIN_URLS: Record<string, string> = {
   "slot-1": L1_JULY12_MAIN_URL,
