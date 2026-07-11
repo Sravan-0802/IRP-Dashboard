@@ -8,7 +8,7 @@ export const L1_CYCLE2_BANNER_VISIBLE = true;
 export const L1_ASSESSMENT_CALENDAR_VISIBLE = false;
 
 export const L1_HUSTLER_SLOTS = [
-  { id: "slot-1", label: "3:00 PM – 5:00 PM IST" },
+  { id: "slot-1", label: "6:00 PM – 8:00 PM IST" },
   { id: "slot-2", label: "6:00 PM – 8:00 PM IST" },
 ] as const;
 

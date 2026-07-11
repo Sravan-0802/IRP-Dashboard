@@ -45,7 +45,7 @@ export function canRegisterForL1July12(
 }
 
 export const L1_SLOT_LABELS: Record<string, string> = {
-  "slot-1": "3:00 PM – 5:00 PM IST",
+  "slot-1": "6:00 PM – 8:00 PM IST",
   "slot-2": "6:00 PM – 8:00 PM IST",
 };
 

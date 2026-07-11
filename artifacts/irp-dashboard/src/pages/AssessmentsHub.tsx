@@ -321,7 +321,7 @@ function AssessmentCard({
             Book · Register for slot
           </button>
         ) : null}
-        {status === "todo" && config.kind !== "main" && canStart && (
+        {status === "todo" && config.kind !== "main" && !isExamMock && canStart && (
           <button
             type="button"
             onClick={openAssessment}
