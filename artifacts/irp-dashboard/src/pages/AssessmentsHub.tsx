@@ -436,7 +436,7 @@ export function AssessmentsHub({
             : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
             : level === 1
-              ? `The assessment on ${L1_JULY12_EXAM_DATE_LABEL} — attempt the mock first, then register for your slot (6:00 PM – 8:00 PM IST).`
+              ? `Attempting Mock Assessment is Mandatory. Your Assessment link will be functional from 6:00 PM – 8:00 PM IST on 12th July 2026.`
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
