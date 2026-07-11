@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { db, formsAuthTokensTable } from "@workspace/db";
+import { db, formsAuthTokensTable, blockedUsersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 /**
@@ -34,8 +34,25 @@ export function extractAuthToken(req: Request): string | null {
  *
  * Outside production, `ACADEMY_USER_ID` in `.env` wins over browser SSO tokens
  * so you can preview different students without clearing sessionStorage.
+ *
+ * Users in the `blocked_users` table are always treated as logged out — null is
+ * returned regardless of how they authenticated or what env overrides are set.
  */
 export async function resolveAcademyUserId(req: Request): Promise<string | null> {
+  const userId = await resolveAcademyUserIdUnchecked(req);
+  if (!userId) return null;
+
+  const [blocked] = await db
+    .select({ academyUserId: blockedUsersTable.academyUserId })
+    .from(blockedUsersTable)
+    .where(eq(blockedUsersTable.academyUserId, userId))
+    .limit(1);
+  if (blocked) return null;
+
+  return userId;
+}
+
+async function resolveAcademyUserIdUnchecked(req: Request): Promise<string | null> {
   if (process.env["NODE_ENV"] !== "production") {
     const devUser = process.env["ACADEMY_USER_ID"]?.trim();
     if (devUser) return devUser;

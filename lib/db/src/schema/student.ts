@@ -180,6 +180,19 @@ export const unpaidUsersTable = pgTable("unpaid_users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Users who have been fully denied access to the dashboard. Unlike
+ * `unpaidUsersTable` (which only gates the dashboard behind a payment
+ * prompt), being on this list makes `resolveAcademyUserId` return null for
+ * every request — including a valid SSO token — so the user is treated as
+ * fully logged out with no data ever returned.
+ */
+export const blockedUsersTable = pgTable("blocked_users", {
+  academyUserId: text("academy_user_id").primaryKey(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const contactUsMessagesTable = pgTable("contact_us_messages", {
   id: serial("id").primaryKey(),
   academyUserId: text("academy_user_id").notNull(),

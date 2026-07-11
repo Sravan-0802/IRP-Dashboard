@@ -7,6 +7,7 @@ import {
   l1CycleRegistrationsTable,
   l1ExamAccessTable,
   unpaidUsersTable,
+  blockedUsersTable,
 } from "@workspace/db";
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
@@ -318,6 +319,85 @@ router.post("/admin/unpaid-users/import", async (req, res) => {
     res.json({ requested: academyUserIds.length, inserted, total: count });
   } catch (err) {
     req.log.error({ err }, "Failed to import unpaid users");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/blocked-users/import — fully deny access to a set of
+// academy users (admin API key required). Once blocked, resolveAcademyUserId
+// returns null for that user on every route — including a valid SSO token —
+// so they are treated as fully logged out with no data ever returned.
+// Body: { academyUserIds: string[], reason?: string }
+router.post("/admin/blocked-users/import", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = req.body?.academyUserIds;
+    const academyUserIds = Array.isArray(raw)
+      ? [...new Set(raw.map((v) => String(v).trim()).filter(Boolean))]
+      : [];
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
+      return;
+    }
+
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() || null : null;
+    const now = new Date();
+
+    let upserted = 0;
+    const CHUNK = 500;
+    for (let i = 0; i < academyUserIds.length; i += CHUNK) {
+      const chunk = academyUserIds
+        .slice(i, i + CHUNK)
+        .map((academyUserId) => ({ academyUserId, reason, createdAt: now }));
+      const rows = await db
+        .insert(blockedUsersTable)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: blockedUsersTable.academyUserId,
+          set: { reason },
+        })
+        .returning({ academyUserId: blockedUsersTable.academyUserId });
+      upserted += rows.length;
+    }
+
+    const [{ count } = { count: 0 }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(blockedUsersTable);
+
+    res.json({ requested: academyUserIds.length, upserted, total: count });
+  } catch (err) {
+    req.log.error({ err }, "Failed to import blocked users");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/admin/blocked-users/:academyUserId — restore access for a
+// previously blocked user (admin API key required).
+router.delete("/admin/blocked-users/:academyUserId", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const academyUserId = req.params.academyUserId?.trim();
+    if (!academyUserId) {
+      res.status(400).json({ error: "academyUserId is required" });
+      return;
+    }
+
+    const rows = await db
+      .delete(blockedUsersTable)
+      .where(eq(blockedUsersTable.academyUserId, academyUserId))
+      .returning({ academyUserId: blockedUsersTable.academyUserId });
+
+    res.json({ removed: rows.length > 0 });
+  } catch (err) {
+    req.log.error({ err }, "Failed to remove blocked user");
     res.status(500).json({ error: "Internal server error" });
   }
 });
