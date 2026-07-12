@@ -402,4 +402,63 @@ router.delete("/admin/blocked-users/:academyUserId", async (req, res) => {
   }
 });
 
+// POST /api/admin/dashboard-access/import — grant dashboard access to a batch
+// of academy users who have no assessment data yet (admin API key required).
+// Inserts a minimal row into academy_user_basic_details and a placeholder row
+// into academy_user_assessment_details so userHasAssessmentData() returns true.
+// Body: { academyUserIds: string[] }
+router.post("/admin/dashboard-access/import", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = Array.isArray(req.body?.academyUserIds) ? req.body.academyUserIds : [];
+    const ids: string[] = [];
+    for (const entry of raw) {
+      if (typeof entry === "string" && entry.trim()) ids.push(entry.trim());
+    }
+
+    if (ids.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be a non-empty array of strings" });
+      return;
+    }
+
+    const now = new Date();
+    const CHUNK = 500;
+    let upsertedBasic = 0;
+    let upsertedAssessment = 0;
+
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const chunk = ids.slice(i, i + CHUNK);
+
+      // Upsert basic details (name stays null — will be filled on first BQ sync)
+      const basicRows = await db
+        .insert(academyUserBasicDetailsTable)
+        .values(chunk.map((userId) => ({ userId, syncedAt: now })))
+        .onConflictDoNothing({ target: academyUserBasicDetailsTable.userId })
+        .returning({ userId: academyUserBasicDetailsTable.userId });
+      upsertedBasic += basicRows.length;
+
+      // Upsert a placeholder assessment row so userHasAssessmentData() passes
+      const assessmentRows = await db
+        .insert(academyUserAssessmentDetailsTable)
+        .values(chunk.map((userId) => ({
+          userId,
+          organisationAssessmentId: "l1-july12-2026-access",
+          syncedAt: now,
+        })))
+        .onConflictDoNothing()
+        .returning({ id: academyUserAssessmentDetailsTable.id });
+      upsertedAssessment += assessmentRows.length;
+    }
+
+    res.json({ requested: ids.length, upsertedBasic, upsertedAssessment });
+  } catch (err) {
+    req.log.error({ err }, "Failed to import dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
