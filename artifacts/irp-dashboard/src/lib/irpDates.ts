@@ -26,7 +26,7 @@ export const L1_JULY12_MOCK_CLOSE_DATE = new Date("2026-07-12T10:00:00+05:30");
  * Main assessment window: 12 July 6:00 PM IST → 12 July 8:00 PM IST.
  * Cohort students can open the main assessment link only within this window.
  */
-export const L1_JULY12_MAIN_OPEN_DATE  = new Date("2026-07-12T18:00:00+05:30");
+export const L1_JULY12_MAIN_OPEN_DATE  = new Date("2026-07-11T00:00:00+05:30");
 export const L1_JULY12_MAIN_CLOSE_DATE = new Date("2026-07-12T20:00:00+05:30");
 
 export function isL1July12MockLinkOpen(now = new Date()): boolean {
