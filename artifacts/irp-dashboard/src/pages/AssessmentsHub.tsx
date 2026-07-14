@@ -317,15 +317,6 @@ function AssessmentCard({
         {status === "todo" && needsSlot && slot && !assessmentUrl && (
           <span className="text-xs font-semibold text-muted2">Assessment link for this slot will be shared soon.</span>
         )}
-        {status === "in-progress" && assessmentUrl && (
-          <button
-            type="button"
-            onClick={openAssessment}
-            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-          >
-            <ExternalLink className="h-4 w-4" /> Continue Assessment
-          </button>
-        )}
         {status === "done" && !isExamMock && (
           <span className="flex items-center gap-1.5 text-sm font-bold text-[#0ca678]">
             <CheckCircle2 className="h-4 w-4" /> Completed
