@@ -34,6 +34,7 @@ import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { ContactUs } from "./ContactUs";
+import { FeMockCallout } from "./FeMockCallout";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { FeProjectResults } from "./FeProjectResults";
 import { NxtmockResults } from "./NxtmockResults";
@@ -249,6 +250,10 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard ? (
         <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <FeMockCallout assessments={assessments} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? <NxtmockResults interview={nxtmock} /> : null}
