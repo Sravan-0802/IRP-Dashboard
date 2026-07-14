@@ -5,6 +5,8 @@ import {
   EXAM_DATE_LABEL,
   L1_CYCLE1_EXAM_DATE_LABEL,
   L1_CYCLE2_EXAM_DATE_LABEL,
+  L1_JULY12_EXAM_DATE_LABEL,
+  L1_JULY12_ORG_ASSESSMENT_ID,
 } from "@/lib/irpDates";
 
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
@@ -213,9 +215,18 @@ export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
   return assessmentCycle(assessment) === "C2";
 }
 
+/** Returns the exam date label for a given assessment row, checking org ID for July 12 re-conduction. */
+function examDateLabelForAssessment(assessment: AssessmentResult | null | undefined): string {
+  if (!assessment) return EXAM_DATE_LABEL;
+  if (assessment.organisationAssessmentId === L1_JULY12_ORG_ASSESSMENT_ID) return L1_JULY12_EXAM_DATE_LABEL;
+  if (assessmentCycle(assessment) === "C2") return L1_CYCLE2_EXAM_DATE_LABEL;
+  return L1_CYCLE1_EXAM_DATE_LABEL;
+}
+
 /** Exam date label for the sit that cleared L1 (Cycle 1 vs Cycle 2). */
 export function getL1ClearedExamDateLabel(assessments: AssessmentResult[]): string {
-  return clearedL1ViaC2(assessments) ? L1_CYCLE2_EXAM_DATE_LABEL : L1_CYCLE1_EXAM_DATE_LABEL;
+  const assessment = pickAssessmentForLevel(assessments, 1);
+  return examDateLabelForAssessment(assessment);
 }
 
 /** Date label for assessment results — Cycle 1 sit vs Cycle 2 upcoming. */
@@ -224,13 +235,9 @@ export function getAssessmentCompletedDateLabel(
   level: 1 | 2 | 3,
   upcomingLabel = EXAM_DATE_LABEL,
 ): string {
-  if (level === 1 && hasClearedAssessment(assessments, 1)) {
-    return getL1ClearedExamDateLabel(assessments);
-  }
-  if (level === 1 && hasWrittenAssessment(assessments, 1)) {
+  if (level === 1 && (hasClearedAssessment(assessments, 1) || hasWrittenAssessment(assessments, 1))) {
     const assessment = pickAssessmentForLevel(assessments, 1);
-    if (assessmentCycle(assessment) === "C2") return L1_CYCLE2_EXAM_DATE_LABEL;
-    return L1_CYCLE1_EXAM_DATE_LABEL;
+    return examDateLabelForAssessment(assessment);
   }
   return upcomingLabel;
 }
