@@ -261,49 +261,16 @@ function AssessmentCard({
       )}
 
       {isExamMain && (
-        <p className="mt-4 text-sm font-semibold text-ink">
-          Your slot: <span className="text-l1">{examMainSlotLabel}</span>
-        </p>
+        <p className="mt-4 text-sm font-semibold text-muted2">Stay tuned for next updates.</p>
       )}
-
-      {isExamMain && !examMainUrl && examMainPendingNote ? (
-        <p className="mt-2 text-sm text-muted2">{examMainPendingNote}</p>
-      ) : null}
 
       {!isExamMain && registrationClosed && config.kind === "main" && status !== "done" && registrationClosedNote ? (
         <p className="mt-4 text-sm text-muted2">{registrationClosedNote}</p>
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        {isExamMock && mockLinkOpen ? (
-          <button
-            type="button"
-            onClick={openExamMock}
-            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Start Mock Assessment
-          </button>
-        ) : null}
-        {isExamMock && !mockLinkOpen ? (
-          <p className="text-sm font-semibold text-muted2">
-            Mock link available from 11th July 2:00 PM – 12th July 10:00 AM IST.
-          </p>
-        ) : null}
-        {isExamMain && examMainUrl && mainLinkOpen ? (
-          <button
-            type="button"
-            onClick={openExamMain}
-            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Start Assessment
-          </button>
-        ) : null}
-        {isExamMain && !mainLinkOpen ? (
-          <p className="text-sm font-semibold text-muted2">
-            Main assessment link opens on 12th July 6:00 PM IST.
-          </p>
+        {isExamMock ? (
+          <p className="text-sm font-semibold text-muted2">Stay tuned for next updates.</p>
         ) : null}
         {status === "todo" && config.kind === "main" && needsSlot && onBook && slotRegistrationSubmitted ? (
           <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-4 py-2.5 text-sm font-bold text-teal">
