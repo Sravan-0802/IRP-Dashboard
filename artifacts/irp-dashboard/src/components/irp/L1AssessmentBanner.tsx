@@ -60,27 +60,7 @@ export function L1AssessmentBanner({
   }
 
   if (!registrationOpen) {
-    return (
-      <div
-        className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-5 shadow-soft sm:p-6"
-        style={{ background: "linear-gradient(130deg, #f8f9fa 0%, #f3f0ff 100%)" }}
-      >
-        <div className="relative flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-muted2 shadow-sm">
-            <Megaphone className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted2">
-              {L1_REGISTRATION_BANNER_EYEBROW}
-            </p>
-            <p className={`mt-1 font-display font-extrabold text-ink ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
-              {L1_REGISTRATION_CLOSED_BANNER_TITLE}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted2">{L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
