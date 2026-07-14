@@ -6,7 +6,7 @@ export const L1_CYCLE1_EXAM_DATE_LABEL = "14th June 2026";
 export const EXAM_DATE = new Date("2026-07-05T00:00:00");
 export const EXAM_DATE_LABEL = "5th July 2026";
 export const L1_CYCLE2_EXAM_DATE = EXAM_DATE;
-export const L1_CYCLE2_EXAM_DATE_LABEL = EXAM_DATE_LABEL;
+export const L1_CYCLE2_EXAM_DATE_LABEL = "12th July 2026";
 
 /** L1 Cycle 2 re-conduction — upcoming sit for cycle2_pending students. */
 export const L1_JULY12_EXAM_DATE = new Date("2026-07-12T00:00:00+05:30");
