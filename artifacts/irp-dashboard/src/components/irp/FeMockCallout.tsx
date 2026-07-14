@@ -1,19 +1,28 @@
 import { ExternalLink, FlaskConical } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
-import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import { hasClearedFeProject } from "@/lib/assessment";
 import { isFeMockLinkOpen } from "@/lib/irpDates";
+import { isInFeMockAllowlist } from "@/lib/feMockAllowlist";
 import {
   FE_PROJECT_MOCK_TITLE,
   FE_PROJECT_MOCK_URL,
   FE_PROJECT_MOCK_WINDOW_LABEL,
 } from "@/lib/feProjectConfig";
 
-/** Shown for FE-stage students (cleared L1, not yet cleared FE Project) within the mock window. */
-export function FeMockCallout({ assessments }: { assessments: AssessmentResult[] }) {
-  if (!isCycle1Cleared(assessments)) return null;
-  if (hasClearedFeProject(assessments)) return null;
+interface FeMockCalloutProps {
+  assessments: AssessmentResult[];
+  userId: string;
+}
+
+/** Shown for FE-stage students (cleared L1 OR in the allowlist, not yet cleared FE Project) within the mock window. */
+export function FeMockCallout({ assessments, userId }: FeMockCalloutProps) {
   if (!isFeMockLinkOpen()) return null;
+  if (hasClearedFeProject(assessments)) return null;
+
+  const inAllowlist = isInFeMockAllowlist(userId);
+  const hasData = assessments.length > 0;
+
+  if (!inAllowlist && !hasData) return null;
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">

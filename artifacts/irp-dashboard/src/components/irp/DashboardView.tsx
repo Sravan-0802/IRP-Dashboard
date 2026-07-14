@@ -179,6 +179,7 @@ export function DashboardView({
   examDateLabel,
   progress,
   assessments,
+  userId,
   onSwitchToStandard,
   onOpenAssessmentCalendar,
 }: {
@@ -186,6 +187,7 @@ export function DashboardView({
   firstName: string;
   days: number;
   examDateLabel: string;
+  userId: string;
   progress: {
     overallPct: number;
     mcqPct: number;
@@ -253,7 +255,7 @@ export function DashboardView({
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <FeMockCallout assessments={assessments} />
+        <FeMockCallout assessments={assessments} userId={userId} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? <NxtmockResults interview={nxtmock} /> : null}

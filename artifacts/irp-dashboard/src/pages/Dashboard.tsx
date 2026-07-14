@@ -133,6 +133,7 @@ export default function Dashboard() {
   }
 
   const firstName = displayStudent.name.split(" ")[0];
+  const userId = displayStudent.email.split("@")[0];
 
   function openSwitchToStandard() {
     setSettingsMode("to-standard");
@@ -196,6 +197,7 @@ export default function Dashboard() {
                 examDateLabel={L1_JULY12_EXAM_DATE_LABEL}
                 progress={progressProps}
                 assessments={displayAssessments}
+                userId={userId}
                 onSwitchToStandard={openSwitchToStandard}
                 onOpenAssessmentCalendar={() => navigate("slot")}
               />
