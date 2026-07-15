@@ -2,6 +2,11 @@
 
 A personalised progress dashboard for IRP (Industry Readiness Program) 2.0 students. Students log in via SSO and see their current level (L1/L2/L3), assessment status, course progress synced from BigQuery, and next steps in their journey — all in one place.
 
+> **Docs**
+> - **Full reference:** [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) — architecture, domain, DB, API, UI, sync, auth, ops  
+> - **Short onboarding:** [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md)  
+> - **Docs index:** [`docs/README.md`](docs/README.md)
+
 ---
 
 ## Quick Start (Local Dev)

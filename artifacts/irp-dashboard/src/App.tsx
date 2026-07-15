@@ -11,7 +11,7 @@ import NotEnrolled from "./pages/NotEnrolled";
 import PaymentRequired from "./pages/PaymentRequired";
 import NotFound from "@/pages/not-found";
 import { redirectToLogin, shouldRequireSsoLogin } from "@/lib/authToken";
-import { useJourney } from "@/lib/useJourney";
+import { useJourney, ApiError } from "@/lib/useJourney";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
 
 const queryClient = new QueryClient();
@@ -28,7 +28,7 @@ function isUnauthorized(error: unknown): boolean {
 
 function Home() {
   const { paid, loading: paymentLoading } = usePaymentStatus();
-  const { data: journey, isLoading, isError: journeyError } = useJourney();
+  const { data: journey, isLoading, isError: journeyError, error: journeyErr } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
   });
@@ -67,14 +67,20 @@ function Home() {
   }
 
   if (journeyError) {
+    const requestId = journeyErr instanceof ApiError ? journeyErr.requestId : null;
     return (
       <div className="flex min-h-[100dvh] items-center justify-center p-6">
         <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
           <p className="font-display text-lg font-extrabold text-ink">Could not load dashboard</p>
           <p className="mt-2 text-sm text-muted2">
-            The API server may be down or the database needs setup. Make sure the API is running on
-            port 8080 and assessment data is synced.
+            Something went wrong loading your journey. Please refresh. If it keeps happening,
+            share the reference below with support.
           </p>
+          {requestId ? (
+            <p className="mt-4 break-all rounded-lg bg-white/80 px-3 py-2 font-mono text-[11px] text-ink">
+              Ref: {requestId}
+            </p>
+          ) : null}
         </div>
       </div>
     );

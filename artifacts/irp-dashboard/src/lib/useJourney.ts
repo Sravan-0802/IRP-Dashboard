@@ -4,6 +4,18 @@ import { getAuthToken } from "./authToken";
 
 const JOURNEY_KEY = ["student", "journey"] as const;
 
+export class ApiError extends Error {
+  status: number;
+  requestId: string | null;
+
+  constructor(message: string, status: number, requestId: string | null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.requestId = requestId;
+  }
+}
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const token = getAuthToken();
   const res = await fetch(url, {
@@ -14,10 +26,11 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
+  const requestId = res.headers.get("x-request-id");
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) {
-    throw new Error(data?.error ?? `Request failed (${res.status})`);
+    throw new ApiError(data?.error ?? `Request failed (${res.status})`, res.status, requestId);
   }
   return data as T;
 }

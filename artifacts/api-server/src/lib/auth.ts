@@ -38,6 +38,19 @@ export function extractAuthToken(req: Request): string | null {
  * Users in the `blocked_users` table are always treated as logged out — null is
  * returned regardless of how they authenticated or what env overrides are set.
  */
+/**
+ * Attaches `academyUserId` to the request logger so prod error lines can be
+ * grepped by user UUID. Safe to call multiple times.
+ */
+function bindUserToRequestLog(req: Request, userId: string): void {
+  const existing = (req as Request & { academyUserId?: string }).academyUserId;
+  if (existing === userId) return;
+  (req as Request & { academyUserId?: string }).academyUserId = userId;
+  if (req.log) {
+    req.log = req.log.child({ academyUserId: userId });
+  }
+}
+
 export async function resolveAcademyUserId(req: Request): Promise<string | null> {
   const userId = await resolveAcademyUserIdUnchecked(req);
   if (!userId) return null;
@@ -55,7 +68,10 @@ export async function resolveAcademyUserId(req: Request): Promise<string | null>
 async function resolveAcademyUserIdUnchecked(req: Request): Promise<string | null> {
   if (process.env["NODE_ENV"] !== "production") {
     const devUser = process.env["ACADEMY_USER_ID"]?.trim();
-    if (devUser) return devUser;
+    if (devUser) {
+      bindUserToRequestLog(req, devUser);
+      return devUser;
+    }
   }
 
   const token = extractAuthToken(req);
@@ -68,6 +84,7 @@ async function resolveAcademyUserIdUnchecked(req: Request): Promise<string | nul
       .limit(1);
 
     if (row && row.expiresAt.getTime() > Date.now()) {
+      bindUserToRequestLog(req, row.userId);
       return row.userId;
     }
     return null;
