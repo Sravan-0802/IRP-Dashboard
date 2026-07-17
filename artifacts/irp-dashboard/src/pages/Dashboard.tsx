@@ -207,6 +207,7 @@ export default function Dashboard() {
                 level={getLevel(journey.journeyState)}
                 assessments={displayAssessments}
                 journey={journey}
+                userId={userId}
               />
             )}
             {page === "slot" && <BookSlot assessments={displayAssessments} />}

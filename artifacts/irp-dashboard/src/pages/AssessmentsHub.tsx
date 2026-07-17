@@ -35,6 +35,7 @@ import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
+import { FeMockCallout } from "@/components/irp/FeMockCallout";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -331,10 +332,12 @@ export function AssessmentsHub({
   level = 1,
   assessments = [],
   journey,
+  userId = "",
 }: {
   level?: 1 | 2 | 3;
   assessments?: AssessmentResult[];
   journey?: Journey;
+  userId?: string;
 }) {
   const [statuses, setStatuses] = useState<StatusMap>(loadStatuses);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -398,6 +401,10 @@ export function AssessmentsHub({
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
+
+      {level === 1 && (
+        <FeMockCallout assessments={assessments} userId={userId} />
+      )}
 
       {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
