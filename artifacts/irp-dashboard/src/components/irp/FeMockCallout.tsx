@@ -4,6 +4,7 @@ import { hasClearedFeProject } from "@/lib/assessment";
 import { isFeMockLinkOpen } from "@/lib/irpDates";
 import { isInFeMockAllowlist } from "@/lib/feMockAllowlist";
 import {
+  FE_PROJECT_MOCK_AVAILABLE_UNTIL,
   FE_PROJECT_MOCK_TITLE,
   FE_PROJECT_MOCK_URL,
   FE_PROJECT_MOCK_WINDOW_LABEL,
@@ -29,13 +30,13 @@ export function FeMockCallout({ assessments, userId }: FeMockCalloutProps) {
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
-              Practice · FE Project Mock
+              FE Project · Main Assessment
             </p>
             <h3 className="font-display text-base font-extrabold text-ink sm:text-lg">
               {FE_PROJECT_MOCK_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              Practice before the real assessment. Available until 16th July 11:00 PM IST.
+              Complete the FE Project Main assessment. Available until {FE_PROJECT_MOCK_AVAILABLE_UNTIL}.
             </p>
             <p className="mt-1.5 text-xs font-semibold text-brand">
               🕐 {FE_PROJECT_MOCK_WINDOW_LABEL}
@@ -50,7 +51,7 @@ export function FeMockCallout({ assessments, userId }: FeMockCalloutProps) {
           className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl px-5 py-2.5 text-sm font-bold sm:self-center"
         >
           <ExternalLink className="h-4 w-4" />
-          Start Mock
+          Start Assessment
         </a>
       </div>
     </div>

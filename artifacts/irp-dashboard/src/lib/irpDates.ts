@@ -18,9 +18,9 @@ export const L1_JULY12_EXAM_DATE_LABEL = "12th July 2026";
 /** July 12 results unlock the day after the assessment. */
 export const L1_JULY12_RESULTS_UNLOCK_DATE = new Date("2026-07-13T00:00:00+05:30");
 
-/** FE Project Mock window: 14 July 5:00 PM IST → 16 July 11:00 PM IST. */
-export const FE_MOCK_OPEN_DATE  = new Date("2026-07-14T17:00:00+05:30");
-export const FE_MOCK_CLOSE_DATE = new Date("2026-07-16T23:00:00+05:30");
+/** FE Project Main window for allowlist: 17 July 12:00 PM IST → 19 July 11:00 PM IST. */
+export const FE_MOCK_OPEN_DATE  = new Date("2026-07-17T12:00:00+05:30");
+export const FE_MOCK_CLOSE_DATE = new Date("2026-07-19T23:00:00+05:30");
 
 export function isFeMockLinkOpen(now = new Date()): boolean {
   return now >= FE_MOCK_OPEN_DATE && now < FE_MOCK_CLOSE_DATE;

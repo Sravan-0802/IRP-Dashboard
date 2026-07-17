@@ -22,11 +22,12 @@ export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 100% to unlock the AI Mock In
 export const FE_PROJECT_NOT_CLEARED_BODY =
   "You attempted the FE Project but haven't cleared it yet. You must pass all test cases — a perfect 20/20 (100%) — to advance to the AI Mock Interview.";
 
-/** FE Project Mock — available 14th July 5:00 PM to 16th July 11:00 PM IST. */
+/** FE Project Main — available 17th July 12:00 PM to 19th July 11:00 PM IST (allowlist only). */
 export const FE_PROJECT_MOCK_URL =
-  "https://assessment.topin.tech/assessment?org_id=92c250dd-4ab4-4d92-aa14-15d1229913ee&auto_redirect=1";
-export const FE_PROJECT_MOCK_TITLE = "IRP 2.0 FE Project Mock";
-export const FE_PROJECT_MOCK_WINDOW_LABEL = "14th July 5:00 PM – 16th July 11:00 PM IST";
+  "https://assessment.topin.tech/assessment?org_id=98c2d7a2-23a3-438f-973a-6d7e6f7c5b4b&auto_redirect=1";
+export const FE_PROJECT_MOCK_TITLE = "IRP 2.0 FE Project Main";
+export const FE_PROJECT_MOCK_WINDOW_LABEL = "17th July 12:00 PM – 19th July 11:00 PM IST";
+export const FE_PROJECT_MOCK_AVAILABLE_UNTIL = "19th July 11:00 PM IST";
 
 export const FE_PROJECT_RESULTS_TITLE = "FE Project Results";
 
