@@ -22,6 +22,7 @@ import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { SupportChatSheet } from "@/components/irp/SupportChatSheet";
+import { SupportFAB } from "@/components/irp/SupportFAB";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
@@ -226,7 +227,11 @@ export default function Dashboard() {
 
       <SupportChatSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
 
-      <FeedbackButton variant="floating" onClick={openFeedback} />
+      {/* Floating buttons: support FAB left, feedback right */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+        <SupportFAB open={supportOpen} onToggle={() => setSupportOpen((v) => !v)} />
+        <FeedbackButton variant="floating" onClick={openFeedback} />
+      </div>
     </div>
   );
 }
