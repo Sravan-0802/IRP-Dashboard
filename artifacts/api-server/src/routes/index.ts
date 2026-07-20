@@ -7,6 +7,7 @@ import syncRouter from "./sync";
 import academyRouter from "./academy";
 import analyticsRouter from "./analytics";
 import adminRouter from "./admin";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(syncRouter);
 router.use(academyRouter);
 router.use(analyticsRouter);
 router.use(adminRouter);
+router.use(supportRouter);
 
 export default router;

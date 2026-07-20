@@ -21,6 +21,7 @@ import { PAGE_PATHS, pathToPage } from "@/lib/dashboardRoutes";
 import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
+import { SupportChatSheet } from "@/components/irp/SupportChatSheet";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [settingsMode, setSettingsMode] = useState<"menu" | "to-standard">("menu");
   const [countdown, setCountdown] = useState({ days: 0 });
 
@@ -68,11 +70,8 @@ export default function Dashboard() {
 
   function openContactUs() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.CONTACT_US_CLICK);
-    setLocation(PAGE_PATHS.dashboard);
     setMobileOpen(false);
-    window.requestAnimationFrame(() => {
-      document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    setSupportOpen(true);
   }
 
   const displayStudent = student ?? (studentError ? DEMO_STUDENT : null);
@@ -224,6 +223,8 @@ export default function Dashboard() {
       />
 
       <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
+      <SupportChatSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
 
       <FeedbackButton variant="floating" onClick={openFeedback} />
     </div>

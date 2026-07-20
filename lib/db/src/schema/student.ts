@@ -305,6 +305,25 @@ export const academyUserCourseProgressTable = pgTable(
   })
 );
 
+export const supportConversationsTable = pgTable("support_conversations", {
+  id: serial("id").primaryKey(),
+  academyUserId: text("academy_user_id").notNull(),
+  userName: text("user_name"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const supportMessagesTable = pgTable("support_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id")
+    .notNull()
+    .references(() => supportConversationsTable.id),
+  senderType: text("sender_type").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Tracks the status of each BigQuery -> Postgres sync run
 export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
   id: serial("id").primaryKey(),

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2 } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -74,6 +74,23 @@ type AnalyticsSummary = {
 };
 
 type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support";
+
+type SupportMessage = {
+  id: number;
+  senderType: "student" | "admin" | "bot";
+  message: string;
+  createdAt: string;
+};
+
+type SupportConversation = {
+  id: number;
+  academyUserId: string;
+  userName: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportMessage[];
+};
 
 const STORAGE_KEY = "irp_analytics_admin_key";
 
@@ -238,6 +255,102 @@ export default function AnalyticsPage() {
     setRegistrationPage(1);
     setSupportPage(1);
   }, [data]);
+
+  const [supportConvs, setSupportConvs] = useState<SupportConversation[]>([]);
+  const [convLoading, setConvLoading] = useState(false);
+  const [expandedConvId, setExpandedConvId] = useState<number | null>(null);
+  const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
+  const [replySending, setReplySending] = useState<Record<number, boolean>>({});
+  const [replyError, setReplyError] = useState<Record<number, string>>({});
+  const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
+  const convBottomRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const loadSupportConvs = useCallback(async (key: string) => {
+    if (!key.trim()) return;
+    setConvLoading(true);
+    try {
+      const res = await fetch("/api/admin/support/conversations", {
+        headers: { "x-api-key": key.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSupportConvs((body as { conversations: SupportConversation[] }).conversations ?? []);
+      }
+    } catch {
+      // silent
+    } finally {
+      setConvLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "support" && apiKey) {
+      void loadSupportConvs(apiKey);
+    }
+  }, [activeTab, apiKey, loadSupportConvs]);
+
+  async function sendAdminReply(convId: number) {
+    const msg = (replyInputs[convId] ?? "").trim();
+    if (!msg || replySending[convId]) return;
+    setReplySending((p) => ({ ...p, [convId]: true }));
+    setReplyError((p) => ({ ...p, [convId]: "" }));
+    try {
+      const res = await fetch(`/api/admin/support/reply/${convId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ message: msg }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to send");
+      setReplyInputs((p) => ({ ...p, [convId]: "" }));
+      await loadSupportConvs(apiKey);
+      setTimeout(() => {
+        convBottomRefs.current[convId]?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } catch (err) {
+      setReplyError((p) => ({ ...p, [convId]: err instanceof Error ? err.message : "Failed" }));
+    } finally {
+      setReplySending((p) => ({ ...p, [convId]: false }));
+    }
+  }
+
+  async function updateConvStatus(convId: number, status: string) {
+    setStatusUpdating((p) => ({ ...p, [convId]: true }));
+    try {
+      await fetch(`/api/admin/support/status/${convId}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ status }),
+      });
+      await loadSupportConvs(apiKey);
+    } catch {
+      // silent
+    } finally {
+      setStatusUpdating((p) => ({ ...p, [convId]: false }));
+    }
+  }
+
+  function statusBadge(status: string) {
+    const styles: Record<string, string> = {
+      open: "bg-[#e8faf4] text-[#0ca678]",
+      waiting_for_student: "bg-[#fff4e6] text-[#e67700]",
+      waiting_for_support: "bg-[#eef2ff] text-[#3b5bdb]",
+      resolved: "bg-[#f3f0ff] text-[#6741d9]",
+      closed: "bg-[#f1f3f5] text-[#6e6a8a]",
+    };
+    const labels: Record<string, string> = {
+      open: "Open",
+      waiting_for_student: "Waiting for student",
+      waiting_for_support: "Waiting for support",
+      resolved: "Resolved",
+      closed: "Closed",
+    };
+    return (
+      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${styles[status] ?? "bg-[#f1f3f5] text-[#6e6a8a]"}`}>
+        {labels[status] ?? status}
+      </span>
+    );
+  }
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const copyId = useCallback((id: string) => {
@@ -673,19 +786,178 @@ export default function AnalyticsPage() {
             )}
 
             {activeTab === "support" && (
-            <div className="irp-card p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-[#6741d9]" />
-                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
-                    Help & Support{" "}
-                    <span className="text-sm font-semibold text-[#6e6a8a]">
-                      ({data.contactMessageCount})
-                    </span>
-                  </h2>
+            <div className="space-y-5">
+              {/* Chat Conversations */}
+              <div className="irp-card p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-[#6741d9]" />
+                    <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                      Chat Conversations
+                      {supportConvs.length > 0 && (
+                        <span className="ml-2 text-sm font-semibold text-[#6e6a8a]">({supportConvs.length})</span>
+                      )}
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void loadSupportConvs(apiKey)}
+                    disabled={convLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff] disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${convLoading ? "animate-spin" : ""}`} /> Refresh
+                  </button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className="text-xs text-[#6e6a8a]">Messages sent by students via the Help &amp; Support form</p>
+
+                {convLoading && supportConvs.length === 0 ? (
+                  <div className="flex items-center gap-2 py-6 text-sm text-[#6e6a8a]">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#6741d9]" /> Loading conversations…
+                  </div>
+                ) : supportConvs.length === 0 ? (
+                  <p className="text-sm text-[#6e6a8a]">No conversations yet. They'll appear here when students reach out via Help &amp; Support.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {supportConvs.map((conv) => {
+                      const isExpanded = expandedConvId === conv.id;
+                      const lastMsg = conv.messages[conv.messages.length - 1];
+                      return (
+                        <div key={conv.id} className="overflow-hidden rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff]">
+                          {/* Conversation header */}
+                          <button
+                            type="button"
+                            onClick={() => setExpandedConvId(isExpanded ? null : conv.id)}
+                            className="flex w-full items-start justify-between gap-3 p-4 text-left hover:bg-[rgba(103,65,217,0.03)]"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-semibold text-[#0d1117]">
+                                  {conv.userName?.trim() || "Unnamed student"}
+                                </span>
+                                {statusBadge(conv.status)}
+                                <span className="text-[10px] font-semibold text-[#6e6a8a]">
+                                  #{conv.id}
+                                </span>
+                              </div>
+                              <p className="mt-0.5 font-mono text-[11px] text-[#6e6a8a]">{conv.academyUserId}</p>
+                              {lastMsg && (
+                                <p className="mt-1.5 truncate text-xs text-[#6e6a8a]">
+                                  <span className="font-semibold text-[#3b5bdb]">
+                                    {lastMsg.senderType === "student" ? "Student" : lastMsg.senderType === "admin" ? "You" : "Bot"}:
+                                  </span>{" "}
+                                  {lastMsg.message}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                              <span className="text-[11px] text-[#6e6a8a]">{formatDate(conv.updatedAt)}</span>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-[#6e6a8a]" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-[#6e6a8a]" />
+                              )}
+                            </div>
+                          </button>
+
+                          {/* Expanded: messages + reply */}
+                          {isExpanded && (
+                            <div className="border-t border-[rgba(103,65,217,0.08)] px-4 pb-4 pt-3">
+                              {/* Status actions */}
+                              <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <span className="text-[11px] font-semibold text-[#6e6a8a]">Status:</span>
+                                {["open", "waiting_for_student", "resolved", "closed"].map((s) => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    disabled={statusUpdating[conv.id] || conv.status === s}
+                                    onClick={() => void updateConvStatus(conv.id, s)}
+                                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-opacity disabled:opacity-50 ${
+                                      conv.status === s
+                                        ? "bg-[#6741d9] text-white"
+                                        : "border border-[rgba(103,65,217,0.2)] bg-white text-[#6741d9] hover:bg-[#f3f0ff]"
+                                    }`}
+                                  >
+                                    {s === "waiting_for_student" ? "Waiting for student" : s.charAt(0).toUpperCase() + s.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Message thread */}
+                              <div className="mb-3 max-h-72 overflow-y-auto rounded-lg border border-[rgba(103,65,217,0.08)] bg-white p-3 space-y-3">
+                                {conv.messages.map((m) => {
+                                  const isStudent = m.senderType === "student";
+                                  const isAdmin = m.senderType === "admin";
+                                  return (
+                                    <div key={m.id} className={`flex gap-2 ${isStudent ? "flex-row-reverse" : "flex-row"}`}>
+                                      <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${isAdmin ? "bg-gradient-to-br from-[#3b5bdb] to-[#6741d9]" : isStudent ? "bg-[#e64980]" : "bg-gradient-to-br from-[#0ca678] to-[#099268]"}`}>
+                                        {isAdmin ? "A" : isStudent ? "S" : "IRP"}
+                                      </div>
+                                      <div className={`max-w-[75%] ${isStudent ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
+                                        <span className="text-[10px] font-semibold text-[#6e6a8a]">
+                                          {isAdmin ? "Support Team" : isStudent ? (conv.userName?.trim() || "Student") : "IRP Bot"}
+                                        </span>
+                                        <div className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${isStudent ? "bg-[#f3f0ff] text-[#0d1117]" : isAdmin ? "bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] text-white" : "border border-[rgba(12,166,120,0.2)] bg-[#e8faf4] text-[#0d1117]"}`}>
+                                          {m.message}
+                                        </div>
+                                        <span className="text-[10px] text-[#6e6a8a]">{formatDate(m.createdAt)}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                <div ref={(el) => { convBottomRefs.current[conv.id] = el; }} />
+                              </div>
+
+                              {/* Reply input */}
+                              {replyError[conv.id] && (
+                                <p className="mb-1.5 text-xs font-semibold text-[#c2255c]">{replyError[conv.id]}</p>
+                              )}
+                              <div className="flex items-end gap-2">
+                                <textarea
+                                  value={replyInputs[conv.id] ?? ""}
+                                  onChange={(e) => setReplyInputs((p) => ({ ...p, [conv.id]: e.target.value }))}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      void sendAdminReply(conv.id);
+                                    }
+                                  }}
+                                  placeholder="Type your reply… (Enter to send)"
+                                  rows={2}
+                                  maxLength={5000}
+                                  disabled={replySending[conv.id]}
+                                  className="flex-1 resize-none rounded-xl border border-[rgba(103,65,217,0.15)] bg-white px-3 py-2.5 text-sm text-[#0d1117] placeholder:text-[#6e6a8a] focus:border-[#6741d9] focus:outline-none focus:ring-2 focus:ring-[rgba(103,65,217,0.12)] disabled:opacity-60"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => void sendAdminReply(conv.id)}
+                                  disabled={replySending[conv.id] || !(replyInputs[conv.id] ?? "").trim()}
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {replySending[conv.id] ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Legacy contact_us_messages */}
+              <div className="irp-card p-5">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-[#6741d9]" />
+                    <h2 className="font-display text-base font-extrabold text-[#0d1117]">
+                      Legacy Contact Form Messages{" "}
+                      <span className="text-sm font-semibold text-[#6e6a8a]">({data.contactMessageCount})</span>
+                    </h2>
+                  </div>
                   {data.contactMessages.length > 0 && (
                     <button
                       type="button"
@@ -705,38 +977,28 @@ export default function AnalyticsPage() {
                     </button>
                   )}
                 </div>
-              </div>
-
-              {data.contactMessages.length === 0 ? (
-                <p className="text-sm text-[#6e6a8a]">
-                  No messages yet. Student messages will appear here as they reach out for help.
-                </p>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {data.contactMessages.slice((supportPage - 1) * PAGE_SIZE, supportPage * PAGE_SIZE).map((msg) => (
-                      <div
-                        key={msg.id}
-                        className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4"
-                      >
-                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <span className="font-semibold text-[#0d1117]">
-                              {msg.userName?.trim() || "Unnamed student"}
-                            </span>
-                            <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
+                {data.contactMessages.length === 0 ? (
+                  <p className="text-sm text-[#6e6a8a]">No legacy messages.</p>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {data.contactMessages.slice((supportPage - 1) * PAGE_SIZE, supportPage * PAGE_SIZE).map((msg) => (
+                        <div key={msg.id} className="rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff] p-4">
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <span className="font-semibold text-[#0d1117]">{msg.userName?.trim() || "Unnamed student"}</span>
+                              <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
+                            </div>
+                            <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
                           </div>
-                          <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
+                          <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">{msg.message}</p>
                         </div>
-                        <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">
-                          {msg.message}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <Pagination page={supportPage} total={data.contactMessages.length} onChange={setSupportPage} />
-                </>
-              )}
+                      ))}
+                    </div>
+                    <Pagination page={supportPage} total={data.contactMessages.length} onChange={setSupportPage} />
+                  </>
+                )}
+              </div>
             </div>
             )}
 
