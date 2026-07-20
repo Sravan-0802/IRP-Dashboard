@@ -1,0 +1,194 @@
+I want to implement a complete Help & Support module inside my existing IRP 2.0 application. Do NOT create a separate project. Integrate this feature into the existing authentication, database, dashboard, and admin panel.
+
+Project Context:
+- Existing Project: IRP 2.0
+- Frontend: React.js
+- Backend: Node.js + Express
+- Database: Use the existing database (PostgreSQL/MongoDB)
+- Authentication: Existing login/SSO
+- Keep the existing UI theme and design system.
+
+Feature Name:
+Help & Support
+
+Student Dashboard Requirements
+
+1. Add a new menu item:
+   Help & Support
+
+2. The page should contain:
+   - Welcome message
+   - Search previous conversations
+   - Chat interface
+   - Message history
+   - Text input
+   - Send button
+   - Auto-scroll to latest message
+   - Timestamps
+   - Read status
+   - Typing indicator
+   - Online/Offline status
+
+3. Student can:
+   - Ask any question
+   - Continue previous conversations
+   - View admin replies instantly
+   - Receive notifications when a new reply arrives
+
+4. If no conversation exists:
+   Display:
+   "Hi! How can we help you today?"
+
+Admin Dashboard Requirements
+
+Create a new section:
+
+Support Center
+
+Features:
+- View all student conversations
+- Search by Name, Email, User ID
+- Filter:
+  - Open
+  - Waiting for Student
+  - Waiting for Support
+  - Resolved
+  - Closed
+- Open any conversation
+- Reply to students
+- View timestamps
+- View unread count
+- Mark conversation as Resolved or Closed
+- Real-time updates
+
+Real-time Communication
+
+Use Socket.IO.
+
+Student sends message
+↓
+Admin receives instantly
+
+Admin replies
+↓
+Student receives instantly
+
+No page refresh required.
+
+Database Tables
+
+support_conversations
+- id
+- user_id
+- status
+- created_at
+- updated_at
+
+support_messages
+- id
+- conversation_id
+- sender_type (student/admin/bot)
+- sender_id
+- message
+- is_read
+- created_at
+
+Backend APIs
+
+POST /api/support/conversations
+
+GET /api/support/conversations
+
+GET /api/support/messages/:conversationId
+
+POST /api/support/messages
+
+PUT /api/support/read/:conversationId
+
+Admin APIs
+
+GET /api/admin/support/conversations
+
+PUT /api/admin/support/status/:conversationId
+
+Notifications
+
+Student Dashboard:
+Show unread badge beside Help & Support.
+
+Admin Dashboard:
+Show total pending conversations and unread messages.
+
+AI Assistant (Knowledge Base)
+
+Before creating a human support ticket, use an AI assistant.
+
+The AI should answer common IRP questions using a knowledge base, including:
+
+- Dashboard access
+- IRP eligibility
+- Assessment schedule
+- Assessment marks
+- Coding progress
+- MCQ progress
+- Internship process
+- Registration
+- Payment issues
+- Certificate
+- Level unlock
+- Login issues
+- Course progress
+- General FAQs
+
+If the AI confidently answers:
+- Show the AI response immediately.
+- Save the response in the chat with sender_type = "bot".
+
+If the AI cannot answer confidently:
+- Forward the conversation to the Support Team.
+- Notify admins.
+- Allow admins to continue the same conversation.
+
+UI Requirements
+
+Design should match the existing IRP dashboard.
+
+Use:
+- Chat bubbles
+- Student avatar
+- Admin avatar
+- AI avatar
+- Typing animation
+- Date separators
+- Empty states
+- Loading skeletons
+- Responsive layout
+- Dark/light theme support (if available)
+
+Performance
+
+- Load conversations efficiently
+- Paginate older messages
+- Use optimistic UI updates
+- Prevent duplicate messages
+- Handle reconnects gracefully
+
+Security
+
+- Students can only access their own conversations.
+- Admins can access all conversations.
+- Protect APIs using the existing authentication middleware.
+- Validate all inputs.
+
+Deliverables
+
+- Integrate the feature into the existing IRP project.
+- Reuse existing authentication and database.
+- Create backend APIs.
+- Create database migrations.
+- Implement Socket.IO.
+- Build Student Help & Support page.
+- Build Admin Support Center.
+- Implement AI chatbot with human handoff.
+- Add notification badges.
+- Ensure the implementation does not break any existing IRP functionality.
