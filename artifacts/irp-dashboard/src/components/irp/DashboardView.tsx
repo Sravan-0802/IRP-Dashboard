@@ -33,7 +33,6 @@ import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
-import { ContactUs } from "./ContactUs";
 import { FeMockCallout } from "./FeMockCallout";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { FeProjectResults } from "./FeProjectResults";
@@ -265,8 +264,6 @@ export function DashboardView({
       ) : null}
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
-
-      <ContactUs />
 
       {/* Wildcard: what L3 covers + opt-back */}
       {phase === "WILDCARD" && (
