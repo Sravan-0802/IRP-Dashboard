@@ -20,6 +20,7 @@ import { and, eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
+import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import {
@@ -719,6 +720,21 @@ router.get("/student/l1-july12-cohort", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 July 12 cohort status");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Whether the logged-in student is in the July 26 2026 (Cycle 3) registration allowlist.
+router.get("/student/l1-july26-allowlist", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json({ allowed: isInL1July26Allowlist(userId) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get L1 July 26 allowlist status");
     res.status(500).json({ error: "Internal server error" });
   }
 });

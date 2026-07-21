@@ -10,7 +10,7 @@ import {
   L1_ASSESSMENT_CALENDAR_VISIBLE,
   L1_CYCLE2_BANNER_VISIBLE,
 } from "@/lib/l1AssessmentSchedule";
-import { isL1July12RegistrationOpen } from "@/lib/irpDates";
+import { isL1July12RegistrationOpen, isL1July26RegistrationOpen } from "@/lib/irpDates";
 
 /**
  * L1 online assessment — two student tracks (do not mix):
@@ -73,6 +73,20 @@ export function shouldShowJuly12SlotCalendar(
 /** @deprecated Use shouldShowJuly12SlotCalendar for cycle-2 slot booking. */
 export function shouldShowCycle2Calendar(assessments: AssessmentResult[]): boolean {
   return shouldShowJuly12SlotCalendar(assessments, false);
+}
+
+/** July 26 (Cycle 3) slot registration — only shown to students in the allowlist. */
+export function shouldShowJuly26SlotCalendar(
+  assessments: AssessmentResult[],
+  inAllowlist: boolean,
+  hasSlotRegistration = false,
+): boolean {
+  return (
+    L1_ASSESSMENT_CALENDAR_VISIBLE &&
+    isCycle2Candidate(assessments) &&
+    inAllowlist &&
+    (isL1July26RegistrationOpen() || hasSlotRegistration)
+  );
 }
 
 /** Calendar page stays visible for registered students after registration closes. */

@@ -40,6 +40,7 @@ import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
+import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
 
 function journeySteps(
   journey: Journey,
@@ -206,6 +207,7 @@ export function DashboardView({
   const level = getLevel(journey.journeyState);
   const { registration } = useL1Registration();
   const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
+  const { allowed: july26Allowed } = useL1July26Allowlist();
   const { data: nxtmockData } = useNxtmockInterview();
   const nxtmock = nxtmockData?.interview ?? null;
 
@@ -224,7 +226,7 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard && july12Registered ? (
         <L1July12RegisteredBanner />
-      ) : level === 1 && !journey.isWildcard ? (
+      ) : level === 1 && !journey.isWildcard && july26Allowed ? (
         <L1AssessmentBanner
           assessments={assessments}
           registration={registration}
