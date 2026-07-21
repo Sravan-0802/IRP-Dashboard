@@ -2,8 +2,8 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import {
   L1_CYCLE1_EXAM_DATE,
   L1_CYCLE1_EXAM_DATE_LABEL,
-  L1_JULY12_EXAM_DATE,
-  L1_JULY12_EXAM_DATE_LABEL,
+  L1_JULY26_EXAM_DATE,
+  L1_JULY26_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 import { hasClearedAssessment, hasWrittenAssessment } from "@/lib/assessment";
 import {
@@ -40,13 +40,13 @@ export function getL1Cycle1CompletedDateLabel(assessments: AssessmentResult[]): 
 
 /** Upcoming / next assessment date for L1 hero countdown. */
 export function getL1UpcomingExamDate(assessments: AssessmentResult[]): Date {
-  return isCycle2Candidate(assessments) ? L1_JULY12_EXAM_DATE : L1_CYCLE1_EXAM_DATE;
+  return isCycle2Candidate(assessments) ? L1_JULY26_EXAM_DATE : L1_CYCLE1_EXAM_DATE;
 }
 
 /** Upcoming / next assessment date label for L1 hero, countdown, calendar. */
 export function getL1UpcomingExamDateLabel(assessments: AssessmentResult[]): string {
   return isCycle2Candidate(assessments)
-    ? L1_JULY12_EXAM_DATE_LABEL
+    ? L1_JULY26_EXAM_DATE_LABEL
     : L1_CYCLE1_EXAM_DATE_LABEL;
 }
 

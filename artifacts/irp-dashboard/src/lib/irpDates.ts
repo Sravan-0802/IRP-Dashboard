@@ -132,3 +132,34 @@ export function isL1July12AssessmentLive(now = new Date()): boolean {
 export function isL1July12ExamWindowClosed(now = new Date()): boolean {
   return now >= L1_JULY12_EXAM_DATE && !isL1July12AssessmentLive(now);
 }
+
+/** L1 Cycle 3 re-conduction — 26th July 2026. */
+export const L1_JULY26_EXAM_DATE = new Date("2026-07-26T00:00:00+05:30");
+export const L1_JULY26_EXAM_DATE_LABEL = "26th July 2026";
+
+/** July 26 results unlock the day after the assessment. */
+export const L1_JULY26_RESULTS_UNLOCK_DATE = new Date("2026-07-27T00:00:00+05:30");
+
+/** Slot registration for the 26 July re-conduction opens 21 July 2026 (today). */
+export const L1_JULY26_REGISTRATION_OPEN_DATE = new Date("2026-07-21T00:00:00+05:30");
+export const L1_JULY26_REGISTRATION_OPEN_DATE_LABEL = "21st July 2026";
+
+/** Slot registration for the 26 July re-conduction closes 30 minutes before the slot. */
+export const L1_JULY26_REGISTRATION_CLOSE_DATE = new Date("2026-07-26T17:30:00+05:30");
+export const L1_JULY26_REGISTRATION_CLOSE_DATE_LABEL = "26th July 2026, 5:30 PM IST";
+
+export function isL1July26RegistrationOpen(now = new Date()): boolean {
+  return (
+    now.getTime() >= L1_JULY26_REGISTRATION_OPEN_DATE.getTime() &&
+    now.getTime() < L1_JULY26_REGISTRATION_CLOSE_DATE.getTime()
+  );
+}
+
+/** July 26 re-conduction — live only on assessment day until results unlock. */
+export function isL1July26AssessmentLive(now = new Date()): boolean {
+  return now >= L1_JULY26_EXAM_DATE && now < L1_JULY26_RESULTS_UNLOCK_DATE;
+}
+
+export function isL1July26ExamWindowClosed(now = new Date()): boolean {
+  return now >= L1_JULY26_EXAM_DATE && !isL1July26AssessmentLive(now);
+}

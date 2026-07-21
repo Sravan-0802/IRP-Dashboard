@@ -2,22 +2,19 @@ import { CalendarClock, Megaphone } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import {
   hasSuccessfulSlotRegistration,
-  L1_JULY12_BANNER_TEXT,
-  L1_JULY12_REGISTRATION_BANNER_TITLE,
-  L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT,
-  L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT,
-  L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE,
+  L1_JULY26_REGISTRATION_BANNER_TITLE,
+  L1_JULY26_BANNER_TEXT,
   L1_REGISTRATION_BANNER_EYEBROW,
   L1_REGISTRATION_CLOSED_BANNER_TITLE,
+  L1_JULY26_REGISTRATION_CLOSED_BANNER_TEXT,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
-import { hasL1July12RegistrationStarted, isL1July12RegistrationOpen } from "@/lib/irpDates";
+import { isL1July26RegistrationOpen } from "@/lib/irpDates";
 import { shouldShowCycle2Banner } from "@/lib/l1StudentTrack";
 
 export function L1AssessmentBanner({
   assessments = [],
   registration = null,
-  registrationUnlocked = false,
   onRegisterClick,
   compact = false,
 }: {
@@ -30,34 +27,9 @@ export function L1AssessmentBanner({
   if (!shouldShowCycle2Banner(assessments)) return null;
 
   const slotBooked = hasSuccessfulSlotRegistration(registration);
-  const registrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
-  const registrationStarted = hasL1July12RegistrationStarted() || registrationUnlocked;
-
   if (slotBooked) return null;
 
-  if (!registrationStarted) {
-    return (
-      <div
-        className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-5 shadow-soft sm:p-6"
-        style={{ background: "linear-gradient(130deg, #f8f9fa 0%, #f3f0ff 100%)" }}
-      >
-        <div className="relative flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-sm">
-            <Megaphone className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">
-              {L1_REGISTRATION_BANNER_EYEBROW}
-            </p>
-            <p className={`mt-1 font-display font-extrabold text-ink ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
-              {L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted2">{L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const registrationOpen = isL1July26RegistrationOpen();
 
   if (!registrationOpen) {
     return null;
@@ -79,9 +51,9 @@ export function L1AssessmentBanner({
               {L1_REGISTRATION_BANNER_EYEBROW}
             </p>
             <p className={`mt-1 font-display font-extrabold text-ink ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
-              {L1_JULY12_REGISTRATION_BANNER_TITLE}
+              {L1_JULY26_REGISTRATION_BANNER_TITLE}
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted2">{L1_JULY12_BANNER_TEXT}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted2">{L1_JULY26_BANNER_TEXT}</p>
           </div>
         </div>
         {onRegisterClick ? (

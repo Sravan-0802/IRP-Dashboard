@@ -1,5 +1,15 @@
 import { EXAM_DATE_LABEL, L1_REGISTRATION_CLOSE_DATE_LABEL } from "@/lib/irpDates";
 
+export interface L1AssessmentCalendar {
+  id: string;
+  title: string;
+  subtitle: string;
+  cycleLabel: string;
+  dateLabel: string;
+  duration: string;
+  slots: ReadonlyArray<{ readonly id: string; readonly label: string }>;
+}
+
 /**
  * L1 Cycle 2 UI flags — banner & calendar apply only to cycle2_pending students
  * (see l1StudentTrack.ts). Cleared Cycle 1 students never see Cycle 2 registration.
@@ -19,7 +29,12 @@ export const L1_JULY12_HUSTLER_SLOTS = [
 
 export const L1_JULY12_CONFIRMED_SLOT_LABEL = L1_JULY12_HUSTLER_SLOTS[0].label;
 
-export const L1_CYCLE = 2;
+/** Single slot for the 26 July re-conduction (Cycle 3). */
+export const L1_JULY26_HUSTLER_SLOTS = [
+  { id: "slot-3", label: "6:00 PM – 8:00 PM IST" },
+] as const;
+
+export const L1_CYCLE = 3;
 
 /**
  * Exam-platform (topin.tech) assessment links for the 5th July L1 Hustler exam.
@@ -61,10 +76,20 @@ export const L1_JULY12_HUSTLER_CALENDAR = {
   id: "l1-hustler",
   title: "L1 Hustler Assessment",
   subtitle: "Level 1 · The Hustler",
-  cycleLabel: `Cycle ${L1_CYCLE}`,
+  cycleLabel: "Cycle 2",
   dateLabel: "12th July 2026",
   duration: "~2 hours",
   slots: L1_JULY12_HUSTLER_SLOTS,
+} as const;
+
+export const L1_JULY26_HUSTLER_CALENDAR = {
+  id: "l1-hustler",
+  title: "L1 Hustler Assessment",
+  subtitle: "Level 1 · The Hustler",
+  cycleLabel: "Cycle 3",
+  dateLabel: "26th July 2026",
+  duration: "~2 hours",
+  slots: L1_JULY26_HUSTLER_SLOTS,
 } as const;
 
 export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
@@ -84,6 +109,13 @@ export const L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT =
   "Slot registration for the 12th July L1 Hustler Assessment opens at 9:00 PM IST today (7th July 2026). Please return then to book your 6:00 PM – 8:00 PM IST slot.";
 export const L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT =
   "Registrations for the 12th July L1 Hustler Assessment are now closed.";
+
+/** July 26 (Cycle 3) banner text. */
+export const L1_JULY26_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 26th July 2026";
+export const L1_JULY26_BANNER_TEXT =
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 26th July 2026. Registration is open now — confirm your slot via the Assessment Calendar before 5:30 PM IST on 26th July.";
+export const L1_JULY26_REGISTRATION_CLOSED_BANNER_TEXT =
+  "Registrations for the 26th July L1 Hustler Assessment are now closed.";
 
 /** Confirmation shown to the fixed 12 July (Cycle 2) assessment cohort. */
 export const L1_JULY12_REGISTERED_BANNER_EYEBROW = "Level 1 · The Hustler";

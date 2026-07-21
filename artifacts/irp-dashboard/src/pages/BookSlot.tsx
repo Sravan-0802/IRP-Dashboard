@@ -5,101 +5,32 @@ import { IrpCard } from "@/components/irp/ui";
 import { ComingSoonPanel } from "@/components/irp/ComingSoonPanel";
 import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
 import {
-  L1_JULY12_HUSTLER_CALENDAR,
-  L1_JULY12_REGISTERED_CALENDAR_DESCRIPTION,
-  L1_JULY12_CONFIRMED_SLOT_LABEL,
+  L1_JULY26_HUSTLER_CALENDAR,
+  L1_JULY26_HUSTLER_SLOTS,
   getL1HustlerSlot,
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
-import { L1_JULY12_EXAM_DATE_LABEL, L1_JULY12_REGISTRATION_OPEN_DATE_LABEL, hasL1July12RegistrationStarted, isL1July12RegistrationOpen } from "@/lib/irpDates";
-import { isCycle1Cleared, shouldShowCycle2CalendarPage } from "@/lib/l1StudentTrack";
 import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
+import { L1_JULY26_EXAM_DATE_LABEL, isL1July26RegistrationOpen } from "@/lib/irpDates";
+import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
-import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 
-const JULY12_DEFAULT_SLOT = L1_JULY12_HUSTLER_CALENDAR.slots[0]?.id;
-
-function July12RegisteredCalendarContent({
-  registration,
-}: {
-  registration: L1RegistrationRecord | null;
-}) {
-  const calendar = L1_JULY12_HUSTLER_CALENDAR;
-  const bookedSlotId = registration?.slotId ?? JULY12_DEFAULT_SLOT;
-  const bookedRecord: L1RegistrationRecord =
-    registration?.availability === "yes" && registration.slotId
-      ? registration
-      : {
-          availability: "yes",
-          slotId: bookedSlotId,
-          submittedAt: new Date().toISOString(),
-        };
-
-  return (
-    <IrpCard className="overflow-hidden p-0">
-      <div
-        className="border-b border-[rgba(12,166,120,0.2)] px-5 py-4 sm:px-6"
-        style={{ background: "linear-gradient(130deg, #e8faf0, #f3f0ff)" }}
-      >
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal shadow-sm">
-            <CalendarCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal">
-              Registration confirmed
-            </p>
-            <h2 className="font-display text-xl font-extrabold text-ink">
-              Already registered for {calendar.dateLabel}
-            </h2>
-            <p className="mt-1 text-sm text-muted2">{L1_JULY12_REGISTERED_CALENDAR_DESCRIPTION}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-5 p-5 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-              <Calendar className="h-3.5 w-3.5 text-brand" />
-              Date
-            </div>
-            <p className="mt-1 text-sm font-bold text-ink">{calendar.dateLabel}</p>
-          </div>
-          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-              <Clock className="h-3.5 w-3.5 text-brand" />
-              Duration
-            </div>
-            <p className="mt-1 text-sm font-bold text-ink">{calendar.duration}</p>
-          </div>
-        </div>
-
-        <L1RegistrationSuccess record={bookedRecord} calendar={calendar} />
-
-        <p className="text-xs text-muted2">
-          The assessment link will be shared on exam day via the Assessments Hub. Attempt the mock assessment before
-          the Hustler exam.
-        </p>
-      </div>
-    </IrpCard>
-  );
-}
+const JULY26_DEFAULT_SLOT = L1_JULY26_HUSTLER_SLOTS[0]?.id;
 
 function AssessmentCalendarContent() {
-  const calendar = L1_JULY12_HUSTLER_CALENDAR;
+  const calendar = L1_JULY26_HUSTLER_CALENDAR;
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const [selectedSlot, setSelectedSlot] = useState<string | undefined>(
-    () => getL1HustlerSlot() ?? JULY12_DEFAULT_SLOT,
+    () => getL1HustlerSlot() ?? JULY26_DEFAULT_SLOT,
   );
   const [registerOpen, setRegisterOpen] = useState(false);
 
   useEffect(() => {
     if (registration?.slotId) {
       setSelectedSlot(registration.slotId);
-    } else if (!selectedSlot && JULY12_DEFAULT_SLOT) {
-      setSelectedSlot(JULY12_DEFAULT_SLOT);
+    } else if (!selectedSlot && JULY26_DEFAULT_SLOT) {
+      setSelectedSlot(JULY26_DEFAULT_SLOT);
     }
   }, [registration?.slotId, selectedSlot]);
 
@@ -227,51 +158,105 @@ function AssessmentCalendarContent() {
   );
 }
 
+function SlotConfirmedContent({ registration }: { registration: L1RegistrationRecord | null }) {
+  const calendar = L1_JULY26_HUSTLER_CALENDAR;
+  const bookedSlotId = registration?.slotId ?? JULY26_DEFAULT_SLOT;
+  const bookedRecord: L1RegistrationRecord =
+    registration?.availability === "yes" && registration.slotId
+      ? registration
+      : {
+          availability: "yes",
+          slotId: bookedSlotId,
+          submittedAt: new Date().toISOString(),
+        };
+
+  return (
+    <IrpCard className="overflow-hidden p-0">
+      <div
+        className="border-b border-[rgba(12,166,120,0.2)] px-5 py-4 sm:px-6"
+        style={{ background: "linear-gradient(130deg, #e8faf0, #f3f0ff)" }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal shadow-sm">
+            <CalendarCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal">
+              Registration confirmed
+            </p>
+            <h2 className="font-display text-xl font-extrabold text-ink">
+              Slot booked for {calendar.dateLabel}
+            </h2>
+            <p className="mt-1 text-sm text-muted2">
+              Your assessment registration is confirmed for 26th July 2026.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-5 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
+              <Calendar className="h-3.5 w-3.5 text-brand" />
+              Date
+            </div>
+            <p className="mt-1 text-sm font-bold text-ink">{calendar.dateLabel}</p>
+          </div>
+          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
+              <Clock className="h-3.5 w-3.5 text-brand" />
+              Duration
+            </div>
+            <p className="mt-1 text-sm font-bold text-ink">{calendar.duration}</p>
+          </div>
+        </div>
+
+        <L1RegistrationSuccess record={bookedRecord} calendar={calendar} />
+
+        <p className="text-xs text-muted2">
+          The assessment link will be shared on exam day via the Assessments Hub.
+        </p>
+      </div>
+    </IrpCard>
+  );
+}
+
 export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[] }) {
   const { registration } = useL1Registration();
-  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const slotBooked = hasSuccessfulSlotRegistration(registration);
-  const showCalendar = shouldShowCycle2CalendarPage(
-    assessments,
-    slotBooked,
-    july12Registered,
-    registrationUnlocked,
-  );
   const cleared = isCycle1Cleared(assessments);
-  const registrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
+  const isCandidate = isCycle2Candidate(assessments);
+  const registrationOpen = isL1July26RegistrationOpen();
+
+  const showCalendar = isCandidate && !cleared;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
         <p className="mt-1 text-sm text-muted2">
-          {july12Registered
-            ? `Already registered for ${L1_JULY12_EXAM_DATE_LABEL}. Your ${L1_JULY12_CONFIRMED_SLOT_LABEL} slot is booked.`
+          {slotBooked
+            ? `Your slot for the assessment on ${L1_JULY26_EXAM_DATE_LABEL} (6:00 PM – 8:00 PM IST) is confirmed.`
             : showCalendar && registrationOpen
-              ? `Choose your slot for the assessment on ${L1_JULY12_EXAM_DATE_LABEL} (6:00 PM – 8:00 PM IST), then complete registration.`
-              : showCalendar && slotBooked
-                ? "Your slot is confirmed. The mock assessment link will be shared before exam day."
-                : cleared
-                  ? "You cleared the 14 June assessment and are on the post-assessment track."
-                  : !hasL1July12RegistrationStarted()
-                    ? `Slot registration opens at ${L1_JULY12_REGISTRATION_OPEN_DATE_LABEL}.`
-                  : !registrationOpen
-                    ? "Slot registration for the 12th July assessment has closed."
-                    : "Slot registration will appear here when it opens."}
+              ? `Choose your slot for the assessment on ${L1_JULY26_EXAM_DATE_LABEL} (6:00 PM – 8:00 PM IST), then complete registration.`
+              : cleared
+                ? "You cleared the L1 assessment and are on the post-assessment track."
+                : "Slot registration will appear here when it opens."}
         </p>
       </div>
 
-      {showCalendar ? (
+      {slotBooked ? (
+        <SlotConfirmedContent registration={registration} />
+      ) : showCalendar ? (
         <AssessmentCalendarContent />
-      ) : july12Registered ? (
-        <July12RegisteredCalendarContent registration={registration} />
       ) : (
         <ComingSoonPanel
           title={cleared ? "You're on the post-assessment track" : "Assessment calendar — coming soon"}
           description={
             cleared
-              ? "You cleared the Cycle 1 assessment on 14 June 2026. Continue with IRP 2.0 FE Project Main II from the dashboard or Assessments Hub."
-              : "Registration is not open for you yet. Check back for updates on the 12th July assessment."
+              ? "You cleared the L1 assessment. Continue with the next steps from the dashboard or Assessments Hub."
+              : "Registration is not open for you yet. Check back for updates."
           }
         />
       )}

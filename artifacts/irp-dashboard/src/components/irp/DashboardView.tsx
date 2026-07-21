@@ -19,7 +19,6 @@ import {
   areL1Cycle2ResultsVisible,
   L1_CYCLE2_EXAM_DATE_LABEL,
   L1_CYCLE2_RESULTS_UNLOCK_LABEL,
-  L1_JULY12_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
@@ -132,7 +131,7 @@ function assessmentMotivation(
     }
     if (assessmentStatus === "attempted_not_cleared") {
       if (hasAttemptedL1Cycle2(assessments)) {
-        return `You attempted the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment but didn't clear yet. Register for ${L1_JULY12_EXAM_DATE_LABEL} to reattempt. 🔥`;
+        return `You attempted the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment but didn't clear yet. Register for the 26th July 2026 assessment to reattempt. 🔥`;
       }
       return `The assessment is on ${upcomingLabel}. Register via the Assessment Calendar and keep preparing. 🔥`;
     }

@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   AVAILABILITY_OPTIONS,
   L1_JULY12_HUSTLER_CALENDAR,
+  type L1AssessmentCalendar,
   type AvailabilityValue,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
@@ -25,7 +26,7 @@ interface L1RegistrationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   slotId?: string;
-  calendar?: typeof L1_JULY12_HUSTLER_CALENDAR;
+  calendar?: L1AssessmentCalendar;
   submitting?: boolean;
   onSubmit?: (record: L1RegistrationRecord) => Promise<L1RegistrationRecord | void>;
   onComplete?: (record: L1RegistrationRecord) => void;
@@ -337,7 +338,7 @@ export function L1RegistrationSuccess({
   calendar = L1_JULY12_HUSTLER_CALENDAR,
 }: {
   record: L1RegistrationRecord;
-  calendar?: typeof L1_JULY12_HUSTLER_CALENDAR;
+  calendar?: L1AssessmentCalendar;
 }) {
   const slotLabel = calendar.slots.find((s) => s.id === record.slotId)?.label;
 

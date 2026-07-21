@@ -23,11 +23,12 @@ import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnloc
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import {
-  hasL1July12RegistrationStarted,
-  isL1July12RegistrationOpen,
   canRegisterForL1July12,
+  canRegisterForL1July26,
   L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
+  L1_JULY26_REGISTRATION_ASSESSMENT_DATE,
   L1_JULY12_SLOT_IDS,
+  L1_JULY26_SLOT_IDS,
   L1_REGISTRATION_CYCLE,
   L1_REGISTRATION_LEVEL,
   rowToL1RegistrationResponse,
@@ -564,11 +565,6 @@ router.post("/student/l1-registration", async (req, res) => {
       return;
     }
 
-    if (isInL1July12Cohort(userId)) {
-      res.status(403).json({ error: "You are already registered for the 12 July assessment" });
-      return;
-    }
-
     const [existing] = await db
       .select({ id: l1CycleRegistrationsTable.id })
       .from(l1CycleRegistrationsTable)
@@ -581,21 +577,28 @@ router.post("/student/l1-registration", async (req, res) => {
       )
       .limit(1);
 
-    if (!canRegisterForL1July12(userId) && !existing) {
-      res.status(403).json({
-        error: hasL1July12RegistrationStarted()
-          ? "Slot registration for the 12 July assessment is closed"
-          : "Slot registration opens at 9:00 PM IST on 7th July 2026",
-      });
-      return;
+    if (!existing) {
+      const canRegister =
+        cycle === 3 ? canRegisterForL1July26() :
+        cycle === 2 ? canRegisterForL1July12(userId) :
+        false;
+      if (!canRegister) {
+        res.status(403).json({
+          error: cycle === 3
+            ? "Slot registration for the 26 July assessment is closed"
+            : "Slot registration for this cycle is closed",
+        });
+        return;
+      }
     }
 
     const availability = String(req.body.availability).trim();
     const isYes = availability === "yes";
     const slotId = isYes ? String(req.body.slotId).trim() : null;
 
-    if (isYes && (!slotId || !L1_JULY12_SLOT_IDS.has(slotId))) {
-      res.status(400).json({ error: "Only the 6:00 PM – 8:00 PM IST slot is available on 12th July" });
+    const allowedSlots = cycle === 3 ? L1_JULY26_SLOT_IDS : L1_JULY12_SLOT_IDS;
+    if (isYes && (!slotId || !allowedSlots.has(slotId))) {
+      res.status(400).json({ error: "Only the 6:00 PM – 8:00 PM IST slot is available" });
       return;
     }
 
@@ -622,7 +625,7 @@ router.post("/student/l1-registration", async (req, res) => {
       userName: displayName,
       cycle,
       level: L1_REGISTRATION_LEVEL,
-      assessmentDate: L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
+      assessmentDate: cycle === 3 ? L1_JULY26_REGISTRATION_ASSESSMENT_DATE : L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
       availability,
       slotId,
       slotLabel,

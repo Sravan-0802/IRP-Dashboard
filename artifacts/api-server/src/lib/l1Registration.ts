@@ -1,26 +1,22 @@
 import { isInL1July12RegistrationUnlock } from "./l1July12RegistrationUnlock";
 
-export const L1_REGISTRATION_CYCLE = 2;
+export const L1_REGISTRATION_CYCLE = 3;
 export const L1_REGISTRATION_LEVEL = 1;
+
+/** Cycle 2 — 12 July 2026 (closed). */
 export const L1_REGISTRATION_ASSESSMENT_DATE = "5th July 2026";
 export const L1_JULY12_REGISTRATION_ASSESSMENT_DATE = "12th July 2026";
-
-/** Slot registration closes at end of 3 July 2026 (IST). */
 export const L1_REGISTRATION_CLOSE_DATE = new Date("2026-07-03T23:59:59+05:30");
-
-/** 12 July re-conduction slot booking (non-cohort students only). */
 export const L1_JULY12_REGISTRATION_CLOSE_DATE = new Date("2026-07-12T17:30:00+05:30");
 export const L1_JULY12_REGISTRATION_OPEN_DATE = new Date("2026-07-07T21:00:00+05:30");
 
-function isJuly12RegistrationForceOpen(): boolean {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    process.env.L1_JULY12_REGISTRATION_FORCE_OPEN === "1"
-  );
-}
+/** Cycle 3 — 26 July 2026 (current). */
+export const L1_JULY26_REGISTRATION_ASSESSMENT_DATE = "26th July 2026";
+export const L1_JULY26_REGISTRATION_OPEN_DATE = new Date("2026-07-21T00:00:00+05:30");
+export const L1_JULY26_REGISTRATION_CLOSE_DATE = new Date("2026-07-26T17:30:00+05:30");
 
 export function hasL1July12RegistrationStarted(now = new Date()): boolean {
-  return isJuly12RegistrationForceOpen() || now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
+  return now.getTime() >= L1_JULY12_REGISTRATION_OPEN_DATE.getTime();
 }
 
 export function isL1RegistrationOpen(now = new Date()): boolean {
@@ -34,7 +30,6 @@ export function isL1July12RegistrationOpen(now = new Date()): boolean {
   );
 }
 
-/** True when this student may book a 12 July slot (global window or unlock list). */
 export function canRegisterForL1July12(
   userId: string | null | undefined,
   now = new Date(),
@@ -44,13 +39,25 @@ export function canRegisterForL1July12(
   return isL1July12RegistrationOpen(now);
 }
 
+export function isL1July26RegistrationOpen(now = new Date()): boolean {
+  return (
+    now.getTime() >= L1_JULY26_REGISTRATION_OPEN_DATE.getTime() &&
+    now.getTime() < L1_JULY26_REGISTRATION_CLOSE_DATE.getTime()
+  );
+}
+
+export function canRegisterForL1July26(now = new Date()): boolean {
+  return isL1July26RegistrationOpen(now);
+}
+
 export const L1_SLOT_LABELS: Record<string, string> = {
   "slot-1": "6:00 PM – 8:00 PM IST",
   "slot-2": "6:00 PM – 8:00 PM IST",
+  "slot-3": "6:00 PM – 8:00 PM IST",
 };
 
-/** Only slot offered for the 12 July re-conduction calendar. */
 export const L1_JULY12_SLOT_IDS = new Set(["slot-2"]);
+export const L1_JULY26_SLOT_IDS = new Set(["slot-3"]);
 
 export const L1_AVAILABILITY_VALUES = new Set([
   "yes",
@@ -73,6 +80,11 @@ export interface L1RegistrationPayload {
 export function slotLabelFor(slotId: string | undefined): string | null {
   if (!slotId) return null;
   return L1_SLOT_LABELS[slotId] ?? null;
+}
+
+export function parseRegistrationCycle(raw: unknown): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 1 ? n : L1_REGISTRATION_CYCLE;
 }
 
 export function validateL1RegistrationPayload(body: L1RegistrationPayload): string | null {
