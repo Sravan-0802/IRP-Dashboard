@@ -40,6 +40,7 @@ import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
+import { ContactUs } from "./ContactUs";
 
 function journeySteps(
   journey: Journey,
@@ -361,6 +362,8 @@ export function DashboardView({
           </div>
         </>
       )}
+
+      <ContactUs />
     </div>
   );
 }
