@@ -27,8 +27,10 @@ import { DashboardView } from "@/components/irp/DashboardView";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
+import { usePaymentStatus } from "@/lib/usePaymentStatus";
 
 export default function Dashboard() {
+  const { paid, loading: loadingPayment } = usePaymentStatus();
   const { data: journey, isLoading: loadingJourney } = useJourney();
   const { data: student, isError: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
@@ -124,10 +126,26 @@ export default function Dashboard() {
     };
   }, [subjects, displayProgress]);
 
-  if (loadingJourney || !journey || !displayStudent) {
+  if (loadingJourney || loadingPayment || !journey || !displayStudent) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
         <p className="text-sm font-semibold text-muted2">Loading your dashboard…</p>
+      </div>
+    );
+  }
+
+  if (!paid) {
+    return (
+      <div className="flex h-[100dvh] items-center justify-center bg-gradient-to-br from-[#f3f0ff] via-white to-[#fff9db] px-4">
+        <div className="w-full max-w-md rounded-2xl border border-[rgba(103,65,217,0.18)] bg-white p-8 shadow-soft text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3f0ff] text-2xl">
+            🔒
+          </div>
+          <h1 className="font-display text-xl font-extrabold text-ink">Dashboard Locked</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted2">
+            Please continue with your payment process to unlock your IRP dashboard.
+          </p>
+        </div>
       </div>
     );
   }
