@@ -234,6 +234,14 @@ export function DashboardView({
         />
       ) : null}
 
+      {/* Global processing banner */}
+      <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
+        <span className="mt-0.5 shrink-0 text-lg sm:mt-0">⏳</span>
+        <p className="text-sm font-semibold text-[#3b3069]">
+          Your results are being processed by our team. Please wait for it to show on your Dashboard.
+        </p>
+      </div>
+
       <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} nxtmock={nxtmock} />
 
       <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
