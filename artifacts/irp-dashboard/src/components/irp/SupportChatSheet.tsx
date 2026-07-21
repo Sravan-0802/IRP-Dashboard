@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, MessageCircle, Send, X } from "lucide-react";
+import { Loader2, MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/authToken";
 
@@ -75,12 +75,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 export function SupportChatSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [initialLoading, setInitialLoading] = useState(false);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = getAuthToken();
@@ -118,35 +114,6 @@ export function SupportChatSheet({ open, onClose }: { open: boolean; onClose: ()
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
     }
   }, [open, messages.length]);
-
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || sending) return;
-    setSending(true);
-    setSendError("");
-    try {
-      const res = await fetch("/api/support/message", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ message: text }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(data?.error ?? "Failed to send");
-      setInput("");
-      await fetchMessages();
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : "Failed to send. Please try again.");
-    } finally {
-      setSending(false);
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void sendMessage();
-    }
-  }
 
   if (!open) return null;
 
@@ -220,38 +187,13 @@ export function SupportChatSheet({ open, onClose }: { open: boolean; onClose: ()
           )}
         </div>
 
-        {/* Input */}
+        {/* Input — disabled while chatbot is in testing */}
         <div className="shrink-0 border-t border-[rgba(103,65,217,0.10)] px-4 py-3">
-          {sendError && (
-            <p className="mb-2 text-xs font-semibold text-[#c2255c]">{sendError}</p>
-          )}
-          <div className="flex items-end gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                setSendError("");
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message… (Enter to send)"
-              rows={2}
-              maxLength={5000}
-              disabled={sending}
-              className="flex-1 resize-none rounded-xl border border-[rgba(103,65,217,0.15)] bg-white px-3 py-2.5 text-sm text-[#0d1117] placeholder:text-[#6e6a8a] focus:border-[#6741d9] focus:outline-none focus:ring-2 focus:ring-[rgba(103,65,217,0.12)] disabled:opacity-60"
-            />
-            <button
-              type="button"
-              onClick={() => void sendMessage()}
-              disabled={sending || !input.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </button>
+          <div className="flex items-center gap-2 rounded-xl border border-[rgba(103,65,217,0.15)] bg-[#f8f7ff] px-3.5 py-3">
+            <Loader2 className="h-4 w-4 shrink-0 text-[#6741d9]" />
+            <p className="text-xs text-[#6e6a8a]">
+              Chat support is currently in testing and will be available soon.
+            </p>
           </div>
         </div>
       </div>
