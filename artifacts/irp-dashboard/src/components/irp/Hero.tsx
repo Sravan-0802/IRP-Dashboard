@@ -4,13 +4,11 @@ import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import {
   areAssignmentResultsVisible,
-  areL1Cycle2ResultsVisible,
   isAssessmentLive,
   isExamWindowClosed,
   isL1July12AssessmentLive,
   L1_CYCLE1_EXAM_DATE_LABEL,
   L1_CYCLE2_EXAM_DATE_LABEL,
-  L1_CYCLE2_RESULTS_UNLOCK_LABEL,
   PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import {
@@ -35,6 +33,8 @@ import {
   type L1PipelineStage,
 } from "@/lib/l1PipelineStage";
 import type { NxtmockInterview } from "@/lib/nxtmockInterview";
+import { isNxtmockCleared } from "@/lib/nxtmockInterview";
+import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { CountdownRing } from "./CountdownRing";
 import { Pill } from "./ui";
 
@@ -183,6 +183,8 @@ export function Hero({
   assessments?: AssessmentResult[];
   nxtmock?: NxtmockInterview | null;
 }) {
+  const { settings } = useVisibilitySettings();
+  const onlineL1ResultsVisible = settings.onlineL1Results;
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
   const meta = LEVEL_META[level];
@@ -203,12 +205,12 @@ export function Hero({
     (isExamWindowClosed() || resultsVisible) &&
     (phase === "PREP" || phase === "EXAM_OPEN");
 
-  // Cycle 1 cleared → post-assessment track. Cycle 2 sit results unlock on 10 July.
+  // Cycle 1 cleared → post-assessment track. Online L1 results gated by admin toggle.
   if (level === 1 && isCycle1Cleared(assessments)) {
     if (
       hasAttemptedL1Cycle2(assessments) &&
       clearedL1ViaC2(assessments) &&
-      !areL1Cycle2ResultsVisible()
+      !onlineL1ResultsVisible
     ) {
       return (
         <div
@@ -225,8 +227,8 @@ export function Hero({
                 Results coming soon
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted2">
-                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results will appear here on{" "}
-                {L1_CYCLE2_RESULTS_UNLOCK_LABEL}.
+                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results are being
+                processed and will appear here once released.
               </p>
             </div>
             <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
@@ -240,7 +242,57 @@ export function Hero({
     }
 
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
-    const pipelineStage = getL1PipelineStage(journey, assessments, nxtmock);
+    let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock);
+
+    // Hold pipeline result stages until admin releases that stage.
+    if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults) {
+      if (settings.aiMockResults) {
+        // AI mock released; human not yet — keep AI-cleared messaging via pending hero below
+        pipelineStage = null;
+      } else if (settings.feProjectResults) {
+        pipelineStage = "ai_mock_active";
+      } else {
+        pipelineStage = "fe_project_active";
+      }
+    } else if (
+      (pipelineStage === "ai_mock_active" || pipelineStage === "ai_mock_not_cleared") &&
+      !settings.aiMockResults
+    ) {
+      pipelineStage = settings.feProjectResults ? "fe_project_active" : "fe_project_active";
+    } else if (
+      (pipelineStage === "fe_project_not_cleared") &&
+      !settings.feProjectResults
+    ) {
+      pipelineStage = "fe_project_active";
+    }
+
+    if (
+      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
+      !settings.humanInterviewResults &&
+      settings.aiMockResults
+    ) {
+      return (
+        <div
+          className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-5 shadow-soft sm:p-6 md:p-8"
+          style={{ background: "linear-gradient(130deg, #ede9fe, #f8f7ff)" }}
+        >
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(103,65,217,0.2)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
+              <PulsingDot color="#6741d9" /> Next step pending
+            </div>
+            <LevelHeading name={meta.name} level={level} />
+            <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
+              Human Interview coming soon
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-muted2">
+              Your AI Mock Interview is cleared. Human Interview details will appear here once
+              released by the team.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     if (pipelineStage) {
       return (
         <L1PipelineStageHero
@@ -261,7 +313,7 @@ export function Hero({
 
   // Cycle 2 track: attempted Cycle 1 but did not clear — show past results + upcoming exam.
   if (level === 1 && assessmentStatus === "attempted_not_cleared") {
-    if (hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
+    if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
       return (
         <div
           className="relative overflow-hidden rounded-2xl border border-[rgba(103,65,217,0.15)] p-5 shadow-soft sm:p-6 md:p-8"
@@ -277,8 +329,8 @@ export function Hero({
                 Results coming soon
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted2">
-                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results will appear here on{" "}
-                {L1_CYCLE2_RESULTS_UNLOCK_LABEL}.
+                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results are being
+                processed and will appear here once released.
               </p>
             </div>
             <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
@@ -292,7 +344,7 @@ export function Hero({
     }
 
     const assessment = hasAttemptedL1Cycle2(assessments)
-      ? pickL1AssessmentForResults(assessments)
+      ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
       : pickAssessmentForLevel(assessments, 1);
     const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
     const resultsDateLabel = hasAttemptedL1Cycle2(assessments)

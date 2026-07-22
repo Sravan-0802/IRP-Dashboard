@@ -12,6 +12,12 @@ import {
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { emailForUser } from "../lib/student";
+import {
+  getVisibilitySettings,
+  parseAdminSettingsBody,
+  toResponse,
+  updateVisibilitySettings,
+} from "../lib/visibilitySettings";
 
 const router = Router();
 
@@ -457,6 +463,48 @@ router.post("/admin/dashboard-access/import", async (req, res) => {
     res.json({ requested: ids.length, upsertedBasic, upsertedAssessment });
   } catch (err) {
     req.log.error({ err }, "Failed to import dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/visibility-settings — read student result visibility toggles
+router.get("/admin/visibility-settings", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const { map, updatedAt, syncByTable, countsByKey } = await getVisibilitySettings({
+      includeCounts: true,
+    });
+    res.json(toResponse(map, updatedAt, syncByTable, countsByKey));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get visibility settings");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/visibility-settings — upsert toggles (admin API key required)
+// Body: { settings: { onlineL1Results?: boolean, feProjectResults?: boolean, ... } }
+//    or { settings: { online_l1_results?: boolean, ... } }
+router.put("/admin/visibility-settings", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const partial = parseAdminSettingsBody(req.body);
+    if (!partial) {
+      res.status(400).json({
+        error:
+          "Provide settings with at least one boolean: onlineL1Results, feProjectResults, aiMockResults, courseProgress",
+      });
+      return;
+    }
+    const { map, updatedAt, syncByTable, countsByKey } = await updateVisibilitySettings(partial);
+    res.json(toResponse(map, updatedAt, syncByTable, countsByKey));
+  } catch (err) {
+    req.log.error({ err }, "Failed to update visibility settings");
     res.status(500).json({ error: "Internal server error" });
   }
 });

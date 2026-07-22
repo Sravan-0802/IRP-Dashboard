@@ -1,7 +1,6 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { LEVEL_META } from "@/lib/journey";
 import {
-  areL1Cycle2ResultsVisible,
   EXAM_DATE_LABEL,
   L1_CYCLE1_EXAM_DATE_LABEL,
   L1_CYCLE2_EXAM_DATE_LABEL,
@@ -137,9 +136,12 @@ export function hasAttemptedL1Cycle2(assessments: AssessmentResult[]): boolean {
   return c2 != null && assessmentWasWritten(c2);
 }
 
-/** Prefer the Cycle 2 sit for results once the 5 July release date has passed. */
-export function pickL1AssessmentForResults(assessments: AssessmentResult[]): AssessmentResult | null {
-  if (areL1Cycle2ResultsVisible() && hasAttemptedL1Cycle2(assessments)) {
+/** Prefer the Cycle 2 sit for results once online L1 results are visible (admin flag). */
+export function pickL1AssessmentForResults(
+  assessments: AssessmentResult[],
+  onlineL1ResultsVisible = true,
+): AssessmentResult | null {
+  if (onlineL1ResultsVisible && hasAttemptedL1Cycle2(assessments)) {
     const showCycle2Sit =
       !hasClearedAssessment(assessments, 1) || clearedL1ViaC2(assessments);
     if (showCycle2Sit) return pickL1Cycle2Assessment(assessments);
@@ -263,13 +265,15 @@ export function isAssessmentResultsLocked(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
   resultsUnlockedByDate: boolean,
+  onlineL1ResultsVisible = true,
 ): boolean {
   if (!hasWrittenAssessment(assessments, level)) return true;
-  // 5 July Cycle 2 results — held until release date for C2 attempters who rely on that sit.
-  if (level === 1 && hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
-    const awaitingCycle2Release =
+  // July 12 / Cycle 2 sit: data may already be synced, but scores stay locked until
+  // admin turns on "online L1 results" in Analytics → Visibility.
+  if (level === 1 && hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
+    const awaitingJuly12Release =
       !hasClearedAssessment(assessments, 1) || clearedL1ViaC2(assessments);
-    if (awaitingCycle2Release) return true;
+    if (awaitingJuly12Release) return true;
   }
   if (level === 1 && hasWrittenAssessment(assessments, 1)) return false;
   return !resultsUnlockedByDate;

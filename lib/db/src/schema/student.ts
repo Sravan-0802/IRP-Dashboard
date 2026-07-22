@@ -336,7 +336,19 @@ export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Admin-controlled student visibility flags.
+ * Data still syncs from BigQuery; these keys decide what students can see.
+ * Keys: online_l1_results | fe_project_results | ai_mock_results | human_interview_results | course_progress
+ */
+export const visibilitySettingsTable = pgTable("visibility_settings", {
+  key: text("key").primaryKey(),
+  visible: integer("visible").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
+export type VisibilitySetting = typeof visibilitySettingsTable.$inferSelect;
 export type AcademyUserAssessmentDetails = typeof academyUserAssessmentDetailsTable.$inferSelect;
 export type AcademyUserNxtmockDetails = typeof academyUserNxtmockDetailsTable.$inferSelect;
 export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;

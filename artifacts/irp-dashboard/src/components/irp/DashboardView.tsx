@@ -16,9 +16,7 @@ import {
   hasClearedFeProject,
 } from "@/lib/assessment";
 import {
-  areL1Cycle2ResultsVisible,
   L1_CYCLE2_EXAM_DATE_LABEL,
-  L1_CYCLE2_RESULTS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
@@ -28,6 +26,7 @@ import {
   type NxtmockInterview,
 } from "@/lib/nxtmockInterview";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
+import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
@@ -46,12 +45,18 @@ function journeySteps(
   journey: Journey,
   assessments: AssessmentResult[],
   nxtmock: NxtmockInterview | null | undefined,
+  visibility?: {
+    onlineL1Results?: boolean;
+    feProjectResults?: boolean;
+    aiMockResults?: boolean;
+    humanInterviewResults?: boolean;
+  },
 ): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
 
   if (level === 1 && !journey.isWildcard) {
-    return l1HustlerJourneySteps(journey, assessments, nxtmock);
+    return l1HustlerJourneySteps(journey, assessments, nxtmock, visibility);
   }
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
@@ -98,6 +103,12 @@ function assessmentMotivation(
   level: 1 | 2 | 3,
   journey: Journey,
   nxtmock: NxtmockInterview | null | undefined,
+  onlineL1ResultsVisible: boolean,
+  visibility: {
+    feProjectResults: boolean;
+    aiMockResults: boolean;
+    humanInterviewResults: boolean;
+  },
 ): string {
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
@@ -105,30 +116,36 @@ function assessmentMotivation(
     if (
       hasAttemptedL1Cycle2(assessments) &&
       clearedL1ViaC2(assessments) &&
-      !areL1Cycle2ResultsVisible()
+      !onlineL1ResultsVisible
     ) {
-      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
+      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results are being processed and will appear once released.`;
     }
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
-    if (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") {
+    if (
+      visibility.humanInterviewResults &&
+      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")
+    ) {
       return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
     }
-    if (hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments)) {
+    if (visibility.aiMockResults && hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
+      return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
+    }
+    if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments)) {
       return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score 20/20 to unlock the AI Mock Interview. 💪`;
     }
-    if (hasClearedFeProject(assessments)) {
+    if (visibility.feProjectResults && hasClearedFeProject(assessments)) {
+      if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
+        return `You cleared the ${clearedDateLabel} assessment and FE Project. Next-step results will appear once released. 💪`;
+      }
       return `You cleared the ${clearedDateLabel} assessment and FE Project. Continue with your next interview step. 💪`;
-    }
-    if (hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
-      return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
     return `You cleared the ${clearedDateLabel} assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪`;
   }
 
   if (level === 1 && isCycle2Candidate(assessments)) {
     const upcomingLabel = getL1UpcomingExamDateLabel(assessments);
-    if (hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
-      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on ${L1_CYCLE2_RESULTS_UNLOCK_LABEL}.`;
+    if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
+      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results are being processed and will appear once released.`;
     }
     if (assessmentStatus === "attempted_not_cleared") {
       if (hasAttemptedL1Cycle2(assessments)) {
@@ -209,9 +226,24 @@ export function DashboardView({
   const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const { allowed: july26Allowed } = useL1July26Allowlist();
   const { data: nxtmockData } = useNxtmockInterview();
+  const { settings } = useVisibilitySettings();
   const nxtmock = nxtmockData?.interview ?? null;
 
-  const motivation = assessmentMotivation(phase, days, progress.points, assessments, level, journey, nxtmock);
+  const motivation = assessmentMotivation(
+    phase,
+    days,
+    progress.points,
+    assessments,
+    level,
+    journey,
+    nxtmock,
+    settings.onlineL1Results,
+    {
+      feProjectResults: settings.feProjectResults,
+      aiMockResults: settings.aiMockResults,
+      humanInterviewResults: settings.humanInterviewResults,
+    },
+  );
 
   return (
     <div className="space-y-6">
@@ -252,24 +284,41 @@ export function DashboardView({
           </p>
         )}
         <JourneyBar
-          steps={journeySteps(journey, assessments, nxtmock)}
+          steps={journeySteps(journey, assessments, nxtmock, settings)}
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
       </IrpCard>
 
-      {level === 1 && !journey.isWildcard ? (
+      {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
       ) : null}
 
-      {level === 1 && !journey.isWildcard ? (
+      {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeMockCallout assessments={assessments} userId={userId} />
       ) : null}
 
-      {level === 1 && !journey.isWildcard ? <NxtmockResults interview={nxtmock} /> : null}
+      {level === 1 && !journey.isWildcard ? (
+        <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />
+      ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <FeProjectResults journey={journey} assessments={assessments} />
+        <FeProjectResults
+          journey={journey}
+          assessments={assessments}
+          visible={settings.feProjectResults}
+        />
+      ) : null}
+
+      {level === 1 &&
+      !journey.isWildcard &&
+      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
+      !settings.humanInterviewResults ? (
+        <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft">
+          <span className="text-sm font-medium text-muted2">
+            Human Interview details are being processed. They will appear here once released.
+          </span>
+        </div>
       ) : null}
 
       <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />

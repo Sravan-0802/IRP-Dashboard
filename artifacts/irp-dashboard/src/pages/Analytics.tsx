@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2 } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -73,7 +73,57 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support";
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility";
+
+type VisibilitySyncInfo = {
+  tableName: string | null;
+  status: string | null;
+  rowCount: number | null;
+  lastSyncedAt: string | null;
+};
+
+type VisibilityStageCounts = {
+  scope: string;
+  attempted: number;
+  cleared: number;
+  notCleared: number;
+  assigned?: number;
+  registeredNotAttempted?: number;
+  inStage?: number;
+};
+
+type VisibilityStage = {
+  key: string;
+  camelKey:
+    | "onlineL1Results"
+    | "feProjectResults"
+    | "aiMockResults"
+    | "humanInterviewResults"
+    | "courseProgress";
+  label: string;
+  description: string;
+  visibleToStudents: boolean;
+  awaitingApproval: boolean;
+  sync: VisibilitySyncInfo;
+  counts: VisibilityStageCounts | null;
+};
+
+type VisibilitySettings = {
+  onlineL1Results: boolean;
+  feProjectResults: boolean;
+  aiMockResults: boolean;
+  humanInterviewResults: boolean;
+  courseProgress: boolean;
+  updatedAt: string | null;
+  stages?: VisibilityStage[];
+};
+
+type VisibilityFlag =
+  | "onlineL1Results"
+  | "feProjectResults"
+  | "aiMockResults"
+  | "humanInterviewResults"
+  | "courseProgress";
 
 type SupportMessage = {
   id: number;
@@ -230,6 +280,65 @@ export default function AnalyticsPage() {
   }, [data]);
 
   const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
+
+  const [visibility, setVisibility] = useState<VisibilitySettings | null>(null);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
+  const [visibilitySavingField, setVisibilitySavingField] = useState<VisibilityFlag | null>(null);
+  const [visibilityError, setVisibilityError] = useState("");
+
+  const loadVisibility = useCallback(async (key: string) => {
+    if (!key.trim()) return;
+    setVisibilityLoading(true);
+    setVisibilityError("");
+    try {
+      const res = await fetch("/api/admin/visibility-settings", {
+        headers: { "x-api-key": key.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load");
+      setVisibility(body as VisibilitySettings);
+    } catch (err) {
+      setVisibilityError(err instanceof Error ? err.message : "Could not load visibility settings");
+    } finally {
+      setVisibilityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (apiKey) void loadVisibility(apiKey);
+  }, [apiKey, loadVisibility]);
+
+  useEffect(() => {
+    if (activeTab === "visibility" && apiKey) {
+      void loadVisibility(apiKey);
+    }
+  }, [activeTab, apiKey, loadVisibility]);
+
+  async function setStageVisibility(field: VisibilityFlag, visible: boolean) {
+    if (!apiKey || visibilitySavingField) return;
+    setVisibilitySavingField(field);
+    setVisibilityError("");
+    try {
+      const res = await fetch("/api/admin/visibility-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ settings: { [field]: visible } }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to save");
+      setVisibility(body as VisibilitySettings);
+    } catch (err) {
+      setVisibilityError(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setVisibilitySavingField(null);
+    }
+  }
+
+  const visibilityPendingCount = useMemo(
+    () => visibility?.stages?.filter((s) => s.awaitingApproval).length ?? 0,
+    [visibility],
+  );
+
   const tabs = useMemo(
     () =>
       data
@@ -239,9 +348,10 @@ export default function AnalyticsPage() {
             { id: "registrations" as const, label: "Registrations", count: data.l1RegistrationCount },
             { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
             { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
+            { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
           ]
         : [],
-    [data],
+    [data, visibilityPendingCount],
   );
 
   const [visitorsPage, setVisitorsPage] = useState(1);
@@ -393,8 +503,10 @@ export default function AnalyticsPage() {
               Admin key
             </label>
             <p className="mt-1 text-xs text-[#6e6a8a]">
-              Set <code className="rounded bg-[#eef2ff] px-1">ANALYTICS_ADMIN_KEY</code> on the API server, or use{" "}
-              <code className="rounded bg-[#eef2ff] px-1">dev</code> locally when no key is configured.
+              Use the <code className="rounded bg-[#eef2ff] px-1">ANALYTICS_ADMIN_KEY</code> from your{" "}
+              <code className="rounded bg-[#eef2ff] px-1">.env</code> (not <code className="rounded bg-[#eef2ff] px-1">dev</code>{" "}
+              once that key is set). After signing in, open the <strong>Visibility</strong> tab to
+              see what has synced and approve releasing results to students.
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -999,6 +1111,182 @@ export default function AnalyticsPage() {
                   </>
                 )}
               </div>
+            </div>
+            )}
+
+            {activeTab === "visibility" && (
+            <div className="irp-card p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    Release synced results
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadVisibility(apiKey)}
+                  disabled={visibilityLoading}
+                  className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff] disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${visibilityLoading ? "animate-spin" : ""}`} /> Refresh
+                </button>
+              </div>
+
+              <p className="mb-4 text-sm text-[#6e6a8a]">
+                BigQuery keeps syncing into our database. Students do not see new results until you
+                approve each stage below. Example: when FE Project scores sync, you will see the sync
+                date here — then choose whether to release them to student dashboards.
+              </p>
+
+              {visibilityPendingCount > 0 && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  {visibilityPendingCount} stage{visibilityPendingCount === 1 ? "" : "s"} synced and
+                  waiting for your approval to show students.
+                </div>
+              )}
+
+              {visibilityError && (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {visibilityError}
+                </div>
+              )}
+
+              {visibilityLoading && !visibility ? (
+                <div className="flex items-center gap-2 py-6 text-sm text-[#6e6a8a]">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#6741d9]" /> Loading release status…
+                </div>
+              ) : visibility?.stages?.length ? (
+                <div className="space-y-3">
+                  {visibility.stages.map((stage) => {
+                    const synced = Boolean(stage.sync.lastSyncedAt);
+                    const saving = visibilitySavingField === stage.camelKey;
+                    return (
+                      <div
+                        key={stage.key}
+                        className={`rounded-xl border px-4 py-3 ${
+                          stage.awaitingApproval
+                            ? "border-amber-200 bg-amber-50/60"
+                            : stage.visibleToStudents
+                              ? "border-emerald-200 bg-emerald-50/50"
+                              : "border-[rgba(103,65,217,0.10)] bg-[#faf9ff]"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-[#0d1117]">{stage.label}</p>
+                              {stage.awaitingApproval && (
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+                                  Awaiting approval
+                                </span>
+                              )}
+                              {stage.visibleToStudents && (
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
+                                  Visible to students
+                                </span>
+                              )}
+                              {!stage.visibleToStudents && !stage.awaitingApproval && (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                                  Hidden
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-[#6e6a8a]">{stage.description}</p>
+                            <p className="mt-2 text-sm text-[#0d1117]">
+                              {stage.key === "human_interview_results" ? (
+                                <>Not tied to a BigQuery table — release when the Human Interview stage is ready.</>
+                              ) : synced ? (
+                                <>
+                                  Synced on <strong>{formatDate(stage.sync.lastSyncedAt)}</strong>
+                                  {stage.sync.rowCount != null
+                                    ? ` · ${stage.sync.rowCount.toLocaleString()} rows`
+                                    : ""}
+                                  {stage.sync.status ? ` · status: ${stage.sync.status}` : ""}
+                                  {stage.awaitingApproval
+                                    ? " — should this be released to students?"
+                                    : null}
+                                </>
+                              ) : (
+                                <>No sync recorded yet for this data source.</>
+                              )}
+                            </p>
+                            {stage.counts && (
+                              <div className="mt-3 rounded-lg border border-[rgba(15,23,42,0.08)] bg-white/80 px-3 py-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wide text-[#6e6a8a]">
+                                  {stage.counts.scope}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                  <span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-800">
+                                    Attempted {stage.counts.attempted.toLocaleString()}
+                                  </span>
+                                  <span className="rounded-md bg-emerald-100 px-2 py-1 font-semibold text-emerald-900">
+                                    Cleared {stage.counts.cleared.toLocaleString()}
+                                  </span>
+                                  <span className="rounded-md bg-amber-100 px-2 py-1 font-semibold text-amber-900">
+                                    Not cleared {stage.counts.notCleared.toLocaleString()}
+                                  </span>
+                                  {stage.counts.assigned != null && (
+                                    <span className="rounded-md bg-indigo-50 px-2 py-1 font-semibold text-indigo-900">
+                                      Assigned {stage.counts.assigned.toLocaleString()}
+                                    </span>
+                                  )}
+                                  {stage.counts.registeredNotAttempted != null &&
+                                    stage.counts.registeredNotAttempted > 0 && (
+                                      <span className="rounded-md bg-slate-50 px-2 py-1 font-semibold text-slate-700">
+                                        Assigned, not attempted{" "}
+                                        {stage.counts.registeredNotAttempted.toLocaleString()}
+                                      </span>
+                                    )}
+                                  {stage.counts.inStage != null && stage.key === "human_interview_results" && (
+                                    <span className="rounded-md bg-violet-50 px-2 py-1 font-semibold text-violet-900">
+                                      In Human Interview {stage.counts.inStage.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                                {stage.awaitingApproval && stage.counts.attempted > 0 && (
+                                  <p className="mt-2 text-xs font-semibold text-amber-900">
+                                    {stage.counts.cleared.toLocaleString()} cleared ·{" "}
+                                    {stage.counts.notCleared.toLocaleString()} not cleared — show on
+                                    student dashboards?
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 flex-wrap gap-2">
+                            {stage.visibleToStudents ? (
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => void setStageVisibility(stage.camelKey, false)}
+                                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                              >
+                                {saving ? "Saving…" : "Hide from students"}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => void setStageVisibility(stage.camelKey, true)}
+                                className="rounded-xl bg-[#6741d9] px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                              >
+                                {saving ? "Saving…" : "Release to students"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <p className="pt-1 text-xs text-[#6e6a8a]">
+                    Last settings update: {formatDate(visibility.updatedAt)}
+                  </p>
+                </div>
+              ) : (
+                <p className="py-4 text-sm text-[#6e6a8a]">No visibility stages returned.</p>
+              )}
             </div>
             )}
 

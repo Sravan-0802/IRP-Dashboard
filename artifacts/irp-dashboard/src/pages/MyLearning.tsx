@@ -3,6 +3,8 @@ import { subjectsForTrack } from "@/lib/subjectMatching";
 import { IrpCard, ProgressRing } from "@/components/irp/ui";
 import { SubjectStatsTable } from "@/components/irp/SubjectStatsTable";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
+import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
+import { Lock } from "lucide-react";
 
 function StatCard({
   label,
@@ -42,6 +44,7 @@ function trackPct(subjects: SubjectRow[], courses: string[]): number {
 }
 
 export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; level?: 1 | 2 | 3 }) {
+  const { settings } = useVisibilitySettings();
   const mcqDone = subjects.reduce((a, s) => a + s.mcqCompleted, 0);
   const mcqTotal = subjects.reduce((a, s) => a + s.mcqTotal, 0);
   const codeDone = subjects.reduce((a, s) => a + s.codingCompleted, 0);
@@ -51,6 +54,23 @@ export function MyLearning({ subjects, level = 1 }: { subjects: SubjectRow[]; le
   const overallPct = overallTotal > 0 ? Math.round((overallDone / overallTotal) * 100) : 0;
   const mcqPct = mcqTotal > 0 ? Math.round((mcqDone / mcqTotal) * 100) : 0;
   const codePct = codeTotal > 0 ? Math.round((codeDone / codeTotal) * 100) : 0;
+
+  if (!settings.courseProgress) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Practice Hub</h1>
+          <p className="mt-1 text-sm text-muted2">Track your courses, subjects and practice progress.</p>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-4 shadow-soft">
+          <Lock className="h-4 w-4 shrink-0 text-muted2" />
+          <p className="text-sm font-medium text-muted2">
+            Course progress is being processed. It will appear here once released.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

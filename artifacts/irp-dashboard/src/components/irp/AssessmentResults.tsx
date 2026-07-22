@@ -2,7 +2,7 @@ import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible, areL1Cycle2ResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_CYCLE2_RESULTS_UNLOCK_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
   formatAssessmentTitle,
@@ -18,6 +18,7 @@ import {
   resultTone,
 } from "@/lib/assessment";
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { ProgressRing, Pill } from "./ui";
 
 export function AssessmentResults({
@@ -29,6 +30,8 @@ export function AssessmentResults({
   examDateLabel: string;
   assessments: AssessmentResult[];
 }) {
+  const { settings } = useVisibilitySettings();
+  const onlineL1ResultsVisible = settings.onlineL1Results;
   const level = getLevel(journey.journeyState);
   const phase = getPhase(journey.journeyState);
   const resultsUnlockedByDate =
@@ -36,7 +39,9 @@ export function AssessmentResults({
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
   const assessment =
-    level === 1 ? pickL1AssessmentForResults(assessments) : pickAssessmentForLevel(assessments, level);
+    level === 1
+      ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
+      : pickAssessmentForLevel(assessments, level);
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
   const cycle1Cleared = level === 1 && isCycle1Cleared(assessments);
   const cycle2Track = level === 1 && isCycle2Candidate(assessments);
@@ -54,16 +59,21 @@ export function AssessmentResults({
     return examDateLabel;
   })();
 
-  const locked = isAssessmentResultsLocked(assessments, level, resultsUnlockedByDate);
+  const locked = isAssessmentResultsLocked(
+    assessments,
+    level,
+    resultsUnlockedByDate,
+    onlineL1ResultsVisible,
+  );
   const showResults = !locked;
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   const lockedMessage = (() => {
-    if (hasAttemptedL1Cycle2(assessments) && !areL1Cycle2ResultsVisible()) {
+    if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
       return (
         <>
-          You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results unlock on{" "}
-          <span className="font-bold text-ink">{L1_CYCLE2_RESULTS_UNLOCK_LABEL}</span>.
+          You completed the {L1_CYCLE2_EXAM_DATE_LABEL} / 12th July assessment. Results are synced
+          and will appear on your dashboard once released by the team.
         </>
       );
     }

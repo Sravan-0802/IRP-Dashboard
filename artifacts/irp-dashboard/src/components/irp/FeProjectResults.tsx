@@ -1,4 +1,4 @@
-import { CheckCircle2, FileCode2 } from "lucide-react";
+import { CheckCircle2, FileCode2, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import {
@@ -17,9 +17,11 @@ import { Pill } from "./ui";
 export function FeProjectResults({
   journey,
   assessments,
+  visible = true,
 }: {
   journey: Journey;
   assessments: AssessmentResult[];
+  visible?: boolean;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
   const feCleared = hasClearedFeProject(assessments);
@@ -27,6 +29,20 @@ export function FeProjectResults({
   const hasScoreData = fe != null && hasClearedFeProject(assessments);
 
   if (!clearedL1 || !feCleared) return null;
+
+  if (!visible) {
+    return (
+      <div
+        id="fe-project-results"
+        className="scroll-mt-24 flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft"
+      >
+        <Lock className="h-4 w-4 shrink-0 text-muted2" />
+        <p className="text-xs font-medium text-muted2">
+          FE Project results are being processed. They will appear here once released.
+        </p>
+      </div>
+    );
+  }
 
   const title = fe?.assessmentTitle?.trim() || FE_PROJECT_MAIN_II_TITLE;
   const overallPct = fe ? assessmentOverallPct(fe) : 100;

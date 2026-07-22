@@ -23,6 +23,7 @@ import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnloc
 import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
+import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
 import {
   canRegisterForL1July12,
   canRegisterForL1July26,
@@ -735,6 +736,23 @@ router.get("/student/l1-july26-allowlist", async (req, res) => {
     res.json({ allowed: isInL1July26Allowlist(userId) });
   } catch (err) {
     req.log.error({ err }, "Failed to get L1 July 26 allowlist status");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/visibility-settings — admin-controlled result visibility flags.
+// Data still syncs; these flags decide what the student UI may show.
+router.get("/student/visibility-settings", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const { map, updatedAt, syncByTable } = await getVisibilitySettings({ includeCounts: false });
+    res.json(toResponse(map, updatedAt, syncByTable));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get visibility settings");
     res.status(500).json({ error: "Internal server error" });
   }
 });

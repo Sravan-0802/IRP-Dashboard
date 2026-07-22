@@ -1,4 +1,4 @@
-import { AlertTriangle, Mic } from "lucide-react";
+import { AlertTriangle, Lock, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   formatNxtmockRating,
@@ -26,8 +26,28 @@ const SKILL_ROWS: { key: keyof NxtmockInterview; label: string }[] = [
   { key: "reactJsRating", label: "React" },
 ];
 
-export function NxtmockResults({ interview }: { interview: NxtmockInterview | null | undefined }) {
+export function NxtmockResults({
+  interview,
+  visible = true,
+}: {
+  interview: NxtmockInterview | null | undefined;
+  visible?: boolean;
+}) {
   if (!interview) return null;
+
+  if (!visible) {
+    return (
+      <div
+        id="nxtmock-results"
+        className="scroll-mt-24 flex items-center gap-2.5 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft"
+      >
+        <Lock className="h-4 w-4 shrink-0 text-muted2" />
+        <p className="text-xs font-medium text-muted2">
+          AI Mock Interview results are being processed. They will appear here once released.
+        </p>
+      </div>
+    );
+  }
 
   const cleared = interview.cleared;
   const avgPct = nxtmockRatingPct(interview.averageRating);

@@ -22,12 +22,25 @@ const L1_STEPS: Omit<JourneyStep, "status">[] = [
   { label: "Level 2 Access", icon: "access" },
 ];
 
-/** Level 1 · The Hustler — full pipeline through Level 2 access. */
+/** Level 1 · The Hustler — full pipeline through Level 2 access.
+ * Result-stage statuses stay hidden until admin releases that stage.
+ */
 export function l1HustlerJourneySteps(
   journey: Journey,
   assessments: AssessmentResult[],
   nxtmock?: NxtmockInterview | null,
+  visibility?: {
+    onlineL1Results?: boolean;
+    feProjectResults?: boolean;
+    aiMockResults?: boolean;
+    humanInterviewResults?: boolean;
+  },
 ): JourneyStep[] {
+  const showOnline = visibility?.onlineL1Results !== false;
+  const showFe = visibility?.feProjectResults === true;
+  const showAi = visibility?.aiMockResults === true;
+  const showHuman = visibility?.humanInterviewResults === true;
+
   const assessmentStatus = getAssessmentStepStatus(assessments, 1);
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
@@ -44,21 +57,23 @@ export function l1HustlerJourneySteps(
   const onlineStatus: JourneyStep["status"] =
     phase === "REATTEMPT_WAITING" || phase === "REATTEMPT_ACTIVE"
       ? "reattempt"
-      : assessmentStatus;
+      : !showOnline && assessmentStatus !== "active"
+        ? "active"
+        : assessmentStatus;
 
   let feProjectStatus: JourneyStep["status"] = "locked";
-  if (feCleared) feProjectStatus = "done";
-  else if (feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
+  if (showFe && feCleared) feProjectStatus = "done";
+  else if (showFe && feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
   let aiMockStatus: JourneyStep["status"] = "locked";
-  if (pastAiMock) aiMockStatus = "done";
-  else if (nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
-  else if (feCleared) aiMockStatus = "active";
+  if (showAi && pastAiMock) aiMockStatus = "done";
+  else if (showAi && nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
+  else if (showFe && feCleared) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";
-  if (phase === "PLACED" || state.startsWith("L3_")) humanInterviewStatus = "done";
-  else if (pastAiMock) humanInterviewStatus = "active";
+  if (showHuman && (phase === "PLACED" || state.startsWith("L3_"))) humanInterviewStatus = "done";
+  else if (showHuman && showAi && pastAiMock) humanInterviewStatus = "active";
 
   let level2AccessStatus: JourneyStep["status"] = "locked";
   if (phase === "PLACED") level2AccessStatus = "done";
