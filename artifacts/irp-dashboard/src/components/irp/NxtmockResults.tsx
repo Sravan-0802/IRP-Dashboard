@@ -1,4 +1,4 @@
-import { AlertTriangle, Lock, Mic } from "lucide-react";
+import { AlertTriangle, ExternalLink, Lock, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   formatNxtmockRating,
@@ -10,6 +10,7 @@ import {
   NXTMOCK_CLEARED_BODY,
   NXTMOCK_CLEARED_TITLE,
   NXTMOCK_CLEAR_REQUIREMENT_LABEL,
+  NXTMOCK_INTERVIEW_LINK,
   NXTMOCK_NOT_CLEARED_BODY,
   NXTMOCK_NOT_CLEARED_EYEBROW,
   NXTMOCK_NOT_CLEARED_TITLE,
@@ -61,7 +62,7 @@ export function NxtmockResults({
         cleared ? "border-[rgba(12,166,120,0.22)]" : "border-[rgba(236,72,153,0.18)]",
       )}
     >
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="flex items-center gap-2 font-display text-base font-extrabold">
             <Mic className={cn("h-4 w-4", cleared ? "text-teal" : "text-brand-2")} />
@@ -69,9 +70,20 @@ export function NxtmockResults({
           </h3>
           <p className="mt-0.5 text-xs text-muted2">{title}</p>
         </div>
-        <Pill tone={cleared ? "green" : "amber"}>
-          {cleared ? "Cleared" : "Not cleared"}
-        </Pill>
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone={cleared ? "green" : "amber"}>
+            {cleared ? "Cleared" : "Not cleared"}
+          </Pill>
+          <a
+            href={NXTMOCK_INTERVIEW_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.2)] bg-white px-3 py-1.5 text-xs font-semibold text-brand shadow-sm transition-colors hover:bg-[rgba(103,65,217,0.05)]"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View interview
+          </a>
+        </div>
       </div>
 
       {cleared ? (
