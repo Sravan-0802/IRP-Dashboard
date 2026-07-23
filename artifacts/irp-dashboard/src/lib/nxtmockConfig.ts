@@ -63,6 +63,3 @@ export const NXTMOCK_NOT_CLEARED_BODY =
   "Your re-attempt date will be announced soon. Stay tuned to your dashboard for updates.";
 
 export const NXTMOCK_CLEAR_REQUIREMENT_LABEL = `Required · ${NXTMOCK_CLEAR_RATING_THRESHOLD}+ average rating`;
-
-export const NXTMOCK_INTERVIEW_LINK =
-  "https://nxtinterview.ccbp.in/interview/67b87057-99ab-4db4-811c-48fa2620b515";
