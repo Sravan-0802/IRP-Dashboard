@@ -600,7 +600,10 @@ router.post("/student/l1-registration", async (req, res) => {
 
     const allowedSlots = cycle === 3 ? L1_JULY26_SLOT_IDS : L1_JULY12_SLOT_IDS;
     if (isYes && (!slotId || !allowedSlots.has(slotId))) {
-      res.status(400).json({ error: "Only the 6:00 PM – 8:00 PM IST slot is available" });
+      res.status(400).json({
+        error:
+          "Please select the available 6:00 PM – 8:00 PM IST slot for this assessment and submit again.",
+      });
       return;
     }
 

@@ -7,7 +7,7 @@ import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1R
 import {
   L1_JULY26_HUSTLER_CALENDAR,
   L1_JULY26_HUSTLER_SLOTS,
-  getL1HustlerSlot,
+  getValidJuly26HustlerSlot,
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
@@ -16,26 +16,31 @@ import { L1_JULY26_EXAM_DATE_LABEL, isL1July26RegistrationOpen } from "@/lib/irp
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 
+const JULY26_SLOT_IDS = new Set(L1_JULY26_HUSTLER_SLOTS.map((s) => s.id));
 const JULY26_DEFAULT_SLOT = L1_JULY26_HUSTLER_SLOTS[0]?.id;
 
 function AssessmentCalendarContent() {
   const calendar = L1_JULY26_HUSTLER_CALENDAR;
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
-  const [selectedSlot, setSelectedSlot] = useState<string | undefined>(
-    () => getL1HustlerSlot() ?? JULY26_DEFAULT_SLOT,
-  );
+  const [selectedSlot, setSelectedSlot] = useState<string | undefined>(() => getValidJuly26HustlerSlot());
   const [registerOpen, setRegisterOpen] = useState(false);
 
   useEffect(() => {
-    if (registration?.slotId) {
+    if (registration?.slotId && JULY26_SLOT_IDS.has(registration.slotId)) {
       setSelectedSlot(registration.slotId);
-    } else if (!selectedSlot && JULY26_DEFAULT_SLOT) {
-      setSelectedSlot(JULY26_DEFAULT_SLOT);
+      return;
     }
-  }, [registration?.slotId, selectedSlot]);
+    // Drop stale slot-1 / slot-2 left from earlier cycles in localStorage.
+    setSelectedSlot((prev) =>
+      prev && JULY26_SLOT_IDS.has(prev) ? prev : JULY26_DEFAULT_SLOT,
+    );
+  }, [registration?.slotId]);
 
   function openRegister() {
-    if (!selectedSlot || isSubmitted) return;
+    const slot =
+      selectedSlot && JULY26_SLOT_IDS.has(selectedSlot) ? selectedSlot : JULY26_DEFAULT_SLOT;
+    if (!slot || isSubmitted) return;
+    if (slot !== selectedSlot) setSelectedSlot(slot);
     setRegisterOpen(true);
   }
 

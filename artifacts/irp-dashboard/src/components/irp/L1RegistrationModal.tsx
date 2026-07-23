@@ -139,6 +139,10 @@ export function L1RegistrationModal({
         setError("Please choose a time slot before registering.");
         return;
       }
+      if (!calendar.slots.some((s) => s.id === slotId)) {
+        setError("Please select the available time slot shown on the calendar, then try again.");
+        return;
+      }
       if (!understandsGc || !willAttend) {
         setError("Please confirm both checkboxes to complete registration.");
         return;

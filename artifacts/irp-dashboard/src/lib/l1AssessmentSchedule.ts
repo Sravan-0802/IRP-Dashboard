@@ -188,6 +188,18 @@ export function getL1HustlerSlot(): string | undefined {
   return loadAssessmentStatuses()[L1_HUSTLER_CALENDAR.id]?.slot;
 }
 
+/** Prefer a stored slot only when it belongs to the current July 26 calendar. */
+export function getValidJuly26HustlerSlot(): string | undefined {
+  const stored = getL1HustlerSlot();
+  const valid = stored && L1_JULY26_HUSTLER_SLOTS.some((s) => s.id === stored) ? stored : undefined;
+  const resolved = valid ?? L1_JULY26_HUSTLER_SLOTS[0]?.id;
+  // Rewrite stale slot-1 / slot-2 leftovers from prior cycles so submit uses slot-3.
+  if (resolved && stored !== resolved) {
+    saveL1HustlerSlot(resolved);
+  }
+  return resolved;
+}
+
 /** Clears legacy browser keys (dev). Registration lives in l1_cycle_registrations. */
 export function clearL1RegistrationLocal(): void {
   localStorage.removeItem("irp-l1-cycle2-registration");
