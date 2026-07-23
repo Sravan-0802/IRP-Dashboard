@@ -258,7 +258,8 @@ export function Hero({
       (pipelineStage === "ai_mock_active" || pipelineStage === "ai_mock_not_cleared") &&
       !settings.aiMockResults
     ) {
-      pipelineStage = settings.feProjectResults ? "fe_project_active" : "fe_project_active";
+      // Keep the AI Mock take/reattempt stage visible; only results cards stay gated.
+      // Do not fall back to "complete FE Project" when FE is already cleared.
     } else if (
       (pipelineStage === "fe_project_not_cleared") &&
       !settings.feProjectResults

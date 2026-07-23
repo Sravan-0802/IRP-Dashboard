@@ -34,6 +34,7 @@ import { AssessmentResults } from "./AssessmentResults";
 import { FeMockCallout } from "./FeMockCallout";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { FeProjectResults } from "./FeProjectResults";
+import { AiMockCallout } from "./AiMockCallout";
 import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
@@ -297,6 +298,10 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeMockCallout assessments={assessments} userId={userId} />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <AiMockCallout assessments={assessments} nxtmock={nxtmock} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
