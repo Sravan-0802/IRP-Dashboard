@@ -26,6 +26,7 @@ import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
+import { PAYMENT_CONCERNS_FORM_URL } from "@/pages/PaymentRequired";
 
 export default function Dashboard() {
   const { paid, loading: loadingPayment } = usePaymentStatus();
@@ -145,6 +146,14 @@ export default function Dashboard() {
           <p className="mt-3 text-sm leading-relaxed text-muted2">
             Please continue with your payment process to unlock your IRP dashboard.
           </p>
+          <a
+            href={PAYMENT_CONCERNS_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-pop mt-6 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold"
+          >
+            Payment concerns form
+          </a>
         </div>
       </div>
     );
