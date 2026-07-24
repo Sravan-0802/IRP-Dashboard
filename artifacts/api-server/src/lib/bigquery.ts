@@ -59,8 +59,10 @@ const NXTMOCK_VIEW_TABLE = "y_academy_users_irp_main_nxtmock_details_for_irp_por
 const ASSESSMENT_SELECT = `SELECT
       user_id, organisation_assessment_id, assessment_title,
       assessment_tag_str_extracted, level, cycle,
+      assessment_start_datetime, assessment_end_datetime, user_assesment_start_datetime,
       mcq_section_max_score, mcq_user_section_score, mcq_user_attempt_duration_in_mins,
       coding_section_max_score, coding_user_section_score, coding_user_attempt_duration_in_mins,
+      fe_section_max_score, fe_user_section_score, fe_user_attempt_duration_in_mins,
       assessment_total_score, assessment_user_score`;
 
 function assessmentTableCandidates(): string[] {
@@ -161,12 +163,19 @@ export interface MainAssessmentDetailsRow {
   assessment_tag_str_extracted: string | null;
   level: string | null;
   cycle: string | null;
+  assessment_start_datetime: string | Date | { value: string } | null;
+  assessment_end_datetime: string | Date | { value: string } | null;
+  /** BigQuery column spelling (one 's' in assesment). */
+  user_assesment_start_datetime: string | Date | { value: string } | null;
   mcq_section_max_score: number | null;
   mcq_user_section_score: number | null;
   mcq_user_attempt_duration_in_mins: number | null;
   coding_section_max_score: number | null;
   coding_user_section_score: number | null;
   coding_user_attempt_duration_in_mins: number | null;
+  fe_section_max_score: number | null;
+  fe_user_section_score: number | null;
+  fe_user_attempt_duration_in_mins: number | null;
   assessment_total_score: number | null;
   assessment_user_score: number | null;
 }

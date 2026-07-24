@@ -25,12 +25,13 @@ export function getL1PipelineStage(
   journey: Journey,
   assessments: AssessmentResult[],
   nxtmock?: NxtmockInterview | null,
+  userId?: string | null,
 ): L1PipelineStage | null {
   if (!isCycle1Cleared(assessments)) return null;
 
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
-  const feCleared = hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments, userId);
   const feAttempted = hasAttemptedFeProject(assessments);
   const nxtmockCleared = isNxtmockCleared(nxtmock);
   const nxtmockAttempted = hasNxtmockAttempt(nxtmock);
@@ -67,7 +68,7 @@ export function l1StageHeroContent(
       return {
         eyebrow: "FE Project · In progress",
         title: "Complete your FE Project",
-        body: `${clearedOn} Score a perfect 20/20 on FE Project Main II to unlock the AI Mock Interview.`,
+        body: `${clearedOn} Complete FE Project — C2 needs ≥18/20, Main II needs a perfect 20/20 — to unlock the AI Mock Interview.`,
         dotColor: "#0ca678",
         eyebrowClass: "border-[rgba(12,166,120,0.3)] text-teal",
         borderClass: "border-[rgba(12,166,120,0.25)]",
@@ -77,8 +78,8 @@ export function l1StageHeroContent(
     case "fe_project_not_cleared":
       return {
         eyebrow: "FE Project · Not cleared yet",
-        title: "Re-attempt FE Project Main II",
-        body: `${clearedOn} Pass all test cases — a perfect 20/20 — to advance to the AI Mock Interview.`,
+        title: "Re-attempt FE Project",
+        body: `${clearedOn} Reach the required score (C2 ≥18/20, Main II 100%) to advance to the AI Mock Interview.`,
         dotColor: "#f59f00",
         eyebrowClass: "border-[rgba(245,159,0,0.35)] text-[#e67700]",
         borderClass: "border-[rgba(245,159,0,0.28)]",

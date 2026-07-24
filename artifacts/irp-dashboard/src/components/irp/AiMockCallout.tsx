@@ -27,13 +27,15 @@ export function AiMockCallout({
   assessments,
   nxtmock,
   className,
+  userId,
 }: {
   assessments: AssessmentResult[];
   nxtmock?: NxtmockInterview | null;
   className?: string;
+  userId?: string;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments, userId);
   const mockCleared = isNxtmockCleared(nxtmock);
   const mockAttempted = hasNxtmockAttempt(nxtmock);
   const isReattempt = mockAttempted && !mockCleared;

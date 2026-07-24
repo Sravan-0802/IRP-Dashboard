@@ -14,8 +14,11 @@ import {
   hasAttemptedFeProject,
   hasAttemptedL1Cycle2,
   hasClearedFeProject,
+  hasWrittenAssessment,
+  isAssessmentResultsLocked,
 } from "@/lib/assessment";
 import {
+  areAssignmentResultsVisible,
   L1_CYCLE2_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
@@ -32,7 +35,6 @@ import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { FeMockCallout } from "./FeMockCallout";
-import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { FeProjectResults } from "./FeProjectResults";
 import { AiMockCallout } from "./AiMockCallout";
 import { NxtmockResults } from "./NxtmockResults";
@@ -53,12 +55,13 @@ function journeySteps(
     aiMockResults?: boolean;
     humanInterviewResults?: boolean;
   },
+  userId?: string,
 ): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
 
   if (level === 1 && !journey.isWildcard) {
-    return l1HustlerJourneySteps(journey, assessments, nxtmock, visibility);
+    return l1HustlerJourneySteps(journey, assessments, nxtmock, visibility, userId);
   }
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
@@ -133,7 +136,7 @@ function assessmentMotivation(
       return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments)) {
-      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score 20/20 to unlock the AI Mock Interview. 💪`;
+      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — C2 needs ≥18/20, Main II needs 20/20. 💪`;
     }
     if (visibility.feProjectResults && hasClearedFeProject(assessments)) {
       if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
@@ -247,6 +250,19 @@ export function DashboardView({
     },
   );
 
+  const resultsUnlockedByDate =
+    areAssignmentResultsVisible() ||
+    phase === "POST_ASSESSMENT" ||
+    phase === "PLACED";
+  const onlineResultsLocked = isAssessmentResultsLocked(
+    assessments,
+    level,
+    resultsUnlockedByDate,
+    settings.onlineL1Results,
+  );
+  const hasOnlineScores = hasWrittenAssessment(assessments, level);
+  const showResultsProcessingBanner = hasOnlineScores && onlineResultsLocked;
+
   return (
     <div className="space-y-6">
       <div className="animate-pop-in">
@@ -258,9 +274,9 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {level === 1 && !journey.isWildcard && july12Registered ? (
+      {level === 1 && !journey.isWildcard && july12Registered && !isCycle1Cleared(assessments) ? (
         <L1July12RegisteredBanner />
-      ) : level === 1 && !journey.isWildcard && july26Allowed ? (
+      ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments) ? (
         <L1AssessmentBanner
           assessments={assessments}
           registration={registration}
@@ -269,15 +285,27 @@ export function DashboardView({
         />
       ) : null}
 
-      {/* Global processing banner */}
-      <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
-        <span className="mt-0.5 shrink-0 text-lg sm:mt-0">⏳</span>
-        <p className="text-sm font-semibold text-[#3b3069]">
-          Your results are being processed by our team. Please wait for it to show on your Dashboard.
-        </p>
-      </div>
+      {showResultsProcessingBanner ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
+          <span className="mt-0.5 shrink-0 text-lg sm:mt-0">⏳</span>
+          <p className="text-sm font-semibold text-[#3b3069]">
+            Your results are being processed by our team. Please wait for it to show on your Dashboard.
+          </p>
+        </div>
+      ) : null}
 
-      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} nxtmock={nxtmock} />
+      <Hero
+        journey={journey}
+        days={days}
+        examDateLabel={examDateLabel}
+        assessments={assessments}
+        nxtmock={nxtmock}
+        userId={userId}
+      />
+
+      {hasOnlineScores && !onlineResultsLocked ? (
+        <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
+      ) : null}
 
       <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
         {level === 1 && !journey.isWildcard && (
@@ -286,14 +314,19 @@ export function DashboardView({
           </p>
         )}
         <JourneyBar
-          steps={journeySteps(journey, assessments, nxtmock, settings)}
+          steps={journeySteps(journey, assessments, nxtmock, settings, userId)}
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
       </IrpCard>
 
-      {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
-        <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
+      {level === 1 && !journey.isWildcard ? (
+        <FeProjectResults
+          journey={journey}
+          assessments={assessments}
+          visible={settings.feProjectResults}
+          userId={userId}
+        />
       ) : null}
 
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
@@ -301,19 +334,11 @@ export function DashboardView({
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <AiMockCallout assessments={assessments} nxtmock={nxtmock} />
+        <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
         <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />
-      ) : null}
-
-      {level === 1 && !journey.isWildcard ? (
-        <FeProjectResults
-          journey={journey}
-          assessments={assessments}
-          visible={settings.feProjectResults}
-        />
       ) : null}
 
       {level === 1 &&
@@ -327,8 +352,9 @@ export function DashboardView({
         </div>
       ) : null}
 
-      <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
-
+      {!(hasOnlineScores && !onlineResultsLocked) ? (
+        <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
+      ) : null}
       {/* Wildcard: what L3 covers + opt-back */}
       {phase === "WILDCARD" && (
         <>

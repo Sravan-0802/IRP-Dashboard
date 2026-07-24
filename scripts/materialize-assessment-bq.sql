@@ -12,12 +12,18 @@ SELECT
   assessment_tag_str_extracted,
   level,
   cycle,
+  assessment_start_datetime,
+  assessment_end_datetime,
+  user_assesment_start_datetime,
   mcq_section_max_score,
   mcq_user_section_score,
   mcq_user_attempt_duration_in_mins,
   coding_section_max_score,
   coding_user_section_score,
   coding_user_attempt_duration_in_mins,
+  fe_section_max_score,
+  fe_user_section_score,
+  fe_user_attempt_duration_in_mins,
   assessment_total_score,
   assessment_user_score
 FROM `kossip-helpers.retention_academy_analytics.y_academy_users_irp_assessment_details`
