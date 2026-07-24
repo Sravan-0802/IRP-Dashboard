@@ -7824,6 +7824,7 @@ export const L1_JULY26_ALLOWLIST: ReadonlySet<string> = new Set([
   "951cadbb-d479-4adc-a7ed-8ed6357676ac",
   "c674f893-9c20-404c-832a-411f4214ca1d",
   "f111ffb4-5bb5-4568-8e49-ce757679126a",
+  "69d3bd59-7b23-4ae5-8fb5-439b505334df",
   "163fceb1-6d81-437d-ae43-5d0ad1c9e316",
   "fa513b2c-90bf-4389-949c-4ab6a340ba39",
   "09d08434-9cca-4f63-8401-4c8febdb6d16",
