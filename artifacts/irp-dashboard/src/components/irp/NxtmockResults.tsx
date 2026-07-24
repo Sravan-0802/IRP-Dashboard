@@ -9,6 +9,7 @@ import {
 import {
   NXTMOCK_CLEARED_BODY,
   NXTMOCK_CLEARED_TITLE,
+  NXTMOCK_CLEAR_REQUIREMENT_LABEL,
   NXTMOCK_NOT_CLEARED_BODY,
   NXTMOCK_NOT_CLEARED_EYEBROW,
   NXTMOCK_NOT_CLEARED_TITLE,
@@ -102,7 +103,7 @@ export function NxtmockResults({
                 <Pill tone="amber">
                   Your average · {formatNxtmockRating(interview.averageRating)}/{NXTMOCK_RATING_MAX}
                 </Pill>
-                <Pill tone="green">Required · {interview.clearThreshold}+ average rating</Pill>
+                <Pill tone="green">{NXTMOCK_CLEAR_REQUIREMENT_LABEL}</Pill>
               </div>
             </div>
           </div>

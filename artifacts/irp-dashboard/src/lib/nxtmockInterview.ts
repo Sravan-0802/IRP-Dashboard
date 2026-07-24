@@ -1,4 +1,4 @@
-/** Minimum average rating (inclusive) to clear C1 NxtMock (out of 10). */
+/** Minimum average rating (inclusive) to clear the AI Mock Interview. */
 export const NXTMOCK_CLEAR_RATING_THRESHOLD = 5;
 
 export const NXTMOCK_RATING_MAX = 10;
@@ -16,7 +16,6 @@ export type NxtmockInterview = {
   htmlRating: number | null;
   reactJsRating: number | null;
   averageRating: number | null;
-  clearThreshold: number;
   cleared: boolean;
 };
 
