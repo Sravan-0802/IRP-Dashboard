@@ -68,7 +68,7 @@ export function AiMockCallout({
             id="ai-mock-interview-title"
             className="font-display text-base font-extrabold text-ink sm:text-lg"
           >
-            Main Interview vs Mock Interview
+            AI Mock Interview
           </h3>
           <p className="mt-0.5 text-sm text-muted2">
             {isReattempt ? NXTMOCK_REATTEMPT_BODY : NXTMOCK_MAIN_II_BODY}
