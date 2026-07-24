@@ -375,6 +375,7 @@ export function DashboardView({
         />
       ) : null}
 
+
       {level === 1 &&
       !journey.isWildcard &&
       (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&

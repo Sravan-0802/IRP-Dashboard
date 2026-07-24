@@ -32,7 +32,7 @@ export function FeProjectResults({
   const fe = pickFeProjectAssessment(assessments);
   const hasScoreData = fe != null && feCleared;
 
-  if (!clearedL1 || !feCleared) return null;
+  if (!clearedL1 || !feCleared || !fe) return null;
 
   if (!visible) {
     return (
@@ -48,9 +48,9 @@ export function FeProjectResults({
     );
   }
 
-  const title = fe?.assessmentTitle?.trim() || FE_PROJECT_MAIN_II_TITLE;
-  const overallPct = fe ? assessmentOverallPct(fe) : 100;
-  const scoreLabel = hasScoreData && fe
+  const title = fe.assessmentTitle?.trim() || FE_PROJECT_MAIN_II_TITLE;
+  const overallPct = assessmentOverallPct(fe);
+  const scoreLabel = hasScoreData
     ? `${Math.round(fe.overallScore)}/${Math.round(fe.overallMax)}`
     : null;
 

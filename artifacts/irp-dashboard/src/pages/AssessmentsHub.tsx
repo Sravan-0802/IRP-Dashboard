@@ -413,7 +413,7 @@ export function AssessmentsHub({
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
 
-      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} /> : null}
+      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">

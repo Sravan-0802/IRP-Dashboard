@@ -17,7 +17,7 @@ import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 import { useL1Registration } from "@/lib/useL1Registration";
 
-const JULY26_SLOT_IDS = new Set(L1_JULY26_HUSTLER_SLOTS.map((s) => s.id));
+const JULY26_SLOT_IDS = new Set<string>(L1_JULY26_HUSTLER_SLOTS.map((s) => s.id));
 const JULY26_DEFAULT_SLOT = L1_JULY26_HUSTLER_SLOTS[0]?.id;
 
 function AssessmentCalendarContent() {

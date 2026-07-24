@@ -114,8 +114,11 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
 }
 
 /**
- * FE Project clears on a perfect score by default (20/20). If `minScore` is
- * provided (e.g. 18 for reduced-threshold students), that value is used instead.
+ * FE Project clears:
+ * - FE Project C2 (and FE C2 cohort users) → score ≥ 18/20
+ * - Main II (Cycle 1) → perfect score (100%)
+ * If `minScore` is provided it overrides per-user logic.
+ * Pass `minScore` (e.g. 18) for reduced-threshold students; defaults to full max.
  */
 export function hasClearedFeProject(
   assessments: AssessmentResult[],
