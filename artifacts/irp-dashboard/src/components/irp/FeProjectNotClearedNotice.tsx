@@ -23,12 +23,14 @@ import { Pill } from "./ui";
 export function FeProjectNotClearedNotice({
   journey,
   assessments,
+  feProjectMinScore,
 }: {
   journey: Journey;
   assessments: AssessmentResult[];
+  feProjectMinScore?: number | null;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
   const feAttempted = hasAttemptedFeProject(assessments);
 
   if (!clearedL1 || feCleared || !feAttempted) return null;
@@ -62,7 +64,9 @@ export function FeProjectNotClearedNotice({
             <Pill tone="amber">
               Your score · {score}/{max} ({pct}%)
             </Pill>
-            <Pill tone="green">Required · {max}/{max} (100%)</Pill>
+            <Pill tone="green">
+              Required · {feProjectMinScore != null ? feProjectMinScore : max}/{max} ({feProjectMinScore != null ? Math.round((feProjectMinScore / max) * 100) : 100}%)
+            </Pill>
           </div>
         </div>
       </div>

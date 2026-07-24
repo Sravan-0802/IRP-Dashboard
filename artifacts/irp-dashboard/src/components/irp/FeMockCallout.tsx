@@ -13,13 +13,14 @@ import {
 interface FeMockCalloutProps {
   assessments: AssessmentResult[];
   userId: string;
+  feProjectMinScore?: number | null;
 }
 
 /** Shown only for allowlisted students who haven't cleared FE Project yet, within the mock window. */
-export function FeMockCallout({ assessments, userId }: FeMockCalloutProps) {
+export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMockCalloutProps) {
   if (!isFeMockLinkOpen()) return null;
   if (!isInFeMockAllowlist(userId)) return null;
-  if (hasClearedFeProject(assessments)) return null;
+  if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">

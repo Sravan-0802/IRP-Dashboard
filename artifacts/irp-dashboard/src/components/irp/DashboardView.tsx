@@ -41,6 +41,7 @@ import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
+import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { ContactUs } from "./ContactUs";
 
 function journeySteps(
@@ -53,12 +54,13 @@ function journeySteps(
     aiMockResults?: boolean;
     humanInterviewResults?: boolean;
   },
+  feProjectMinScore?: number | null,
 ): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
 
   if (level === 1 && !journey.isWildcard) {
-    return l1HustlerJourneySteps(journey, assessments, nxtmock, visibility);
+    return l1HustlerJourneySteps(journey, assessments, nxtmock, visibility, feProjectMinScore);
   }
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
@@ -111,6 +113,7 @@ function assessmentMotivation(
     aiMockResults: boolean;
     humanInterviewResults: boolean;
   },
+  feProjectMinScore?: number | null,
 ): string {
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
 
@@ -132,10 +135,11 @@ function assessmentMotivation(
     if (visibility.aiMockResults && hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
       return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
-    if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments)) {
-      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score 20/20 to unlock the AI Mock Interview. 💪`;
+    if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments, feProjectMinScore)) {
+      const required = feProjectMinScore != null ? `${feProjectMinScore}/20` : "20/20";
+      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} to unlock the AI Mock Interview. 💪`;
     }
-    if (visibility.feProjectResults && hasClearedFeProject(assessments)) {
+    if (visibility.feProjectResults && hasClearedFeProject(assessments, feProjectMinScore)) {
       if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
         return `You cleared the ${clearedDateLabel} assessment and FE Project. Next-step results will appear once released. 💪`;
       }
@@ -229,6 +233,7 @@ export function DashboardView({
   const { allowed: july26Allowed } = useL1July26Allowlist();
   const { data: nxtmockData } = useNxtmockInterview();
   const { settings } = useVisibilitySettings();
+  const { minScore: feProjectMinScore } = useFeProjectConfig();
   const nxtmock = nxtmockData?.interview ?? null;
 
   const motivation = assessmentMotivation(
@@ -245,6 +250,7 @@ export function DashboardView({
       aiMockResults: settings.aiMockResults,
       humanInterviewResults: settings.humanInterviewResults,
     },
+    feProjectMinScore,
   );
 
   return (
@@ -277,7 +283,7 @@ export function DashboardView({
         </p>
       </div>
 
-      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} nxtmock={nxtmock} />
+      <Hero journey={journey} days={days} examDateLabel={examDateLabel} assessments={assessments} nxtmock={nxtmock} feProjectMinScore={feProjectMinScore} />
 
       <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
         {level === 1 && !journey.isWildcard && (
@@ -286,22 +292,22 @@ export function DashboardView({
           </p>
         )}
         <JourneyBar
-          steps={journeySteps(journey, assessments, nxtmock, settings)}
+          steps={journeySteps(journey, assessments, nxtmock, settings, feProjectMinScore)}
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
       </IrpCard>
 
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
-        <FeProjectNotClearedNotice journey={journey} assessments={assessments} />
+        <FeProjectNotClearedNotice journey={journey} assessments={assessments} feProjectMinScore={feProjectMinScore} />
       ) : null}
 
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
-        <FeMockCallout assessments={assessments} userId={userId} />
+        <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <AiMockCallout assessments={assessments} nxtmock={nxtmock} />
+        <AiMockCallout assessments={assessments} nxtmock={nxtmock} feProjectMinScore={feProjectMinScore} />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
@@ -313,6 +319,7 @@ export function DashboardView({
           journey={journey}
           assessments={assessments}
           visible={settings.feProjectResults}
+          feProjectMinScore={feProjectMinScore}
         />
       ) : null}
 

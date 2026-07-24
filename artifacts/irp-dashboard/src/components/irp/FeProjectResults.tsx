@@ -18,15 +18,17 @@ export function FeProjectResults({
   journey,
   assessments,
   visible = true,
+  feProjectMinScore,
 }: {
   journey: Journey;
   assessments: AssessmentResult[];
   visible?: boolean;
+  feProjectMinScore?: number | null;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
   const fe = pickFeProjectAssessment(assessments);
-  const hasScoreData = fe != null && hasClearedFeProject(assessments);
+  const hasScoreData = fe != null && feCleared;
 
   if (!clearedL1 || !feCleared) return null;
 

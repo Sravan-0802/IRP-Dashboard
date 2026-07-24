@@ -176,12 +176,14 @@ export function Hero({
   examDateLabel,
   assessments = [],
   nxtmock,
+  feProjectMinScore,
 }: {
   journey: Journey;
   days: number;
   examDateLabel: string;
   assessments?: AssessmentResult[];
   nxtmock?: NxtmockInterview | null;
+  feProjectMinScore?: number | null;
 }) {
   const { settings } = useVisibilitySettings();
   const onlineL1ResultsVisible = settings.onlineL1Results;
@@ -242,7 +244,7 @@ export function Hero({
     }
 
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
-    let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock);
+    let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, feProjectMinScore);
 
     // Hold pipeline result stages until admin releases that stage.
     if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults) {

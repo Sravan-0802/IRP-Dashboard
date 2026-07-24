@@ -113,12 +113,16 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
 }
 
 /**
- * FE Project clears only on a perfect score — every test case must pass
- * (e.g. 20/20). A partial score counts as attempted-but-not-cleared.
+ * FE Project clears on a perfect score by default (20/20). If `minScore` is
+ * provided (e.g. 18 for reduced-threshold students), that value is used instead.
  */
-export function hasClearedFeProject(assessments: AssessmentResult[]): boolean {
+export function hasClearedFeProject(
+  assessments: AssessmentResult[],
+  minScore?: number | null,
+): boolean {
   const fe = pickFeProjectAssessment(assessments);
   if (!fe || !feAssessmentWasWritten(fe)) return false;
+  if (minScore != null) return fe.overallScore >= minScore;
   return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
 }
 

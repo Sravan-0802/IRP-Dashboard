@@ -25,13 +25,15 @@ export function FeProjectCallout({
   journey,
   assessments,
   className,
+  feProjectMinScore,
 }: {
   journey: Journey;
   assessments: AssessmentResult[];
   className?: string;
+  feProjectMinScore?: number | null;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = hasClearedFeProject(assessments);
+  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
   const feAttempted = hasAttemptedFeProject(assessments);
   const feAssessment = pickFeProjectAssessment(assessments);
   const fePct = feAssessment ? assessmentOverallPct(feAssessment) : 0;
