@@ -4,25 +4,30 @@ import type { Journey } from "@/lib/journey";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   assessmentOverallPct,
+  feProjectClearScore,
   hasAttemptedFeProject,
   hasClearedFeProject,
+  isFeProjectC2,
   pickFeProjectAssessment,
 } from "@/lib/assessment";
+import { isFeProjectC2CohortUser } from "@/lib/feProjectC2Cohort";
 import {
-  FE_PROJECT_NOT_CLEARED_BODY,
+  FE_PROJECT_C2_NOT_CLEARED_BODY,
+  FE_PROJECT_C2_NOT_CLEARED_TITLE,
+  FE_PROJECT_MAIN_II_NOT_CLEARED_BODY,
+  FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE,
   FE_PROJECT_NOT_CLEARED_EYEBROW,
-  FE_PROJECT_NOT_CLEARED_TITLE,
 } from "@/lib/feProjectConfig";
 import { Pill } from "./ui";
 
 /**
  * Shown for cleared-L1 students who attempted the FE Project but have not
- * cleared it (anything short of a perfect 20/20). Informational only — no
- * external assessment link.
+ * cleared it yet. C2 / cohort clears at ≥18/20; Main II at 100%.
  */
 export function FeProjectNotClearedNotice({
   journey,
   assessments,
+<<<<<<< HEAD
   feProjectMinScore,
 }: {
   journey: Journey;
@@ -31,14 +36,27 @@ export function FeProjectNotClearedNotice({
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+=======
+  userId,
+}: {
+  journey: Journey;
+  assessments: AssessmentResult[];
+  userId?: string;
+}) {
+  const clearedL1 = isCycle1Cleared(assessments);
+  const feCleared = hasClearedFeProject(assessments, userId);
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
   const feAttempted = hasAttemptedFeProject(assessments);
 
   if (!clearedL1 || feCleared || !feAttempted) return null;
 
-  const fe = pickFeProjectAssessment(assessments);
+  const fe = pickFeProjectAssessment(assessments, userId);
   const pct = fe ? assessmentOverallPct(fe) : 0;
   const score = fe?.overallScore ?? 0;
   const max = fe?.overallMax ?? 20;
+  const requiredScore = fe ? feProjectClearScore(fe, userId) : 20;
+  const useEighteen =
+    (fe ? isFeProjectC2(fe) : false) || isFeProjectC2CohortUser(userId);
 
   return (
     <div
@@ -57,15 +75,22 @@ export function FeProjectNotClearedNotice({
             id="fe-project-not-cleared-title"
             className="font-display text-base font-extrabold text-ink sm:text-lg"
           >
-            {FE_PROJECT_NOT_CLEARED_TITLE}
+            {useEighteen ? FE_PROJECT_C2_NOT_CLEARED_TITLE : FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE}
           </h3>
-          <p className="mt-0.5 text-sm text-muted2">{FE_PROJECT_NOT_CLEARED_BODY}</p>
+          <p className="mt-0.5 text-sm text-muted2">
+            {useEighteen ? FE_PROJECT_C2_NOT_CLEARED_BODY : FE_PROJECT_MAIN_II_NOT_CLEARED_BODY}
+          </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Pill tone="amber">
               Your score · {score}/{max} ({pct}%)
             </Pill>
             <Pill tone="green">
+<<<<<<< HEAD
               Required · {feProjectMinScore != null ? feProjectMinScore : max}/{max} ({feProjectMinScore != null ? Math.round((feProjectMinScore / max) * 100) : 100}%)
+=======
+              Required · {requiredScore}/{max}
+              {useEighteen ? " (18+)" : " (100%)"}
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
             </Pill>
           </div>
         </div>

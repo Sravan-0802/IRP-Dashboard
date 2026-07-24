@@ -37,7 +37,11 @@ export function l1HustlerJourneySteps(
     aiMockResults?: boolean;
     humanInterviewResults?: boolean;
   },
+<<<<<<< HEAD
   feProjectMinScore?: number | null,
+=======
+  userId?: string,
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
   const showFe = visibility?.feProjectResults === true;
@@ -48,7 +52,12 @@ export function l1HustlerJourneySteps(
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
   const assessmentCleared = hasClearedAssessment(assessments, 1);
+<<<<<<< HEAD
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+=======
+  // FE: C2 / cohort clears at ≥18/20; Main II at 100%.
+  const feCleared = hasClearedFeProject(assessments, userId);
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
   const feAttemptedNotCleared = !feCleared && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";

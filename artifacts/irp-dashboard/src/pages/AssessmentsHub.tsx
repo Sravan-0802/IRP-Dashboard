@@ -396,10 +396,10 @@ export function AssessmentsHub({
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {level === 1 && july12Registered
+          {level === 1 && isCycle1Cleared(assessments)
+            ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
+            : level === 1 && july12Registered
             ? `Already registered for ${L1_JULY12_EXAM_DATE_LABEL}. Your 6:00 PM – 8:00 PM IST slot is booked — details will appear closer to the exam.`
-            : level === 1 && isCycle1Cleared(assessments)
-            ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
             : level === 1
               ? `Attempting Mock Assessment is Mandatory. Your Assessment link will be functional from 6:00 PM – 8:00 PM IST on 12th July 2026.`
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
@@ -410,7 +410,7 @@ export function AssessmentsHub({
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
 
-      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
+      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">

@@ -27,15 +27,26 @@ export function AiMockCallout({
   assessments,
   nxtmock,
   className,
+<<<<<<< HEAD
   feProjectMinScore,
+=======
+  userId,
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 }: {
   assessments: AssessmentResult[];
   nxtmock?: NxtmockInterview | null;
   className?: string;
+<<<<<<< HEAD
   feProjectMinScore?: number | null;
 }) {
   const clearedL1 = isCycle1Cleared(assessments);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+=======
+  userId?: string;
+}) {
+  const clearedL1 = isCycle1Cleared(assessments);
+  const feCleared = hasClearedFeProject(assessments, userId);
+>>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
   const mockCleared = isNxtmockCleared(nxtmock);
   const mockAttempted = hasNxtmockAttempt(nxtmock);
   const isReattempt = mockAttempted && !mockCleared;

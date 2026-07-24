@@ -106,7 +106,20 @@ async function feProjectCounts(): Promise<StageCounts> {
         MAX(
           CASE
             WHEN assessment_total_score > 0
-              AND assessment_user_score >= assessment_total_score
+              AND (
+                (
+                  (
+                    UPPER(COALESCE(cycle, '')) = 'C2'
+                    OR UPPER(COALESCE(assessment_tag, '')) LIKE '%FE-PROJECT_C2%'
+                  )
+                AND assessment_user_score >= 18
+              )
+              OR (
+                UPPER(COALESCE(cycle, '')) IS DISTINCT FROM 'C2'
+                AND UPPER(COALESCE(assessment_tag, '')) NOT LIKE '%FE-PROJECT_C2%'
+                AND assessment_user_score >= assessment_total_score
+              )
+              )
             THEN 1 ELSE 0
           END
         ) AS cleared
@@ -124,7 +137,7 @@ async function feProjectCounts(): Promise<StageCounts> {
   `);
   const row = firstRow(result as { rows?: CountRow[] } | CountRow[]);
   return {
-    scope: "FE Project (Main / Main II)",
+    scope: "FE Project (C2 ≥18/20 / Main II 100%)",
     assigned: n(row.assigned),
     attempted: n(row.attempted),
     cleared: n(row.cleared),

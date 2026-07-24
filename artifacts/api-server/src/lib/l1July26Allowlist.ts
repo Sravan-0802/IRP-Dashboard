@@ -1,4 +1,7 @@
 export const L1_JULY26_ALLOWLIST: ReadonlySet<string> = new Set([
+  // Test user — booking / July 26 slot registration
+  "69d3bd59-7b23-4ae5-8fb5-439b505334df",
+  "176f6f8e-ff20-41d0-a2e8-b7e7e6c3a0c5",
   "c739ccdc-af09-43d3-ab04-daba40d06e8d",
   "7e325eb6-3935-4cb2-be1d-43dd380ca41f",
   "f2b7985e-1660-43dc-9092-9820009e4798",

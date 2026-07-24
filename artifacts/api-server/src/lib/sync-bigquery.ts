@@ -39,6 +39,16 @@ function toStr(v: unknown): string | null {
   return String(v);
 }
 
+function toDate(v: unknown): Date | null {
+  if (v === null || v === undefined) return null;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v;
+  if (typeof v === "object" && v !== null && "value" in v) {
+    return toDate((v as { value: unknown }).value);
+  }
+  const d = new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 async function recordStatus(
   tableName: string,
   status: "success" | "error",
@@ -181,12 +191,18 @@ async function syncMainAssessmentDetails(): Promise<number> {
         assessmentTag: toStr(r.assessment_tag_str_extracted),
         level: toStr(r.level),
         cycle: toStr(r.cycle),
+        assessmentStartDatetime: toDate(r.assessment_start_datetime),
+        assessmentEndDatetime: toDate(r.assessment_end_datetime),
+        userAssessmentStartDatetime: toDate(r.user_assesment_start_datetime),
         mcqSectionMaxScore: toReal(r.mcq_section_max_score),
         mcqUserSectionScore: toReal(r.mcq_user_section_score),
         mcqAttemptDurationMins: toReal(r.mcq_user_attempt_duration_in_mins),
         codingSectionMaxScore: toReal(r.coding_section_max_score),
         codingUserSectionScore: toReal(r.coding_user_section_score),
         codingAttemptDurationMins: toReal(r.coding_user_attempt_duration_in_mins),
+        feSectionMaxScore: toReal(r.fe_section_max_score),
+        feUserSectionScore: toReal(r.fe_user_section_score),
+        feAttemptDurationMins: toReal(r.fe_user_attempt_duration_in_mins),
         assessmentTotalScore: toReal(r.assessment_total_score),
         assessmentUserScore: toReal(r.assessment_user_score),
         syncedAt: new Date(),
@@ -209,12 +225,18 @@ async function syncMainAssessmentDetails(): Promise<number> {
           assessmentTag: sql`excluded.assessment_tag`,
           level: sql`excluded.level`,
           cycle: sql`excluded.cycle`,
+          assessmentStartDatetime: sql`excluded.assessment_start_datetime`,
+          assessmentEndDatetime: sql`excluded.assessment_end_datetime`,
+          userAssessmentStartDatetime: sql`excluded.user_assessment_start_datetime`,
           mcqSectionMaxScore: sql`excluded.mcq_section_max_score`,
           mcqUserSectionScore: sql`excluded.mcq_user_section_score`,
           mcqAttemptDurationMins: sql`excluded.mcq_attempt_duration_mins`,
           codingSectionMaxScore: sql`excluded.coding_section_max_score`,
           codingUserSectionScore: sql`excluded.coding_user_section_score`,
           codingAttemptDurationMins: sql`excluded.coding_attempt_duration_mins`,
+          feSectionMaxScore: sql`excluded.fe_section_max_score`,
+          feUserSectionScore: sql`excluded.fe_user_section_score`,
+          feAttemptDurationMins: sql`excluded.fe_attempt_duration_mins`,
           assessmentTotalScore: sql`excluded.assessment_total_score`,
           assessmentUserScore: sql`excluded.assessment_user_score`,
           syncedAt: sql`excluded.synced_at`,
