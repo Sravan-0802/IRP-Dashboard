@@ -19,7 +19,7 @@ import {
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
   { label: "Online Assessment", icon: "assessment" },
   { label: "FE Project", icon: "post" },
-  { label: "AI Mock Interview", icon: "mock" },
+  { label: "NxtMock AI Interview", icon: "mock" },
   { label: "Human Interview", icon: "human" },
   { label: "Level 2 Access", icon: "access" },
 ];

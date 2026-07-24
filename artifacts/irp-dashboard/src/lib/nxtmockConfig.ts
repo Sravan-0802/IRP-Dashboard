@@ -48,14 +48,14 @@ export const NXTMOCK_REATTEMPT_LABEL = "Re-attempt interview";
 export const NXTMOCK_REATTEMPT_BODY =
   "You attempted the AI Mock Interview but have not cleared yet. Use Main Interview in the window below, or the Mock Interview link to practice — average rating 5+ is required.";
 
-export const NXTMOCK_RESULTS_TITLE = "AI Mock Interview Results";
+export const NXTMOCK_RESULTS_TITLE = "NxtMock AI Interview Results";
 
-export const NXTMOCK_CLEARED_TITLE = "You cleared the AI Mock Interview";
+export const NXTMOCK_CLEARED_TITLE = "You cleared the NxtMock AI Interview";
 
 export const NXTMOCK_CLEARED_BODY =
   "Great work. Prepare for your Human Interview — the next step in your IRP journey.";
 
-export const NXTMOCK_NOT_CLEARED_EYEBROW = "AI Mock Interview · Not cleared yet";
+export const NXTMOCK_NOT_CLEARED_EYEBROW = "NxtMock AI Interview · Not cleared yet";
 
 export const NXTMOCK_NOT_CLEARED_TITLE = "Keep preparing — re-attempt coming soon";
 

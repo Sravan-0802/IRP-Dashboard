@@ -87,9 +87,9 @@ export function l1StageHeroContent(
       };
     case "ai_mock_active":
       return {
-        eyebrow: "AI Mock Interview · Next step",
-        title: "Take your AI Mock Interview",
-        body: "You cleared the FE Project. Complete the AI Mock Interview to move forward in your IRP journey.",
+        eyebrow: "NxtMock AI Interview · Next step",
+        title: "Take your NxtMock AI Interview",
+        body: "You cleared the FE Project. Complete the NxtMock AI Interview to move forward in your IRP journey.",
         dotColor: "#6741d9",
         eyebrowClass: "border-[rgba(103,65,217,0.2)] text-brand",
         borderClass: "border-[rgba(103,65,217,0.18)]",
@@ -98,9 +98,9 @@ export function l1StageHeroContent(
       };
     case "ai_mock_not_cleared":
       return {
-        eyebrow: "AI Mock Interview · Not cleared yet",
+        eyebrow: "NxtMock AI Interview · Not cleared yet",
         title: "Keep preparing — re-attempt coming soon",
-        body: "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard.",
+        body: "You attempted the NxtMock AI Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard.",
         dotColor: "#f59f00",
         eyebrowClass: "border-[rgba(245,159,0,0.35)] text-[#e67700]",
         borderClass: "border-[rgba(245,159,0,0.28)]",
