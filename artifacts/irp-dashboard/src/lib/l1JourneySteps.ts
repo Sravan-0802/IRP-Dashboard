@@ -2,8 +2,10 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getPhase } from "@/lib/journey";
 import {
+  clearedL1ViaC2,
   getAssessmentStepStatus,
   hasAttemptedFeProject,
+  hasAttemptedL1Cycle2,
   hasClearedAssessment,
   hasClearedFeProject,
 } from "@/lib/assessment";
@@ -54,10 +56,18 @@ export function l1HustlerJourneySteps(
   const nxtmockAttemptedNotCleared = hasNxtmockAttempt(nxtmock) && !nxtmockCleared;
   const pastAiMock = state === "L1_HUMAN_INTERVIEW" || advancedToL2 || nxtmockCleared;
 
+  // Only hide Online Assessment cleared/not-cleared while July 12 / C2 results
+  // are gated. Cycle 1 students who already scored ≥70% keep "Completed".
+  const awaitingJuly12OnlineRelease =
+    !showOnline &&
+    assessmentStatus !== "active" &&
+    hasAttemptedL1Cycle2(assessments) &&
+    (!assessmentCleared || clearedL1ViaC2(assessments));
+
   const onlineStatus: JourneyStep["status"] =
     phase === "REATTEMPT_WAITING" || phase === "REATTEMPT_ACTIVE"
       ? "reattempt"
-      : !showOnline && assessmentStatus !== "active"
+      : awaitingJuly12OnlineRelease
         ? "active"
         : assessmentStatus;
 
