@@ -1,8 +1,16 @@
 import { db, academyUserNxtmockDetailsTable, studentsTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 
-/** Minimum average rating (inclusive) to clear the AI Mock Interview. */
+/** Minimum average rating (inclusive) to clear C1 NxtMock (out of 10). */
 export const NXTMOCK_CLEAR_RATING_THRESHOLD = 5;
+
+/** Minimum average rating (inclusive) to clear C2 NxtMock — 90% of 10. */
+export const NXTMOCK_C2_CLEAR_RATING_THRESHOLD = 9;
+
+/** Returns the clearing threshold for the given cycle. */
+export function nxtmockClearThreshold(cycle: string | null | undefined): number {
+  return cycle === "C2" ? NXTMOCK_C2_CLEAR_RATING_THRESHOLD : NXTMOCK_CLEAR_RATING_THRESHOLD;
+}
 
 export type NxtmockInterviewResponse = {
   interviewId: string;
@@ -17,11 +25,15 @@ export type NxtmockInterviewResponse = {
   htmlRating: number | null;
   reactJsRating: number | null;
   averageRating: number | null;
+  clearThreshold: number;
   cleared: boolean;
 };
 
-export function isNxtmockCleared(averageRating: number | null | undefined): boolean {
-  return averageRating != null && averageRating >= NXTMOCK_CLEAR_RATING_THRESHOLD;
+export function isNxtmockCleared(
+  averageRating: number | null | undefined,
+  cycle: string | null | undefined,
+): boolean {
+  return averageRating != null && averageRating >= nxtmockClearThreshold(cycle);
 }
 
 function rowToResponse(
@@ -40,7 +52,8 @@ function rowToResponse(
     htmlRating: row.htmlRating,
     reactJsRating: row.reactJsRating,
     averageRating: row.averageRating,
-    cleared: isNxtmockCleared(row.averageRating),
+    clearThreshold: nxtmockClearThreshold(row.cycle),
+    cleared: isNxtmockCleared(row.averageRating, row.cycle),
   };
 }
 
