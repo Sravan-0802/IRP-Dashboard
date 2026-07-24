@@ -203,20 +203,29 @@ async function courseProgressCounts(): Promise<StageCounts> {
   };
 }
 
-export async function loadStageCounts(): Promise<Record<VisibilityKey, StageCounts>> {
-  const [onlineL1, fe, aiMock, human, course] = await Promise.all([
-    july12OnlineCounts(),
-    feProjectCounts(),
-    aiMockCounts(),
-    humanInterviewCounts(),
-    courseProgressCounts(),
-  ]);
+export async function loadStageCounts(): Promise<Partial<Record<VisibilityKey, StageCounts>>> {
+  const loaders: [VisibilityKey, () => Promise<StageCounts>][] = [
+    ["online_l1_results", july12OnlineCounts],
+    ["fe_project_results", feProjectCounts],
+    ["ai_mock_results", aiMockCounts],
+    ["human_interview_results", humanInterviewCounts],
+    ["course_progress", courseProgressCounts],
+  ];
 
-  return {
-    online_l1_results: onlineL1,
-    fe_project_results: fe,
-    ai_mock_results: aiMock,
-    human_interview_results: human,
-    course_progress: course,
-  };
+  const settled = await Promise.all(
+    loaders.map(async ([key, load]) => {
+      try {
+        return [key, await load()] as const;
+      } catch (err) {
+        console.error(`[stageCounts] failed for ${key}`, err);
+        return [key, null] as const;
+      }
+    }),
+  );
+
+  const out: Partial<Record<VisibilityKey, StageCounts>> = {};
+  for (const [key, counts] of settled) {
+    if (counts) out[key] = counts;
+  }
+  return out;
 }

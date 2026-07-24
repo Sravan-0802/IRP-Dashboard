@@ -86,7 +86,7 @@ const STAGE_META: Record<
     camelKey: "feProjectResults",
     label: "FE Project results",
     description:
-      "FE Project scores from the assessment sync. Review counts, then approve to show FE results on dashboards.",
+      "FE Project Main / Main II scores (perfect 20/20 = cleared). Uses the assessment sync table. Review counts below, then Release or Hide for student dashboards.",
   },
   ai_mock_results: {
     camelKey: "aiMockResults",
