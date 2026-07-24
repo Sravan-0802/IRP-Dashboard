@@ -176,22 +176,16 @@ export function Hero({
   examDateLabel,
   assessments = [],
   nxtmock,
-<<<<<<< HEAD
   feProjectMinScore,
-=======
   userId,
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 }: {
   journey: Journey;
   days: number;
   examDateLabel: string;
   assessments?: AssessmentResult[];
   nxtmock?: NxtmockInterview | null;
-<<<<<<< HEAD
   feProjectMinScore?: number | null;
-=======
   userId?: string;
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 }) {
   const { settings } = useVisibilitySettings();
   const onlineL1ResultsVisible = settings.onlineL1Results;
@@ -200,7 +194,7 @@ export function Hero({
   const meta = LEVEL_META[level];
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
   const l1UpcomingDateLabel =
-    level === 1 ? getL1UpcomingExamDateLabel(assessments) : examDateLabel;
+    level === 1 ? getL1UpcomingExamDateLabel(assessments, userId) : examDateLabel;
   const activeDateLabel = l1UpcomingDateLabel;
   const completedDateLabel = getAssessmentCompletedDateLabel(
     assessments,
@@ -208,7 +202,7 @@ export function Hero({
     l1UpcomingDateLabel,
   );
   const resultsVisible = areAssignmentResultsVisible();
-  const cycle2Track = level === 1 && isCycle2Candidate(assessments);
+  const cycle2Track = level === 1 && isCycle2Candidate(assessments, userId);
   const assessmentLive = cycle2Track ? isL1July12AssessmentLive() : isAssessmentLive();
   const showPostExamHero =
     !cycle2Track &&
@@ -216,13 +210,9 @@ export function Hero({
     (phase === "PREP" || phase === "EXAM_OPEN");
 
   // Cleared Online L1 → FE / AI Mock pipeline (always show cleared path; never "results coming soon").
-  if (level === 1 && isCycle1Cleared(assessments)) {
+  if (level === 1 && isCycle1Cleared(assessments, userId)) {
     const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
-<<<<<<< HEAD
     let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, feProjectMinScore);
-=======
-    let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, userId);
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 
     // Hold pipeline result stages until admin releases that stage.
     if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults) {

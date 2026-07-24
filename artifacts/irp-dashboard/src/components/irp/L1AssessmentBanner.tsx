@@ -11,25 +11,29 @@ import {
 } from "@/lib/l1AssessmentSchedule";
 import { isL1July26RegistrationOpen } from "@/lib/irpDates";
 import { shouldShowCycle2Banner } from "@/lib/l1StudentTrack";
+import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 
 export function L1AssessmentBanner({
   assessments = [],
   registration = null,
   onRegisterClick,
   compact = false,
+  userId,
 }: {
   assessments?: AssessmentResult[];
   registration?: L1RegistrationRecord | null;
   registrationUnlocked?: boolean;
   onRegisterClick?: () => void;
   compact?: boolean;
+  userId?: string;
 }) {
-  if (!shouldShowCycle2Banner(assessments)) return null;
+  if (!shouldShowCycle2Banner(assessments, userId)) return null;
 
   const slotBooked = hasSuccessfulSlotRegistration(registration);
   if (slotBooked) return null;
 
-  const registrationOpen = isL1July26RegistrationOpen();
+  const registrationOpen =
+    isL1July26RegistrationOpen() || isJuly26BookingTestUser(userId);
 
   if (!registrationOpen) {
     return null;

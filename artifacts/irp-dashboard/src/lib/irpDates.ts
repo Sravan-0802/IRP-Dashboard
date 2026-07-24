@@ -144,9 +144,9 @@ export const L1_JULY26_RESULTS_UNLOCK_DATE = new Date("2026-07-27T00:00:00+05:30
 export const L1_JULY26_REGISTRATION_OPEN_DATE = new Date("2026-07-21T00:00:00+05:30");
 export const L1_JULY26_REGISTRATION_OPEN_DATE_LABEL = "21st July 2026";
 
-/** Slot registration for the 26 July re-conduction closes 24 July 2026 at 8:00 PM IST. */
-export const L1_JULY26_REGISTRATION_CLOSE_DATE = new Date("2026-07-24T20:00:00+05:30");
-export const L1_JULY26_REGISTRATION_CLOSE_DATE_LABEL = "24th July 2026, 8:00 PM IST";
+/** Slot registration for the 26 July re-conduction closes 26 July 2026 at 5:30 PM IST. */
+export const L1_JULY26_REGISTRATION_CLOSE_DATE = new Date("2026-07-26T17:30:00+05:30");
+export const L1_JULY26_REGISTRATION_CLOSE_DATE_LABEL = "26th July 2026, 5:30 PM IST";
 
 export function isL1July26RegistrationOpen(now = new Date()): boolean {
   return (

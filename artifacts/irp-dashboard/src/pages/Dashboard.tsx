@@ -237,7 +237,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
-            {page === "slot" && <BookSlot assessments={displayAssessments} />}
+            {page === "slot" && <BookSlot assessments={displayAssessments} userId={userId} />}
           </div>
         </main>
       </div>

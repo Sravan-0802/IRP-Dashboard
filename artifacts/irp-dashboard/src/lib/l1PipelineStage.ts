@@ -25,21 +25,13 @@ export function getL1PipelineStage(
   journey: Journey,
   assessments: AssessmentResult[],
   nxtmock?: NxtmockInterview | null,
-<<<<<<< HEAD
   feProjectMinScore?: number | null,
-=======
-  userId?: string | null,
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 ): L1PipelineStage | null {
   if (!isCycle1Cleared(assessments)) return null;
 
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
-<<<<<<< HEAD
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
-=======
-  const feCleared = hasClearedFeProject(assessments, userId);
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
   const feAttempted = hasAttemptedFeProject(assessments);
   const nxtmockCleared = isNxtmockCleared(nxtmock);
   const nxtmockAttempted = hasNxtmockAttempt(nxtmock);

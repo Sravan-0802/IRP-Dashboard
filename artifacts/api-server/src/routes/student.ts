@@ -582,7 +582,7 @@ router.post("/student/l1-registration", async (req, res) => {
 
     if (!existing) {
       const canRegister =
-        cycle === 3 ? canRegisterForL1July26() :
+        cycle === 3 ? canRegisterForL1July26(userId) :
         cycle === 2 ? canRegisterForL1July12(userId) :
         false;
       if (!canRegister) {

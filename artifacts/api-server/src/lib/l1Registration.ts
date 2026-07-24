@@ -1,4 +1,6 @@
 import { isInL1July12RegistrationUnlock } from "./l1July12RegistrationUnlock";
+import { isJuly26BookingTestUser } from "./july26BookingTestUsers";
+import { isInL1July26Allowlist } from "./l1July26Allowlist";
 
 export const L1_REGISTRATION_CYCLE = 3;
 export const L1_REGISTRATION_LEVEL = 1;
@@ -46,7 +48,13 @@ export function isL1July26RegistrationOpen(now = new Date()): boolean {
   );
 }
 
-export function canRegisterForL1July26(now = new Date()): boolean {
+export function canRegisterForL1July26(
+  userId?: string | null,
+  now = new Date(),
+): boolean {
+  if (isJuly26BookingTestUser(userId) && isInL1July26Allowlist(userId ?? "")) {
+    return true;
+  }
   return isL1July26RegistrationOpen(now);
 }
 

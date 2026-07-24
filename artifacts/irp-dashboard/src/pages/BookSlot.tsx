@@ -14,6 +14,7 @@ import {
 import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
 import { L1_JULY26_EXAM_DATE_LABEL, isL1July26RegistrationOpen } from "@/lib/irpDates";
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 import { useL1Registration } from "@/lib/useL1Registration";
 
 const JULY26_SLOT_IDS = new Set(L1_JULY26_HUSTLER_SLOTS.map((s) => s.id));
@@ -227,14 +228,21 @@ function SlotConfirmedContent({ registration }: { registration: L1RegistrationRe
   );
 }
 
-export function BookSlot({ assessments = [] }: { assessments?: AssessmentResult[] }) {
+export function BookSlot({
+  assessments = [],
+  userId,
+}: {
+  assessments?: AssessmentResult[];
+  userId?: string;
+}) {
   const { registration } = useL1Registration();
   const slotBooked = hasSuccessfulSlotRegistration(registration);
-  const cleared = isCycle1Cleared(assessments);
-  const isCandidate = isCycle2Candidate(assessments);
-  const registrationOpen = isL1July26RegistrationOpen();
+  const cleared = isCycle1Cleared(assessments, userId);
+  const isCandidate = isCycle2Candidate(assessments, userId);
+  const registrationOpen =
+    isL1July26RegistrationOpen() || isJuly26BookingTestUser(userId);
 
-  const showCalendar = isCandidate && !cleared;
+  const showCalendar = isCandidate && !cleared && registrationOpen;
 
   return (
     <div className="space-y-6">

@@ -20,11 +20,7 @@ interface FeMockCalloutProps {
 export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMockCalloutProps) {
   if (!isFeMockLinkOpen()) return null;
   if (!isInFeMockAllowlist(userId)) return null;
-<<<<<<< HEAD
   if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
-=======
-  if (hasClearedFeProject(assessments, userId)) return null;
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">

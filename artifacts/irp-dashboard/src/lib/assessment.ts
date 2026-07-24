@@ -7,8 +7,6 @@ import {
   L1_JULY12_EXAM_DATE_LABEL,
   L1_JULY12_ORG_ASSESSMENT_ID,
 } from "@/lib/irpDates";
-import { FE_PROJECT_C2_CLEAR_SCORE, isFeProjectC2CohortUser } from "@/lib/feProjectC2Cohort";
-
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
 
@@ -76,14 +74,10 @@ export function isFeProjectAssessment(a: AssessmentResult): boolean {
 
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
-  userId?: string | null,
 ): AssessmentResult | null {
   const fe = assessments
     .filter(isFeProjectAssessment)
     .sort((a, b) => {
-      const aCleared = feAssessmentMeetsClearThreshold(a, userId) ? 1 : 0;
-      const bCleared = feAssessmentMeetsClearThreshold(b, userId) ? 1 : 0;
-      if (bCleared !== aCleared) return bCleared - aCleared;
       const scoreDiff = scoreRank(b) - scoreRank(a);
       if (scoreDiff !== 0) return scoreDiff;
       const aMainII = (a.assessmentTitle ?? "").toLowerCase().includes("main ii") ? 1 : 0;
@@ -120,7 +114,6 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
 }
 
 /**
-<<<<<<< HEAD
  * FE Project clears on a perfect score by default (20/20). If `minScore` is
  * provided (e.g. 18 for reduced-threshold students), that value is used instead.
  */
@@ -132,55 +125,6 @@ export function hasClearedFeProject(
   if (!fe || !feAssessmentWasWritten(fe)) return false;
   if (minScore != null) return fe.overallScore >= minScore;
   return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
-=======
- * FE Project clears:
- * - FE Project C2 (and FE C2 cohort users) → score ≥ 18/20
- * - Main II (Cycle 1) → perfect score (100%)
- */
-export const FE_PROJECT_C2_CLEAR_THRESHOLD = 90;
-export const FE_PROJECT_MAIN_II_CLEAR_THRESHOLD = 100;
-
-export function isFeProjectC2(a: AssessmentResult): boolean {
-  const cycle = (a.cycle ?? "").trim().toUpperCase();
-  const tag = (a.assessmentTag ?? "").toUpperCase();
-  return cycle === "C2" || tag.includes("FE-PROJECT_C2");
-}
-
-export function feProjectClearThresholdPct(fe: AssessmentResult, userId?: string | null): number {
-  if (isFeProjectC2(fe) || isFeProjectC2CohortUser(userId)) {
-    return FE_PROJECT_C2_CLEAR_THRESHOLD;
-  }
-  return FE_PROJECT_MAIN_II_CLEAR_THRESHOLD;
-}
-
-/** Absolute points required to clear (18 for C2 / cohort, else full max). */
-export function feProjectClearScore(fe: AssessmentResult, userId?: string | null): number {
-  if (isFeProjectC2(fe) || isFeProjectC2CohortUser(userId)) {
-    return FE_PROJECT_C2_CLEAR_SCORE;
-  }
-  return fe.overallMax > 0 ? fe.overallMax : 20;
-}
-
-function feAssessmentMeetsClearThreshold(
-  fe: AssessmentResult,
-  userId?: string | null,
-): boolean {
-  if (!feAssessmentWasWritten(fe) || fe.overallMax <= 0) return false;
-  return fe.overallScore >= feProjectClearScore(fe, userId);
-}
-
-/**
- * True when any FE Project sit meets its clear threshold
- * (C2 / cohort ≥18/20, Main II 100%).
- */
-export function hasClearedFeProject(
-  assessments: AssessmentResult[],
-  userId?: string | null,
-): boolean {
-  return assessments.some(
-    (a) => isFeProjectAssessment(a) && feAssessmentMeetsClearThreshold(a, userId),
-  );
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
 }
 
 export function pickL1Cycle2Assessment(assessments: AssessmentResult[]): AssessmentResult | null {

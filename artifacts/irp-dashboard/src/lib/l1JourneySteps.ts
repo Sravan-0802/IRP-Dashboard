@@ -15,6 +15,7 @@ import {
   isNxtmockCleared,
   type NxtmockInterview,
 } from "@/lib/nxtmockInterview";
+import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
   { label: "Online Assessment", icon: "assessment" },
@@ -37,28 +38,28 @@ export function l1HustlerJourneySteps(
     aiMockResults?: boolean;
     humanInterviewResults?: boolean;
   },
-<<<<<<< HEAD
   feProjectMinScore?: number | null,
-=======
-  userId?: string,
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
+  userId?: string | null,
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
   const showFe = visibility?.feProjectResults === true;
   const showAi = visibility?.aiMockResults === true;
   const showHuman = visibility?.humanInterviewResults === true;
 
-  const assessmentStatus = getAssessmentStepStatus(assessments, 1);
+  const forceOnlineBookingTrack = isJuly26BookingTestUser(userId);
+  const assessmentStatus = forceOnlineBookingTrack
+    ? "active"
+    : getAssessmentStepStatus(assessments, 1);
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
-  const assessmentCleared = hasClearedAssessment(assessments, 1);
-<<<<<<< HEAD
-  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
-=======
-  // FE: C2 / cohort clears at ≥18/20; Main II at 100%.
-  const feCleared = hasClearedFeProject(assessments, userId);
->>>>>>> fcd5aa89106b64c9d6b76bc66540be874a0805a4
-  const feAttemptedNotCleared = !feCleared && hasAttemptedFeProject(assessments);
+  const assessmentCleared = forceOnlineBookingTrack
+    ? false
+    : hasClearedAssessment(assessments, 1);
+  const feCleared = forceOnlineBookingTrack
+    ? false
+    : hasClearedFeProject(assessments, feProjectMinScore);
+  const feAttemptedNotCleared =
+    !forceOnlineBookingTrack && !feCleared && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
   const nxtmockCleared = isNxtmockCleared(nxtmock);
