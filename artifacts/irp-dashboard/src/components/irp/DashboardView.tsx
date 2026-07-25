@@ -48,6 +48,7 @@ import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
+import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { ContactUs } from "./ContactUs";
 
@@ -294,7 +295,7 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {level === 1 && !journey.isWildcard && july12Registered && !isCycle1Cleared(assessments, userId) ? (
+      {level === 1 && !journey.isWildcard && july12Registered && !isInL1July25MockAllowlist(userId) && !isCycle1Cleared(assessments, userId) ? (
         <L1July12RegisteredBanner />
       ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) && isL1July26MockLinkOpen() && hasSuccessfulSlotRegistration(registration) ? (
         <L1July26MockBanner />

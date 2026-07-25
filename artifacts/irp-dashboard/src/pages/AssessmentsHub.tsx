@@ -40,6 +40,7 @@ import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
 import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
+import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 
@@ -371,7 +372,10 @@ export function AssessmentsHub({
   const july26Registered = july26Allowed && hasSuccessfulSlotRegistration(registration);
   const july26MockLinkOpen = isL1July26MockLinkOpen();
 
-  const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
+  const onJuly25MockAllowlist = level === 1 && isInL1July25MockAllowlist(userId);
+  // July 25 mock cohort gets the dedicated callout; hide the stale July 12
+  // "Stay tuned" Mock / Hustler cards for those students.
+  const assessmentsForLevel = onJuly25MockAllowlist ? [] : ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
   // Cohort members (july12Registered) OR students in the DB exam-access list get
@@ -405,7 +409,9 @@ export function AssessmentsHub({
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {level === 1 && isCycle1Cleared(assessments)
+          {level === 1 && onJuly25MockAllowlist
+            ? "Your L1 mock assessment link is available below during the mock window."
+            : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
             : level === 1 && july12Registered
             ? `Already registered for ${L1_JULY12_EXAM_DATE_LABEL}. Your 6:00 PM – 8:00 PM IST slot is booked — details will appear closer to the exam.`
@@ -424,6 +430,7 @@ export function AssessmentsHub({
       {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
+        onJuly25MockAllowlist ? null : (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
             <ClipboardList className="h-5 w-5" />
@@ -433,6 +440,7 @@ export function AssessmentsHub({
             Assessments for {meta.name} will appear here once they are scheduled.
           </p>
         </div>
+        )
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {assessmentsForLevel.map((a) => {
