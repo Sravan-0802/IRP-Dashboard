@@ -26,6 +26,7 @@ import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
+import { useAcademyUserId } from "@/lib/useAcademyUserId";
 import { PAYMENT_CONCERNS_FORM_URL } from "@/pages/PaymentRequired";
 
 export default function Dashboard() {
@@ -127,6 +128,9 @@ export default function Dashboard() {
     };
   }, [subjects, displayProgress]);
 
+  const emailDerivedUserId = displayStudent?.email?.split("@")[0] ?? "";
+  const userId = useAcademyUserId(emailDerivedUserId);
+
   if (loadingJourney || loadingPayment || !journey || !displayStudent) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
@@ -160,7 +164,6 @@ export default function Dashboard() {
   }
 
   const firstName = displayStudent.name.split(" ")[0];
-  const userId = displayStudent.email.split("@")[0];
 
   function openSwitchToStandard() {
     setSettingsMode("to-standard");

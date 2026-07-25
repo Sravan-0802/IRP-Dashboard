@@ -337,5 +337,5 @@ const L1_JULY25_MOCK_ALLOWLIST = new Set<string>([
 
 export function isInL1July25MockAllowlist(userId: string | null | undefined): boolean {
   if (!userId) return false;
-  return L1_JULY25_MOCK_ALLOWLIST.has(userId);
+  return L1_JULY25_MOCK_ALLOWLIST.has(userId.trim().toLowerCase());
 }
