@@ -135,9 +135,10 @@ export function isL1July12ExamWindowClosed(now = new Date()): boolean {
 
 /**
  * L1 Mock Assessment window for registered students:
- * 25 July 2026 02:00 PM IST → 26 July 2026 10:00 AM IST.
+ * Opened early for verification; closes 26 July 2026 10:00 AM IST.
+ * (Originally scheduled from 25 July 02:00 PM IST.)
  */
-export const L1_JULY25_MOCK_OPEN_DATE = new Date("2026-07-25T14:00:00+05:30");
+export const L1_JULY25_MOCK_OPEN_DATE = new Date("2026-07-25T11:00:00+05:30");
 export const L1_JULY25_MOCK_CLOSE_DATE = new Date("2026-07-26T10:00:00+05:30");
 
 export function isL1July25MockLinkOpen(now = new Date()): boolean {
