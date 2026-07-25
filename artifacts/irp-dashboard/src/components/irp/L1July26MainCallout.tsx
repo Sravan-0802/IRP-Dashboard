@@ -13,9 +13,8 @@ interface L1July26MainCalloutProps {
   userId: string;
 }
 
-/** Main Hustler link for registered (allowlisted) students — visible ahead of the exam window. */
+/** Main Hustler link for registered (allowlisted) students. */
 export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
-  if (!isL1July26MainLinkVisible()) return null;
   if (!isInL1July25MockAllowlist(userId)) return null;
 
   const live = isL1July26MainLinkLive();
@@ -42,9 +41,6 @@ export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
               {live
                 ? "Your main assessment is live. Open the link and begin now."
                 : `This is your official Level 1 assessment. The link becomes active at ${L1_JULY26_MAIN_START_LABEL}.`}
-            </p>
-            <p className="mt-1.5 text-xs font-semibold text-[#e67700]">
-              🕐 {L1_JULY26_MAIN_WINDOW_LABEL}
             </p>
           </div>
         </div>

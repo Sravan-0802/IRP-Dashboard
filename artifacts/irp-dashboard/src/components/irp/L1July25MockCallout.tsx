@@ -13,9 +13,8 @@ interface L1July25MockCalloutProps {
   userId: string;
 }
 
-/** Shown only for L1-registered (allowlisted) students within the mock window. */
+/** Shown for all L1-registered (allowlisted) students. */
 export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
-  if (!isL1July25MockLinkOpen()) return null;
   if (!isInL1July25MockAllowlist(userId)) return null;
 
   function onStartMock() {
@@ -38,9 +37,6 @@ export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
               Complete the L1 mock assessment. Available until {L1_JULY25_MOCK_AVAILABLE_UNTIL}.
-            </p>
-            <p className="mt-1.5 text-xs font-semibold text-brand">
-              🕐 {L1_JULY25_MOCK_WINDOW_LABEL}
             </p>
           </div>
         </div>
