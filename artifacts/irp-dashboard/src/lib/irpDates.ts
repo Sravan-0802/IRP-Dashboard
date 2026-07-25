@@ -166,6 +166,17 @@ export function isL1July26RegistrationOpen(now = new Date()): boolean {
   );
 }
 
+/**
+ * Mock link window: 25 July 2:00 PM IST → 26 July 10:00 AM IST.
+ * Registered students can open the July 26 mock assessment only within this window.
+ */
+export const L1_JULY26_MOCK_OPEN_DATE  = new Date("2026-07-25T14:00:00+05:30");
+export const L1_JULY26_MOCK_CLOSE_DATE = new Date("2026-07-26T10:00:00+05:30");
+
+export function isL1July26MockLinkOpen(now = new Date()): boolean {
+  return now >= L1_JULY26_MOCK_OPEN_DATE && now < L1_JULY26_MOCK_CLOSE_DATE;
+}
+
 /** July 26 re-conduction — live only on assessment day until results unlock. */
 export function isL1July26AssessmentLive(now = new Date()): boolean {
   return now >= L1_JULY26_EXAM_DATE && now < L1_JULY26_RESULTS_UNLOCK_DATE;

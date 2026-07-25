@@ -19,6 +19,7 @@ import {
 } from "@/lib/assessment";
 import {
   areAssignmentResultsVisible,
+  isL1July26MockLinkOpen,
   L1_CYCLE2_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
@@ -42,6 +43,8 @@ import { AiMockCallout } from "./AiMockCallout";
 import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
+import { L1July26MockBanner } from "./L1July26MockBanner";
+import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
@@ -293,6 +296,8 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard && july12Registered && !isCycle1Cleared(assessments, userId) ? (
         <L1July12RegisteredBanner />
+      ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) && isL1July26MockLinkOpen() && hasSuccessfulSlotRegistration(registration) ? (
+        <L1July26MockBanner />
       ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) ? (
         <L1AssessmentBanner
           assessments={assessments}

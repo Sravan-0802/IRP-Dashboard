@@ -13,6 +13,7 @@ import {
   L1_JULY12_HUSTLER_CALENDAR,
   L1_JULY12_HUSTLER_SLOTS,
   L1_MOCK_ASSESSMENT_URL,
+  L1_JULY26_MOCK_ASSESSMENT_URL,
   L1_JULY12_MAIN_URL,
   L1_HUSTLER_MAIN_URLS,
   L1_JULY12_REGISTERED_HUB_NOTE,
@@ -29,7 +30,9 @@ import {
   hasL1July12RegistrationStarted,
   isL1July12MockLinkOpen,
   isL1July12MainLinkOpen,
+  isL1July26MockLinkOpen,
 } from "@/lib/irpDates";
+import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
 import { isCycle1Cleared, shouldShowJuly12SlotCalendar } from "@/lib/l1StudentTrack";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
@@ -347,6 +350,7 @@ export function AssessmentsHub({
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const { examAccess } = useL1ExamAccess();
   const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
+  const { allowed: july26Allowed } = useL1July26Allowlist();
   const { data: nxtmockData } = useNxtmockInterview();
   const nxtmock = nxtmockData?.interview ?? null;
   const hustlerState = statuses["l1-hustler"] ?? {
@@ -362,6 +366,10 @@ export function AssessmentsHub({
   const july12RegistrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
   const mockLinkOpen = isL1July12MockLinkOpen();
   const mainLinkOpen = isL1July12MainLinkOpen();
+
+  // July 26 registered = in allowlist AND successfully booked a slot.
+  const july26Registered = july26Allowed && hasSuccessfulSlotRegistration(registration);
+  const july26MockLinkOpen = isL1July26MockLinkOpen();
 
   const assessmentsForLevel = ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
@@ -429,14 +437,19 @@ export function AssessmentsHub({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {assessmentsForLevel.map((a) => {
             // Inject the COMMON mock link for students who are on the exam-platform list.
+            // July 26 registered students get their own mock URL during the mock window.
             const config =
-              a.id === "l1-mock" && hasExamAccess ? { ...a, url: L1_MOCK_ASSESSMENT_URL } : a;
+              a.id === "l1-mock" && july26Registered
+                ? { ...a, url: L1_JULY26_MOCK_ASSESSMENT_URL }
+                : a.id === "l1-mock" && hasExamAccess
+                ? { ...a, url: L1_MOCK_ASSESSMENT_URL }
+                : a;
             const derived = deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" });
             // The common mock link must stay startable for exam-access students even
             // if they already wrote the earlier (cycle-1) assessment, which would
             // otherwise mark the mock "done". Fall back to their local mock state.
             const state =
-              a.id === "l1-mock" && hasExamAccess && derived.status === "done"
+              a.id === "l1-mock" && (hasExamAccess || july26Registered) && derived.status === "done"
                 ? statuses[a.id] ?? { status: "todo" as AssessmentStatus }
                 : derived;
             return (
@@ -447,7 +460,7 @@ export function AssessmentsHub({
               onUpdate={(next) => update(a.id, next)}
               examMainUrl={a.id === "l1-hustler" ? examMainUrl : undefined}
               examMainSlotLabel={examMainSlotLabel}
-              mockLinkOpen={mockLinkOpen}
+              mockLinkOpen={july26Registered ? july26MockLinkOpen : mockLinkOpen}
               mainLinkOpen={mainLinkOpen}
               examMainPendingNote={
                 a.id === "l1-hustler"
