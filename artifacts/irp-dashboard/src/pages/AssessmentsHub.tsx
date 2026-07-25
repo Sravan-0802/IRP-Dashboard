@@ -191,7 +191,7 @@ function AssessmentCard({
 
   function openExamMock() {
     if (!assessmentUrl) return;
-    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MOCK_ASSESSMENT_LINK_CLICK);
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK);
     window.open(assessmentUrl, "_blank", "noopener,noreferrer");
   }
 
@@ -200,7 +200,7 @@ function AssessmentCard({
     if (!url) return;
     trackDashboardEvent(
       config.kind === "mock"
-        ? DASHBOARD_ANALYTICS_EVENTS.MOCK_ASSESSMENT_LINK_CLICK
+        ? DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK
         : DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK,
     );
     window.open(url, "_blank", "noopener,noreferrer");

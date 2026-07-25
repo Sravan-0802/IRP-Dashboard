@@ -8,7 +8,7 @@ import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics
  */
 export function L1July26MockBanner({ compact = false }: { compact?: boolean }) {
   function openMock() {
-    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MOCK_ASSESSMENT_LINK_CLICK);
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK);
     window.open(L1_JULY26_MOCK_ASSESSMENT_URL, "_blank", "noopener,noreferrer");
   }
 

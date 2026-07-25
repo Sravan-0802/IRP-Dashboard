@@ -7,13 +7,14 @@ import { rowToL1RegistrationResponse } from "../lib/l1Registration";
 const router = Router();
 
 const EVENT_LABELS: Record<string, string> = {
+  l1_july25_mock_start_click: "L1 Mock Start — people clicked",
   dashboard_visit: "Users who visited the dashboard",
   nav_dashboard: "Dashboard nav clicks",
   nav_assessments_hub: "Assessments Hub clicks",
   nav_assessment_calendar: "Assessment Calendar clicks",
   feedback_open: "Feedback opens",
   contact_us_click: "Help & Support clicks",
-  mock_assessment_link_click: "Mock assessment link clicks",
+  mock_assessment_link_click: "Mock assessment link clicks (legacy)",
   main_assessment_link_click: "Main assessment link clicks",
 };
 

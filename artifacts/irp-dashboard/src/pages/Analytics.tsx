@@ -245,8 +245,23 @@ export default function AnalyticsPage() {
     setLoading(true);
     setError("");
     try {
+      const trimmed = key.trim();
+      // One-time wipe of prior mock-click rows so the admin counter starts at 0.
+      const resetKey = "irp_l1_mock_clicks_reset_20260725";
+      try {
+        if (!localStorage.getItem(resetKey)) {
+          const resetRes = await fetch("/api/admin/analytics/reset-l1-mock-clicks", {
+            method: "POST",
+            headers: { "x-api-key": trimmed },
+          });
+          if (resetRes.ok) localStorage.setItem(resetKey, "1");
+        }
+      } catch {
+        // Reset is best-effort; still load the dashboard.
+      }
+
       const res = await fetch("/api/analytics/dashboard", {
-        headers: { "x-api-key": key.trim() },
+        headers: { "x-api-key": trimmed },
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -257,8 +272,8 @@ export default function AnalyticsPage() {
         l1Registrations: (body as AnalyticsSummary).l1Registrations ?? [],
         l1RegistrationCount: (body as AnalyticsSummary).l1RegistrationCount ?? 0,
       });
-      storeKey(key.trim());
-      setApiKey(key.trim());
+      storeKey(trimmed);
+      setApiKey(trimmed);
     } catch (err) {
       setData(null);
       setError(err instanceof Error ? err.message : "Could not load analytics.");
@@ -565,9 +580,16 @@ export default function AnalyticsPage() {
             {activeTab === "overview" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {data.events.map((metric) => (
-                <div key={metric.eventType} className="irp-card p-5">
+                <div
+                  key={metric.eventType}
+                  className={
+                    metric.eventType === "l1_july25_mock_start_click"
+                      ? "irp-card border-2 border-[rgba(103,65,217,0.35)] bg-[linear-gradient(140deg,#f3f0ff_0%,#ffffff_70%)] p-5"
+                      : "irp-card p-5"
+                  }
+                >
                   <div className="mb-3 flex items-center gap-2 text-[#6741d9]">
-                    {metric.eventType === "dashboard_visit" ? (
+                    {metric.eventType === "dashboard_visit" || metric.eventType === "l1_july25_mock_start_click" ? (
                       <Users className="h-4 w-4" />
                     ) : (
                       <MousePointerClick className="h-4 w-4" />
@@ -575,7 +597,11 @@ export default function AnalyticsPage() {
                     <span className="text-[11px] font-bold uppercase tracking-wider">{metric.label}</span>
                   </div>
                   <p className="font-display text-3xl font-extrabold text-[#0d1117]">{metric.uniqueUsers}</p>
-                  <p className="mt-1 text-xs font-medium text-[#6e6a8a]">unique users</p>
+                  <p className="mt-1 text-xs font-medium text-[#6e6a8a]">
+                    {metric.eventType === "l1_july25_mock_start_click"
+                      ? "people clicked Start Mock"
+                      : "unique users"}
+                  </p>
                   <p className="mt-3 text-sm font-semibold text-[#3b5bdb]">
                     {metric.totalClicks.toLocaleString()} total clicks
                   </p>

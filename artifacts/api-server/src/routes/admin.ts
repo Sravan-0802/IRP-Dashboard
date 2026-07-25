@@ -8,6 +8,7 @@ import {
   l1ExamAccessTable,
   unpaidUsersTable,
   blockedUsersTable,
+  dashboardAnalyticsEventsTable,
 } from "@workspace/db";
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
@@ -505,6 +506,31 @@ router.put("/admin/visibility-settings", async (req, res) => {
     res.json(toResponse(map, updatedAt, syncByTable, countsByKey));
   } catch (err) {
     req.log.error({ err }, "Failed to update visibility settings");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/** Event types wiped when starting a fresh L1 Mock Start click counter. */
+const L1_MOCK_CLICK_EVENT_TYPES = [
+  "l1_july25_mock_start_click",
+  "mock_assessment_link_click",
+] as const;
+
+// POST /api/admin/analytics/reset-l1-mock-clicks — zero the L1 Mock Start
+// people-clicked counter (admin API key required). Deletes prior click rows.
+router.post("/admin/analytics/reset-l1-mock-clicks", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const deleted = await db
+      .delete(dashboardAnalyticsEventsTable)
+      .where(inArray(dashboardAnalyticsEventsTable.eventType, [...L1_MOCK_CLICK_EVENT_TYPES]))
+      .returning({ id: dashboardAnalyticsEventsTable.id });
+    res.json({ ok: true, deletedRows: deleted.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to reset L1 mock click analytics");
     res.status(500).json({ error: "Internal server error" });
   }
 });

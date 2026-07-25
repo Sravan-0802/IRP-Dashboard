@@ -260,7 +260,10 @@ export function BookSlot({
       </div>
 
       {slotBooked ? (
-        <SlotConfirmedContent registration={registration} />
+        <ComingSoonPanel
+          title="Assessment calendar"
+          description="Slot booking confirmation is hidden for now. Use the IRP 2.0 L1 Mock Assessment card on your Dashboard or Assessments Hub to start the mock."
+        />
       ) : showCalendar ? (
         <AssessmentCalendarContent />
       ) : (

@@ -7,6 +7,7 @@ import {
   L1_JULY25_MOCK_URL,
   L1_JULY25_MOCK_WINDOW_LABEL,
 } from "@/lib/l1July25MockConfig";
+import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 
 interface L1July25MockCalloutProps {
   userId: string;
@@ -16,6 +17,10 @@ interface L1July25MockCalloutProps {
 export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
   if (!isL1July25MockLinkOpen()) return null;
   if (!isInL1July25MockAllowlist(userId)) return null;
+
+  function onStartMock() {
+    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK);
+  }
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">
@@ -44,6 +49,7 @@ export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
           href={L1_JULY25_MOCK_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onStartMock}
           className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl px-5 py-2.5 text-sm font-bold sm:self-center"
         >
           <ExternalLink className="h-4 w-4" />

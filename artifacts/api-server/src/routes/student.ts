@@ -479,6 +479,7 @@ const ANALYTICS_EVENT_TYPES = new Set([
   "feedback_open",
   "contact_us_click",
   "mock_assessment_link_click",
+  "l1_july25_mock_start_click",
   "main_assessment_link_click",
 ]);
 
