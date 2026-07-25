@@ -133,6 +133,17 @@ export function isL1July12ExamWindowClosed(now = new Date()): boolean {
   return now >= L1_JULY12_EXAM_DATE && !isL1July12AssessmentLive(now);
 }
 
+/**
+ * L1 Mock Assessment window for registered students:
+ * 25 July 2026 02:00 PM IST → 26 July 2026 10:00 AM IST.
+ */
+export const L1_JULY25_MOCK_OPEN_DATE = new Date("2026-07-25T14:00:00+05:30");
+export const L1_JULY25_MOCK_CLOSE_DATE = new Date("2026-07-26T10:00:00+05:30");
+
+export function isL1July25MockLinkOpen(now = new Date()): boolean {
+  return now >= L1_JULY25_MOCK_OPEN_DATE && now < L1_JULY25_MOCK_CLOSE_DATE;
+}
+
 /** L1 Cycle 3 re-conduction — 26th July 2026. */
 export const L1_JULY26_EXAM_DATE = new Date("2026-07-26T00:00:00+05:30");
 export const L1_JULY26_EXAM_DATE_LABEL = "26th July 2026";

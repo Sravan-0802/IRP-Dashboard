@@ -36,6 +36,7 @@ import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
+import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
 import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 
@@ -405,6 +406,8 @@ export function AssessmentsHub({
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
+
+      {level === 1 && <L1July25MockCallout userId={userId} />}
 
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
