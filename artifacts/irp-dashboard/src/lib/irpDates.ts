@@ -177,6 +177,23 @@ export function isL1July26MockLinkOpen(now = new Date()): boolean {
   return now >= L1_JULY26_MOCK_OPEN_DATE && now < L1_JULY26_MOCK_CLOSE_DATE;
 }
 
+/**
+ * Main (Hustler) assessment window: 26 July 6:00 PM IST → 26 July 8:00 PM IST.
+ * The link is shown to registered students ahead of time so they can plan, and
+ * is only live inside the window.
+ */
+export const L1_JULY26_MAIN_VISIBLE_FROM_DATE = new Date("2026-07-25T00:00:00+05:30");
+export const L1_JULY26_MAIN_OPEN_DATE = new Date("2026-07-26T18:00:00+05:30");
+export const L1_JULY26_MAIN_CLOSE_DATE = new Date("2026-07-26T20:00:00+05:30");
+
+export function isL1July26MainLinkVisible(now = new Date()): boolean {
+  return now >= L1_JULY26_MAIN_VISIBLE_FROM_DATE && now < L1_JULY26_MAIN_CLOSE_DATE;
+}
+
+export function isL1July26MainLinkLive(now = new Date()): boolean {
+  return now >= L1_JULY26_MAIN_OPEN_DATE && now < L1_JULY26_MAIN_CLOSE_DATE;
+}
+
 /** July 26 re-conduction — live only on assessment day until results unlock. */
 export function isL1July26AssessmentLive(now = new Date()): boolean {
   return now >= L1_JULY26_EXAM_DATE && now < L1_JULY26_RESULTS_UNLOCK_DATE;

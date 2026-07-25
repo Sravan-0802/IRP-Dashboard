@@ -37,6 +37,7 @@ import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
 import { FeMockCallout } from "./FeMockCallout";
 import { L1July25MockCallout } from "./L1July25MockCallout";
+import { L1July26MainCallout } from "./L1July26MainCallout";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { AiMockCallout } from "./AiMockCallout";
@@ -352,6 +353,10 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard ? (
         <L1July25MockCallout userId={userId} />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <L1July26MainCallout userId={userId} />
       ) : null}
 
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (

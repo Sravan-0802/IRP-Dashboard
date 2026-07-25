@@ -40,6 +40,7 @@ import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
 import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
+import { L1July26MainCallout } from "@/components/irp/L1July26MainCallout";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
@@ -410,7 +411,7 @@ export function AssessmentsHub({
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
           {level === 1 && onJuly25MockAllowlist
-            ? "Your L1 mock assessment link is available below during the mock window."
+            ? "Your L1 mock link (until 26 Jul, 10:00 AM IST) and main Hustler link (26 Jul, 6:00 PM – 8:00 PM IST) are below."
             : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
             : level === 1 && july12Registered
@@ -422,6 +423,8 @@ export function AssessmentsHub({
       </div>
 
       {level === 1 && <L1July25MockCallout userId={userId} />}
+
+      {level === 1 && <L1July26MainCallout userId={userId} />}
 
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
