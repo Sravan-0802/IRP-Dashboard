@@ -331,6 +331,8 @@ const L1_JULY25_MOCK_ALLOWLIST = new Set<string>([
   "dbd98e63-ddae-4f5a-b297-955e4c91930f",
   "f086a132-9265-4f67-a2c7-0ac6c727087e",
   "b30cd532-b24d-4dc2-a0f5-4edeaabd06c7",
+  // Test user
+  "39c7d7ae-76e4-445b-a5de-8f01de1db436",
 ]);
 
 export function isInL1July25MockAllowlist(userId: string | null | undefined): boolean {
