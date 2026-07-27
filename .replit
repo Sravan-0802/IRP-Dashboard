@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "bash"]
+modules = ["nodejs-20", "web", "bash", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -9,7 +9,6 @@ args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
 
 [workflows]
-runButton = "Project"
 
 [agent]
 stack = "PNPM_WORKSPACE"
@@ -42,3 +41,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ANALYTICS_ADMIN_KEY = "irp_9dd9f74e0b0a9a1085b0d1964c6389d8d996"
+ACADEMY_USER_ID = "dev-user-00000000-0000-0000-0000-000000000001"
