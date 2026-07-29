@@ -48,13 +48,13 @@ export type VisibilitySettingsResponse = {
 };
 
 /**
- * Defaults OFF for synced result stages — admin must approve release.
- * Course progress stays ON (not an exam-result release gate).
+ * Defaults OFF for synced result stages unless explicitly released.
+ * AI Mock results and course progress stay ON by default.
  */
 const DEFAULT_VISIBLE: VisibilitySettingsMap = {
   online_l1_results: false,
   fe_project_results: false,
-  ai_mock_results: false,
+  ai_mock_results: true,
   human_interview_results: false,
   course_progress: true,
 };

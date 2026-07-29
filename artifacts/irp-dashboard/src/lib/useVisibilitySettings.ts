@@ -10,11 +10,11 @@ export type VisibilitySettings = {
   updatedAt: string | null;
 };
 
-/** Conservative client defaults while loading — hide exam results until API says otherwise. */
+/** Conservative client defaults while loading — AI Mock results are now released. */
 const DEFAULTS: VisibilitySettings = {
   onlineL1Results: false,
   feProjectResults: false,
-  aiMockResults: false,
+  aiMockResults: true,
   humanInterviewResults: false,
   courseProgress: true,
   updatedAt: null,
@@ -37,7 +37,7 @@ async function fetchVisibilitySettings(): Promise<VisibilitySettings> {
   return {
     onlineL1Results: data.onlineL1Results ?? false,
     feProjectResults: data.feProjectResults ?? false,
-    aiMockResults: data.aiMockResults ?? false,
+    aiMockResults: data.aiMockResults ?? true,
     humanInterviewResults: data.humanInterviewResults ?? false,
     courseProgress: data.courseProgress ?? true,
     updatedAt: data.updatedAt ?? null,
