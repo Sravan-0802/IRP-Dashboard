@@ -38,9 +38,11 @@ import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
+<<<<<<< HEAD
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
+=======
+>>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
-import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -74,12 +76,6 @@ function resolveAssessmentUrl(config: AssessmentConfig, slotId?: string): string
 
 const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
   1: [
-    {
-      id: "l1-mock",
-      title: "Mock Assessment",
-      description: "A practice run that mirrors the real L1 exam format. Attempt it before your Hustler assessment.",
-      kind: "mock",
-    },
     {
       id: "l1-hustler",
       title: "L1 Hustler",
@@ -420,11 +416,14 @@ export function AssessmentsHub({
         </p>
       </div>
 
+<<<<<<< HEAD
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
 
       {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
+=======
+>>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 
       {assessmentsForLevel.length === 0 ? (
         onJuly25MockAllowlist ? null : (
@@ -441,22 +440,8 @@ export function AssessmentsHub({
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {assessmentsForLevel.map((a) => {
-            // Inject the COMMON mock link for students who are on the exam-platform list.
-            // July 26 registered students get their own mock URL during the mock window.
-            const config =
-              a.id === "l1-mock" && july26Registered
-                ? { ...a, url: L1_JULY26_MOCK_ASSESSMENT_URL }
-                : a.id === "l1-mock" && hasExamAccess
-                ? { ...a, url: L1_MOCK_ASSESSMENT_URL }
-                : a;
-            const derived = deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" });
-            // The common mock link must stay startable for exam-access students even
-            // if they already wrote the earlier (cycle-1) assessment, which would
-            // otherwise mark the mock "done". Fall back to their local mock state.
-            const state =
-              a.id === "l1-mock" && (hasExamAccess || july26Registered) && derived.status === "done"
-                ? statuses[a.id] ?? { status: "todo" as AssessmentStatus }
-                : derived;
+            const config = a;
+            const state = deriveAssessmentState(a, assessments, level, statuses[a.id] ?? { status: "todo" });
             return (
             <AssessmentCard
               key={a.id}

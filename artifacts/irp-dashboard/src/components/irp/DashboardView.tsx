@@ -19,7 +19,6 @@ import {
 } from "@/lib/assessment";
 import {
   areAssignmentResultsVisible,
-  isL1July26MockLinkOpen,
   L1_CYCLE2_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
 import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
@@ -35,15 +34,15 @@ import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
+<<<<<<< HEAD
 import { FeMockCallout } from "./FeMockCallout";
+=======
+>>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
-import { AiMockCallout } from "./AiMockCallout";
 import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
-import { L1July26MockBanner } from "./L1July26MockBanner";
-import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
 import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
@@ -296,8 +295,6 @@ export function DashboardView({
 
       {level === 1 && !journey.isWildcard && july12Registered && !isInL1July25MockAllowlist(userId) && !isCycle1Cleared(assessments, userId) ? (
         <L1July12RegisteredBanner />
-      ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) && isL1July26MockLinkOpen() && hasSuccessfulSlotRegistration(registration) ? (
-        <L1July26MockBanner />
       ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) ? (
         <L1AssessmentBanner
           assessments={assessments}
@@ -349,6 +346,7 @@ export function DashboardView({
         />
       ) : null}
 
+<<<<<<< HEAD
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
       ) : null}
@@ -361,6 +359,9 @@ export function DashboardView({
           userId={userId}
         />
       ) : null}
+=======
+
+>>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 
       {level === 1 && !journey.isWildcard ? (
         <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />
