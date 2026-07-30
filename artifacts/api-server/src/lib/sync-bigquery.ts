@@ -332,6 +332,26 @@ export interface SyncResult {
 
 let syncInProgress = false;
 
+/** Keep serial sequences ahead of max(id) after dump/restore so upserts don't collide on PK. */
+async function ensureSerialSequences(): Promise<void> {
+  const tables = [
+    "academy_user_course_progress",
+    "academy_user_assessment_details",
+    "academy_user_nxtmock_details",
+  ];
+  for (const table of tables) {
+    try {
+      await db.execute(
+        sql.raw(
+          `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1))`,
+        ),
+      );
+    } catch (err) {
+      logger.warn({ table, err }, "Could not realign serial sequence before sync");
+    }
+  }
+}
+
 /**
  * Pulls all IRP tables from BigQuery and upserts them into Postgres.
  * Each table is tracked independently so one failure does not block the other.
@@ -356,6 +376,7 @@ export async function runBigQuerySync(): Promise<SyncResult> {
 
   syncInProgress = true;
   try {
+    await ensureSerialSequences();
     const results = [
       await runOne(BASIC_DETAILS_KEY, syncBasicDetails),
       await runOne(COURSE_PROGRESS_KEY, syncCourseProgress),

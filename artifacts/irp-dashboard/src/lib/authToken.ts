@@ -4,7 +4,7 @@ const POST_LOGIN_PATH_KEY = "irp_post_login_path";
 
 /** SSO login page — users land here when visiting the dashboard without a token. */
 export const LOGIN_URL =
-  import.meta.env.VITE_LOGIN_URL ?? "https://meetings.ccbp.in/mid/irp_dashboard";
+  import.meta.env.VITE_LOGIN_URL ?? "https://meetings.ccbp.in/mid/irp-academy-dashboard";
 
 export function getAuthToken(): string | null {
   try {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -300,6 +300,18 @@ export default function AnalyticsPage() {
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [visibilitySavingField, setVisibilitySavingField] = useState<VisibilityFlag | null>(null);
   const [visibilityError, setVisibilityError] = useState("");
+  const [syncRunning, setSyncRunning] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncError, setSyncError] = useState("");
+  const [syncTables, setSyncTables] = useState<
+    Array<{
+      tableName: string;
+      status: string;
+      rowCount: number | null;
+      lastSyncedAt: string | null;
+      error: string | null;
+    }>
+  >([]);
 
   const loadVisibility = useCallback(async (key: string) => {
     if (!key.trim()) return;
@@ -319,15 +331,68 @@ export default function AnalyticsPage() {
     }
   }, []);
 
+  const loadSyncStatus = useCallback(async (key: string) => {
+    if (!key.trim()) return;
+    try {
+      const res = await fetch("/api/sync/status", {
+        headers: { "x-api-key": key.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { message?: string }).message ?? "Failed to load sync status");
+      const tables = (body as { tables?: typeof syncTables }).tables ?? [];
+      setSyncTables(tables);
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Could not load sync status");
+    }
+  }, []);
+
+  async function runManualSync() {
+    if (!apiKey || syncRunning) return;
+    setSyncRunning(true);
+    setSyncError("");
+    setSyncMessage("Syncing BigQuery → database… this can take a few minutes.");
+    try {
+      const res = await fetch("/api/sync/bigquery", {
+        method: "POST",
+        headers: { "x-api-key": apiKey },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (body as { message?: string; error?: string }).message ??
+            (body as { error?: string }).error ??
+            `Sync failed (${res.status})`,
+        );
+      }
+      const results = (body as { ok?: boolean; results?: Array<{ table: string; status: string; rowCount: number; error?: string }> }).results ?? [];
+      const ok = (body as { ok?: boolean }).ok === true;
+      const summary = results
+        .map((r) => `${r.table}: ${r.status}${r.rowCount ? ` (${r.rowCount.toLocaleString()} rows)` : ""}${r.error ? ` — ${r.error}` : ""}`)
+        .join(" · ");
+      setSyncMessage(ok ? `Sync complete. ${summary}` : `Sync finished with errors. ${summary}`);
+      if (!ok) setSyncError("One or more tables failed. Check server logs if this persists.");
+      await Promise.all([loadSyncStatus(apiKey), loadVisibility(apiKey)]);
+    } catch (err) {
+      setSyncMessage("");
+      setSyncError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncRunning(false);
+    }
+  }
+
   useEffect(() => {
-    if (apiKey) void loadVisibility(apiKey);
-  }, [apiKey, loadVisibility]);
+    if (apiKey) {
+      void loadVisibility(apiKey);
+      void loadSyncStatus(apiKey);
+    }
+  }, [apiKey, loadVisibility, loadSyncStatus]);
 
   useEffect(() => {
     if (activeTab === "visibility" && apiKey) {
       void loadVisibility(apiKey);
+      void loadSyncStatus(apiKey);
     }
-  }, [activeTab, apiKey, loadVisibility]);
+  }, [activeTab, apiKey, loadVisibility, loadSyncStatus]);
 
   async function setStageVisibility(field: VisibilityFlag, visible: boolean) {
     if (!apiKey || visibilitySavingField) return;
@@ -1141,6 +1206,65 @@ export default function AnalyticsPage() {
             )}
 
             {activeTab === "visibility" && (
+            <div className="space-y-4">
+            <div className="irp-card p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-[#6741d9]" />
+                  <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                    BigQuery sync
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void runManualSync()}
+                  disabled={syncRunning || !apiKey}
+                  className="btn-pop flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {syncRunning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  {syncRunning ? "Syncing…" : "Sync now"}
+                </button>
+              </div>
+              <p className="mb-3 text-sm text-[#6e6a8a]">
+                Pull the latest student data from BigQuery into the production database. Use this for
+                your daily morning refresh. Full sync can take a few minutes.
+              </p>
+              {syncMessage ? (
+                <div className="mb-3 rounded-xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3 text-sm font-medium text-[#3b3069]">
+                  {syncMessage}
+                </div>
+              ) : null}
+              {syncError ? (
+                <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {syncError}
+                </div>
+              ) : null}
+              {syncTables.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {syncTables.map((t) => (
+                    <div
+                      key={t.tableName}
+                      className="rounded-lg border border-[rgba(103,65,217,0.1)] bg-white px-3 py-2 text-xs"
+                    >
+                      <p className="font-bold text-[#0d1117]">{t.tableName}</p>
+                      <p className="mt-0.5 text-[#6e6a8a]">
+                        {t.status}
+                        {t.rowCount != null ? ` · ${t.rowCount.toLocaleString()} rows` : ""}
+                        {t.lastSyncedAt ? ` · ${formatDate(t.lastSyncedAt)}` : ""}
+                      </p>
+                      {t.error ? <p className="mt-1 text-red-600">{t.error}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-[#6e6a8a]">No sync status recorded yet.</p>
+              )}
+            </div>
+
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -1361,6 +1485,7 @@ export default function AnalyticsPage() {
               ) : (
                 <p className="py-4 text-sm text-[#6e6a8a]">No visibility stages returned.</p>
               )}
+            </div>
             </div>
             )}
 
