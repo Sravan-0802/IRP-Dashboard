@@ -34,12 +34,10 @@ import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
-<<<<<<< HEAD
 import { FeMockCallout } from "./FeMockCallout";
-=======
->>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
+import { AiMockCallout } from "./AiMockCallout";
 import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
@@ -346,7 +344,6 @@ export function DashboardView({
         />
       ) : null}
 
-<<<<<<< HEAD
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
       ) : null}
@@ -359,9 +356,6 @@ export function DashboardView({
           userId={userId}
         />
       ) : null}
-=======
-
->>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 
       {level === 1 && !journey.isWildcard ? (
         <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />

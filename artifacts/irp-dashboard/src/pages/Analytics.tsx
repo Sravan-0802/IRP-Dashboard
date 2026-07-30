@@ -12,6 +12,8 @@ type AnalyticsUser = {
   academyUserId: string;
   userName: string | null;
   totalEvents: number;
+  logins?: number;
+  paid?: boolean;
   firstSeen: string | null;
   lastSeen: string | null;
   metrics: Array<{ eventType: string; clicks: number }>;
@@ -238,6 +240,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState("");
   const [previewingUserId, setPreviewingUserId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState("");
+  const [paymentTogglingId, setPaymentTogglingId] = useState<string | null>(null);
 
   async function openUserPreview(academyUserId: string) {
     if (!apiKey || !academyUserId || previewingUserId) return;
@@ -263,6 +266,40 @@ export default function AnalyticsPage() {
       setPreviewError(err instanceof Error ? err.message : "Could not open user preview");
     } finally {
       setPreviewingUserId(null);
+    }
+  }
+
+  async function togglePaymentStatus(academyUserId: string, currentlyPaid: boolean) {
+    if (!apiKey || !academyUserId || paymentTogglingId) return;
+    setPaymentTogglingId(academyUserId);
+    setPreviewError("");
+    try {
+      const res = await fetch(`/api/admin/unpaid-users/${encodeURIComponent(academyUserId)}`, {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({ unpaid: currentlyPaid }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((body as { error?: string }).error ?? `Payment update failed (${res.status})`);
+      }
+      const paid = (body as { paid?: boolean }).paid === true;
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          users: prev.users.map((u) =>
+            u.academyUserId === academyUserId ? { ...u, paid } : u,
+          ),
+        };
+      });
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Could not update payment status");
+    } finally {
+      setPaymentTogglingId(null);
     }
   }
 
@@ -710,27 +747,29 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-2">
                   <UserRound className="h-4 w-4 text-[#6741d9]" />
                   <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
-                    Visitors{" "}
+                    Users{" "}
                     <span className="text-sm font-semibold text-[#6e6a8a]">
                       ({data.totalVisitors})
                     </span>
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-xs text-[#6e6a8a]">Every user who opened the dashboard and what they did</p>
+                  <p className="text-xs text-[#6e6a8a]">
+                    Click Payment to toggle Paid ↔ Unpaid · View profile opens that student&apos;s dashboard
+                  </p>
                   {data.users.length > 0 && (
                     <button
                       type="button"
                       onClick={() => {
-                        const headers = ["Name", "Academy User ID", ...dailyColumns.map((c) => c.label), "Total Events", "Last Active"];
+                        const headers = ["UID", "Name", "Logins", "Last Login", "Payment"];
                         const rows = data.users.map((u) => [
-                          u.userName?.trim() || "Unnamed student",
                           u.academyUserId,
-                          ...dailyColumns.map((col) => String(u.metrics.find((m) => m.eventType === col.eventType)?.clicks ?? 0)),
-                          String(u.totalEvents),
+                          u.userName?.trim() || "Unnamed student",
+                          String(u.logins ?? u.metrics.find((m) => m.eventType === "dashboard_visit")?.clicks ?? 0),
                           formatDate(u.lastSeen),
+                          u.paid === false ? "Unpaid" : "Paid",
                         ]);
-                        downloadCsv("irp-visitors.csv", [headers, ...rows]);
+                        downloadCsv("irp-users.csv", [headers, ...rows]);
                       }}
                       className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]"
                     >
@@ -740,6 +779,12 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
+              {previewError && (activeTab === "visitors" || activeTab === "support") ? (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {previewError}
+                </div>
+              ) : null}
+
               {data.users.length === 0 ? (
                 <p className="text-sm text-[#6e6a8a]">
                   No visitors recorded yet. User IDs will appear here as students open the dashboard.
@@ -747,58 +792,83 @@ export default function AnalyticsPage() {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-left text-sm">
+                    <table className="w-full min-w-[760px] text-left text-sm">
                       <thead>
                         <tr className="border-b border-[rgba(103,65,217,0.12)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                          <th className="px-2 py-2">Visitor</th>
-                          {dailyColumns.map((col) => (
-                            <th key={col.eventType} className="px-2 py-2 text-center">
-                              {col.label}
-                            </th>
-                          ))}
-                          <th className="px-2 py-2 text-center">Total</th>
-                          <th className="px-2 py-2">Last active</th>
+                          <th className="px-2 py-2">UID</th>
+                          <th className="px-2 py-2 text-center">Logins</th>
+                          <th className="px-2 py-2">Last login</th>
+                          <th className="px-2 py-2">Payment</th>
+                          <th className="px-2 py-2 text-right"> </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {data.users.slice((visitorsPage - 1) * PAGE_SIZE, visitorsPage * PAGE_SIZE).map((u) => (
-                          <tr
-                            key={u.academyUserId}
-                            className="border-b border-[rgba(103,65,217,0.06)] align-top"
-                          >
-                            <td className="px-2 py-2.5">
-                              <div className="font-semibold text-[#0d1117]">
-                                {u.userName?.trim() || "Unnamed student"}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => copyId(u.academyUserId)}
-                                title={`Click to copy: ${u.academyUserId}`}
-                                className="mt-0.5 font-mono text-[11px] text-[#6e6a8a] transition-colors hover:text-[#6741d9]"
-                              >
-                                {copiedId === u.academyUserId ? "Copied!" : u.academyUserId}
-                              </button>
-                            </td>
-                            {dailyColumns.map((col) => {
-                              const metric = u.metrics.find((m) => m.eventType === col.eventType);
-                              const value = metric?.clicks ?? 0;
-                              return (
-                                <td
-                                  key={`${u.academyUserId}-${col.eventType}`}
-                                  className={`px-2 py-2.5 text-center ${
-                                    value > 0 ? "font-semibold text-[#0d1117]" : "text-[#c2c0d6]"
+                        {data.users.slice((visitorsPage - 1) * PAGE_SIZE, visitorsPage * PAGE_SIZE).map((u) => {
+                          const paid = u.paid !== false;
+                          const logins =
+                            u.logins ??
+                            u.metrics.find((m) => m.eventType === "dashboard_visit")?.clicks ??
+                            0;
+                          const toggling = paymentTogglingId === u.academyUserId;
+                          const previewing = previewingUserId === u.academyUserId;
+                          return (
+                            <tr
+                              key={u.academyUserId}
+                              className="border-b border-[rgba(103,65,217,0.06)] align-middle"
+                            >
+                              <td className="px-2 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => copyId(u.academyUserId)}
+                                  title={`Click to copy: ${u.academyUserId}`}
+                                  className="font-mono text-[12px] text-[#0d1117] transition-colors hover:text-[#6741d9]"
+                                >
+                                  {copiedId === u.academyUserId ? "Copied!" : u.academyUserId}
+                                </button>
+                                {u.userName?.trim() ? (
+                                  <p className="mt-0.5 text-[11px] text-[#6e6a8a]">{u.userName.trim()}</p>
+                                ) : null}
+                              </td>
+                              <td className="px-2 py-3 text-center font-semibold text-[#0d1117]">
+                                {logins}
+                              </td>
+                              <td className="px-2 py-3 text-[#6e6a8a]">{formatDate(u.lastSeen)}</td>
+                              <td className="px-2 py-3">
+                                <button
+                                  type="button"
+                                  disabled={toggling}
+                                  onClick={() => void togglePaymentStatus(u.academyUserId, paid)}
+                                  title={paid ? "Click to mark Unpaid" : "Click to mark Paid"}
+                                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors disabled:opacity-60 ${
+                                    paid
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                   }`}
                                 >
-                                  {value}
-                                </td>
-                              );
-                            })}
-                            <td className="px-2 py-2.5 text-center font-bold text-[#3b5bdb]">
-                              {u.totalEvents}
-                            </td>
-                            <td className="px-2 py-2.5 text-[#6e6a8a]">{formatDate(u.lastSeen)}</td>
-                          </tr>
-                        ))}
+                                  {toggling ? (
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                  ) : null}
+                                  {paid ? "Paid" : "Unpaid · No access"}
+                                </button>
+                              </td>
+                              <td className="px-2 py-3 text-right">
+                                <button
+                                  type="button"
+                                  disabled={previewing}
+                                  onClick={() => void openUserPreview(u.academyUserId)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(59,91,219,0.35)] bg-white px-3 py-1.5 text-xs font-bold text-[#3b5bdb] hover:bg-[#eef2ff] disabled:opacity-50"
+                                >
+                                  {previewing ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  )}
+                                  View profile
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1052,6 +1122,13 @@ export default function AnalyticsPage() {
                     {supportConvs.map((conv) => {
                       const isExpanded = expandedConvId === conv.id;
                       const lastMsg = conv.messages[conv.messages.length - 1];
+                      const rawName = conv.userName?.trim() ?? "";
+                      const looksLikeId =
+                        !rawName ||
+                        rawName === conv.academyUserId ||
+                        /^[A-Za-z0-9+/_=-]{20,}$/.test(rawName) ||
+                        /^[0-9a-f-]{36}$/i.test(rawName);
+                      const displayName = looksLikeId ? "Unnamed student" : rawName;
                       return (
                         <div key={conv.id} className="overflow-hidden rounded-xl border border-[rgba(103,65,217,0.10)] bg-[#faf9ff]">
                           {/* Conversation header */}
@@ -1063,14 +1140,13 @@ export default function AnalyticsPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-semibold text-[#0d1117]">
-                                  {conv.userName?.trim() || "Unnamed student"}
+                                  {displayName}
                                 </span>
                                 {statusBadge(conv.status)}
                                 <span className="text-[10px] font-semibold text-[#6e6a8a]">
                                   #{conv.id}
                                 </span>
                               </div>
-                              <p className="mt-0.5 font-mono text-[11px] text-[#6e6a8a]">{conv.academyUserId}</p>
                               {lastMsg && (
                                 <p className="mt-1.5 truncate text-xs text-[#6e6a8a]">
                                   <span className="font-semibold text-[#3b5bdb]">

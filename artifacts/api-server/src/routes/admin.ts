@@ -334,6 +334,46 @@ router.post("/admin/unpaid-users/import", async (req, res) => {
   }
 });
 
+// PUT /api/admin/unpaid-users/:academyUserId — mark one user unpaid (payment gate)
+// or paid (remove from unpaid list). Admin API key required.
+// Body: { unpaid: boolean }
+router.put("/admin/unpaid-users/:academyUserId", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const academyUserId = String(req.params.academyUserId ?? "").trim();
+    if (!academyUserId) {
+      res.status(400).json({ error: "academyUserId is required" });
+      return;
+    }
+
+    const unpaid = (req.body as { unpaid?: unknown })?.unpaid;
+    if (typeof unpaid !== "boolean") {
+      res.status(400).json({ error: "Body must include unpaid: true | false" });
+      return;
+    }
+
+    if (unpaid) {
+      await db
+        .insert(unpaidUsersTable)
+        .values({ academyUserId, createdAt: new Date() })
+        .onConflictDoNothing({ target: unpaidUsersTable.academyUserId });
+    } else {
+      await db
+        .delete(unpaidUsersTable)
+        .where(eq(unpaidUsersTable.academyUserId, academyUserId));
+    }
+
+    res.json({ ok: true, academyUserId, paid: !unpaid, unpaid });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update unpaid user");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/admin/blocked-users/import — fully deny access to a set of
 // academy users (admin API key required). Once blocked, resolveAcademyUserId
 // returns null for that user on every route — including a valid SSO token —
@@ -578,9 +618,11 @@ router.post("/admin/preview-link", async (req, res) => {
       used: 0,
     });
 
+    const originHeader = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
     const origin = (
-      process.env["FORMS_REDIRECT_ORIGIN"] ??
-      process.env["LEGACY_APP_ORIGIN"] ??
+      originHeader ||
+      process.env["FORMS_REDIRECT_ORIGIN"] ||
+      process.env["LEGACY_APP_ORIGIN"] ||
       "https://irp-dashboard-academy.replit.app"
     ).replace(/\/$/, "");
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable, l1CycleRegistrationsTable } from "@workspace/db";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable, l1CycleRegistrationsTable, unpaidUsersTable } from "@workspace/db";
 import { sql, count, countDistinct, inArray, min, max, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { rowToL1RegistrationResponse } from "../lib/l1Registration";
@@ -117,6 +117,14 @@ router.get("/analytics/dashboard", async (req, res) => {
       : [];
     const nameMap = new Map(nameRows.map((r) => [r.userId, r.userName]));
 
+    const unpaidRows = userIds.length
+      ? await db
+          .select({ academyUserId: unpaidUsersTable.academyUserId })
+          .from(unpaidUsersTable)
+          .where(inArray(unpaidUsersTable.academyUserId, userIds))
+      : [];
+    const unpaidSet = new Set(unpaidRows.map((r) => r.academyUserId));
+
     const toIso = (v: unknown): string | null =>
       v ? new Date(v as string | Date).toISOString() : null;
 
@@ -156,6 +164,8 @@ router.get("/analytics/dashboard", async (req, res) => {
         academyUserId: u.academyUserId,
         userName: u.userName,
         totalEvents: u.totalEvents,
+        logins: u.counts["dashboard_visit"] ?? 0,
+        paid: !unpaidSet.has(u.academyUserId),
         firstSeen: u.firstSeen,
         lastSeen: u.lastSeen,
         metrics: TRACKED_EVENTS.map((eventType) => ({

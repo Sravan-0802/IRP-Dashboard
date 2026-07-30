@@ -38,11 +38,9 @@ import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
-<<<<<<< HEAD
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
-=======
->>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
+import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -416,14 +414,11 @@ export function AssessmentsHub({
         </p>
       </div>
 
-<<<<<<< HEAD
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
 
       {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
-=======
->>>>>>> b6de72a (Clean up DashboardView and AssessmentsHub and add new asset)
 
       {assessmentsForLevel.length === 0 ? (
         onJuly25MockAllowlist ? null : (
