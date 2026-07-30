@@ -26,8 +26,9 @@ function resolveUserIdFromBody(body: Record<string, unknown>): string | null {
 
 function buildRedirectUrl(token: string): string | null {
   const origin =
-    process.env["FORMS_REDIRECT_ORIGIN"] ?? process.env["LEGACY_APP_ORIGIN"];
-  if (!origin) return null;
+    process.env["FORMS_REDIRECT_ORIGIN"] ??
+    process.env["LEGACY_APP_ORIGIN"] ??
+    "https://irp-dashboard-academy.replit.app";
   return `${origin.replace(/\/$/, "")}?auth_token=${token}`;
 }
 
@@ -105,14 +106,6 @@ router.post("/auth/generate-auth-code-with-redirect", async (req, res) => {
     });
 
     const redirect_url = buildRedirectUrl(authToken);
-    if (!redirect_url) {
-      return void res.status(500).json({
-        message: "Missing or invalid FORMS_REDIRECT_ORIGIN / LEGACY_APP_ORIGIN env var",
-        auth_token: authToken,
-        expires_at: expiresAt.toISOString(),
-        user_id: userId,
-      });
-    }
 
     res.json({
       auth_token: authToken,

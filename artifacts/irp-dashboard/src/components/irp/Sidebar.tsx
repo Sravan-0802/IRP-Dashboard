@@ -90,7 +90,7 @@ export function SidebarContent({
           </button>
         ))}
         <a
-          href="https://irp.nxtwave.academy"
+          href="https://irp-dashboard-academy.replit.app"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-[9px] border-[1.5px] border-transparent px-3 py-2.5 text-xs font-semibold text-[#6e6a8a] transition-all hover:bg-[#6741d9]/[0.05] hover:text-[#0d1117]"
