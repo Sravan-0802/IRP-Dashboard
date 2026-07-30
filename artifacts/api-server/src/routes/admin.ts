@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "crypto";
 import {
   db,
   studentsTable,
@@ -9,6 +10,7 @@ import {
   unpaidUsersTable,
   blockedUsersTable,
   dashboardAnalyticsEventsTable,
+  formsAuthTokensTable,
 } from "@workspace/db";
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
@@ -21,6 +23,8 @@ import {
 } from "../lib/visibilitySettings";
 
 const router = Router();
+
+const PREVIEW_TOKEN_TTL_MINUTES = Number(process.env["FORMS_TOKEN_TTL_MINUTES"]) || 15;
 
 // POST /api/admin/students/fe-project-done — mark a batch of academy users as
 // having cleared L1 and completed their FE Project (admin API key required).
@@ -531,6 +535,63 @@ router.post("/admin/analytics/reset-l1-mock-clicks", async (req, res) => {
     res.json({ ok: true, deletedRows: deleted.length });
   } catch (err) {
     req.log.error({ err }, "Failed to reset L1 mock click analytics");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/preview-link — mint a short-lived SSO token so admins can
+// open a student's dashboard view in a new tab (admin API key required).
+// Body: { academyUserId: string }
+router.post("/admin/preview-link", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const academyUserId =
+      typeof (req.body as { academyUserId?: unknown })?.academyUserId === "string"
+        ? (req.body as { academyUserId: string }).academyUserId.trim()
+        : "";
+    if (!academyUserId) {
+      res.status(400).json({ error: "academyUserId is required" });
+      return;
+    }
+
+    // Realign sequence after DB restores so token inserts don't collide on PK.
+    try {
+      await db.execute(
+        sql.raw(
+          `SELECT setval(pg_get_serial_sequence('forms_auth_tokens', 'id'), COALESCE((SELECT MAX(id) FROM forms_auth_tokens), 1))`,
+        ),
+      );
+    } catch {
+      // Best-effort; insert may still succeed if sequence is already correct.
+    }
+
+    const authToken = crypto.randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + PREVIEW_TOKEN_TTL_MINUTES * 60 * 1000);
+    await db.insert(formsAuthTokensTable).values({
+      token: authToken,
+      userId: academyUserId,
+      expiresAt,
+      used: 0,
+    });
+
+    const origin = (
+      process.env["FORMS_REDIRECT_ORIGIN"] ??
+      process.env["LEGACY_APP_ORIGIN"] ??
+      "https://irp-dashboard-academy.replit.app"
+    ).replace(/\/$/, "");
+
+    res.json({
+      ok: true,
+      academyUserId,
+      expiresAt: expiresAt.toISOString(),
+      previewUrl: `${origin}?auth_token=${authToken}`,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create admin preview link");
     res.status(500).json({ error: "Internal server error" });
   }
 });

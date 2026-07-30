@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database } from "lucide-react";
+import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -236,6 +236,35 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [previewingUserId, setPreviewingUserId] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState("");
+
+  async function openUserPreview(academyUserId: string) {
+    if (!apiKey || !academyUserId || previewingUserId) return;
+    setPreviewingUserId(academyUserId);
+    setPreviewError("");
+    try {
+      const res = await fetch("/api/admin/preview-link", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({ academyUserId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((body as { error?: string }).error ?? `Preview failed (${res.status})`);
+      }
+      const previewUrl = (body as { previewUrl?: string }).previewUrl;
+      if (!previewUrl) throw new Error("No preview URL returned");
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Could not open user preview");
+    } finally {
+      setPreviewingUserId(null);
+    }
+  }
 
   const load = useCallback(async (key: string) => {
     if (!key.trim()) {
@@ -1151,6 +1180,12 @@ export default function AnalyticsPage() {
                 )}
               </div>
 
+                {previewError && activeTab === "support" ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {previewError}
+                  </div>
+                ) : null}
+
               {/* Legacy contact_us_messages */}
               <div className="irp-card p-5">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
@@ -1192,7 +1227,22 @@ export default function AnalyticsPage() {
                               <span className="font-semibold text-[#0d1117]">{msg.userName?.trim() || "Unnamed student"}</span>
                               <p className="font-mono text-[11px] text-[#6e6a8a]">{msg.academyUserId}</p>
                             </div>
-                            <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs text-[#6e6a8a]">{formatDate(msg.submittedAt)}</span>
+                              <button
+                                type="button"
+                                disabled={!msg.academyUserId || previewingUserId === msg.academyUserId}
+                                onClick={() => void openUserPreview(msg.academyUserId)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.22)] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#6741d9] hover:bg-[#f3f0ff] disabled:opacity-50"
+                              >
+                                {previewingUserId === msg.academyUserId ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                )}
+                                Preview user
+                              </button>
+                            </div>
                           </div>
                           <p className="rounded-lg border border-[rgba(103,65,217,0.08)] bg-white px-4 py-3 text-sm text-[#0d1117]">{msg.message}</p>
                         </div>
