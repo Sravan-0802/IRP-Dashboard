@@ -1,23 +1,29 @@
 import { ExternalLink, Trophy } from "lucide-react";
-import { isL1July26MainLinkLive, isL1July26MainLinkVisible } from "@/lib/irpDates";
+import { isL1July26MainLinkLive } from "@/lib/irpDates";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import {
   L1_JULY26_MAIN_ASSESSMENT_TITLE,
   L1_JULY26_MAIN_ASSESSMENT_URL,
   L1_JULY26_MAIN_START_LABEL,
-  L1_JULY26_MAIN_WINDOW_LABEL,
 } from "@/lib/l1July26MainConfig";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 
 interface L1July26MainCalloutProps {
   userId: string;
 }
 
-/** Main Hustler link for registered (allowlisted) students. */
+/** Online Assessment main — grant URL preferred; else allowlist fallback. */
 export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
-  if (!isInL1July25MockAllowlist(userId)) return null;
+  const { findGrant } = useStudentAccess();
+  const grant = findGrant("online_assessment", "main");
+  const grantUrl = grant?.url?.trim() || null;
 
-  const live = isL1July26MainLinkLive();
+  const fallback = isInL1July25MockAllowlist(userId);
+  if (!grantUrl && !fallback) return null;
+
+  const href = grantUrl ?? L1_JULY26_MAIN_ASSESSMENT_URL;
+  const live = grantUrl ? true : isL1July26MainLinkLive();
 
   function onStartMain() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK);
@@ -38,15 +44,17 @@ export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
               {L1_JULY26_MAIN_ASSESSMENT_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              {live
-                ? "Your main assessment is live. Open the link and begin now."
-                : `This is your official Level 1 assessment. The link becomes active at ${L1_JULY26_MAIN_START_LABEL}.`}
+              {grantUrl
+                ? "Your main assessment link is ready. Open the link and begin."
+                : live
+                  ? "Your main assessment is live. Open the link and begin now."
+                  : `This is your official Level 1 assessment. The link becomes active at ${L1_JULY26_MAIN_START_LABEL}.`}
             </p>
           </div>
         </div>
 
         <a
-          href={L1_JULY26_MAIN_ASSESSMENT_URL}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           onClick={onStartMain}

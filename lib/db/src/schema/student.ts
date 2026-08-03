@@ -356,8 +356,49 @@ export const visibilitySettingsTable = pgTable("visibility_settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Admin stage access grants: CSV UID lists + mock/main links per L1 stage.
+ *
+ * stage keys align with future BQ user matrix columns (see l1StageAccessMatrix):
+ *   online_assessment | fe_project | ai_mock | human_interview
+ * link_kind: mock | main | default
+ *
+ * Grants answer "who gets the URL". Future BQ matrix will add payment +
+ * Not Attempted / Qualified / Not Qualified per stage — compose, don't replace.
+ * expires_at: optional link expiry; null = no expiry. Student UI hides expired grants.
+ */
+export const accessBatchesTable = pgTable("access_batches", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  stage: text("stage").notNull(),
+  linkKind: text("link_kind").notNull(),
+  url: text("url").notNull(),
+  enabled: integer("enabled").notNull().default(1),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const accessBatchUsersTable = pgTable(
+  "access_batch_users",
+  {
+    batchId: integer("batch_id")
+      .notNull()
+      .references(() => accessBatchesTable.id, { onDelete: "cascade" }),
+    academyUserId: text("academy_user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: unique("access_batch_users_pk").on(t.batchId, t.academyUserId),
+  }),
+);
+
 export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
 export type VisibilitySetting = typeof visibilitySettingsTable.$inferSelect;
+export type AccessBatch = typeof accessBatchesTable.$inferSelect;
+export type InsertAccessBatch = typeof accessBatchesTable.$inferInsert;
+export type AccessBatchUser = typeof accessBatchUsersTable.$inferSelect;
 export type AcademyUserAssessmentDetails = typeof academyUserAssessmentDetailsTable.$inferSelect;
 export type AcademyUserNxtmockDetails = typeof academyUserNxtmockDetailsTable.$inferSelect;
 export type AcademyUserCourseProgress = typeof academyUserCourseProgressTable.$inferSelect;

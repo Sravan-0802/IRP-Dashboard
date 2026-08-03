@@ -18,6 +18,7 @@ import {
   FE_PROJECT_REATTEMPT_BODY,
   FE_PROJECT_REATTEMPT_LABEL,
 } from "@/lib/feProjectConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { Pill } from "./ui";
 
 /** Shown for cleared L1 students who have not yet completed FE Project Main II. */
@@ -32,6 +33,10 @@ export function FeProjectCallout({
   className?: string;
   feProjectMinScore?: number | null;
 }) {
+  const { findGrant } = useStudentAccess();
+  const grant = findGrant("fe_project", "main");
+  const href = grant?.url?.trim() || FE_PROJECT_MAIN_II_URL;
+
   const clearedL1 = isCycle1Cleared(assessments);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
   const feAttempted = hasAttemptedFeProject(assessments);
@@ -86,7 +91,7 @@ export function FeProjectCallout({
         </div>
 
         <a
-          href={FE_PROJECT_MAIN_II_URL}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl px-5 py-2.5 text-sm font-bold sm:self-center"

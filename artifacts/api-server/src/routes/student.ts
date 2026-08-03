@@ -22,6 +22,7 @@ import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
 import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { isInFeProjectReducedThreshold, FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
+import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
@@ -758,6 +759,22 @@ router.get("/student/fe-project-config", async (req, res) => {
     res.json({ minScore });
   } catch (err) {
     req.log.error({ err }, "Failed to get fe project config");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/access — admin stage access grants for the current user
+router.get("/student/access", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const grants = await getStudentAccessGrants(userId);
+    res.json({ grants });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get student access grants");
     res.status(500).json({ error: "Internal server error" });
   }
 });
