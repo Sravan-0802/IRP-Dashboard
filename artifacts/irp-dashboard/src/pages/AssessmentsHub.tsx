@@ -16,6 +16,7 @@ import {
   L1_JULY26_MOCK_ASSESSMENT_URL,
   L1_JULY12_MAIN_URL,
   L1_HUSTLER_MAIN_URLS,
+  L1_AUG3_MAIN_URL,
   L1_JULY12_REGISTERED_HUB_NOTE,
   l1HustlerSlotLabel,
   hasSuccessfulSlotRegistration,
@@ -86,6 +87,15 @@ const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
   ],
   2: [],
   3: [],
+};
+
+/** Mock assessment card for the Aug 3-5 makeup cohort (slot-3). Same URL as main. */
+const AUG3_MOCK_CONFIG: AssessmentConfig = {
+  id: "l1-hustler-aug3-mock",
+  title: "L1 Hustler Mock Assessment",
+  description: "Practice run before your main assessment. Available 3rd Aug 2:00 PM – 5th Aug 10:00 AM IST.",
+  kind: "mock",
+  url: L1_AUG3_MAIN_URL,
 };
 
 // ── Status helpers ───────────────────────────────────────────────────────────
@@ -379,7 +389,11 @@ export function AssessmentsHub({
   // July 25 mock cohort gets the dedicated callout; hide the stale July 12
   // "Stay tuned" Mock / Hustler cards for those students — but if the student
   // already has exam access (e.g. slot-3 Aug 3-5 makeup), show the cards.
-  const assessmentsForLevel = (onJuly25MockAllowlist && !hasExamAccess) ? [] : ASSESSMENTS_BY_LEVEL[level];
+  // slot-3 students: prepend the Aug 3-5 mock card while the window is live.
+  const aug3MockLinkLive = examSlotId === "slot-3" && isL1Aug3MainLinkLive();
+  const assessmentsForLevel = examSlotId === "slot-3"
+    ? [...(aug3MockLinkLive ? [AUG3_MOCK_CONFIG] : []), ...ASSESSMENTS_BY_LEVEL[level]]
+    : (onJuly25MockAllowlist && !hasExamAccess) ? [] : ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
@@ -459,7 +473,9 @@ export function AssessmentsHub({
               slotRegistrationSubmitted={false}
               registrationClosed={a.id === "l1-hustler"}
               registrationClosedNote={
-                a.id === "l1-hustler" && july12Registered
+                a.id === "l1-hustler" && examSlotId === "slot-3"
+                  ? "Your L1 Hustler assessment link is active from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+                  : a.id === "l1-hustler" && july12Registered
                   ? L1_JULY12_REGISTERED_HUB_NOTE
                   : a.id === "l1-hustler" && isCycle1Cleared(assessments)
                   ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
