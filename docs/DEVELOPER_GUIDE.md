@@ -331,9 +331,9 @@ Mounted under `/api`:
 
 Operators control **who sees which L1 stage link** (separate from Visibility “release results”):
 
-1. Open `/analytics?key=…` → **Access** tab  
+1. Open `/analytics?key=…` → **Access Loader** tab  
 2. Upload CSV of `academy_user_id`s (or paste UIDs)  
-3. Select stage: Online Assessment / FE Project / NxtMock AI / Human Interview  
+3. Select stage: L1 Hustler Online Assessment / FE Project / NxtMock AI / Human Interview  
 4. For Online + FE: choose **mock** or **main**  
 5. Paste URL → Save  
 
@@ -359,7 +359,7 @@ Canonical keys (do not rename casually) live in `l1StageAccessMatrix.ts` on API 
 
 | BQ column | Stage key | Outcomes |
 |-----------|-----------|----------|
-| Online Assessments | `online_assessment` | `not_attempted` \| `qualified` \| `not_qualified` |
+| Online Assessments (BQ) / **L1 Hustler Online Assessment** (Access UI) | `online_assessment` | `not_attempted` \| `qualified` \| `not_qualified` |
 | FE project | `fe_project` | same |
 | AI Mock Interview | `ai_mock` | same |
 | Human interview | `human_interview` | same |
@@ -398,7 +398,7 @@ pnpm --filter @workspace/api-spec run codegen
 - `components/irp/AssessmentResults.tsx` — score cards  
 - `components/irp/FeProjectResults.tsx` / `NxtmockResults` — post-L1 pipeline  
 - `pages/AssessmentsHub.tsx`, `BookSlot.tsx` — calendar / slots  
-- `pages/Analytics.tsx` — internal analytics (admin key); **Access** tab for stage grants  
+- `pages/Analytics.tsx` — internal analytics (admin key); **Access Loader** tab for stage grants  
 - `components/admin/AccessGrantsPanel.tsx` — CSV UID grants UI  
 
 **L1 journey steps** are built in `l1JourneySteps.ts` from assessment + nxtmock data.

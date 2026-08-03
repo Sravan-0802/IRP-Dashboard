@@ -17,7 +17,7 @@ export const L1_ACCESS_STAGES = [
 export type L1AccessStage = (typeof L1_ACCESS_STAGES)[number];
 
 export const L1_ACCESS_STAGE_LABELS: Record<L1AccessStage, string> = {
-  online_assessment: "Online Assessment",
+  online_assessment: "L1 Hustler Online Assessment",
   fe_project: "FE Project",
   ai_mock: "AI Mock Interview",
   human_interview: "Human Interview",

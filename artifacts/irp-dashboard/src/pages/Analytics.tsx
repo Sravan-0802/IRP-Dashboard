@@ -181,6 +181,35 @@ function captureKeyFromUrl(): string {
   return getStoredKey();
 }
 
+function captureAccessViewerUidFromUrl(): string {
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.get("uid")?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function captureTabFromUrl(): AnalyticsTab | null {
+  try {
+    const tab = new URL(window.location.href).searchParams.get("tab")?.trim();
+    const allowed: AnalyticsTab[] = [
+      "overview",
+      "visitors",
+      "registrations",
+      "feedback",
+      "support",
+      "visibility",
+      "access",
+      "access_viewer",
+    ];
+    if (tab && (allowed as string[]).includes(tab)) return tab as AnalyticsTab;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString(undefined, {
@@ -369,7 +398,10 @@ export default function AnalyticsPage() {
     }));
   }, [data]);
 
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>(
+    () => captureTabFromUrl() ?? "overview",
+  );
+  const accessViewerUid = useMemo(() => captureAccessViewerUidFromUrl(), []);
 
   const [visibility, setVisibility] = useState<VisibilitySettings | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
@@ -498,7 +530,7 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
-            { id: "access" as const, label: "Access", count: undefined },
+            { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access viewer", count: undefined },
           ]
         : [];
@@ -510,7 +542,7 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
-      { id: "access" as const, label: "Access", count: undefined },
+      { id: "access" as const, label: "Access Loader", count: undefined },
       { id: "access_viewer" as const, label: "Access viewer", count: undefined },
     ];
   }, [data, visibilityPendingCount, apiKey]);
@@ -1635,7 +1667,7 @@ export default function AnalyticsPage() {
             ) : null}
 
             {activeTab === "access_viewer" && apiKey ? (
-              <MasterAccessViewer apiKey={apiKey} />
+              <MasterAccessViewer apiKey={apiKey} initialUid={accessViewerUid} />
             ) : null}
 
             {activeTab === "overview" && data && (

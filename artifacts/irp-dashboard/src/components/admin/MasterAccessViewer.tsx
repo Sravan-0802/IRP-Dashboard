@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Eye, Loader2, Search } from "lucide-react";
 import {
   L1_ACCESS_STAGE_LABELS,
@@ -50,18 +50,25 @@ function statusPill(g: PreviewGrant) {
   return <span className="rounded-md bg-[#e8faf0] px-2 py-0.5 text-[10px] font-bold text-teal">Visible to student</span>;
 }
 
-export function MasterAccessViewer({ apiKey }: { apiKey: string }) {
-  const [uid, setUid] = useState("");
+export function MasterAccessViewer({
+  apiKey,
+  initialUid = "",
+}: {
+  apiKey: string;
+  initialUid?: string;
+}) {
+  const [uid, setUid] = useState(initialUid);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
 
-  const search = useCallback(async () => {
-    const academyUserId = uid.trim();
+  const search = useCallback(async (overrideUid?: string) => {
+    const academyUserId = (overrideUid ?? uid).trim();
     if (!academyUserId) {
       setError("Enter an academy user id");
       return;
     }
+    setUid(academyUserId);
     setLoading(true);
     setError("");
     setPreview(null);
@@ -74,9 +81,11 @@ export function MasterAccessViewer({ apiKey }: { apiKey: string }) {
       if (!res.ok) {
         throw new Error(
           (body as { error?: string }).error ??
-            ((res.status === 500 || res.status === 502) && !(body as { error?: string }).error
-              ? "API not available — Access preview needs the updated API + DATABASE_URL"
-              : `Request failed (${res.status})`),
+            ((res.status === 404
+              ? "Access preview API not deployed yet — merge the Access grants PR, then db push"
+              : (res.status === 500 || res.status === 502) && !(body as { error?: string }).error
+                ? "API not available — Access preview needs the updated API + DATABASE_URL"
+                : `Request failed (${res.status})`)),
         );
       }
       setPreview(body as PreviewResponse);
@@ -86,6 +95,11 @@ export function MasterAccessViewer({ apiKey }: { apiKey: string }) {
       setLoading(false);
     }
   }, [apiKey, uid]);
+
+  useEffect(() => {
+    if (initialUid.trim()) void search(initialUid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot from URL
+  }, [initialUid]);
 
   return (
     <div className="space-y-6">
