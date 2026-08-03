@@ -1,4 +1,4 @@
-import { ExternalLink, Trophy } from "lucide-react";
+import { ExternalLink, Timer, Trophy } from "lucide-react";
 import { isL1July26MainLinkLive } from "@/lib/irpDates";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/lib/l1July26MainConfig";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { useStudentAccess } from "@/lib/useStudentAccess";
+import { useCountdown } from "@/lib/useCountdown";
 
 interface L1July26MainCalloutProps {
   userId: string;
@@ -18,6 +19,10 @@ export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
   const { findGrant } = useStudentAccess();
   const grant = findGrant("online_assessment", "main");
   const grantUrl = grant?.url?.trim() || null;
+  const { timeLeft, isExpired } = useCountdown(grant?.expiresAt);
+
+  // Grant exists but expired client-side → hide
+  if (grantUrl && isExpired) return null;
 
   const fallback = isInL1July25MockAllowlist(userId);
   if (!grantUrl && !fallback) return null;
@@ -50,6 +55,12 @@ export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
                   ? "Your main assessment is live. Open the link and begin now."
                   : `This is your official Level 1 assessment. The link becomes active at ${L1_JULY26_MAIN_START_LABEL}.`}
             </p>
+            {grantUrl && timeLeft ? (
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-[rgba(230,119,0,0.1)] px-2 py-1 text-xs font-bold text-[#e67700]">
+                <Timer className="h-3 w-3 shrink-0" />
+                {timeLeft} remaining
+              </p>
+            ) : null}
           </div>
         </div>
 

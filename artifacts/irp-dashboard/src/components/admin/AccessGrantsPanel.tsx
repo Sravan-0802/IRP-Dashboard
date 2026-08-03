@@ -4,10 +4,12 @@ import {
   KeyRound,
   Loader2,
   RefreshCw,
+  Timer,
   Trash2,
   Upload,
 } from "lucide-react";
 import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
+import { useCountdown } from "@/lib/useCountdown";
 import {
   L1_ACCESS_STAGES,
   L1_ACCESS_STAGE_LABELS,
@@ -53,6 +55,58 @@ function truncateUrl(url: string, max = 48): string {
   return `${url.slice(0, max - 1)}…`;
 }
 
+/** Live countdown cell — updates every second while mounted. */
+function CountdownCell({ expiresAt, expired }: { expiresAt: string | null; expired: boolean }) {
+  const { timeLeft, isExpired: clientExpired } = useCountdown(expiresAt);
+  const isExpired = expired || clientExpired;
+
+  if (!expiresAt) {
+    return <span className="text-xs text-[#6e6a8a]">No expiry</span>;
+  }
+
+  const dateLabel = new Date(expiresAt).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  // Determine urgency colour: red if <30 min, amber if <2 h, teal otherwise
+  const urgency = (() => {
+    if (isExpired) return "expired";
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms < 30 * 60 * 1000) return "critical";
+    if (ms < 2 * 60 * 60 * 1000) return "warn";
+    return "ok";
+  })();
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span
+        className={`text-xs font-semibold ${
+          isExpired ? "text-red-600" : "text-[#6e6a8a]"
+        }`}
+      >
+        {isExpired ? "Expired" : `Until ${dateLabel}`}
+      </span>
+      {!isExpired && timeLeft ? (
+        <span
+          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
+            urgency === "critical"
+              ? "bg-red-50 text-red-600"
+              : urgency === "warn"
+                ? "bg-amber-50 text-amber-700"
+                : "bg-[#e8faf0] text-teal"
+          }`}
+        >
+          <Timer className="h-3 w-3 shrink-0" />
+          {timeLeft} left
+        </span>
+      ) : isExpired ? (
+        <span className="text-[11px] text-red-400">{dateLabel}</span>
+      ) : null}
+    </div>
+  );
+}
+
 /** ISO → value for `<input type="datetime-local">` in local timezone. */
 function isoToDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -69,15 +123,6 @@ function datetimeLocalToIso(local: string): string | null {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
-}
-
-function formatExpires(iso: string | null, expired: boolean): string {
-  if (!iso) return "No expiry";
-  const label = new Date(iso).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-  return expired ? `Expired ${label}` : `Until ${label}`;
 }
 
 function downloadCsv(ids: string[], filename: string) {
@@ -468,13 +513,10 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                         </a>
                       </td>
                       <td className="px-2 py-2">
-                        <span
-                          className={`text-xs font-semibold ${
-                            b.expired ? "text-red-600" : "text-[#6e6a8a]"
-                          }`}
-                        >
-                          {formatExpires(b.expiresAt ?? null, Boolean(b.expired))}
-                        </span>
+                        <CountdownCell
+                          expiresAt={b.expiresAt ?? null}
+                          expired={Boolean(b.expired)}
+                        />
                       </td>
                       <td className="px-2 py-2">{b.userCount}</td>
                       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>

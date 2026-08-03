@@ -1,4 +1,4 @@
-import { ExternalLink, FlaskConical } from "lucide-react";
+import { ExternalLink, FlaskConical, Timer } from "lucide-react";
 import { isL1July25MockLinkOpen } from "@/lib/irpDates";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/lib/l1July25MockConfig";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { useStudentAccess } from "@/lib/useStudentAccess";
+import { useCountdown } from "@/lib/useCountdown";
 
 interface L1July25MockCalloutProps {
   userId: string;
@@ -17,7 +18,12 @@ interface L1July25MockCalloutProps {
 /** Online Assessment mock — grant URL preferred; else allowlist + date window. */
 export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
   const { findGrant } = useStudentAccess();
-  const grantUrl = findGrant("online_assessment", "mock")?.url?.trim() || null;
+  const grant = findGrant("online_assessment", "mock");
+  const grantUrl = grant?.url?.trim() || null;
+  const { timeLeft, isExpired } = useCountdown(grant?.expiresAt);
+
+  // Grant exists but expired client-side → hide
+  if (grantUrl && isExpired) return null;
 
   if (!grantUrl) {
     if (!isInL1July25MockAllowlist(userId) || !isL1July25MockLinkOpen()) return null;
@@ -48,7 +54,12 @@ export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
                 ? "Your L1 mock assessment link is ready."
                 : `Complete the L1 mock assessment. Available until ${L1_JULY25_MOCK_AVAILABLE_UNTIL}.`}
             </p>
-            {!grantUrl ? (
+            {grantUrl && timeLeft ? (
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-[rgba(103,65,217,0.08)] px-2 py-1 text-xs font-bold text-brand">
+                <Timer className="h-3 w-3 shrink-0" />
+                {timeLeft} remaining
+              </p>
+            ) : !grantUrl ? (
               <p className="mt-1.5 text-xs font-semibold text-brand">
                 🕐 {L1_JULY25_MOCK_WINDOW_LABEL}
               </p>
