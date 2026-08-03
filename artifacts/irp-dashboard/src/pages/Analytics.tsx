@@ -498,8 +498,8 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
-            { id: "access" as const, label: "Access", count: undefined },
-            { id: "access_viewer" as const, label: "Access viewer", count: undefined },
+            { id: "access" as const, label: "Access Loader", count: undefined },
+            { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
           ]
         : [];
     }
@@ -510,8 +510,8 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
-      { id: "access" as const, label: "Access", count: undefined },
-      { id: "access_viewer" as const, label: "Access viewer", count: undefined },
+      { id: "access" as const, label: "Access Loader", count: undefined },
+      { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
     ];
   }, [data, visibilityPendingCount, apiKey]);
 
