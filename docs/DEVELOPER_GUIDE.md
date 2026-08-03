@@ -324,7 +324,58 @@ Mounted under `/api`:
 | Auth | `routes/auth.ts` | generate code, `/auth/me` |
 | Sync | `routes/sync.ts` | `POST /sync/bigquery` (API key) |
 | Admin | `routes/admin.ts` | exam-access import, unpaid list, resets |
+| Access grants | `routes/accessBatches.ts` | CSV UID batches + mock/main URLs per L1 stage |
 | Analytics | `routes/analytics.ts` | dashboard aggregates |
+
+### Admin stage access grants
+
+Operators control **who sees which L1 stage link** (separate from Visibility “release results”):
+
+1. Open `/analytics?key=…` → **Access** tab  
+2. Upload CSV of `academy_user_id`s (or paste UIDs)  
+3. Select stage: Online Assessment / FE Project / NxtMock AI / Human Interview  
+4. For Online + FE: choose **mock** or **main**  
+5. Paste URL → Save  
+
+| API | Purpose |
+|-----|---------|
+| `GET/POST /api/admin/access-batches` | List / create (admin key) |
+| `GET/PUT/DELETE /api/admin/access-batches/:id` | Detail / update / delete |
+| `GET /api/student/access` | Enabled grants for the SSO user |
+
+**Resolution:** students **with** a matching enabled grant use the admin URL (and skip date/allowlist for that stage). Students **without** a grant keep existing hardcoded / allowlist behavior.
+
+Tables: `access_batches`, `access_batch_users` (see `lib/db` schema). After schema changes: `pnpm --filter @workspace/db run push`.
+
+#### Future: BigQuery user stage matrix (planned)
+
+Ops will feed a per-user matrix from BigQuery shaped like:
+
+| user id | payment status | year of graduation | Online Assessments | FE project | AI Mock Interview | Human interview |
+|---------|----------------|--------------------|--------------------|------------|-------------------|-----------------|
+| 21I3USERTEST | PAID / UNPAID | 2025 | Not Attempted / Qualified / Not Qualified | … | … | … |
+
+Canonical keys (do not rename casually) live in `l1StageAccessMatrix.ts` on API + dashboard:
+
+| BQ column | Stage key | Outcomes |
+|-----------|-----------|----------|
+| Online Assessments | `online_assessment` | `not_attempted` \| `qualified` \| `not_qualified` |
+| FE project | `fe_project` | same |
+| AI Mock Interview | `ai_mock` | same |
+| Human interview | `human_interview` | same |
+| payment status | — | `paid` \| `unpaid` (today: `unpaid_users`) |
+
+**How layers will compose (not replace):**
+
+1. **Payment** — unpaid gate (today) → later BQ `paymentStatus`  
+2. **Who gets the attempt URL** — Access grants CSV (today) → later grants **or** matrix-based eligibility rules  
+3. **Qualified / Not Qualified UI** — assessment/nxtmock sync (today) → later BQ stage outcomes via the same stage keys  
+
+When implementing the BQ sync: parse labels with `parseL1StageOutcome` / `parseL1PaymentStatus`, store one row per user keyed by `academy_user_id`, and resolve student access through the shared stage keys — no new stage enums on the UI.
+
+**Expiry:** optional `expires_at` on each batch. After that time, `GET /api/student/access` omits the grant and student UI falls back. Admin list shows Expired; Access viewer reflects visibility.
+
+**Master Access viewer:** Analytics → **Access viewer** → search `academy_user_id` → grants table on top, student-facing link preview below (`GET /api/admin/access-preview/:academyUserId`).
 
 OpenAPI → Orval regenerates clients:
 
@@ -347,7 +398,8 @@ pnpm --filter @workspace/api-spec run codegen
 - `components/irp/AssessmentResults.tsx` — score cards  
 - `components/irp/FeProjectResults.tsx` / `NxtmockResults` — post-L1 pipeline  
 - `pages/AssessmentsHub.tsx`, `BookSlot.tsx` — calendar / slots  
-- `pages/Analytics.tsx` — internal analytics (admin key)
+- `pages/Analytics.tsx` — internal analytics (admin key); **Access** tab for stage grants  
+- `components/admin/AccessGrantsPanel.tsx` — CSV UID grants UI  
 
 **L1 journey steps** are built in `l1JourneySteps.ts` from assessment + nxtmock data.
 

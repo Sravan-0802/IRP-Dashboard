@@ -9,6 +9,7 @@ import {
   FE_PROJECT_MOCK_URL,
   FE_PROJECT_MOCK_WINDOW_LABEL,
 } from "@/lib/feProjectConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 
 interface FeMockCalloutProps {
   assessments: AssessmentResult[];
@@ -16,11 +17,22 @@ interface FeMockCalloutProps {
   feProjectMinScore?: number | null;
 }
 
-/** Shown only for allowlisted students who haven't cleared FE Project yet, within the mock window. */
+/** Shown for allowlisted students (fallback) or users with an FE mock grant. */
 export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMockCalloutProps) {
-  if (!isFeMockLinkOpen()) return null;
-  if (!isInFeMockAllowlist(userId)) return null;
-  if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
+  const { findGrant } = useStudentAccess();
+  const grant = findGrant("fe_project", "mock");
+  const grantUrl = grant?.url?.trim() || null;
+
+  const fallbackOpen =
+    isFeMockLinkOpen() && isInFeMockAllowlist(userId) && !hasClearedFeProject(assessments, feProjectMinScore);
+
+  if (grantUrl) {
+    if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
+  } else if (!fallbackOpen) {
+    return null;
+  }
+
+  const href = grantUrl ?? FE_PROJECT_MOCK_URL;
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">
@@ -31,22 +43,26 @@ export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMock
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
-              FE Project · Main Assessment
+              FE Project · {grantUrl ? "Mock" : "Main Assessment"}
             </p>
             <h3 className="font-display text-base font-extrabold text-ink sm:text-lg">
               {FE_PROJECT_MOCK_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              Complete the FE Project Main assessment. Available until {FE_PROJECT_MOCK_AVAILABLE_UNTIL}.
+              {grantUrl
+                ? "Your FE Project mock link is ready."
+                : `Complete the FE Project Main assessment. Available until ${FE_PROJECT_MOCK_AVAILABLE_UNTIL}.`}
             </p>
-            <p className="mt-1.5 text-xs font-semibold text-brand">
-              🕐 {FE_PROJECT_MOCK_WINDOW_LABEL}
-            </p>
+            {!grantUrl ? (
+              <p className="mt-1.5 text-xs font-semibold text-brand">
+                🕐 {FE_PROJECT_MOCK_WINDOW_LABEL}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <a
-          href={FE_PROJECT_MOCK_URL}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl px-5 py-2.5 text-sm font-bold sm:self-center"

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
+import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
+import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -75,7 +77,7 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility";
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer";
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -331,7 +333,14 @@ export default function AnalyticsPage() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(body?.error ?? `Request failed (${res.status})`);
+        const apiMsg = (body as { error?: string; message?: string }).error
+          ?? (body as { message?: string }).message;
+        if ((res.status === 500 || res.status === 502) && !apiMsg) {
+          throw new Error(
+            "API not running on :8080 (Vite proxy 500). Add DATABASE_URL to .env, then start the API.",
+          );
+        }
+        throw new Error(apiMsg ?? `Request failed (${res.status})`);
       }
       setData({
         ...(body as AnalyticsSummary),
@@ -485,20 +494,26 @@ export default function AnalyticsPage() {
     [visibility],
   );
 
-  const tabs = useMemo(
-    () =>
-      data
+  const tabs = useMemo(() => {
+    if (!data) {
+      return apiKey
         ? [
-            { id: "overview" as const, label: "Overview", count: undefined },
-            { id: "visitors" as const, label: "Visitors", count: data.totalVisitors },
-            { id: "registrations" as const, label: "Registrations", count: data.l1RegistrationCount },
-            { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
-            { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
-            { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
+            { id: "access" as const, label: "Access", count: undefined },
+            { id: "access_viewer" as const, label: "Access viewer", count: undefined },
           ]
-        : [],
-    [data, visibilityPendingCount],
-  );
+        : [];
+    }
+    return [
+      { id: "overview" as const, label: "Overview", count: undefined },
+      { id: "visitors" as const, label: "Visitors", count: data.totalVisitors },
+      { id: "registrations" as const, label: "Registrations", count: data.l1RegistrationCount },
+      { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
+      { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
+      { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
+      { id: "access" as const, label: "Access", count: undefined },
+      { id: "access_viewer" as const, label: "Access viewer", count: undefined },
+    ];
+  }, [data, visibilityPendingCount, apiKey]);
 
   const [visitorsPage, setVisitorsPage] = useState(1);
   const [feedbackPage, setFeedbackPage] = useState(1);
@@ -680,7 +695,7 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {data && (
+        {apiKey && (
           <>
             <div className="flex flex-wrap gap-1 border-b border-[rgba(103,65,217,0.12)]">
               {tabs.map((tab) => (
@@ -708,7 +723,7 @@ export default function AnalyticsPage() {
               ))}
             </div>
 
-            {activeTab === "overview" && (
+            {activeTab === "overview" && data && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {data.events.map((metric) => (
                 <div
@@ -741,7 +756,7 @@ export default function AnalyticsPage() {
             </div>
             )}
 
-            {activeTab === "visitors" && (
+            {activeTab === "visitors" && data && (
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -878,7 +893,7 @@ export default function AnalyticsPage() {
             </div>
             )}
 
-            {activeTab === "feedback" && (
+            {activeTab === "feedback" && data && (
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -982,7 +997,7 @@ export default function AnalyticsPage() {
             </div>
             )}
 
-            {activeTab === "registrations" && (
+            {activeTab === "registrations" && data && (
             <div className="irp-card p-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -1087,7 +1102,7 @@ export default function AnalyticsPage() {
             </div>
             )}
 
-            {activeTab === "support" && (
+            {activeTab === "support" && data && (
             <div className="space-y-5">
               {/* Chat Conversations */}
               <div className="irp-card p-5">
@@ -1615,7 +1630,15 @@ export default function AnalyticsPage() {
             </div>
             )}
 
-            {activeTab === "overview" && (
+            {activeTab === "access" && apiKey ? (
+              <AccessGrantsPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "access_viewer" && apiKey ? (
+              <MasterAccessViewer apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "overview" && data && (
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">

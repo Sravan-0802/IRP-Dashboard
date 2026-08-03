@@ -21,6 +21,7 @@ import {
   NXTMOCK_MOCK_URL,
   NXTMOCK_REATTEMPT_BODY,
 } from "@/lib/nxtmockConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 
 /** Shown for FE-cleared L1 students who still need to clear the AI Mock Interview. */
 export function AiMockCallout({
@@ -36,6 +37,12 @@ export function AiMockCallout({
   feProjectMinScore?: number | null;
   userId?: string;
 }) {
+  const { findGrant } = useStudentAccess();
+  const mainGrant = findGrant("ai_mock", "main") ?? findGrant("ai_mock", "default");
+  const mockGrant = findGrant("ai_mock", "mock");
+  const mainUrl = mainGrant?.url?.trim() || NXTMOCK_MAIN_URL;
+  const mockUrl = mockGrant?.url?.trim() || NXTMOCK_MOCK_URL;
+
   const clearedL1 = isCycle1Cleared(assessments, userId);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
   const mockCleared = isNxtmockCleared(nxtmock);
@@ -92,7 +99,7 @@ export function AiMockCallout({
           </p>
           <p className="mt-1.5 text-xs text-muted2">{NXTMOCK_MAIN_WINDOW_HINT}</p>
           <a
-            href={NXTMOCK_MAIN_URL}
+            href={mainUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
@@ -109,7 +116,7 @@ export function AiMockCallout({
           <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MOCK_TITLE}</p>
           <p className="mt-2 text-xs font-medium text-muted2">{NXTMOCK_MOCK_HINT}</p>
           <a
-            href={NXTMOCK_MOCK_URL}
+            href={mockUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"

@@ -12,8 +12,6 @@ import {
   ASSESSMENT_STATUS_STORAGE_KEY,
   L1_JULY12_HUSTLER_CALENDAR,
   L1_JULY12_HUSTLER_SLOTS,
-  L1_MOCK_ASSESSMENT_URL,
-  L1_JULY26_MOCK_ASSESSMENT_URL,
   L1_JULY12_MAIN_URL,
   L1_HUSTLER_MAIN_URLS,
   L1_JULY12_REGISTERED_HUB_NOTE,
@@ -38,14 +36,13 @@ import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
-<<<<<<< HEAD
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
-=======
-
->>>>>>> f622e20 (Clean up unused code in dashboard and assessments components)
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { AiMockCallout } from "@/components/irp/AiMockCallout";
+import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
+import { L1July26MainCallout } from "@/components/irp/L1July26MainCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -351,6 +348,9 @@ export function AssessmentsHub({
   const { allowed: july26Allowed } = useL1July26Allowlist();
   const { data: nxtmockData } = useNxtmockInterview();
   const nxtmock = nxtmockData?.interview ?? null;
+  const { findGrant } = useStudentAccess();
+  const hasOnlineMockGrant = Boolean(findGrant("online_assessment", "mock"));
+  const hasOnlineMainGrant = Boolean(findGrant("online_assessment", "main"));
   const hustlerState = statuses["l1-hustler"] ?? {
     status: "todo" as AssessmentStatus,
     slot: L1_JULY12_HUSTLER_SLOTS[0]?.id,
@@ -370,9 +370,9 @@ export function AssessmentsHub({
   const july26MockLinkOpen = isL1July26MockLinkOpen();
 
   const onJuly25MockAllowlist = level === 1 && isInL1July25MockAllowlist(userId);
-  // July 25 mock cohort gets the dedicated callout; hide the stale July 12
-  // "Stay tuned" Mock / Hustler cards for those students.
-  const assessmentsForLevel = onJuly25MockAllowlist ? [] : ASSESSMENTS_BY_LEVEL[level];
+  const showOnlineGrantCards = level === 1 && (hasOnlineMockGrant || hasOnlineMainGrant || onJuly25MockAllowlist);
+  // July 25 mock cohort / grant holders get dedicated callouts; hide stale July 12 cards.
+  const assessmentsForLevel = showOnlineGrantCards ? [] : ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
   // Cohort members (july12Registered) OR students in the DB exam-access list get
@@ -406,8 +406,8 @@ export function AssessmentsHub({
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {level === 1 && onJuly25MockAllowlist
-            ? "Your L1 mock link (until 26 Jul, 10:00 AM IST) and main Hustler link (26 Jul, 6:00 PM – 8:00 PM IST) are below."
+          {level === 1 && showOnlineGrantCards
+            ? "Your L1 mock and/or main assessment links are below when granted or scheduled."
             : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
             : level === 1 && july12Registered
@@ -418,17 +418,22 @@ export function AssessmentsHub({
         </p>
       </div>
 
-<<<<<<< HEAD
+      {level === 1 && (hasOnlineMockGrant || onJuly25MockAllowlist) ? (
+        <L1July25MockCallout userId={userId} />
+      ) : null}
+
+      {level === 1 && (hasOnlineMainGrant || onJuly25MockAllowlist) ? (
+        <L1July26MainCallout userId={userId} />
+      ) : null}
+
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
 
-      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} /> : null}
-=======
->>>>>>> f622e20 (Clean up unused code in dashboard and assessments components)
+      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
-        onJuly25MockAllowlist ? null : (
+        showOnlineGrantCards ? null : (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
             <ClipboardList className="h-5 w-5" />
