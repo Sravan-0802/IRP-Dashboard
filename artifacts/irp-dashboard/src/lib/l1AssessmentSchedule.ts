@@ -54,9 +54,17 @@ export const L1_JULY26_MOCK_ASSESSMENT_URL =
 export const L1_JULY12_MAIN_URL =
   "https://assessment.topin.tech/assessment?org_id=248f8108-2922-46cb-9fd7-af5edd025a9a&auto_redirect=1";
 
+/**
+ * Aug 3-5 2026 makeup assessment link — for July 26 cohort students (slot-3).
+ * Visible from 3 Aug 2:00 PM IST to 5 Aug 10:00 AM IST.
+ */
+export const L1_AUG3_MAIN_URL =
+  "https://assessment.topin.tech/assessment?org_id=1a96ac39-dd20-48bc-82dc-975aa0c6b988&auto_redirect=1";
+
 export const L1_HUSTLER_MAIN_URLS: Record<string, string> = {
   "slot-1": L1_JULY12_MAIN_URL,
   "slot-2": L1_JULY12_MAIN_URL,
+  "slot-3": L1_AUG3_MAIN_URL,
 };
 
 export function l1HustlerSlotLabel(slotId: string | null | undefined): string | undefined {

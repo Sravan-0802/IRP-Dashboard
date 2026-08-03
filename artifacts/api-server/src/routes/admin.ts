@@ -227,7 +227,7 @@ router.post("/admin/l1-exam-access/import", async (req, res) => {
     }
 
     const rawEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
-    const ALLOWED_SLOTS = new Set(["slot-1", "slot-2"]);
+    const ALLOWED_SLOTS = new Set(["slot-1", "slot-2", "slot-3"]);
     const seen = new Set<string>();
     const values: { academyUserId: string; cycle: number; slotId: string }[] = [];
     const invalid: unknown[] = [];

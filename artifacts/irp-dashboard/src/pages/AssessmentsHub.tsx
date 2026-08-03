@@ -38,6 +38,7 @@ import { useL1Registration } from "@/lib/useL1Registration";
 import { useL1ExamAccess } from "@/lib/useL1ExamAccess";
 import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
+import { isL1Aug3MainLinkLive } from "@/lib/irpDates";
 
 
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
@@ -360,7 +361,6 @@ export function AssessmentsHub({
   );
   const july12RegistrationOpen = isL1July12RegistrationOpen() || registrationUnlocked;
   const mockLinkOpen = isL1July12MockLinkOpen();
-  const mainLinkOpen = isL1July12MainLinkOpen();
 
   // July 26 registered = in allowlist AND successfully booked a slot.
   const july26Registered = july26Allowed && hasSuccessfulSlotRegistration(registration);
@@ -378,6 +378,8 @@ export function AssessmentsHub({
   const examSlotId = examAccess?.slotId ?? (july12Registered ? "slot-2" : undefined);
   const examMainUrl = hasExamAccess ? (july12Registered ? L1_JULY12_MAIN_URL : (examSlotId ? L1_HUSTLER_MAIN_URLS[examSlotId] : undefined)) : undefined;
   const examMainSlotLabel = hasExamAccess ? (july12Registered ? "6:00 PM – 8:00 PM IST" : l1HustlerSlotLabel(examSlotId)) : undefined;
+  // slot-3 = Aug 3-5 makeup cohort; all other slots use the July 12 window (already closed).
+  const mainLinkOpenForSlot = examSlotId === "slot-3" ? isL1Aug3MainLinkLive() : isL1July12MainLinkOpen();
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
     setStatuses((prev) => {
@@ -442,7 +444,7 @@ export function AssessmentsHub({
               examMainUrl={a.id === "l1-hustler" ? examMainUrl : undefined}
               examMainSlotLabel={examMainSlotLabel}
               mockLinkOpen={july26Registered ? july26MockLinkOpen : mockLinkOpen}
-              mainLinkOpen={mainLinkOpen}
+              mainLinkOpen={mainLinkOpenForSlot}
               examMainPendingNote={
                 a.id === "l1-hustler"
                   ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`

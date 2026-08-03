@@ -202,3 +202,14 @@ export function isL1July26AssessmentLive(now = new Date()): boolean {
 export function isL1July26ExamWindowClosed(now = new Date()): boolean {
   return now >= L1_JULY26_EXAM_DATE && !isL1July26AssessmentLive(now);
 }
+
+/**
+ * Aug 3-5 makeup assessment window for July 26 cohort students:
+ * 3 Aug 2:00 PM IST → 5 Aug 10:00 AM IST.
+ */
+export const L1_AUG3_MAIN_OPEN_DATE  = new Date("2026-08-03T14:00:00+05:30");
+export const L1_AUG3_MAIN_CLOSE_DATE = new Date("2026-08-05T10:00:00+05:30");
+
+export function isL1Aug3MainLinkLive(now = new Date()): boolean {
+  return now >= L1_AUG3_MAIN_OPEN_DATE && now < L1_AUG3_MAIN_CLOSE_DATE;
+}
