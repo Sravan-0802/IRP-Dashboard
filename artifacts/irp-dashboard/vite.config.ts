@@ -68,8 +68,11 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        // Set API_PROXY_TARGET to preview against deployed Replit/Neon data, e.g.
+        // https://irp-dashboard-academy.replit.app
+        target: process.env.API_PROXY_TARGET || "http://localhost:8080",
         changeOrigin: true,
+        secure: true,
       },
     },
   },

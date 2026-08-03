@@ -34,11 +34,8 @@ import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
-<<<<<<< HEAD
 import { FeMockCallout } from "./FeMockCallout";
-=======
-
->>>>>>> f622e20 (Clean up unused code in dashboard and assessments components)
+import { FeProjectCallout } from "./FeProjectCallout";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { AiMockCallout } from "./AiMockCallout";
@@ -50,6 +47,7 @@ import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { ContactUs } from "./ContactUs";
 
 function journeySteps(
@@ -251,6 +249,11 @@ export function DashboardView({
   const { data: nxtmockData } = useNxtmockInterview();
   const { settings } = useVisibilitySettings();
   const { minScore: feProjectMinScore } = useFeProjectConfig();
+  const { findGrant } = useStudentAccess();
+  const humanInterviewGrantUrl =
+    findGrant("human_interview", "default")?.url?.trim() ||
+    findGrant("human_interview", "main")?.url?.trim() ||
+    null;
   const nxtmock = nxtmockData?.interview ?? null;
 
   const motivation = assessmentMotivation(
@@ -348,9 +351,16 @@ export function DashboardView({
         />
       ) : null}
 
-<<<<<<< HEAD
       {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
         <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <FeProjectCallout
+          journey={journey}
+          assessments={assessments}
+          feProjectMinScore={feProjectMinScore}
+        />
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
@@ -361,8 +371,6 @@ export function DashboardView({
           userId={userId}
         />
       ) : null}
-=======
->>>>>>> f622e20 (Clean up unused code in dashboard and assessments components)
 
       {level === 1 && !journey.isWildcard ? (
         <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />
@@ -382,7 +390,24 @@ export function DashboardView({
       {level === 1 &&
       !journey.isWildcard &&
       (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
-      !settings.humanInterviewResults ? (
+      humanInterviewGrantUrl ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-[rgba(59,91,219,0.2)] bg-[linear-gradient(120deg,#edf2ff_0%,#f8f7ff_100%)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-semibold text-ink">
+            Your Human Interview link is ready.
+          </span>
+          <a
+            href={humanInterviewGrantUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+          >
+            Open Human Interview
+          </a>
+        </div>
+      ) : level === 1 &&
+        !journey.isWildcard &&
+        (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
+        !settings.humanInterviewResults ? (
         <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft">
           <span className="text-sm font-medium text-muted2">
             Human Interview details are being processed. They will appear here once released.

@@ -8,14 +8,22 @@ import {
   L1_JULY25_MOCK_WINDOW_LABEL,
 } from "@/lib/l1July25MockConfig";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 
 interface L1July25MockCalloutProps {
   userId: string;
 }
 
-/** Shown for all L1-registered (allowlisted) students. */
+/** Online Assessment mock — grant URL preferred; else allowlist + date window. */
 export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
-  if (!isInL1July25MockAllowlist(userId)) return null;
+  const { findGrant } = useStudentAccess();
+  const grantUrl = findGrant("online_assessment", "mock")?.url?.trim() || null;
+
+  if (!grantUrl) {
+    if (!isInL1July25MockAllowlist(userId) || !isL1July25MockLinkOpen()) return null;
+  }
+
+  const href = grantUrl ?? L1_JULY25_MOCK_URL;
 
   function onStartMock() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK);
@@ -36,13 +44,20 @@ export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
               {L1_JULY25_MOCK_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              Complete the L1 mock assessment. Available until {L1_JULY25_MOCK_AVAILABLE_UNTIL}.
+              {grantUrl
+                ? "Your L1 mock assessment link is ready."
+                : `Complete the L1 mock assessment. Available until ${L1_JULY25_MOCK_AVAILABLE_UNTIL}.`}
             </p>
+            {!grantUrl ? (
+              <p className="mt-1.5 text-xs font-semibold text-brand">
+                🕐 {L1_JULY25_MOCK_WINDOW_LABEL}
+              </p>
+            ) : null}
           </div>
         </div>
 
         <a
-          href={L1_JULY25_MOCK_URL}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           onClick={onStartMock}

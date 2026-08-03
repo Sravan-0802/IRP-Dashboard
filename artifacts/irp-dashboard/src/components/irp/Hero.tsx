@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock, ClipboardList, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
+import { Calendar, CalendarClock, ClipboardList, ExternalLink, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -35,6 +35,7 @@ import {
 import type { NxtmockInterview } from "@/lib/nxtmockInterview";
 import { isNxtmockCleared } from "@/lib/nxtmockInterview";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { CountdownRing } from "./CountdownRing";
 import { Pill } from "./ui";
 
@@ -106,10 +107,14 @@ function L1PipelineStageHero({
   level,
   stage,
   examDateLabel,
+  ctaUrl,
+  ctaLabel,
 }: {
   level: 1 | 2 | 3;
   stage: L1PipelineStage;
   examDateLabel: string;
+  ctaUrl?: string | null;
+  ctaLabel?: string;
 }) {
   const meta = LEVEL_META[level];
   const content = l1StageHeroContent(stage, examDateLabel);
@@ -155,6 +160,17 @@ function L1PipelineStageHero({
             {content.title}
           </h2>
           <p className="mt-2 max-w-md text-sm text-muted2">{content.body}</p>
+          {ctaUrl ? (
+            <a
+              href={ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-pop mt-4 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {ctaLabel ?? "Open link"}
+            </a>
+          ) : null}
         </div>
 
         <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
@@ -188,6 +204,11 @@ export function Hero({
   userId?: string;
 }) {
   const { settings } = useVisibilitySettings();
+  const { findGrant } = useStudentAccess();
+  const humanInterviewGrantUrl =
+    findGrant("human_interview", "default")?.url?.trim() ||
+    findGrant("human_interview", "main")?.url?.trim() ||
+    null;
   const onlineL1ResultsVisible = settings.onlineL1Results;
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
@@ -215,7 +236,8 @@ export function Hero({
     let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, feProjectMinScore);
 
     // Hold pipeline result stages until admin releases that stage.
-    if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults) {
+    // Access grants can unlock Human Interview CTA even before results release.
+    if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults && !humanInterviewGrantUrl) {
       if (settings.aiMockResults) {
         // AI mock released; human not yet — keep AI-cleared messaging via pending hero below
         pipelineStage = null;
@@ -240,7 +262,8 @@ export function Hero({
     if (
       (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
       !settings.humanInterviewResults &&
-      settings.aiMockResults
+      settings.aiMockResults &&
+      !humanInterviewGrantUrl
     ) {
       return (
         <div
@@ -268,8 +291,21 @@ export function Hero({
       return (
         <L1PipelineStageHero
           level={level}
-          stage={pipelineStage}
+          stage={
+            humanInterviewGrantUrl &&
+            (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")
+              ? "human_interview_active"
+              : pipelineStage
+          }
           examDateLabel={clearedDateLabel}
+          ctaUrl={
+            (pipelineStage === "human_interview_active" ||
+              (humanInterviewGrantUrl &&
+                (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")))
+              ? humanInterviewGrantUrl
+              : null
+          }
+          ctaLabel="Open Human Interview"
         />
       );
     }
