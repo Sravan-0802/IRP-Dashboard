@@ -311,6 +311,17 @@ function AssessmentCard({
             {config.kind === "mock" ? "Start Mock Assessment" : "Start Assessment"}
           </button>
         )}
+        {/* Direct exam link — slot-3 makeup: no slot picker, mainLinkOpen gates the window */}
+        {status === "todo" && config.kind === "main" && !needsSlot && !isExamMain && examMainUrl && mainLinkOpen && (
+          <button
+            type="button"
+            onClick={openExamMain}
+            className="btn-pop flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Start Assessment
+          </button>
+        )}
         {status === "todo" && config.kind === "main" && needsSlot && !onBook && (
           <button
             type="button"
