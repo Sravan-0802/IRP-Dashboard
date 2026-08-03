@@ -366,12 +366,6 @@ export function AssessmentsHub({
   const july26Registered = july26Allowed && hasSuccessfulSlotRegistration(registration);
   const july26MockLinkOpen = isL1July26MockLinkOpen();
 
-  const onJuly25MockAllowlist = level === 1 && isInL1July25MockAllowlist(userId);
-  // July 25 mock cohort gets the dedicated callout; hide the stale July 12
-  // "Stay tuned" Mock / Hustler cards for those students.
-  const assessmentsForLevel = onJuly25MockAllowlist ? [] : ASSESSMENTS_BY_LEVEL[level];
-  const meta = LEVEL_META[level];
-
   // Cohort members (july12Registered) OR students in the DB exam-access list get
   // the mock + main links. The July 12 re-conduction has a single common main link.
   const hasExamAccess = level === 1 && (!!examAccess || july12Registered);
@@ -380,6 +374,13 @@ export function AssessmentsHub({
   const examMainSlotLabel = hasExamAccess ? (july12Registered ? "6:00 PM – 8:00 PM IST" : l1HustlerSlotLabel(examSlotId)) : undefined;
   // slot-3 = Aug 3-5 makeup cohort; all other slots use the July 12 window (already closed).
   const mainLinkOpenForSlot = examSlotId === "slot-3" ? isL1Aug3MainLinkLive() : isL1July12MainLinkOpen();
+
+  const onJuly25MockAllowlist = level === 1 && isInL1July25MockAllowlist(userId);
+  // July 25 mock cohort gets the dedicated callout; hide the stale July 12
+  // "Stay tuned" Mock / Hustler cards for those students — but if the student
+  // already has exam access (e.g. slot-3 Aug 3-5 makeup), show the cards.
+  const assessmentsForLevel = (onJuly25MockAllowlist && !hasExamAccess) ? [] : ASSESSMENTS_BY_LEVEL[level];
+  const meta = LEVEL_META[level];
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
     setStatuses((prev) => {
@@ -405,7 +406,9 @@ export function AssessmentsHub({
       <div>
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
-          {level === 1 && onJuly25MockAllowlist
+          {level === 1 && hasExamAccess && examSlotId === "slot-3"
+            ? "Your L1 Hustler assessment link is available from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+            : level === 1 && onJuly25MockAllowlist
             ? "Your L1 mock link (until 26 Jul, 10:00 AM IST) and main Hustler link (26 Jul, 6:00 PM – 8:00 PM IST) are below."
             : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
@@ -446,7 +449,9 @@ export function AssessmentsHub({
               mockLinkOpen={july26Registered ? july26MockLinkOpen : mockLinkOpen}
               mainLinkOpen={mainLinkOpenForSlot}
               examMainPendingNote={
-                a.id === "l1-hustler"
+                a.id === "l1-hustler" && examSlotId === "slot-3"
+                  ? "Your L1 Hustler assessment link will be available here from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+                  : a.id === "l1-hustler"
                   ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
                   : undefined
               }
