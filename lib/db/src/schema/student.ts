@@ -138,6 +138,7 @@ export const l1CycleRegistrationsTable = pgTable(
     willAttend: integer("will_attend"),
     unavailabilityReason: text("unavailability_reason"),
     notifyNextCycle: integer("notify_next_cycle"),
+    batchId: integer("batch_id"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -394,6 +395,39 @@ export const accessBatchUsersTable = pgTable(
     pk: unique("access_batch_users_pk").on(t.batchId, t.academyUserId),
   }),
 );
+
+export const registrationBatchesTable = pgTable("registration_batches", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  assessmentLabel: text("assessment_label").notNull(),
+  assessmentDate: text("assessment_date").notNull(),
+  slotId: text("slot_id"),
+  slotLabel: text("slot_label"),
+  enabled: integer("enabled").notNull().default(1),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const registrationBatchUsersTable = pgTable(
+  "registration_batch_users",
+  {
+    batchId: integer("batch_id")
+      .notNull()
+      .references(() => registrationBatchesTable.id, { onDelete: "cascade" }),
+    academyUserId: text("academy_user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: unique("registration_batch_users_pk").on(t.batchId, t.academyUserId),
+  }),
+);
+
+export type RegistrationBatch = typeof registrationBatchesTable.$inferSelect;
+export type InsertRegistrationBatch = typeof registrationBatchesTable.$inferInsert;
+export type RegistrationBatchUser = typeof registrationBatchUsersTable.$inferSelect;
 
 export type AcademyUserBasicDetails = typeof academyUserBasicDetailsTable.$inferSelect;
 export type VisibilitySetting = typeof visibilitySettingsTable.$inferSelect;

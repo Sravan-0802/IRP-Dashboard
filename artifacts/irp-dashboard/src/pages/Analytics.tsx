@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
 import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
 import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
+import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/components/admin/RegistrationBatchesPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -77,7 +78,7 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer";
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer" | "reg_batches" | "reg_responses";
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -500,6 +501,8 @@ export default function AnalyticsPage() {
         ? [
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
+            { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
+            { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
         : [];
     }
@@ -514,6 +517,8 @@ export default function AnalyticsPage() {
         ? [
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
+            { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
+            { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
         : []),
     ];
@@ -1640,6 +1645,14 @@ export default function AnalyticsPage() {
 
             {activeTab === "access_viewer" && apiKey ? (
               <MasterAccessViewer apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "reg_batches" && apiKey ? (
+              <RegistrationBatchesPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "reg_responses" && apiKey ? (
+              <RegistrationResponsesPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "overview" && data && (

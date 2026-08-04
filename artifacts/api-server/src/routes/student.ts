@@ -15,8 +15,10 @@ import {
   l1CycleRegistrationsTable,
   l1ExamAccessTable,
   unpaidUsersTable,
+  registrationBatchesTable,
+  registrationBatchUsersTable,
 } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
@@ -29,6 +31,7 @@ import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
 import {
   canRegisterForL1July12,
   canRegisterForL1July26,
+  L1_AVAILABILITY_VALUES,
   L1_JULY12_REGISTRATION_ASSESSMENT_DATE,
   L1_JULY26_REGISTRATION_ASSESSMENT_DATE,
   L1_JULY12_SLOT_IDS,
@@ -39,6 +42,7 @@ import {
   slotLabelFor,
   validateL1RegistrationPayload,
 } from "../lib/l1Registration";
+import { getActiveRegistrationBatchForStudent } from "../lib/registrationBatches";
 
 const router = Router();
 
@@ -555,6 +559,127 @@ router.post("/student/l1-registration", async (req, res) => {
       return;
     }
 
+    // ── Batch registration path ──────────────────────────────────────────────
+    const batchIdRaw = req.body?.batchId;
+    if (batchIdRaw !== undefined && batchIdRaw !== null) {
+      const batchId = typeof batchIdRaw === "number" ? batchIdRaw : Number(batchIdRaw);
+      if (!Number.isFinite(batchId) || batchId <= 0) {
+        res.status(400).json({ error: "Invalid batchId" });
+        return;
+      }
+
+      // Load batch
+      const [batchRow] = await db
+        .select()
+        .from(registrationBatchesTable)
+        .where(eq(registrationBatchesTable.id, batchId))
+        .limit(1);
+      if (!batchRow) {
+        res.status(404).json({ error: "Registration batch not found" });
+        return;
+      }
+      const batchNow = new Date();
+      const batchActive =
+        batchRow.enabled === 1 &&
+        (batchRow.startsAt === null || batchRow.startsAt <= batchNow) &&
+        (batchRow.expiresAt === null || batchRow.expiresAt > batchNow);
+      if (!batchActive) {
+        res.status(403).json({ error: "This registration batch is not currently active" });
+        return;
+      }
+
+      // Verify student is in batch
+      const [inBatch] = await db
+        .select({ academyUserId: registrationBatchUsersTable.academyUserId })
+        .from(registrationBatchUsersTable)
+        .where(
+          and(
+            eq(registrationBatchUsersTable.batchId, batchId),
+            eq(registrationBatchUsersTable.academyUserId, userId),
+          ),
+        )
+        .limit(1);
+      if (!inBatch) {
+        res.status(403).json({ error: "You are not in this registration batch" });
+        return;
+      }
+
+      // Validate (simplified — slot comes from batch, not L1 global slot list)
+      const availability = typeof req.body?.availability === "string" ? req.body.availability.trim() : "";
+      if (!L1_AVAILABILITY_VALUES.has(availability)) {
+        res.status(400).json({ error: "Invalid availability" });
+        return;
+      }
+      const isYes = availability === "yes";
+      const isNo = availability.startsWith("no-");
+      if (isYes && (req.body.understandsGc !== true || req.body.willAttend !== true)) {
+        res.status(400).json({ error: "Please confirm both checkboxes to complete registration" });
+        return;
+      }
+      if (isNo) {
+        const reason = typeof req.body.unavailabilityReason === "string" ? req.body.unavailabilityReason.trim() : "";
+        if (!reason) {
+          res.status(400).json({ error: "Please provide a reason for unavailability" });
+          return;
+        }
+      }
+
+      const batchCycle = 1000 + batchId;
+      const batchStudent = await getOrCreateStudentForUser(userId);
+      const [batchBasic] = await db
+        .select({ userName: academyUserBasicDetailsTable.userName })
+        .from(academyUserBasicDetailsTable)
+        .where(eq(academyUserBasicDetailsTable.userId, userId))
+        .limit(1);
+      const batchDisplayName = resolveStudentName(batchBasic?.userName, batchStudent?.name, userId, batchStudent?.email);
+
+      const batchNow2 = new Date();
+      const batchValues = {
+        academyUserId: userId,
+        studentId: batchStudent?.id ?? null,
+        userName: batchDisplayName,
+        cycle: batchCycle,
+        level: L1_REGISTRATION_LEVEL,
+        assessmentDate: batchRow.assessmentDate,
+        availability,
+        slotId: isYes ? batchRow.slotId : null,
+        slotLabel: isYes ? batchRow.slotLabel : null,
+        understandsGc: isYes && req.body.understandsGc === true ? 1 : null,
+        willAttend: isYes && req.body.willAttend === true ? 1 : null,
+        unavailabilityReason: isNo ? String(req.body.unavailabilityReason).trim() : null,
+        notifyNextCycle: isNo && req.body.notifyNextCycle === true ? 1 : 0,
+        batchId,
+        submittedAt: batchNow2,
+        updatedAt: batchNow2,
+      };
+      const [batchRow2] = await db
+        .insert(l1CycleRegistrationsTable)
+        .values(batchValues)
+        .onConflictDoUpdate({
+          target: [
+            l1CycleRegistrationsTable.academyUserId,
+            l1CycleRegistrationsTable.cycle,
+            l1CycleRegistrationsTable.level,
+          ],
+          set: {
+            availability: batchValues.availability,
+            slotId: batchValues.slotId,
+            slotLabel: batchValues.slotLabel,
+            understandsGc: batchValues.understandsGc,
+            willAttend: batchValues.willAttend,
+            unavailabilityReason: batchValues.unavailabilityReason,
+            notifyNextCycle: batchValues.notifyNextCycle,
+            batchId: batchValues.batchId,
+            submittedAt: batchValues.submittedAt,
+            updatedAt: batchValues.updatedAt,
+          },
+        })
+        .returning();
+      res.status(201).json({ registration: rowToL1RegistrationResponse(batchRow2) });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const cycle = parseRegistrationCycle(req.body?.cycle);
     const validationError = validateL1RegistrationPayload({
       cycle,
@@ -863,6 +988,26 @@ router.delete("/student/l1-registration", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to delete L1 registration");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/registration-batch — first active registration batch for the student
+router.get("/student/registration-batch", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const result = await getActiveRegistrationBatchForStudent(userId);
+    if (!result) {
+      res.json({ batch: null, hasResponded: false });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to get registration batch for student");
     res.status(500).json({ error: "Internal server error" });
   }
 });

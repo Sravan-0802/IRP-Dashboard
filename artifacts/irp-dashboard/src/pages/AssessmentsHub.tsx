@@ -39,6 +39,7 @@ import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { isL1Aug3MainLinkLive } from "@/lib/irpDates";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
+import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
@@ -454,6 +455,8 @@ export function AssessmentsHub({
       {level === 1 && (hasOnlineMainGrant || onJuly25MockAllowlist) ? (
         <L1July26MainCallout userId={userId} />
       ) : null}
+
+      {level === 1 && <RegistrationBatchCallout />}
 
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
