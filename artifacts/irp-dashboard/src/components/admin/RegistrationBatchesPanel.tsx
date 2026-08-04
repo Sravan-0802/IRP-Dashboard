@@ -147,6 +147,8 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<RegistrationBatchDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailResponses, setDetailResponses] = useState<BatchRegistrationResponse[]>([]);
+  const [showAllUids, setShowAllUids] = useState(false);
 
   // Create form
   const [name, setName] = useState("");
@@ -184,13 +186,24 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
   async function loadDetail(id: number) {
     setDetailLoading(true);
     setDetail(null);
+    setDetailResponses([]);
+    setShowAllUids(false);
     try {
-      const res = await fetch(`/api/admin/registration-batches/${id}`, {
-        headers: { "x-api-key": apiKey.trim() },
-      });
-      const body = await res.json().catch(() => ({})) as { batch?: RegistrationBatchDetail; error?: string };
-      if (!res.ok) throw new Error(body.error ?? "Failed to load");
-      setDetail(body.batch ?? null);
+      const [detailRes, responsesRes] = await Promise.all([
+        fetch(`/api/admin/registration-batches/${id}`, {
+          headers: { "x-api-key": apiKey.trim() },
+        }),
+        fetch(`/api/admin/registration-batches/${id}/responses`, {
+          headers: { "x-api-key": apiKey.trim() },
+        }),
+      ]);
+      const [detailBody, responsesBody] = await Promise.all([
+        detailRes.json().catch(() => ({})) as Promise<{ batch?: RegistrationBatchDetail; error?: string }>,
+        responsesRes.json().catch(() => ({})) as Promise<{ responses?: BatchRegistrationResponse[]; error?: string }>,
+      ]);
+      if (!detailRes.ok) throw new Error(detailBody.error ?? "Failed to load");
+      setDetail(detailBody.batch ?? null);
+      setDetailResponses(responsesBody.responses ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load batch detail");
     } finally {
@@ -476,24 +489,105 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
                     </tr>
                     {expandedId === b.id ? (
                       <tr className="border-b border-[rgba(103,65,217,0.06)] bg-[#faf9ff]">
-                        <td colSpan={8} className="px-3 py-3">
+                        <td colSpan={8} className="px-4 py-4">
                           {detailLoading ? (
-                            <p className="text-xs text-[#6e6a8a]">Loading UIDs…</p>
+                            <p className="text-xs text-[#6e6a8a]">Loading…</p>
                           ) : detail?.id === b.id ? (
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-bold text-[#6e6a8a]">
-                                  {detail.academyUserIds.length} UIDs
-                                </span>
-                                <button type="button"
-                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold"
-                                  onClick={() => downloadUidsCsv(detail.academyUserIds, `reg-batch-${b.id}-uids.csv`)}>
-                                  <Download className="h-3 w-3" />Download UIDs CSV
-                                </button>
+                            <div className="space-y-4">
+
+                              {/* ── Responses ─────────────────────────────── */}
+                              <div>
+                                <div className="mb-2 flex flex-wrap items-center gap-3">
+                                  <span className="text-xs font-bold uppercase tracking-wider text-[#6741d9]">
+                                    Responses ({detailResponses.length} / {detail.academyUserIds.length})
+                                  </span>
+                                  {detailResponses.length > 0 && (
+                                    <>
+                                      <span className="text-xs text-[#6e6a8a]">
+                                        ✅ {detailResponses.filter(r => r.availability === "yes").length} available
+                                        &nbsp;·&nbsp;
+                                        ❌ {detailResponses.filter(r => r.availability !== "yes").length} unavailable
+                                      </span>
+                                      <button type="button"
+                                        onClick={() => void downloadResponses(b.id, b.name)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-[rgba(103,65,217,0.25)] bg-white px-2 py-1 text-xs font-bold text-[#6741d9]">
+                                        <Download className="h-3 w-3" />Download CSV
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+
+                                {detailResponses.length === 0 ? (
+                                  <p className="text-xs text-[#6e6a8a]">No responses yet.</p>
+                                ) : (
+                                  <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                                    <table className="w-full min-w-[600px] text-left text-xs">
+                                      <thead>
+                                        <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                                          <th className="px-3 py-2">Student</th>
+                                          <th className="px-3 py-2">Availability</th>
+                                          <th className="px-3 py-2">Slot</th>
+                                          <th className="px-3 py-2">GC ✓</th>
+                                          <th className="px-3 py-2">Attend ✓</th>
+                                          <th className="px-3 py-2">Reason</th>
+                                          <th className="px-3 py-2">Submitted</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {detailResponses.map((r) => (
+                                          <tr key={r.id} className="border-b border-slate-50 last:border-0 hover:bg-[#f8f7ff]">
+                                            <td className="px-3 py-2">
+                                              <p className="font-semibold text-[#0d1117]">{r.userName || "—"}</p>
+                                              <p className="font-mono text-[10px] text-[#6e6a8a]">{r.academyUserId.slice(0, 8)}…</p>
+                                            </td>
+                                            <td className="px-3 py-2">
+                                              <span className={`font-bold ${r.availability === "yes" ? "text-[#0ca678]" : "text-amber-600"}`}>
+                                                {availLabel(r.availability)}
+                                              </span>
+                                            </td>
+                                            <td className="px-3 py-2 text-[#6e6a8a]">{r.slotLabel ?? "—"}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              {r.understandsGc === true ? "✅" : r.understandsGc === false ? "❌" : "—"}
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                              {r.willAttend === true ? "✅" : r.willAttend === false ? "❌" : "—"}
+                                            </td>
+                                            <td className="max-w-[140px] truncate px-3 py-2 text-[#6e6a8a]"
+                                              title={r.unavailabilityReason ?? ""}>
+                                              {r.unavailabilityReason
+                                                ? r.unavailabilityReason.slice(0, 35) + (r.unavailabilityReason.length > 35 ? "…" : "")
+                                                : "—"}
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-2 text-[#6e6a8a]">
+                                              {new Date(r.submittedAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
                               </div>
-                              <pre className="max-h-32 overflow-auto rounded-lg border border-slate-200 bg-white p-2 font-mono text-[11px] text-slate-700">
-                                {detail.academyUserIds.join("\n")}
-                              </pre>
+
+                              {/* ── Invited UIDs (collapsible) ─────────────── */}
+                              <div>
+                                <button type="button"
+                                  onClick={() => setShowAllUids((v) => !v)}
+                                  className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-[#6e6a8a] hover:text-[#6741d9]">
+                                  {showAllUids ? "▾" : "▸"} Invited UIDs ({detail.academyUserIds.length})
+                                  <button type="button"
+                                    className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600"
+                                    onClick={(e) => { e.stopPropagation(); downloadUidsCsv(detail.academyUserIds, `reg-batch-${b.id}-uids.csv`); }}>
+                                    <Download className="h-2.5 w-2.5" />CSV
+                                  </button>
+                                </button>
+                                {showAllUids && (
+                                  <pre className="max-h-32 overflow-auto rounded-lg border border-slate-200 bg-white p-2 font-mono text-[11px] text-slate-700">
+                                    {detail.academyUserIds.join("\n")}
+                                  </pre>
+                                )}
+                              </div>
+
                             </div>
                           ) : <p className="text-xs text-[#6e6a8a]">Could not load detail.</p>}
                         </td>
