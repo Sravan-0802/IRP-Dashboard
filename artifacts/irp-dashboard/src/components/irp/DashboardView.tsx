@@ -49,6 +49,7 @@ import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { ContactUs } from "./ContactUs";
+import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 
 function journeySteps(
   journey: Journey,
@@ -308,6 +309,10 @@ export function DashboardView({
           onRegisterClick={onOpenAssessmentCalendar}
           userId={userId}
         />
+      ) : null}
+
+      {level === 1 && !journey.isWildcard ? (
+        <RegistrationBatchCallout />
       ) : null}
 
       {showResultsProcessingBanner ? (

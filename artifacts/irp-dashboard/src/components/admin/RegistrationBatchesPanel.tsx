@@ -149,6 +149,10 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailResponses, setDetailResponses] = useState<BatchRegistrationResponse[]>([]);
   const [showAllUids, setShowAllUids] = useState(false);
+  // Edit UIDs inline
+  const [editingUids, setEditingUids] = useState(false);
+  const [editUidsText, setEditUidsText] = useState("");
+  const [savingUids, setSavingUids] = useState(false);
 
   // Create form
   const [name, setName] = useState("");
@@ -300,8 +304,31 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
     }
   }
 
+  async function patchUids(id: number) {
+    if (savingUids) return;
+    setSavingUids(true);
+    setError("");
+    try {
+      const newIds = parseAcademyUserIds(editUidsText);
+      const res = await fetch(`/api/admin/registration-batches/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", "x-api-key": apiKey.trim() },
+        body: JSON.stringify({ academyUserIds: newIds }),
+      });
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "Failed to update UIDs");
+      setEditingUids(false);
+      await Promise.all([loadBatches(), loadDetail(id)]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update UIDs");
+    } finally {
+      setSavingUids(false);
+    }
+  }
+
   async function toggleExpand(id: number) {
-    if (expandedId === id) { setExpandedId(null); setDetail(null); return; }
+    if (expandedId === id) { setExpandedId(null); setDetail(null); setEditingUids(false); return; }
+    setEditingUids(false);
     setExpandedId(id);
     await loadDetail(id);
   }
@@ -569,23 +596,61 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
                                 )}
                               </div>
 
-                              {/* ── Invited UIDs (collapsible) ─────────────── */}
+                              {/* ── Invited UIDs (collapsible + editable) ─────────────── */}
                               <div>
-                                <button type="button"
-                                  onClick={() => setShowAllUids((v) => !v)}
-                                  className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-[#6e6a8a] hover:text-[#6741d9]">
-                                  {showAllUids ? "▾" : "▸"} Invited UIDs ({detail.academyUserIds.length})
+                                <div className="mb-1 flex flex-wrap items-center gap-2">
                                   <button type="button"
-                                    className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600"
+                                    onClick={() => setShowAllUids((v) => !v)}
+                                    className="inline-flex items-center gap-1 text-xs font-bold text-[#6e6a8a] hover:text-[#6741d9]">
+                                    {showAllUids ? "▾" : "▸"} Invited UIDs ({detail.academyUserIds.length})
+                                  </button>
+                                  <button type="button"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600"
                                     onClick={(e) => { e.stopPropagation(); downloadUidsCsv(detail.academyUserIds, `reg-batch-${b.id}-uids.csv`); }}>
                                     <Download className="h-2.5 w-2.5" />CSV
                                   </button>
-                                </button>
-                                {showAllUids && (
+                                  {!editingUids && (
+                                    <button type="button"
+                                      onClick={(e) => { e.stopPropagation(); setEditUidsText(detail.academyUserIds.join("\n")); setEditingUids(true); setShowAllUids(true); }}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-[rgba(103,65,217,0.3)] bg-[#f3f0ff] px-2 py-0.5 text-[10px] font-bold text-[#6741d9]">
+                                      ✏️ Edit UIDs
+                                    </button>
+                                  )}
+                                </div>
+
+                                {editingUids ? (
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={editUidsText}
+                                      onChange={(e) => setEditUidsText(e.target.value)}
+                                      rows={8}
+                                      placeholder={"academy_user_id\nuuid-1\nuuid-2\n…"}
+                                      className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
+                                    />
+                                    <p className="text-[10px] text-[#6e6a8a]">
+                                      {parseAcademyUserIds(editUidsText).length.toLocaleString()} UIDs parsed
+                                    </p>
+                                    <div className="flex gap-2">
+                                      <button type="button"
+                                        disabled={savingUids}
+                                        onClick={(e) => { e.stopPropagation(); void patchUids(b.id); }}
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#6741d9] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                                        {savingUids ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                                        Save changes
+                                      </button>
+                                      <button type="button"
+                                        disabled={savingUids}
+                                        onClick={(e) => { e.stopPropagation(); setEditingUids(false); }}
+                                        className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-50">
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : showAllUids ? (
                                   <pre className="max-h-32 overflow-auto rounded-lg border border-slate-200 bg-white p-2 font-mono text-[11px] text-slate-700">
                                     {detail.academyUserIds.join("\n")}
                                   </pre>
-                                )}
+                                ) : null}
                               </div>
 
                             </div>
