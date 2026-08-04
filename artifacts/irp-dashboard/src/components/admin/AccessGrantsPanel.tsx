@@ -1,12 +1,18 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  Check,
   Download,
   KeyRound,
+  Link2,
   Loader2,
   RefreshCw,
   Timer,
   Trash2,
   Upload,
+  Users,
 } from "lucide-react";
 import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
 import { useCountdown } from "@/lib/useCountdown";
@@ -86,42 +92,26 @@ function downloadCsv(ids: string[], filename: string) {
   URL.revokeObjectURL(href);
 }
 
-/**
- * Live timing cell — shows "Starts in" when scheduled, or "expires" countdown when active.
- * Updates every second while mounted.
- */
-function TimingCell({
-  startsAt,
-  expiresAt,
-  expired,
-  scheduled,
-}: {
-  startsAt: string | null;
-  expiresAt: string | null;
-  expired: boolean;
-  scheduled: boolean;
-}) {
-  // For scheduled grants, count down to startsAt; otherwise count down to expiresAt.
-  const targetIso = scheduled ? startsAt : expiresAt;
-  const { timeLeft, isExpired: clientExpired } = useCountdown(targetIso);
+/** Separate start-time cell — shows nothing / "Immediate" / scheduled countdown. */
+function StartCell({ startsAt, scheduled }: { startsAt: string | null; scheduled: boolean }) {
+  const { timeLeft, isExpired: alreadyStarted } = useCountdown(startsAt);
+  const isScheduled = scheduled && !alreadyStarted;
 
-  // Re-derive states (client-side ticks may change them)
-  const isNowExpired = !scheduled && (expired || clientExpired);
-  const isNowScheduled = scheduled && !clientExpired;
+  if (!startsAt) {
+    return <span className="text-xs text-[#6e6a8a]">Immediate</span>;
+  }
 
-  if (isNowScheduled && startsAt) {
-    const dateLabel = new Date(startsAt).toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+  const dateLabel = new Date(startsAt).toLocaleString(undefined, {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+
+  if (isScheduled) {
     const ms = new Date(startsAt).getTime() - Date.now();
     const urgency = ms < 30 * 60 * 1000 ? "critical" : ms < 2 * 60 * 60 * 1000 ? "warn" : "scheduled";
-
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-semibold text-[#6741d9]">
-          From {dateLabel}
-        </span>
+        <span className="text-xs font-semibold text-[#6741d9]">{dateLabel}</span>
         {timeLeft ? (
           <span
             className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
@@ -133,41 +123,55 @@ function TimingCell({
             }`}
           >
             <Timer className="h-3 w-3 shrink-0" />
-            Starts in {timeLeft}
-          </span>
-        ) : null}
-        {expiresAt ? (
-          <span className="text-[10px] text-[#6e6a8a]">
-            Expires {new Date(expiresAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
+            in {timeLeft}
           </span>
         ) : null}
       </div>
     );
   }
 
+  // Already started — show the date muted
+  return <span className="text-xs text-[#6e6a8a]">{dateLabel}</span>;
+}
+
+/** Separate end-time cell — shows countdown to expiry or "No expiry". */
+function EndCell({
+  expiresAt,
+  expired,
+  scheduled,
+}: {
+  expiresAt: string | null;
+  expired: boolean;
+  scheduled: boolean;
+}) {
+  const { timeLeft, isExpired: clientExpired } = useCountdown(expiresAt);
+  const isNowExpired = expired || clientExpired;
+
   if (!expiresAt) {
     return <span className="text-xs text-[#6e6a8a]">No expiry</span>;
   }
 
   const dateLabel = new Date(expiresAt).toLocaleString(undefined, {
-    dateStyle: "medium",
+    dateStyle: "short",
     timeStyle: "short",
   });
 
-  const urgency = (() => {
-    if (isNowExpired) return "expired";
-    const ms = new Date(expiresAt).getTime() - Date.now();
-    if (ms < 30 * 60 * 1000) return "critical";
-    if (ms < 2 * 60 * 60 * 1000) return "warn";
-    return "ok";
-  })();
+  if (isNowExpired) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-semibold text-red-600">Expired</span>
+        <span className="text-[11px] text-red-400">{dateLabel}</span>
+      </div>
+    );
+  }
+
+  const ms = expiresAt ? new Date(expiresAt).getTime() - Date.now() : Infinity;
+  const urgency = ms < 30 * 60 * 1000 ? "critical" : ms < 2 * 60 * 60 * 1000 ? "warn" : "ok";
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span className={`text-xs font-semibold ${isNowExpired ? "text-red-600" : "text-[#6e6a8a]"}`}>
-        {isNowExpired ? "Expired" : `Until ${dateLabel}`}
-      </span>
-      {!isNowExpired && timeLeft ? (
+      <span className="text-xs font-semibold text-[#6e6a8a]">{dateLabel}</span>
+      {!scheduled && timeLeft ? (
         <span
           className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
             urgency === "critical"
@@ -180,10 +184,51 @@ function TimingCell({
           <Timer className="h-3 w-3 shrink-0" />
           {timeLeft} left
         </span>
-      ) : isNowExpired ? (
-        <span className="text-[11px] text-red-400">{dateLabel}</span>
       ) : null}
     </div>
+  );
+}
+
+// ── Step-by-step wizard state ─────────────────────────────────────────────
+
+const WIZARD_STEPS = [
+  { id: 1, label: "Grant type", icon: KeyRound },
+  { id: 2, label: "Link & timing", icon: CalendarClock },
+  { id: 3, label: "Users & review", icon: Users },
+] as const;
+
+function WizardSteps({ current }: { current: number }) {
+  return (
+    <ol className="mb-6 flex items-center gap-0">
+      {WIZARD_STEPS.map((s, i) => {
+        const done = s.id < current;
+        const active = s.id === current;
+        const Icon = s.icon;
+        return (
+          <li key={s.id} className="flex items-center">
+            <div
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+                active
+                  ? "bg-[#6741d9] text-white shadow-md"
+                  : done
+                    ? "bg-[#e8faf0] text-teal"
+                    : "bg-slate-100 text-[#6e6a8a]"
+              }`}
+            >
+              {done ? (
+                <Check className="h-3 w-3" />
+              ) : (
+                <Icon className="h-3 w-3" />
+              )}
+              {s.label}
+            </div>
+            {i < WIZARD_STEPS.length - 1 && (
+              <div className={`mx-1 h-px w-6 ${done ? "bg-teal" : "bg-slate-200"}`} />
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -197,6 +242,8 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   const [detail, setDetail] = useState<AccessBatchDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Wizard
+  const [wizardStep, setWizardStep] = useState(1);
   const [name, setName] = useState("");
   const [stage, setStage] = useState<AccessStage>("online_assessment");
   const [linkKind, setLinkKind] = useState<"mock" | "main" | "default">("mock");
@@ -215,6 +262,18 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
       setLinkKind("default");
     }
   }, [stage]);
+
+  function resetWizard() {
+    setWizardStep(1);
+    setName("");
+    setStage("online_assessment");
+    setLinkKind("mock");
+    setUrl("");
+    setStartsLocal("");
+    setExpiresLocal("");
+    setUidsText("");
+    setCsvName("");
+  }
 
   const loadBatches = useCallback(async () => {
     if (!apiKey.trim()) return;
@@ -290,12 +349,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to create");
-      setName("");
-      setUrl("");
-      setStartsLocal("");
-      setExpiresLocal("");
-      setUidsText("");
-      setCsvName("");
+      resetWizard();
       await loadBatches();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create grant");
@@ -357,22 +411,29 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
     await loadDetail(id);
   }
 
+  // ── preview helpers ─────────────────────────────────────────────────────
+  const previewStartsIso = datetimeLocalToIso(startsLocal);
+  const previewExpiresIso = datetimeLocalToIso(expiresLocal);
+
+  function fmtDt(iso: string | null) {
+    if (!iso) return null;
+    return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  const step1Valid = true; // stage always has a value
+  const step2Valid = url.trim().length > 0;
+  const step3Valid = parsedIds.length > 0;
+
   return (
     <div className="space-y-6">
+      {/* ── Create wizard ───────────────────────────────────────────── */}
       <div className="irp-card p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="mb-1 flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-[#6741d9]" />
-              <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
-                Create stage access grant
-              </h2>
-            </div>
-            <p className="max-w-2xl text-sm text-[#6e6a8a]">
-              Upload academy UIDs, pick a stage (and mock/main when needed), paste the access URL,
-              and optionally set a start time and expiry. Scheduled grants are hidden from students
-              until the start time is reached.
-            </p>
+          <div className="mb-1 flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-[#6741d9]" />
+            <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+              Create stage access grant
+            </h2>
           </div>
           <button
             type="button"
@@ -390,157 +451,274 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
           </p>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-              Optional name
-            </span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder='e.g. "July 26 mock"'
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
+        <WizardSteps current={wizardStep} />
 
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-              Stage
-            </span>
-            <select
-              value={stage}
-              onChange={(e) => setStage(e.target.value as AccessStage)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            >
-              {ACCESS_STAGES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {stageNeedsMockMain(stage) ? (
-            <fieldset className="md:col-span-2">
-              <legend className="mb-1 text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-                Link kind
-              </legend>
-              <div className="flex flex-wrap gap-4">
-                {(["mock", "main"] as const).map((kind) => (
-                  <label key={kind} className="inline-flex items-center gap-2 text-sm font-semibold">
-                    <input
-                      type="radio"
-                      name="linkKind"
-                      checked={linkKind === kind}
-                      onChange={() => setLinkKind(kind)}
-                    />
-                    {kind === "mock" ? "Mock" : "Main"}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ) : null}
-
-          <label className="block text-sm md:col-span-2">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-              Access URL
-            </span>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://…"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-              Available from (optional)
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="datetime-local"
-                value={startsLocal}
-                onChange={(e) => setStartsLocal(e.target.value)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              />
-              {startsLocal ? (
-                <button
-                  type="button"
-                  onClick={() => setStartsLocal("")}
-                  className="text-xs font-bold text-[#6e6a8a] underline"
-                >
-                  Clear (immediate)
-                </button>
-              ) : (
-                <span className="text-xs text-[#6e6a8a]">Leave empty — active immediately</span>
-              )}
-            </div>
-          </label>
-
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-              Link expires at (optional)
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="datetime-local"
-                value={expiresLocal}
-                onChange={(e) => setExpiresLocal(e.target.value)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              />
-              {expiresLocal ? (
-                <button
-                  type="button"
-                  onClick={() => setExpiresLocal("")}
-                  className="text-xs font-bold text-[#6e6a8a] underline"
-                >
-                  Clear (no expiry)
-                </button>
-              ) : (
-                <span className="text-xs text-[#6e6a8a]">Leave empty for no expiry</span>
-              )}
-            </div>
-          </label>
-
-          <div className="md:col-span-2 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
-                <Upload className="h-3.5 w-3.5" />
-                Upload CSV
-                <input
-                  type="file"
-                  accept=".csv,text/csv,text/plain"
-                  className="hidden"
-                  onChange={(e) => onCsvFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
-              {csvName ? <span className="text-xs text-[#6e6a8a]">{csvName}</span> : null}
-              <span className="text-xs text-[#6e6a8a]">
-                {parsedIds.length.toLocaleString()} UID{parsedIds.length === 1 ? "" : "s"} parsed
+        {/* ── Step 1: Grant type ──────────────────────────────────── */}
+        {wizardStep === 1 && (
+          <div className="space-y-5">
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                Stage
               </span>
-            </div>
-            <textarea
-              value={uidsText}
-              onChange={(e) => setUidsText(e.target.value)}
-              rows={6}
-              placeholder={"academy_user_id\nuuid-1\nuuid-2\n…"}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
-            />
-          </div>
-        </div>
+              <select
+                value={stage}
+                onChange={(e) => setStage(e.target.value as AccessStage)}
+                className="w-full max-w-sm rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              >
+                {ACCESS_STAGES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <div className="mt-4">
-          <button
-            type="button"
-            disabled={saving || !url.trim() || parsedIds.length === 0}
-            onClick={() => void createBatch()}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Save grant
-          </button>
-        </div>
+            {stageNeedsMockMain(stage) && (
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                  Is this a mock or main exam link?
+                </legend>
+                <div className="flex flex-wrap gap-3">
+                  {(["mock", "main"] as const).map((kind) => (
+                    <label
+                      key={kind}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-xl border-2 px-4 py-2.5 text-sm font-bold transition-all ${
+                        linkKind === kind
+                          ? "border-[#6741d9] bg-[#f3f0ff] text-[#6741d9]"
+                          : "border-slate-200 bg-white text-[#6e6a8a] hover:border-[#c4b5fd]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="linkKind"
+                        className="hidden"
+                        checked={linkKind === kind}
+                        onChange={() => setLinkKind(kind)}
+                      />
+                      <span
+                        className={`h-4 w-4 rounded-full border-2 ${
+                          linkKind === kind
+                            ? "border-[#6741d9] bg-[#6741d9]"
+                            : "border-slate-300 bg-white"
+                        } flex items-center justify-center`}
+                      >
+                        {linkKind === kind && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                        )}
+                      </span>
+                      {kind === "mock" ? "Mock exam link" : "Main exam link"}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                Batch name (optional)
+              </span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder='e.g. "Aug 10 main"'
+                className="w-full max-w-sm rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setWizardStep(2)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white"
+              >
+                Next: Link &amp; timing
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Link & timing ───────────────────────────────── */}
+        {wizardStep === 2 && (
+          <div className="space-y-5">
+            <label className="block text-sm">
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                <Link2 className="inline h-3 w-3 mr-1 relative -top-px" />
+                Access URL <span className="text-red-500">*</span>
+              </span>
+              <input
+                autoFocus
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://…"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono"
+              />
+            </label>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                  <CalendarClock className="h-3 w-3" />
+                  Start time
+                </span>
+                <input
+                  type="datetime-local"
+                  value={startsLocal}
+                  onChange={(e) => setStartsLocal(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+                <p className="mt-1 text-[11px] text-[#6e6a8a]">
+                  {startsLocal
+                    ? `Grant hidden until ${fmtDt(previewStartsIso)}`
+                    : "Leave empty — active immediately"}
+                </p>
+              </label>
+
+              <label className="block text-sm">
+                <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                  <Timer className="h-3 w-3" />
+                  End time (expiry)
+                </span>
+                <input
+                  type="datetime-local"
+                  value={expiresLocal}
+                  onChange={(e) => setExpiresLocal(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+                <p className="mt-1 text-[11px] text-[#6e6a8a]">
+                  {expiresLocal
+                    ? `Link expires ${fmtDt(previewExpiresIso)}`
+                    : "Leave empty — no expiry"}
+                </p>
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setWizardStep(1)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              <button
+                type="button"
+                disabled={!step2Valid}
+                onClick={() => setWizardStep(3)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              >
+                Next: Add users
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Users + review ──────────────────────────────── */}
+        {wizardStep === 3 && (
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+                  Academy user IDs
+                </span>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload CSV
+                  <input
+                    type="file"
+                    accept=".csv,text/csv,text/plain"
+                    className="hidden"
+                    onChange={(e) => onCsvFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {csvName ? <span className="text-xs text-[#6e6a8a]">{csvName}</span> : null}
+              </div>
+              <textarea
+                value={uidsText}
+                onChange={(e) => setUidsText(e.target.value)}
+                rows={6}
+                placeholder={"academy_user_id\nuuid-1\nuuid-2\n…"}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs"
+              />
+              <p className="text-xs text-[#6e6a8a]">
+                {parsedIds.length.toLocaleString()} UID{parsedIds.length === 1 ? "" : "s"} parsed
+              </p>
+            </div>
+
+            {/* Review card */}
+            <div className="rounded-xl border-2 border-[#6741d9]/20 bg-[#faf9ff] p-4 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#6741d9]">
+                Grant summary — review before saving
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Stage</p>
+                  <p className="font-semibold text-[#0d1117]">{stageLabel(stage)}</p>
+                </div>
+                {stageNeedsMockMain(stage) && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Kind</p>
+                    <p className="font-semibold capitalize text-[#0d1117]">{linkKind}</p>
+                  </div>
+                )}
+                {name && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Name</p>
+                    <p className="font-semibold text-[#0d1117]">{name}</p>
+                  </div>
+                )}
+                <div className="col-span-full">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">URL</p>
+                  <p className="break-all font-mono text-xs text-[#6741d9]">{url || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Start time</p>
+                  <p className={`font-semibold ${previewStartsIso ? "text-[#0d1117]" : "text-[#6e6a8a]"}`}>
+                    {fmtDt(previewStartsIso) ?? "Immediately"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">End time</p>
+                  <p className={`font-semibold ${previewExpiresIso ? "text-[#0d1117]" : "text-[#6e6a8a]"}`}>
+                    {fmtDt(previewExpiresIso) ?? "No expiry"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Users</p>
+                  <p className="font-semibold text-[#0d1117]">
+                    {parsedIds.length === 0 ? (
+                      <span className="text-red-500">None yet</span>
+                    ) : (
+                      `${parsedIds.length.toLocaleString()} student${parsedIds.length === 1 ? "" : "s"}`
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setWizardStep(2)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              <button
+                type="button"
+                disabled={saving || !step2Valid || !step3Valid}
+                onClick={() => void createBatch()}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Save grant
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="irp-card p-5">
@@ -560,7 +738,8 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                   <th className="px-2 py-2">Stage</th>
                   <th className="px-2 py-2">Kind</th>
                   <th className="px-2 py-2">URL</th>
-                  <th className="px-2 py-2">Timing</th>
+                  <th className="px-2 py-2">Start</th>
+                  <th className="px-2 py-2">End</th>
                   <th className="px-2 py-2">UIDs</th>
                   <th className="px-2 py-2">Status</th>
                   <th className="px-2 py-2">Actions</th>
@@ -593,12 +772,10 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                         </a>
                       </td>
                       <td className="px-2 py-2">
-                        <TimingCell
-                          startsAt={b.startsAt ?? null}
-                          expiresAt={b.expiresAt ?? null}
-                          expired={Boolean(b.expired)}
-                          scheduled={Boolean(b.scheduled)}
-                        />
+                        <StartCell startsAt={b.startsAt ?? null} scheduled={Boolean(b.scheduled)} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <EndCell expiresAt={b.expiresAt ?? null} expired={Boolean(b.expired)} scheduled={Boolean(b.scheduled)} />
                       </td>
                       <td className="px-2 py-2">{b.userCount}</td>
                       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
