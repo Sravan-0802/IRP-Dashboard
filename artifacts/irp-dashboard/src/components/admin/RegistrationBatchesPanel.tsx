@@ -153,6 +153,16 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
   const [editingUids, setEditingUids] = useState(false);
   const [editUidsText, setEditUidsText] = useState("");
   const [savingUids, setSavingUids] = useState(false);
+  // Edit details inline
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAssessmentLabel, setEditAssessmentLabel] = useState("");
+  const [editAssessmentDate, setEditAssessmentDate] = useState("");
+  const [editSlotId, setEditSlotId] = useState("");
+  const [editSlotLabel, setEditSlotLabel] = useState("");
+  const [editDetailsStartsLocal, setEditDetailsStartsLocal] = useState("");
+  const [editDetailsExpiresLocal, setEditDetailsExpiresLocal] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
 
   // Create form
   const [name, setName] = useState("");
@@ -326,9 +336,53 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
     }
   }
 
+  async function patchDetails(id: number) {
+    if (savingDetails) return;
+    setSavingDetails(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/registration-batches/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", "x-api-key": apiKey.trim() },
+        body: JSON.stringify({
+          name: editName.trim() || null,
+          assessmentLabel: editAssessmentLabel.trim(),
+          assessmentDate: editAssessmentDate.trim(),
+          slotId: editSlotId.trim() || null,
+          slotLabel: editSlotLabel.trim() || null,
+          startsAt: datetimeLocalToIso(editDetailsStartsLocal),
+          expiresAt: datetimeLocalToIso(editDetailsExpiresLocal),
+        }),
+      });
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? "Failed to update details");
+      setEditingDetails(false);
+      await Promise.all([loadBatches(), loadDetail(id)]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update batch details");
+    } finally {
+      setSavingDetails(false);
+    }
+  }
+
+  function openEditDetails(d: RegistrationBatchDetail) {
+    setEditName(d.name ?? "");
+    setEditAssessmentLabel(d.assessmentLabel);
+    setEditAssessmentDate(d.assessmentDate);
+    setEditSlotId(d.slotId ?? "");
+    setEditSlotLabel(d.slotLabel ?? "");
+    setEditDetailsStartsLocal(isoToDatetimeLocal(d.startsAt));
+    setEditDetailsExpiresLocal(isoToDatetimeLocal(d.expiresAt));
+    setEditingDetails(true);
+  }
+
   async function toggleExpand(id: number) {
-    if (expandedId === id) { setExpandedId(null); setDetail(null); setEditingUids(false); return; }
-    setEditingUids(false);
+    if (expandedId === id) {
+      setExpandedId(null); setDetail(null);
+      setEditingUids(false); setEditingDetails(false);
+      return;
+    }
+    setEditingUids(false); setEditingDetails(false);
     setExpandedId(id);
     await loadDetail(id);
   }
@@ -592,6 +646,108 @@ export function RegistrationBatchesPanel({ apiKey }: { apiKey: string }) {
                                         ))}
                                       </tbody>
                                     </table>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* ── Edit Details ─────────────────────────── */}
+                              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="mb-2 flex items-center justify-between">
+                                  <span className="text-xs font-bold uppercase tracking-wider text-[#6741d9]">Batch Details</span>
+                                  {!editingDetails ? (
+                                    <button type="button"
+                                      onClick={(e) => { e.stopPropagation(); openEditDetails(detail); }}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-[rgba(103,65,217,0.3)] bg-[#f3f0ff] px-2 py-0.5 text-[10px] font-bold text-[#6741d9]">
+                                      ✏️ Edit details
+                                    </button>
+                                  ) : null}
+                                </div>
+
+                                {editingDetails ? (
+                                  <div className="space-y-3">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      <label className="block">
+                                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Batch name (optional)</span>
+                                        <input value={editName} onChange={(e) => setEditName(e.target.value)}
+                                          placeholder='e.g. "Aug 10 main cohort"'
+                                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Assessment label *</span>
+                                        <input value={editAssessmentLabel} onChange={(e) => setEditAssessmentLabel(e.target.value)}
+                                          placeholder='e.g. "L1 Hustler — Aug 10 2026"'
+                                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Assessment date *</span>
+                                        <input value={editAssessmentDate} onChange={(e) => setEditAssessmentDate(e.target.value)}
+                                          placeholder='e.g. "10th Aug 2026"'
+                                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
+                                      </label>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <label className="block">
+                                          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Slot ID</span>
+                                          <input value={editSlotId} onChange={(e) => setEditSlotId(e.target.value)}
+                                            placeholder="slot-4"
+                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
+                                        </label>
+                                        <label className="block">
+                                          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Slot label</span>
+                                          <input value={editSlotLabel} onChange={(e) => setEditSlotLabel(e.target.value)}
+                                            placeholder="6:00 PM – 8:00 PM IST"
+                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
+                                        </label>
+                                      </div>
+                                      <label className="block">
+                                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Registration opens</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <input type="datetime-local" value={editDetailsStartsLocal}
+                                            onChange={(e) => setEditDetailsStartsLocal(e.target.value)}
+                                            className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs" />
+                                          {editDetailsStartsLocal ? (
+                                            <button type="button" onClick={() => setEditDetailsStartsLocal("")}
+                                              className="text-[10px] font-bold text-[#6e6a8a] underline">Clear</button>
+                                          ) : <span className="text-[10px] text-[#6e6a8a]">Open immediately</span>}
+                                        </div>
+                                      </label>
+                                      <label className="block">
+                                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">Registration closes</span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <input type="datetime-local" value={editDetailsExpiresLocal}
+                                            onChange={(e) => setEditDetailsExpiresLocal(e.target.value)}
+                                            className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs" />
+                                          {editDetailsExpiresLocal ? (
+                                            <button type="button" onClick={() => setEditDetailsExpiresLocal("")}
+                                              className="text-[10px] font-bold text-[#6e6a8a] underline">Clear</button>
+                                          ) : <span className="text-[10px] text-[#6e6a8a]">No close date</span>}
+                                        </div>
+                                      </label>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button type="button"
+                                        disabled={savingDetails || !editAssessmentLabel.trim() || !editAssessmentDate.trim()}
+                                        onClick={(e) => { e.stopPropagation(); void patchDetails(b.id); }}
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#6741d9] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                                        {savingDetails ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                                        Save details
+                                      </button>
+                                      <button type="button"
+                                        disabled={savingDetails}
+                                        onClick={(e) => { e.stopPropagation(); setEditingDetails(false); }}
+                                        className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-50">
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2 lg:grid-cols-3">
+                                    <div><span className="text-[#6e6a8a]">Name: </span><span className="font-semibold text-[#0d1117]">{detail.name || "—"}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Assessment: </span><span className="font-semibold text-[#0d1117]">{detail.assessmentLabel}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Date: </span><span className="font-semibold text-[#0d1117]">{detail.assessmentDate}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Slot ID: </span><span className="font-semibold text-[#0d1117]">{detail.slotId || "—"}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Slot label: </span><span className="font-semibold text-[#0d1117]">{detail.slotLabel || "—"}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Opens: </span><span className="font-semibold text-[#0d1117]">{detail.startsAt ? new Date(detail.startsAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "Immediately"}</span></div>
+                                    <div><span className="text-[#6e6a8a]">Closes: </span><span className="font-semibold text-[#0d1117]">{detail.expiresAt ? new Date(detail.expiresAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "No expiry"}</span></div>
                                   </div>
                                 )}
                               </div>
