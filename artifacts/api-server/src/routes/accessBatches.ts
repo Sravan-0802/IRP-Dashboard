@@ -9,7 +9,7 @@ import {
   isAccessStage,
   listAccessBatches,
   normalizeLinkKind,
-  parseExpiresAt,
+  parseOptionalDate,
   updateAccessBatch,
 } from "../lib/accessBatches";
 
@@ -103,10 +103,23 @@ router.post("/admin/access-batches", async (req, res) => {
       typeof req.body?.name === "string" ? req.body.name.trim() : null;
     const academyUserIds = parseUserIds(req.body);
 
+    let startsAt: Date | null = null;
+    try {
+      const parsed = parseOptionalDate(
+        "startsAt" in (req.body ?? {}) ? req.body.startsAt : null,
+        "startsAt",
+      );
+      startsAt = parsed === undefined ? null : parsed;
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : "Invalid startsAt" });
+      return;
+    }
+
     let expiresAt: Date | null = null;
     try {
-      const parsed = parseExpiresAt(
+      const parsed = parseOptionalDate(
         "expiresAt" in (req.body ?? {}) ? req.body.expiresAt : null,
+        "expiresAt",
       );
       expiresAt = parsed === undefined ? null : parsed;
     } catch (e) {
@@ -142,6 +155,7 @@ router.post("/admin/access-batches", async (req, res) => {
       linkKind,
       url,
       academyUserIds,
+      startsAt,
       expiresAt,
       createdBy: "api_key",
     });
@@ -170,6 +184,7 @@ router.put("/admin/access-batches/:id", async (req, res) => {
       name?: string | null;
       url?: string;
       enabled?: boolean;
+      startsAt?: Date | null;
       expiresAt?: Date | null;
       academyUserIds?: string[];
     } = {};
@@ -183,9 +198,18 @@ router.put("/admin/access-batches/:id", async (req, res) => {
     if (Array.isArray(req.body?.academyUserIds)) {
       patch.academyUserIds = parseUserIds(req.body);
     }
+    if ("startsAt" in (req.body ?? {})) {
+      try {
+        const parsed = parseOptionalDate(req.body.startsAt, "startsAt");
+        if (parsed !== undefined) patch.startsAt = parsed;
+      } catch (e) {
+        res.status(400).json({ error: e instanceof Error ? e.message : "Invalid startsAt" });
+        return;
+      }
+    }
     if ("expiresAt" in (req.body ?? {})) {
       try {
-        const parsed = parseExpiresAt(req.body.expiresAt);
+        const parsed = parseOptionalDate(req.body.expiresAt, "expiresAt");
         if (parsed !== undefined) patch.expiresAt = parsed;
       } catch (e) {
         res.status(400).json({ error: e instanceof Error ? e.message : "Invalid expiresAt" });

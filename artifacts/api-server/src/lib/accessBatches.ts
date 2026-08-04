@@ -1,4 +1,4 @@
-import { and, count, eq, or, isNull, gt } from "drizzle-orm";
+import { and, count, eq, or, isNull, gt, lte } from "drizzle-orm";
 import {
   db,
   accessBatchesTable,
@@ -44,15 +44,26 @@ export function isGrantExpired(expiresAt: Date | string | null | undefined, now 
   return t.getTime() <= now.getTime();
 }
 
-/** Parse body expiresAt: ISO string, or null/"" to clear. Undefined = leave unchanged. */
-export function parseExpiresAt(raw: unknown): Date | null | undefined {
+/** True when the grant has not started yet (startsAt is in the future). */
+export function isGrantScheduled(startsAt: Date | string | null | undefined, now = new Date()): boolean {
+  if (startsAt == null) return false;
+  const t = startsAt instanceof Date ? startsAt : new Date(startsAt);
+  if (Number.isNaN(t.getTime())) return false;
+  return t.getTime() > now.getTime();
+}
+
+/** Parse body expiresAt / startsAt: ISO string, or null/"" to clear. Undefined = leave unchanged. */
+export function parseOptionalDate(raw: unknown, field = "date"): Date | null | undefined {
   if (raw === undefined) return undefined;
   if (raw === null || raw === "") return null;
-  if (typeof raw !== "string") throw new Error("expiresAt must be an ISO datetime string or null");
+  if (typeof raw !== "string") throw new Error(`${field} must be an ISO datetime string or null`);
   const d = new Date(raw.trim());
-  if (Number.isNaN(d.getTime())) throw new Error("expiresAt is not a valid datetime");
+  if (Number.isNaN(d.getTime())) throw new Error(`${field} is not a valid datetime`);
   return d;
 }
+
+/** @deprecated Use parseOptionalDate */
+export const parseExpiresAt = (raw: unknown) => parseOptionalDate(raw, "expiresAt");
 
 export type AccessBatchSummary = {
   id: number;
@@ -61,8 +72,10 @@ export type AccessBatchSummary = {
   linkKind: string;
   url: string;
   enabled: boolean;
+  startsAt: string | null;
   expiresAt: string | null;
   expired: boolean;
+  scheduled: boolean;
   userCount: number;
   createdBy: string | null;
   createdAt: string;
@@ -79,12 +92,14 @@ export type StudentAccessGrant = {
   url: string;
   batchId: number;
   name: string | null;
+  startsAt: string | null;
   expiresAt: string | null;
 };
 
 export type AccessPreviewGrant = StudentAccessGrant & {
   enabled: boolean;
   expired: boolean;
+  scheduled: boolean;
   /** Would this grant currently show to the student? */
   studentVisible: boolean;
 };
@@ -95,6 +110,7 @@ export type AccessPreviewSlot = {
   linkKind: AccessLinkKind;
   url: string;
   batchName: string | null;
+  startsAt: string | null;
   expiresAt: string | null;
 };
 
@@ -114,6 +130,7 @@ function toSummary(
   userCount: number,
   now = new Date(),
 ): AccessBatchSummary {
+  const startsAt = b.startsAt ? b.startsAt.toISOString() : null;
   const expiresAt = b.expiresAt ? b.expiresAt.toISOString() : null;
   return {
     id: b.id,
@@ -122,8 +139,10 @@ function toSummary(
     linkKind: b.linkKind,
     url: b.url,
     enabled: b.enabled === 1,
+    startsAt,
     expiresAt,
     expired: isGrantExpired(b.expiresAt, now),
+    scheduled: isGrantScheduled(b.startsAt, now),
     userCount,
     createdBy: b.createdBy,
     createdAt: b.createdAt.toISOString(),
@@ -174,6 +193,7 @@ export async function createAccessBatch(input: {
   linkKind: AccessLinkKind;
   url: string;
   academyUserIds: string[];
+  startsAt?: Date | null;
   expiresAt?: Date | null;
   createdBy?: string | null;
 }): Promise<AccessBatchDetail> {
@@ -193,6 +213,7 @@ export async function createAccessBatch(input: {
       linkKind: input.linkKind,
       url,
       enabled: 1,
+      startsAt: input.startsAt ?? null,
       expiresAt: input.expiresAt ?? null,
       createdBy: input.createdBy ?? null,
       createdAt: now,
@@ -224,6 +245,7 @@ export async function updateAccessBatch(
     name?: string | null;
     url?: string;
     enabled?: boolean;
+    startsAt?: Date | null;
     expiresAt?: Date | null;
     academyUserIds?: string[];
   },
@@ -240,6 +262,7 @@ export async function updateAccessBatch(
     patch.url = url;
   }
   if (typeof input.enabled === "boolean") patch.enabled = input.enabled ? 1 : 0;
+  if (input.startsAt !== undefined) patch.startsAt = input.startsAt;
   if (input.expiresAt !== undefined) patch.expiresAt = input.expiresAt;
 
   await db.update(accessBatchesTable).set(patch).where(eq(accessBatchesTable.id, id));
@@ -273,7 +296,7 @@ export async function deleteAccessBatch(id: number): Promise<boolean> {
   return deleted.length > 0;
 }
 
-/** Enabled + non-expired grants for a single academy user (student-facing). */
+/** Enabled + not-yet-expired + already-started grants for a single academy user (student-facing). */
 export async function getStudentAccessGrants(
   academyUserId: string,
 ): Promise<StudentAccessGrant[]> {
@@ -286,6 +309,7 @@ export async function getStudentAccessGrants(
       linkKind: accessBatchesTable.linkKind,
       url: accessBatchesTable.url,
       enabled: accessBatchesTable.enabled,
+      startsAt: accessBatchesTable.startsAt,
       expiresAt: accessBatchesTable.expiresAt,
     })
     .from(accessBatchUsersTable)
@@ -297,7 +321,10 @@ export async function getStudentAccessGrants(
       and(
         eq(accessBatchUsersTable.academyUserId, academyUserId),
         eq(accessBatchesTable.enabled, 1),
+        // not yet expired
         or(isNull(accessBatchesTable.expiresAt), gt(accessBatchesTable.expiresAt, now)),
+        // already started (startsAt null = immediate)
+        or(isNull(accessBatchesTable.startsAt), lte(accessBatchesTable.startsAt, now)),
       ),
     );
 
@@ -309,11 +336,12 @@ export async function getStudentAccessGrants(
       stage: r.stage as AccessStage,
       linkKind: r.linkKind as AccessLinkKind,
       url: r.url,
+      startsAt: r.startsAt ? r.startsAt.toISOString() : null,
       expiresAt: r.expiresAt ? r.expiresAt.toISOString() : null,
     }));
 }
 
-/** Admin: all grants for a UID (including disabled/expired) + student-visible preview slots. */
+/** Admin: all grants for a UID (including disabled/expired/scheduled) + student-visible preview slots. */
 export async function getAccessPreviewForUser(academyUserId: string): Promise<{
   academyUserId: string;
   grants: AccessPreviewGrant[];
@@ -329,6 +357,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
       linkKind: accessBatchesTable.linkKind,
       url: accessBatchesTable.url,
       enabled: accessBatchesTable.enabled,
+      startsAt: accessBatchesTable.startsAt,
       expiresAt: accessBatchesTable.expiresAt,
     })
     .from(accessBatchUsersTable)
@@ -342,6 +371,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
     .filter((r) => isAccessStage(r.stage) && isAccessLinkKind(r.linkKind))
     .map((r) => {
       const expired = isGrantExpired(r.expiresAt, now);
+      const scheduled = isGrantScheduled(r.startsAt, now);
       const enabled = r.enabled === 1;
       return {
         batchId: r.batchId,
@@ -349,10 +379,12 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
         stage: r.stage as AccessStage,
         linkKind: r.linkKind as AccessLinkKind,
         url: r.url,
+        startsAt: r.startsAt ? r.startsAt.toISOString() : null,
         expiresAt: r.expiresAt ? r.expiresAt.toISOString() : null,
         enabled,
         expired,
-        studentVisible: enabled && !expired,
+        scheduled,
+        studentVisible: enabled && !expired && !scheduled,
       };
     });
 
@@ -364,6 +396,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
       linkKind: g.linkKind,
       url: g.url,
       batchName: g.name,
+      startsAt: g.startsAt,
       expiresAt: g.expiresAt,
     }));
 

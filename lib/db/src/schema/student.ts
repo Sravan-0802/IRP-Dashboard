@@ -374,6 +374,7 @@ export const accessBatchesTable = pgTable("access_batches", {
   linkKind: text("link_kind").notNull(),
   url: text("url").notNull(),
   enabled: integer("enabled").notNull().default(1),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

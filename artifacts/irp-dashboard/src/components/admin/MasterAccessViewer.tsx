@@ -11,9 +11,11 @@ type PreviewGrant = {
   stage: L1AccessStage;
   linkKind: string;
   url: string;
+  startsAt: string | null;
   expiresAt: string | null;
   enabled: boolean;
   expired: boolean;
+  scheduled: boolean;
   studentVisible: boolean;
 };
 
@@ -46,6 +48,9 @@ function statusPill(g: PreviewGrant) {
   }
   if (g.expired) {
     return <span className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">Expired</span>;
+  }
+  if (g.scheduled) {
+    return <span className="rounded-md bg-[#f3f0ff] px-2 py-0.5 text-[10px] font-bold text-[#6741d9]">Scheduled</span>;
   }
   return <span className="rounded-md bg-[#e8faf0] px-2 py-0.5 text-[10px] font-bold text-teal">Visible to student</span>;
 }

@@ -30,8 +30,10 @@ type AccessBatchSummary = {
   linkKind: string;
   url: string;
   enabled: boolean;
+  startsAt: string | null;
   expiresAt: string | null;
   expired: boolean;
+  scheduled: boolean;
   userCount: number;
   createdBy: string | null;
   createdAt: string;
@@ -53,58 +55,6 @@ function stageLabel(stage: string): string {
 function truncateUrl(url: string, max = 48): string {
   if (url.length <= max) return url;
   return `${url.slice(0, max - 1)}…`;
-}
-
-/** Live countdown cell — updates every second while mounted. */
-function CountdownCell({ expiresAt, expired }: { expiresAt: string | null; expired: boolean }) {
-  const { timeLeft, isExpired: clientExpired } = useCountdown(expiresAt);
-  const isExpired = expired || clientExpired;
-
-  if (!expiresAt) {
-    return <span className="text-xs text-[#6e6a8a]">No expiry</span>;
-  }
-
-  const dateLabel = new Date(expiresAt).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
-  // Determine urgency colour: red if <30 min, amber if <2 h, teal otherwise
-  const urgency = (() => {
-    if (isExpired) return "expired";
-    const ms = new Date(expiresAt).getTime() - Date.now();
-    if (ms < 30 * 60 * 1000) return "critical";
-    if (ms < 2 * 60 * 60 * 1000) return "warn";
-    return "ok";
-  })();
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span
-        className={`text-xs font-semibold ${
-          isExpired ? "text-red-600" : "text-[#6e6a8a]"
-        }`}
-      >
-        {isExpired ? "Expired" : `Until ${dateLabel}`}
-      </span>
-      {!isExpired && timeLeft ? (
-        <span
-          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
-            urgency === "critical"
-              ? "bg-red-50 text-red-600"
-              : urgency === "warn"
-                ? "bg-amber-50 text-amber-700"
-                : "bg-[#e8faf0] text-teal"
-          }`}
-        >
-          <Timer className="h-3 w-3 shrink-0" />
-          {timeLeft} left
-        </span>
-      ) : isExpired ? (
-        <span className="text-[11px] text-red-400">{dateLabel}</span>
-      ) : null}
-    </div>
-  );
 }
 
 /** ISO → value for `<input type="datetime-local">` in local timezone. */
@@ -136,6 +86,107 @@ function downloadCsv(ids: string[], filename: string) {
   URL.revokeObjectURL(href);
 }
 
+/**
+ * Live timing cell — shows "Starts in" when scheduled, or "expires" countdown when active.
+ * Updates every second while mounted.
+ */
+function TimingCell({
+  startsAt,
+  expiresAt,
+  expired,
+  scheduled,
+}: {
+  startsAt: string | null;
+  expiresAt: string | null;
+  expired: boolean;
+  scheduled: boolean;
+}) {
+  // For scheduled grants, count down to startsAt; otherwise count down to expiresAt.
+  const targetIso = scheduled ? startsAt : expiresAt;
+  const { timeLeft, isExpired: clientExpired } = useCountdown(targetIso);
+
+  // Re-derive states (client-side ticks may change them)
+  const isNowExpired = !scheduled && (expired || clientExpired);
+  const isNowScheduled = scheduled && !clientExpired;
+
+  if (isNowScheduled && startsAt) {
+    const dateLabel = new Date(startsAt).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    const ms = new Date(startsAt).getTime() - Date.now();
+    const urgency = ms < 30 * 60 * 1000 ? "critical" : ms < 2 * 60 * 60 * 1000 ? "warn" : "scheduled";
+
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-semibold text-[#6741d9]">
+          From {dateLabel}
+        </span>
+        {timeLeft ? (
+          <span
+            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
+              urgency === "critical"
+                ? "bg-red-50 text-red-600"
+                : urgency === "warn"
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-[#f3f0ff] text-[#6741d9]"
+            }`}
+          >
+            <Timer className="h-3 w-3 shrink-0" />
+            Starts in {timeLeft}
+          </span>
+        ) : null}
+        {expiresAt ? (
+          <span className="text-[10px] text-[#6e6a8a]">
+            Expires {new Date(expiresAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!expiresAt) {
+    return <span className="text-xs text-[#6e6a8a]">No expiry</span>;
+  }
+
+  const dateLabel = new Date(expiresAt).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  const urgency = (() => {
+    if (isNowExpired) return "expired";
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms < 30 * 60 * 1000) return "critical";
+    if (ms < 2 * 60 * 60 * 1000) return "warn";
+    return "ok";
+  })();
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={`text-xs font-semibold ${isNowExpired ? "text-red-600" : "text-[#6e6a8a]"}`}>
+        {isNowExpired ? "Expired" : `Until ${dateLabel}`}
+      </span>
+      {!isNowExpired && timeLeft ? (
+        <span
+          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
+            urgency === "critical"
+              ? "bg-red-50 text-red-600"
+              : urgency === "warn"
+                ? "bg-amber-50 text-amber-700"
+                : "bg-[#e8faf0] text-teal"
+          }`}
+        >
+          <Timer className="h-3 w-3 shrink-0" />
+          {timeLeft} left
+        </span>
+      ) : isNowExpired ? (
+        <span className="text-[11px] text-red-400">{dateLabel}</span>
+      ) : null}
+    </div>
+  );
+}
+
 export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   const [batches, setBatches] = useState<AccessBatchSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -150,6 +201,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   const [stage, setStage] = useState<AccessStage>("online_assessment");
   const [linkKind, setLinkKind] = useState<"mock" | "main" | "default">("mock");
   const [url, setUrl] = useState("");
+  const [startsLocal, setStartsLocal] = useState("");
   const [expiresLocal, setExpiresLocal] = useState("");
   const [uidsText, setUidsText] = useState("");
   const [csvName, setCsvName] = useState("");
@@ -224,6 +276,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
         stage,
         linkKind: stageNeedsMockMain(stage) ? linkKind : "default",
         url: url.trim(),
+        startsAt: datetimeLocalToIso(startsLocal),
         expiresAt: datetimeLocalToIso(expiresLocal),
         academyUserIds: parsedIds,
       };
@@ -239,6 +292,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
       if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to create");
       setName("");
       setUrl("");
+      setStartsLocal("");
       setExpiresLocal("");
       setUidsText("");
       setCsvName("");
@@ -316,7 +370,8 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
             </div>
             <p className="max-w-2xl text-sm text-[#6e6a8a]">
               Upload academy UIDs, pick a stage (and mock/main when needed), paste the access URL,
-              and optionally set a link expiry. After expiry the student UI hides that grant automatically.
+              and optionally set a start time and expiry. Scheduled grants are hidden from students
+              until the start time is reached.
             </p>
           </div>
           <button
@@ -398,7 +453,32 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
             />
           </label>
 
-          <label className="block text-sm md:col-span-2">
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+              Available from (optional)
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="datetime-local"
+                value={startsLocal}
+                onChange={(e) => setStartsLocal(e.target.value)}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+              {startsLocal ? (
+                <button
+                  type="button"
+                  onClick={() => setStartsLocal("")}
+                  className="text-xs font-bold text-[#6e6a8a] underline"
+                >
+                  Clear (immediate)
+                </button>
+              ) : (
+                <span className="text-xs text-[#6e6a8a]">Leave empty — active immediately</span>
+              )}
+            </div>
+          </label>
+
+          <label className="block text-sm">
             <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
               Link expires at (optional)
             </span>
@@ -473,16 +553,16 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
           <p className="text-sm text-[#6e6a8a]">No access grants yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+            <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
                 <tr className="border-b border-[rgba(103,65,217,0.12)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
                   <th className="px-2 py-2">Name</th>
                   <th className="px-2 py-2">Stage</th>
                   <th className="px-2 py-2">Kind</th>
                   <th className="px-2 py-2">URL</th>
-                  <th className="px-2 py-2">Expires</th>
+                  <th className="px-2 py-2">Timing</th>
                   <th className="px-2 py-2">UIDs</th>
-                  <th className="px-2 py-2">Enabled</th>
+                  <th className="px-2 py-2">Status</th>
                   <th className="px-2 py-2">Actions</th>
                 </tr>
               </thead>
@@ -513,9 +593,11 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                         </a>
                       </td>
                       <td className="px-2 py-2">
-                        <CountdownCell
+                        <TimingCell
+                          startsAt={b.startsAt ?? null}
                           expiresAt={b.expiresAt ?? null}
                           expired={Boolean(b.expired)}
+                          scheduled={Boolean(b.scheduled)}
                         />
                       </td>
                       <td className="px-2 py-2">{b.userCount}</td>
@@ -525,20 +607,24 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                           disabled={togglingId === b.id}
                           onClick={() => void toggleEnabled(b)}
                           className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
-                            b.enabled && !b.expired
-                              ? "bg-[#e8faf0] text-teal"
-                              : b.enabled && b.expired
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-slate-100 text-slate-500"
+                            b.expired
+                              ? "bg-amber-50 text-amber-700"
+                              : !b.enabled
+                                ? "bg-slate-100 text-slate-500"
+                                : b.scheduled
+                                  ? "bg-[#f3f0ff] text-[#6741d9]"
+                                  : "bg-[#e8faf0] text-teal"
                           }`}
                         >
                           {togglingId === b.id
                             ? "…"
                             : b.expired
                               ? "Expired"
-                              : b.enabled
-                                ? "On"
-                                : "Off"}
+                              : !b.enabled
+                                ? "Off"
+                                : b.scheduled
+                                  ? "Scheduled"
+                                  : "On"}
                         </button>
                       </td>
                       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
@@ -559,10 +645,11 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                             <p className="text-xs text-[#6e6a8a]">Loading UIDs…</p>
                           ) : detail?.id === b.id ? (
                             <div className="space-y-3">
-                              <ExpiryEditor
+                              <TimingEditor
                                 apiKey={apiKey}
                                 batchId={b.id}
-                                initialIso={b.expiresAt ?? null}
+                                initialStartsIso={b.startsAt ?? null}
+                                initialExpiresIso={b.expiresAt ?? null}
                                 onSaved={() => void loadBatches()}
                                 onError={setError}
                               />
@@ -606,25 +693,29 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   );
 }
 
-function ExpiryEditor({
+function TimingEditor({
   apiKey,
   batchId,
-  initialIso,
+  initialStartsIso,
+  initialExpiresIso,
   onSaved,
   onError,
 }: {
   apiKey: string;
   batchId: number;
-  initialIso: string | null;
+  initialStartsIso: string | null;
+  initialExpiresIso: string | null;
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
-  const [local, setLocal] = useState(() => isoToDatetimeLocal(initialIso));
+  const [startsLocal, setStartsLocal] = useState(() => isoToDatetimeLocal(initialStartsIso));
+  const [expiresLocal, setExpiresLocal] = useState(() => isoToDatetimeLocal(initialExpiresIso));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setLocal(isoToDatetimeLocal(initialIso));
-  }, [initialIso, batchId]);
+    setStartsLocal(isoToDatetimeLocal(initialStartsIso));
+    setExpiresLocal(isoToDatetimeLocal(initialExpiresIso));
+  }, [initialStartsIso, initialExpiresIso, batchId]);
 
   async function save() {
     setSaving(true);
@@ -635,69 +726,86 @@ function ExpiryEditor({
           "content-type": "application/json",
           "x-api-key": apiKey.trim(),
         },
-        body: JSON.stringify({ expiresAt: datetimeLocalToIso(local) }),
+        body: JSON.stringify({
+          startsAt: datetimeLocalToIso(startsLocal),
+          expiresAt: datetimeLocalToIso(expiresLocal),
+        }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to update expiry");
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to update timing");
       onSaved();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Could not update expiry");
+      onError(err instanceof Error ? err.message : "Could not update timing");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
       <label className="text-sm">
         <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-          Update expiry
+          Available from
         </span>
         <input
           type="datetime-local"
-          value={local}
-          onChange={(e) => setLocal(e.target.value)}
+          value={startsLocal}
+          onChange={(e) => setStartsLocal(e.target.value)}
           className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
         />
       </label>
-      <button
-        type="button"
-        disabled={saving}
-        onClick={() => void save()}
-        className="rounded-lg bg-[#6741d9] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Save expiry"}
-      </button>
-      <button
-        type="button"
-        disabled={saving}
-        onClick={() => {
-          setLocal("");
-          void (async () => {
-            setSaving(true);
-            try {
-              const res = await fetch(`/api/admin/access-batches/${batchId}`, {
-                method: "PUT",
-                headers: {
-                  "content-type": "application/json",
-                  "x-api-key": apiKey.trim(),
-                },
-                body: JSON.stringify({ expiresAt: null }),
-              });
-              const body = await res.json().catch(() => ({}));
-              if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed");
-              onSaved();
-            } catch (err) {
-              onError(err instanceof Error ? err.message : "Could not clear expiry");
-            } finally {
-              setSaving(false);
-            }
-          })();
-        }}
-        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
-      >
-        No expiry
-      </button>
+      <label className="text-sm">
+        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+          Expires at
+        </span>
+        <input
+          type="datetime-local"
+          value={expiresLocal}
+          onChange={(e) => setExpiresLocal(e.target.value)}
+          className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+        />
+      </label>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void save()}
+          className="rounded-lg bg-[#6741d9] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save timing"}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => {
+            setStartsLocal("");
+            setExpiresLocal("");
+            void (async () => {
+              setSaving(true);
+              try {
+                const res = await fetch(`/api/admin/access-batches/${batchId}`, {
+                  method: "PUT",
+                  headers: {
+                    "content-type": "application/json",
+                    "x-api-key": apiKey.trim(),
+                  },
+                  body: JSON.stringify({ startsAt: null, expiresAt: null }),
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed");
+                onSaved();
+              } catch (err) {
+                onError(err instanceof Error ? err.message : "Could not clear timing");
+              } finally {
+                setSaving(false);
+              }
+            })();
+          }}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600"
+        >
+          Clear both
+        </button>
+      </div>
     </div>
   );
 }
