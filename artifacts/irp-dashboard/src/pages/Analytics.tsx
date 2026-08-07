@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
 import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
 import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
+<<<<<<< HEAD
 import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/components/admin/RegistrationBatchesPanel";
+=======
+import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
+>>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
 
 type AnalyticsMetric = {
   eventType: string;
@@ -78,7 +82,11 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
+<<<<<<< HEAD
 type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer" | "reg_batches" | "reg_responses";
+=======
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "dashboard_access" | "access" | "access_viewer";
+>>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -180,6 +188,36 @@ function captureKeyFromUrl(): string {
     // ignore
   }
   return getStoredKey();
+}
+
+function captureAccessViewerUidFromUrl(): string {
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.get("uid")?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function captureTabFromUrl(): AnalyticsTab | null {
+  try {
+    const tab = new URL(window.location.href).searchParams.get("tab")?.trim();
+    const allowed: AnalyticsTab[] = [
+      "overview",
+      "visitors",
+      "registrations",
+      "feedback",
+      "support",
+      "visibility",
+      "dashboard_access",
+      "access",
+      "access_viewer",
+    ];
+    if (tab && (allowed as string[]).includes(tab)) return tab as AnalyticsTab;
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 function formatDate(iso: string | null): string {
@@ -370,7 +408,10 @@ export default function AnalyticsPage() {
     }));
   }, [data]);
 
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>(
+    () => captureTabFromUrl() ?? "overview",
+  );
+  const accessViewerUid = useMemo(() => captureAccessViewerUidFromUrl(), []);
 
   const [visibility, setVisibility] = useState<VisibilitySettings | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
@@ -499,10 +540,16 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
+<<<<<<< HEAD
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
             { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
+=======
+            { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
+            { id: "access" as const, label: "Access Loader", count: undefined },
+            { id: "access_viewer" as const, label: "Access viewer", count: undefined },
+>>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
           ]
         : [];
     }
@@ -513,6 +560,7 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
+<<<<<<< HEAD
       ...(apiKey
         ? [
             { id: "access" as const, label: "Access Loader", count: undefined },
@@ -521,6 +569,11 @@ export default function AnalyticsPage() {
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
         : []),
+=======
+      { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
+      { id: "access" as const, label: "Access Loader", count: undefined },
+      { id: "access_viewer" as const, label: "Access viewer", count: undefined },
+>>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
     ];
   }, [data, visibilityPendingCount, apiKey]);
 
@@ -1639,12 +1692,16 @@ export default function AnalyticsPage() {
             </div>
             )}
 
+            {activeTab === "dashboard_access" && apiKey ? (
+              <DashboardAccessPanel apiKey={apiKey} />
+            ) : null}
+
             {activeTab === "access" && apiKey ? (
               <AccessGrantsPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "access_viewer" && apiKey ? (
-              <MasterAccessViewer apiKey={apiKey} />
+              <MasterAccessViewer apiKey={apiKey} initialUid={accessViewerUid} />
             ) : null}
 
             {activeTab === "reg_batches" && apiKey ? (

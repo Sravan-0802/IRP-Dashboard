@@ -32,8 +32,9 @@ export function extractAuthToken(req: Request): string | null {
  * token against `forms_auth_tokens` on every call (no separate session). A
  * token is valid while it exists and has not expired.
  *
- * Outside production, `ACADEMY_USER_ID` in `.env` wins over browser SSO tokens
- * so you can preview different students without clearing sessionStorage.
+ * Outside production, if no valid token is present, `ACADEMY_USER_ID` in `.env`
+ * is used so you can preview a default student locally. A valid auth/preview
+ * token always wins (admin “Open preview” must work even when that env is set).
  *
  * Users in the `blocked_users` table are always treated as logged out — null is
  * returned regardless of how they authenticated or what env overrides are set.
@@ -66,14 +67,6 @@ export async function resolveAcademyUserId(req: Request): Promise<string | null>
 }
 
 async function resolveAcademyUserIdUnchecked(req: Request): Promise<string | null> {
-  if (process.env["NODE_ENV"] !== "production") {
-    const devUser = process.env["ACADEMY_USER_ID"]?.trim();
-    if (devUser) {
-      bindUserToRequestLog(req, devUser);
-      return devUser;
-    }
-  }
-
   const token = extractAuthToken(req);
 
   if (token) {
@@ -88,6 +81,14 @@ async function resolveAcademyUserIdUnchecked(req: Request): Promise<string | nul
       return row.userId;
     }
     return null;
+  }
+
+  if (process.env["NODE_ENV"] !== "production") {
+    const devUser = process.env["ACADEMY_USER_ID"]?.trim();
+    if (devUser) {
+      bindUserToRequestLog(req, devUser);
+      return devUser;
+    }
   }
 
   return null;
