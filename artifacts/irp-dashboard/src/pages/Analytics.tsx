@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
 import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
 import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
+import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -77,7 +78,7 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer";
+type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "dashboard_access" | "access" | "access_viewer";
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -200,6 +201,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "feedback",
       "support",
       "visibility",
+      "dashboard_access",
       "access",
       "access_viewer",
     ];
@@ -530,6 +532,7 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
+            { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access viewer", count: undefined },
           ]
@@ -542,6 +545,7 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
+      { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
       { id: "access" as const, label: "Access Loader", count: undefined },
       { id: "access_viewer" as const, label: "Access viewer", count: undefined },
     ];
@@ -1661,6 +1665,10 @@ export default function AnalyticsPage() {
             </div>
             </div>
             )}
+
+            {activeTab === "dashboard_access" && apiKey ? (
+              <DashboardAccessPanel apiKey={apiKey} />
+            ) : null}
 
             {activeTab === "access" && apiKey ? (
               <AccessGrantsPanel apiKey={apiKey} />

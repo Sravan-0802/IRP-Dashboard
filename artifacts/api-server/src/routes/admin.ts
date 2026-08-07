@@ -374,6 +374,139 @@ router.put("/admin/unpaid-users/:academyUserId", async (req, res) => {
   }
 });
 
+// POST /api/admin/dashboard-access/grant — unlock dashboard for academy users:
+// 1) remove payment lock (unpaid_users)
+// 2) seed basic + placeholder assessment rows if missing, so
+//    userHasAssessmentData() passes ("You're not in our data yet" goes away).
+// Body: { academyUserIds: string[] }
+router.post("/admin/dashboard-access/grant", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = req.body?.academyUserIds;
+    const academyUserIds = Array.isArray(raw)
+      ? [...new Set(raw.map((v: unknown) => String(v).trim()).filter(Boolean))]
+      : [];
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
+      return;
+    }
+
+    const now = new Date();
+    const CHUNK = 500;
+    const ACCESS_SENTINEL = "manual-access-grant";
+    const unlockedIds: string[] = [];
+    let enrolledBasic = 0;
+    let enrolledAssessment = 0;
+
+    for (let i = 0; i < academyUserIds.length; i += CHUNK) {
+      const chunk = academyUserIds.slice(i, i + CHUNK);
+
+      const removed = await db
+        .delete(unpaidUsersTable)
+        .where(inArray(unpaidUsersTable.academyUserId, chunk))
+        .returning({ academyUserId: unpaidUsersTable.academyUserId });
+      unlockedIds.push(...removed.map((r) => r.academyUserId));
+
+      const basicRows = await db
+        .insert(academyUserBasicDetailsTable)
+        .values(chunk.map((userId) => ({ userId, syncedAt: now })))
+        .onConflictDoNothing({ target: academyUserBasicDetailsTable.userId })
+        .returning({ userId: academyUserBasicDetailsTable.userId });
+      enrolledBasic += basicRows.length;
+
+      const assessmentRows = await db
+        .insert(academyUserAssessmentDetailsTable)
+        .values(
+          chunk.map((userId) => ({
+            userId,
+            organisationAssessmentId: ACCESS_SENTINEL,
+            syncedAt: now,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning({ id: academyUserAssessmentDetailsTable.id });
+      enrolledAssessment += assessmentRows.length;
+    }
+
+    const unlockedSet = new Set(unlockedIds);
+    const alreadyPaid = academyUserIds.filter((id) => !unlockedSet.has(id));
+
+    const [{ unpaidTotal } = { unpaidTotal: 0 }] = await db
+      .select({ unpaidTotal: sql<number>`count(*)::int` })
+      .from(unpaidUsersTable);
+
+    res.json({
+      ok: true,
+      requested: academyUserIds.length,
+      unlocked: unlockedIds.length,
+      alreadyHadAccess: alreadyPaid.length,
+      alreadyPaid: alreadyPaid.length,
+      enrolledBasic,
+      enrolledAssessment,
+      unlockedIds,
+      alreadyHadAccessIds: alreadyPaid,
+      unpaidTotal,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to grant dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/dashboard-access/revoke — bulk mark users Unpaid (payment gate).
+// Body: { academyUserIds: string[] }
+router.post("/admin/dashboard-access/revoke", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = req.body?.academyUserIds;
+    const academyUserIds = Array.isArray(raw)
+      ? [...new Set(raw.map((v: unknown) => String(v).trim()).filter(Boolean))]
+      : [];
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
+      return;
+    }
+
+    const now = new Date();
+    const CHUNK = 500;
+    let locked = 0;
+    for (let i = 0; i < academyUserIds.length; i += CHUNK) {
+      const chunk = academyUserIds
+        .slice(i, i + CHUNK)
+        .map((academyUserId) => ({ academyUserId, createdAt: now }));
+      const rows = await db
+        .insert(unpaidUsersTable)
+        .values(chunk)
+        .onConflictDoNothing({ target: unpaidUsersTable.academyUserId })
+        .returning({ academyUserId: unpaidUsersTable.academyUserId });
+      locked += rows.length;
+    }
+
+    const [{ unpaidTotal } = { unpaidTotal: 0 }] = await db
+      .select({ unpaidTotal: sql<number>`count(*)::int` })
+      .from(unpaidUsersTable);
+
+    res.json({
+      ok: true,
+      requested: academyUserIds.length,
+      locked,
+      alreadyUnpaid: academyUserIds.length - locked,
+      unpaidTotal,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/admin/blocked-users/import — fully deny access to a set of
 // academy users (admin API key required). Once blocked, resolveAcademyUserId
 // returns null for that user on every route — including a valid SSO token —
