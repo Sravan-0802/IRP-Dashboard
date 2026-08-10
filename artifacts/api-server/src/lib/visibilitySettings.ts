@@ -78,32 +78,33 @@ const STAGE_META: Record<
 > = {
   online_l1_results: {
     camelKey: "onlineL1Results",
-    label: "Online L1 assessment results (July 12)",
+    label: "Online L1 assessment results",
     description:
-      "12th July scores synced from BigQuery. Review cleared / not-cleared counts, then approve to show on student dashboards.",
+      "Latest online L1 scores synced from BigQuery. Review cleared / not-cleared counts, then Release once to show on student dashboards.",
   },
   fe_project_results: {
     camelKey: "feProjectResults",
-    label: "FE Project results",
+    label: "FE Project results (≥18/20)",
     description:
-      "FE Project Main / Main II scores (≥18/20 on any sit clears). Uses the assessment sync table. Review counts below, then Release or Hide for student dashboards.",
+      "Latest FE Project Main / Main II scores from BigQuery (≥18/20 on any sit clears). Review counts, then Release to show on student dashboards.",
   },
   ai_mock_results: {
     camelKey: "aiMockResults",
     label: "AI Mock Interview results",
     description:
-      "NxtMock ratings synced from BigQuery. Review counts, then approve to show AI Mock results on dashboards.",
+      "Latest NxtMock ratings synced from BigQuery. Review counts, then Release to show AI Mock results on dashboards.",
   },
   human_interview_results: {
     camelKey: "humanInterviewResults",
     label: "Human Interview stage",
     description:
-      "Students currently in Human Interview journey state. Approve when you want them to see that next step.",
+      "Students currently in Human Interview journey state. Release when you want them to see that next step.",
   },
   course_progress: {
     camelKey: "courseProgress",
     label: "Course progress",
-    description: "Course completion stats from BigQuery. Approve to show Practice Hub progress.",
+    description:
+      "Latest course completion stats from BigQuery. Release to show Practice Hub progress.",
   },
 };
 

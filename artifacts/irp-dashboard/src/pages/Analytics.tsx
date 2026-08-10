@@ -2,11 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, RefreshCw, Users, MousePointerClick, UserRound, MessageSquare, Star, Mail, Download, ChevronLeft, ChevronRight, CalendarClock, ChevronDown, ChevronUp, Send, Loader2, Eye, Database, ExternalLink } from "lucide-react";
 import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
 import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
-<<<<<<< HEAD
 import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/components/admin/RegistrationBatchesPanel";
-=======
 import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
->>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
 
 type AnalyticsMetric = {
   eventType: string;
@@ -82,11 +79,18 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-<<<<<<< HEAD
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "access" | "access_viewer" | "reg_batches" | "reg_responses";
-=======
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "dashboard_access" | "access" | "access_viewer";
->>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
+type AnalyticsTab =
+  | "overview"
+  | "visitors"
+  | "registrations"
+  | "feedback"
+  | "support"
+  | "visibility"
+  | "dashboard_access"
+  | "access"
+  | "access_viewer"
+  | "reg_batches"
+  | "reg_responses";
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -415,7 +419,7 @@ export default function AnalyticsPage() {
 
   const [visibility, setVisibility] = useState<VisibilitySettings | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
-  const [visibilitySavingField, setVisibilitySavingField] = useState<VisibilityFlag | null>(null);
+  const [visibilitySavingField, setVisibilitySavingField] = useState<VisibilityFlag | "__all__" | null>(null);
   const [visibilityError, setVisibilityError] = useState("");
   const [syncRunning, setSyncRunning] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -531,6 +535,31 @@ export default function AnalyticsPage() {
     }
   }
 
+  /** One-click: release every stage that has synced data and is still hidden. */
+  async function releaseAllAwaiting() {
+    if (!apiKey || visibilitySavingField || !visibility?.stages?.length) return;
+    const awaiting = visibility.stages.filter((s) => s.awaitingApproval);
+    if (awaiting.length === 0) return;
+
+    setVisibilitySavingField("__all__");
+    setVisibilityError("");
+    try {
+      const settings = Object.fromEntries(awaiting.map((s) => [s.camelKey, true]));
+      const res = await fetch("/api/admin/visibility-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ settings }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to release");
+      setVisibility(body as VisibilitySettings);
+    } catch (err) {
+      setVisibilityError(err instanceof Error ? err.message : "Could not release stages");
+    } finally {
+      setVisibilitySavingField(null);
+    }
+  }
+
   const visibilityPendingCount = useMemo(
     () => visibility?.stages?.filter((s) => s.awaitingApproval).length ?? 0,
     [visibility],
@@ -540,16 +569,11 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
-<<<<<<< HEAD
-            { id: "access" as const, label: "Access Loader", count: undefined },
-            { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
-            { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
-            { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
-=======
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access viewer", count: undefined },
->>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
+            { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
+            { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
         : [];
     }
@@ -560,20 +584,15 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
-<<<<<<< HEAD
       ...(apiKey
         ? [
+            { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
-            { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
+            { id: "access_viewer" as const, label: "Access viewer", count: undefined },
             { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
         : []),
-=======
-      { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
-      { id: "access" as const, label: "Access Loader", count: undefined },
-      { id: "access_viewer" as const, label: "Access viewer", count: undefined },
->>>>>>> ee80ad0c6d76701e05f50f0671f53ea9bda53fe8
     ];
   }, [data, visibilityPendingCount, apiKey]);
 
@@ -1476,20 +1495,40 @@ export default function AnalyticsPage() {
                     Release synced results
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void loadVisibility(apiKey)}
-                  disabled={visibilityLoading}
-                  className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff] disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${visibilityLoading ? "animate-spin" : ""}`} /> Refresh
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {visibilityPendingCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void releaseAllAwaiting()}
+                      disabled={Boolean(visibilitySavingField) || !apiKey}
+                      className="btn-pop flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {visibilitySavingField === "__all__" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                      {visibilitySavingField === "__all__"
+                        ? "Releasing…"
+                        : `Release all awaiting (${visibilityPendingCount})`}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void loadVisibility(apiKey)}
+                    disabled={visibilityLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff] disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${visibilityLoading ? "animate-spin" : ""}`} /> Refresh
+                  </button>
+                </div>
               </div>
 
               <p className="mb-4 text-sm text-[#6e6a8a]">
-                BigQuery keeps syncing into our database. Students do not see new results until you
-                approve each stage below. Example: when FE Project scores sync, you will see the sync
-                date here — then choose whether to release them to student dashboards.
+                After <strong>Sync now</strong>, latest counts and sync timestamps appear below for every
+                stage (Online L1, FE Project, AI Mock, etc.). Students do not see those results until you
+                release them — use <strong>Release all awaiting</strong> for one click, or release each
+                stage individually.
               </p>
 
               {visibility?.stages?.length ? (
@@ -1540,7 +1579,8 @@ export default function AnalyticsPage() {
                 <div className="space-y-3">
                   {visibility.stages.map((stage) => {
                     const synced = Boolean(stage.sync.lastSyncedAt);
-                    const saving = visibilitySavingField === stage.camelKey;
+                    const saving =
+                      visibilitySavingField === stage.camelKey || visibilitySavingField === "__all__";
                     return (
                       <div
                         key={stage.key}
@@ -1578,29 +1618,16 @@ export default function AnalyticsPage() {
                                 <>Not tied to a BigQuery table — release when the Human Interview stage is ready.</>
                               ) : synced ? (
                                 <>
-                                  {stage.key === "fe_project_results" ? (
-                                    <>
-                                      FE Project data source synced on{" "}
-                                      <strong>{formatDate(stage.sync.lastSyncedAt)}</strong>
-                                      {stage.sync.rowCount != null
-                                        ? ` · ${stage.sync.rowCount.toLocaleString()} assessment rows`
-                                        : ""}
-                                      {stage.visibleToStudents
-                                        ? " · currently released to students"
-                                        : " — release FE results to student dashboards when ready"}
-                                    </>
-                                  ) : (
-                                    <>
-                                      Synced on <strong>{formatDate(stage.sync.lastSyncedAt)}</strong>
-                                      {stage.sync.rowCount != null
-                                        ? ` · ${stage.sync.rowCount.toLocaleString()} rows`
-                                        : ""}
-                                      {stage.sync.status ? ` · status: ${stage.sync.status}` : ""}
-                                      {stage.awaitingApproval
-                                        ? " — should this be released to students?"
-                                        : null}
-                                    </>
-                                  )}
+                                  Latest sync: <strong>{formatDate(stage.sync.lastSyncedAt)}</strong>
+                                  {stage.sync.rowCount != null
+                                    ? ` · ${stage.sync.rowCount.toLocaleString()} rows in DB`
+                                    : ""}
+                                  {stage.sync.status ? ` · ${stage.sync.status}` : ""}
+                                  {stage.visibleToStudents
+                                    ? " · currently released to students"
+                                    : stage.awaitingApproval
+                                      ? " — ready to release to students"
+                                      : ""}
                                 </>
                               ) : (
                                 <>No sync recorded yet for this data source.</>
@@ -1615,7 +1642,7 @@ export default function AnalyticsPage() {
                             {stage.counts && (
                               <div className="mt-3 rounded-lg border border-[rgba(15,23,42,0.08)] bg-white/80 px-3 py-2">
                                 <p className="text-[11px] font-bold uppercase tracking-wide text-[#6e6a8a]">
-                                  {stage.counts.scope}
+                                  Latest synced counts · {stage.counts.scope}
                                 </p>
                                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                   <span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-800">
@@ -1663,7 +1690,9 @@ export default function AnalyticsPage() {
                                 onClick={() => void setStageVisibility(stage.camelKey, false)}
                                 className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
                               >
-                                {saving ? "Saving…" : "Hide from students"}
+                                {saving && visibilitySavingField === stage.camelKey
+                                  ? "Saving…"
+                                  : "Hide from students"}
                               </button>
                             ) : (
                               <button
@@ -1672,7 +1701,9 @@ export default function AnalyticsPage() {
                                 onClick={() => void setStageVisibility(stage.camelKey, true)}
                                 className="rounded-xl bg-[#6741d9] px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                               >
-                                {saving ? "Saving…" : "Release to students"}
+                                {saving && visibilitySavingField === stage.camelKey
+                                  ? "Saving…"
+                                  : "Release to students"}
                               </button>
                             )}
                           </div>
