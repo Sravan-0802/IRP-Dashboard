@@ -56,7 +56,7 @@ per_user AS (
     MAX(CASE WHEN (level_u LIKE '%FE-PROJECT%' OR level_u LIKE '%FE_PROJECT%' OR tag_u LIKE '%FE-PROJECT%' OR title_u LIKE '%FE PROJECT%')
       AND (COALESCE(assessment_user_score,0) > 0 OR COALESCE(mcq_user_section_score,0) > 0 OR COALESCE(coding_user_section_score,0) > 0) THEN 1 ELSE 0 END) AS fe_attempted,
     MAX(CASE WHEN (level_u LIKE '%FE-PROJECT%' OR level_u LIKE '%FE_PROJECT%' OR tag_u LIKE '%FE-PROJECT%' OR title_u LIKE '%FE PROJECT%')
-      AND assessment_total_score > 0 AND assessment_user_score >= assessment_total_score THEN 1 ELSE 0 END) AS fe_cleared,
+      AND assessment_total_score > 0 AND assessment_user_score >= 18 THEN 1 ELSE 0 END) AS fe_cleared,
     MAX(CASE WHEN cycle = 'C2' THEN 1 ELSE 0 END) AS has_c2_row
   FROM assessment_rows
   GROUP BY user_id
@@ -73,7 +73,7 @@ staged AS (
       ELSE 'No online attempt yet'
     END AS online_stage,
     CASE
-      WHEN fe_cleared = 1 THEN 'FE Project cleared (20/20)'
+      WHEN fe_cleared = 1 THEN 'FE Project cleared (≥18/20)'
       WHEN fe_attempted = 1 THEN 'FE Project attempted (not cleared)'
       WHEN has_fe_row = 1 THEN 'FE Project assigned (in progress)'
       ELSE 'No FE Project row'

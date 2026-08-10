@@ -13,8 +13,8 @@ import {
   L1_JULY26_ORG_ASSESSMENT_ID,
 } from "@/lib/irpDates";
 import {
-  FE_AUG5_CLEAR_MIN_SCORE,
   FE_AUG5_ORG_ASSESSMENT_ID,
+  FE_PROJECT_CLEAR_MIN_SCORE,
 } from "@/lib/feProjectConfig";
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
@@ -81,26 +81,44 @@ export function isFeProjectAssessment(a: AssessmentResult): boolean {
   );
 }
 
-/** 5 Aug 2026 FE Project Main (A4) — org window clears at ≥18/20 for everyone. */
+/** 5 Aug 2026 FE Project Main (A4) assessment window. */
 export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
   if (a.organisationAssessmentId === FE_AUG5_ORG_ASSESSMENT_ID) return true;
   const tag = (a.assessmentTag ?? "").toUpperCase();
   return tag.includes("FE-PROJECT_A4");
 }
 
+/**
+ * Featured FE Project row for the dashboard: latest attempt by start date
+ * (then score). Clearance uses {@link hasClearedFeProject} (any sit ≥ threshold).
+ */
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
 ): AssessmentResult | null {
-  const fe = assessments
+  const attempted = listAttemptedFeProjectAssessments(assessments);
+  if (attempted.length > 0) return attempted[0];
+
+  const registered = assessments
     .filter(isFeProjectAssessment)
+    .sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
+  return registered[0] ?? null;
+}
+
+/**
+ * All FE Project sits that were attempted, newest first.
+ * Used for FE Results history; the main card shows the latest sit.
+ */
+export function listAttemptedFeProjectAssessments(
+  assessments: AssessmentResult[],
+): AssessmentResult[] {
+  return assessments
+    .filter(isFeProjectAssessment)
+    .filter(feAssessmentWasWritten)
     .sort((a, b) => {
-      const scoreDiff = scoreRank(b) - scoreRank(a);
-      if (scoreDiff !== 0) return scoreDiff;
-      const aMainII = (a.assessmentTitle ?? "").toLowerCase().includes("main ii") ? 1 : 0;
-      const bMainII = (b.assessmentTitle ?? "").toLowerCase().includes("main ii") ? 1 : 0;
-      return bMainII - aMainII;
+      const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
+      if (dateDiff !== 0) return dateDiff;
+      return scoreRank(b) - scoreRank(a);
     });
-  return fe[0] ?? null;
 }
 
 /**
@@ -129,24 +147,41 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
+/** True when a single FE assessment sit clears (overallScore ≥ threshold). */
+export function hasClearedFeSit(
+  assessment: AssessmentResult,
+  minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
+): boolean {
+  if (!feAssessmentWasWritten(assessment)) return false;
+  return assessment.overallScore >= minScore;
+}
+
 /**
- * FE Project clears:
- * - 5 Aug FE Project Main (A4) → score ≥ 18/20 for all sitters
- * - FE Project C2 / reduced-threshold users → score ≥ 18/20 (via `minScore`)
- * - Main II (and other FE sits) → perfect score (100%)
- * If `minScore` is provided it overrides per-assessment defaults.
+ * FE Project clears when any attempted FE sit reaches ≥ minScore (default 18/20).
+ * Clearance is not limited to the latest sit — an earlier ≥18 clears the stage.
  */
 export function hasClearedFeProject(
   assessments: AssessmentResult[],
   minScore?: number | null,
 ): boolean {
-  const fe = pickFeProjectAssessment(assessments);
-  if (!fe || !feAssessmentWasWritten(fe)) return false;
-  if (minScore != null) return fe.overallScore >= minScore;
-  if (isFeProjectAug5A4Assessment(fe)) {
-    return fe.overallScore >= FE_AUG5_CLEAR_MIN_SCORE;
-  }
-  return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
+  const threshold = minScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
+  return listAttemptedFeProjectAssessments(assessments).some((fe) =>
+    hasClearedFeSit(fe, threshold),
+  );
+}
+
+export function feResultLabel(
+  assessment: AssessmentResult,
+  minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
+): "Cleared" | "Not cleared" {
+  return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
+}
+
+export function feResultTone(
+  assessment: AssessmentResult,
+  minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
+): "green" | "amber" {
+  return hasClearedFeSit(assessment, minScore) ? "green" : "amber";
 }
 
 export function pickL1Cycle2Assessment(assessments: AssessmentResult[]): AssessmentResult | null {

@@ -4,11 +4,16 @@ import type { Journey } from "@/lib/journey";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   assessmentOverallPct,
+  feResultLabel,
+  feResultTone,
+  getExamDateLabelForAssessment,
   hasAttemptedFeProject,
   hasClearedFeProject,
+  listAttemptedFeProjectAssessments,
   pickFeProjectAssessment,
 } from "@/lib/assessment";
 import {
+  FE_PROJECT_CLEAR_MIN_SCORE,
   FE_PROJECT_NOT_CLEARED_BODY,
   FE_PROJECT_NOT_CLEARED_EYEBROW,
   FE_PROJECT_NOT_CLEARED_TITLE,
@@ -17,7 +22,7 @@ import { Pill } from "./ui";
 
 /**
  * Shown for cleared-L1 students who attempted the FE Project but have not
- * cleared it (anything short of a perfect 20/20). Informational only — no
+ * cleared it (below 18/20 on all sits). Informational only — no
  * external assessment link.
  */
 export function FeProjectNotClearedNotice({
@@ -31,8 +36,9 @@ export function FeProjectNotClearedNotice({
   feProjectMinScore?: number | null;
   userId?: string;
 }) {
+  const threshold = feProjectMinScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
   const clearedL1 = isCycle1Cleared(assessments, userId);
-  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+  const feCleared = hasClearedFeProject(assessments, threshold);
   const feAttempted = hasAttemptedFeProject(assessments);
 
   if (!clearedL1 || feCleared || !feAttempted) return null;
@@ -41,6 +47,7 @@ export function FeProjectNotClearedNotice({
   const pct = fe ? assessmentOverallPct(fe) : 0;
   const score = fe?.overallScore ?? 0;
   const max = fe?.overallMax ?? 20;
+  const previousSits = listAttemptedFeProjectAssessments(assessments).slice(1);
 
   return (
     <div
@@ -51,7 +58,7 @@ export function FeProjectNotClearedNotice({
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#e67700] shadow-sm ring-1 ring-[rgba(245,159,0,0.15)]">
           <AlertTriangle className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#e67700]">
             {FE_PROJECT_NOT_CLEARED_EYEBROW}
           </p>
@@ -64,12 +71,57 @@ export function FeProjectNotClearedNotice({
           <p className="mt-0.5 text-sm text-muted2">{FE_PROJECT_NOT_CLEARED_BODY}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Pill tone="amber">
-              Your score · {score}/{max} ({pct}%)
+              Latest · {score}/{max} ({pct}%)
             </Pill>
             <Pill tone="green">
-              Required · {feProjectMinScore != null ? feProjectMinScore : max}/{max} ({feProjectMinScore != null ? Math.round((feProjectMinScore / max) * 100) : 100}%)
+              Required · {threshold}/{max} ({Math.round((threshold / max) * 100)}%)
             </Pill>
           </div>
+
+          {previousSits.length > 0 ? (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                Previous FE attempts
+              </p>
+              <div className="overflow-hidden rounded-xl border border-[rgba(245,159,0,0.2)] bg-white/70">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(245,159,0,0.12)] bg-[rgba(245,159,0,0.06)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Assessment</th>
+                      <th className="px-3 py-2">Overall</th>
+                      <th className="px-3 py-2">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previousSits.map((sit) => {
+                      const sitPct = assessmentOverallPct(sit);
+                      const sitTitle = sit.assessmentTitle?.trim() || "FE Project";
+                      return (
+                        <tr
+                          key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? ""}`}
+                          className="border-b border-[rgba(245,159,0,0.08)] last:border-b-0"
+                        >
+                          <td className="px-3 py-2.5 font-medium text-ink">
+                            {getExamDateLabelForAssessment(sit)}
+                          </td>
+                          <td className="px-3 py-2.5 text-[#6e6a8a]">{sitTitle}</td>
+                          <td className="px-3 py-2.5 text-[#6e6a8a]">
+                            {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({sitPct}%)
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <Pill tone={feResultTone(sit, threshold)}>
+                              {feResultLabel(sit, threshold)}
+                            </Pill>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

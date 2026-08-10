@@ -68,7 +68,7 @@ export function l1StageHeroContent(
       return {
         eyebrow: "FE Project · In progress",
         title: "Complete your FE Project",
-        body: `${clearedOn} Complete FE Project — C2 needs ≥18/20, Main II needs a perfect 20/20 — to unlock the AI Mock Interview.`,
+        body: `${clearedOn} Complete FE Project with ≥18/20 on any sit to unlock the AI Mock Interview.`,
         dotColor: "#0ca678",
         eyebrowClass: "border-[rgba(12,166,120,0.3)] text-teal",
         borderClass: "border-[rgba(12,166,120,0.25)]",
@@ -79,7 +79,7 @@ export function l1StageHeroContent(
       return {
         eyebrow: "FE Project · Not cleared yet",
         title: "Re-attempt FE Project",
-        body: `${clearedOn} Reach the required score (C2 ≥18/20, Main II 100%) to advance to the AI Mock Interview.`,
+        body: `${clearedOn} Reach ≥18/20 on any FE Project sit to advance to the AI Mock Interview.`,
         dotColor: "#f59f00",
         eyebrowClass: "border-[rgba(245,159,0,0.35)] text-[#e67700]",
         borderClass: "border-[rgba(245,159,0,0.28)]",

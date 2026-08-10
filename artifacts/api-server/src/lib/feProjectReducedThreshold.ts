@@ -1,5 +1,7 @@
 /**
- * Users for whom the FE Project clearing threshold is 18/20 instead of 20/20.
+ * Users previously allowlisted for FE Project clearing at 18/20.
+ * Threshold is now universal (≥18/20 for all FE sits); this list is retained
+ * for historical/admin reference only.
  * A score of 18 or above counts as cleared for these students.
  */
 export const FE_PROJECT_REDUCED_THRESHOLD_USERS: ReadonlySet<string> = new Set([

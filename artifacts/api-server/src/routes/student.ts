@@ -23,11 +23,7 @@ import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
 import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
-import { isInFeProjectReducedThreshold, FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
-import {
-  FE_AUG5_CLEAR_MIN_SCORE,
-  FE_AUG5_ORG_ASSESSMENT_ID,
-} from "../lib/feProjectAug5";
+import { FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
 import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
@@ -879,7 +875,7 @@ router.get("/student/l1-july26-allowlist", async (req, res) => {
 });
 
 // GET /api/student/fe-project-config — FE Project clearing threshold for this user.
-// Returns minScore: 18 for reduced-threshold users and 5 Aug FE A4 sitters; null = perfect score.
+// All FE sits clear at ≥18/20.
 router.get("/student/fe-project-config", async (req, res) => {
   try {
     const userId = await resolveAcademyUserId(req);
@@ -887,26 +883,7 @@ router.get("/student/fe-project-config", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    let minScore: number | null = isInFeProjectReducedThreshold(userId)
-      ? FE_PROJECT_REDUCED_MIN_SCORE
-      : null;
-    if (minScore == null) {
-      const [aug5] = await db
-        .select({ userId: academyUserAssessmentDetailsTable.userId })
-        .from(academyUserAssessmentDetailsTable)
-        .where(
-          and(
-            eq(academyUserAssessmentDetailsTable.userId, userId),
-            eq(
-              academyUserAssessmentDetailsTable.organisationAssessmentId,
-              FE_AUG5_ORG_ASSESSMENT_ID,
-            ),
-          ),
-        )
-        .limit(1);
-      if (aug5) minScore = FE_AUG5_CLEAR_MIN_SCORE;
-    }
-    res.json({ minScore });
+    res.json({ minScore: FE_PROJECT_REDUCED_MIN_SCORE });
   } catch (err) {
     req.log.error({ err }, "Failed to get fe project config");
     res.status(500).json({ error: "Internal server error" });

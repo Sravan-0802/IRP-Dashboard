@@ -152,8 +152,8 @@ function assessmentMotivation(
       return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments, feProjectMinScore)) {
-      const required = feProjectMinScore != null ? `${feProjectMinScore}/20` : "20/20";
-      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} to unlock the AI Mock Interview. 💪`;
+      const required = `${feProjectMinScore ?? 18}/20`;
+      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} on any sit to unlock the AI Mock Interview. 💪`;
     }
     if (visibility.feProjectResults && hasClearedFeProject(assessments, feProjectMinScore)) {
       if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {

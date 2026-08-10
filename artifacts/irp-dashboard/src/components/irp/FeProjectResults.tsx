@@ -3,12 +3,17 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import {
   assessmentOverallPct,
+  feResultLabel,
+  feResultTone,
+  getExamDateLabelForAssessment,
   hasClearedFeProject,
+  listAttemptedFeProjectAssessments,
   pickFeProjectAssessment,
 } from "@/lib/assessment";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   FE_PROJECT_CLEARED_BODY,
+  FE_PROJECT_CLEAR_MIN_SCORE,
   FE_PROJECT_MAIN_II_TITLE,
   FE_PROJECT_RESULTS_TITLE,
 } from "@/lib/feProjectConfig";
@@ -27,10 +32,13 @@ export function FeProjectResults({
   feProjectMinScore?: number | null;
   userId?: string;
 }) {
+  const threshold = feProjectMinScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
   const clearedL1 = isCycle1Cleared(assessments, userId);
-  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+  const feCleared = hasClearedFeProject(assessments, threshold);
   const fe = pickFeProjectAssessment(assessments);
   const hasScoreData = fe != null && feCleared;
+  const attemptedHistory = listAttemptedFeProjectAssessments(assessments);
+  const previousSits = attemptedHistory.slice(1);
 
   if (!clearedL1 || !feCleared || !fe) return null;
 
@@ -53,6 +61,8 @@ export function FeProjectResults({
   const scoreLabel = hasScoreData
     ? `${Math.round(fe.overallScore)}/${Math.round(fe.overallMax)}`
     : null;
+  const latestDateLabel = getExamDateLabelForAssessment(fe);
+  const latestClears = fe.overallScore >= threshold;
 
   return (
     <div
@@ -74,6 +84,14 @@ export function FeProjectResults({
               </div>
               <p className="truncate text-[11px] text-muted2 sm:hidden">{title}</p>
               <p className="mt-0.5 line-clamp-1 text-[11px] text-muted2">{FE_PROJECT_CLEARED_BODY}</p>
+              <p className="mt-0.5 text-[10px] text-muted2">
+                Latest: {latestDateLabel}
+                {!latestClears
+                  ? " · Cleared on an earlier sit (≥18/20)"
+                  : previousSits.length > 0
+                    ? " · Earlier sits listed below"
+                    : ""}
+              </p>
             </div>
           </div>
 
@@ -105,6 +123,51 @@ export function FeProjectResults({
           </div>
         </div>
       </div>
+
+      {previousSits.length > 0 ? (
+        <div className="border-t border-[rgba(12,166,120,0.12)] px-3.5 py-3 sm:px-4">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+            Previous FE attempts
+          </p>
+          <div className="overflow-hidden rounded-xl border border-[rgba(12,166,120,0.12)]">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(12,166,120,0.10)] bg-[rgba(12,166,120,0.04)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                  <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">Assessment</th>
+                  <th className="px-3 py-2">Overall</th>
+                  <th className="px-3 py-2">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previousSits.map((sit) => {
+                  const pct = assessmentOverallPct(sit);
+                  const sitTitle = sit.assessmentTitle?.trim() || "FE Project";
+                  return (
+                    <tr
+                      key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? ""}`}
+                      className="border-b border-[rgba(12,166,120,0.06)] last:border-b-0"
+                    >
+                      <td className="px-3 py-2.5 font-medium text-ink">
+                        {getExamDateLabelForAssessment(sit)}
+                      </td>
+                      <td className="px-3 py-2.5 text-[#6e6a8a]">{sitTitle}</td>
+                      <td className="px-3 py-2.5 text-[#6e6a8a]">
+                        {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({pct}%)
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Pill tone={feResultTone(sit, threshold)}>
+                          {feResultLabel(sit, threshold)}
+                        </Pill>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

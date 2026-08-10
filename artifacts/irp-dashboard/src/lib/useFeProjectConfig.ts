@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/authToken";
+import { FE_PROJECT_CLEAR_MIN_SCORE } from "@/lib/feProjectConfig";
 
 export type FeProjectConfig = {
   minScore: number | null;
@@ -27,7 +28,7 @@ export function useFeProjectConfig() {
     retry: 1,
   });
   return {
-    minScore: query.data?.minScore ?? null,
+    minScore: query.data?.minScore ?? FE_PROJECT_CLEAR_MIN_SCORE,
     loading: query.isLoading,
   };
 }

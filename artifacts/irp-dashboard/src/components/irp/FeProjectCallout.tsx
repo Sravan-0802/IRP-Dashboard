@@ -5,12 +5,13 @@ import type { Journey } from "@/lib/journey";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   assessmentOverallPct,
+  feResultLabel,
   hasAttemptedFeProject,
   hasClearedFeProject,
   pickFeProjectAssessment,
-  resultLabel,
 } from "@/lib/assessment";
 import {
+  FE_PROJECT_CLEAR_MIN_SCORE,
   FE_PROJECT_MAIN_II_BODY,
   FE_PROJECT_MAIN_II_LABEL,
   FE_PROJECT_MAIN_II_TITLE,
@@ -36,9 +37,10 @@ export function FeProjectCallout({
   const { findGrant } = useStudentAccess();
   const grant = findGrant("fe_project", "main");
   const href = grant?.url?.trim() || FE_PROJECT_MAIN_II_URL;
+  const threshold = feProjectMinScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
 
   const clearedL1 = isCycle1Cleared(assessments);
-  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+  const feCleared = hasClearedFeProject(assessments, threshold);
   const feAttempted = hasAttemptedFeProject(assessments);
   const feAssessment = pickFeProjectAssessment(assessments);
   const fePct = feAssessment ? assessmentOverallPct(feAssessment) : 0;
@@ -80,10 +82,11 @@ export function FeProjectCallout({
             <p className="mt-0.5 text-sm text-muted2">
               {isReattempt ? FE_PROJECT_REATTEMPT_BODY : FE_PROJECT_MAIN_II_BODY}
             </p>
-            {isReattempt ? (
+            {isReattempt && feAssessment ? (
               <div className="mt-2">
                 <Pill tone="amber">
-                  {resultLabel(fePct)} · {fePct}%
+                  {feResultLabel(feAssessment, threshold)} · {Math.round(feAssessment.overallScore)}/
+                  {Math.round(feAssessment.overallMax)} ({fePct}%)
                 </Pill>
               </div>
             ) : null}
