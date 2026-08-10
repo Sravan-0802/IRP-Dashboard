@@ -79,7 +79,6 @@ type AnalyticsSummary = {
   l1RegistrationCount: number;
 };
 
-<<<<<<< HEAD
 type AnalyticsTab =
   | "overview"
   | "visitors"
@@ -92,9 +91,6 @@ type AnalyticsTab =
   | "access_viewer"
   | "reg_batches"
   | "reg_responses";
-=======
-type AnalyticsTab = "overview" | "visitors" | "registrations" | "feedback" | "support" | "visibility" | "dashboard_access" | "access" | "access_viewer" | "reg_batches" | "reg_responses";
->>>>>>> 19e8131 (Resolve merge conflict markers in Analytics.tsx (keep both Dashboard Access and Reg Batches tabs))
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -575,11 +571,7 @@ export default function AnalyticsPage() {
         ? [
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
-<<<<<<< HEAD
-            { id: "access_viewer" as const, label: "Access viewer", count: undefined },
-=======
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
->>>>>>> 19e8131 (Resolve merge conflict markers in Analytics.tsx (keep both Dashboard Access and Reg Batches tabs))
             { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
           ]
