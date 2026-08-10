@@ -20,6 +20,7 @@ import {
   hasAttemptedL1Cycle2,
   pickAssessmentForLevel,
   pickL1AssessmentForResults,
+  getExamDateLabelForAssessment,
   resultLabel,
 } from "@/lib/assessment";
 import {
@@ -354,9 +355,7 @@ export function Hero({
       ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
       : pickAssessmentForLevel(assessments, 1);
     const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
-    const resultsDateLabel = hasAttemptedL1Cycle2(assessments)
-      ? L1_CYCLE2_EXAM_DATE_LABEL
-      : L1_CYCLE1_EXAM_DATE_LABEL;
+    const resultsDateLabel = getExamDateLabelForAssessment(assessment);
 
     return (
       <div

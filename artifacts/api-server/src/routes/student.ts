@@ -210,6 +210,9 @@ async function getAssessmentResultsResponse(userId: string) {
           a.assessmentUserScore ?? (mcqScore + codingScore || null),
           a.assessmentTotalScore ?? (mcqMax + codingMax || null),
         ),
+        assessmentStartDatetime: a.assessmentStartDatetime
+          ? a.assessmentStartDatetime.toISOString()
+          : undefined,
         hasWrittenAssessment,
         levelNumber: parseAssessmentLevel(a.level),
       };

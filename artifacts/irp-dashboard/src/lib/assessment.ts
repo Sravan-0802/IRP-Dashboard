@@ -2,10 +2,15 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import { LEVEL_META } from "@/lib/journey";
 import {
   EXAM_DATE_LABEL,
+  L1_AUG9_EXAM_DATE_LABEL,
+  L1_AUG9_ORG_ASSESSMENT_ID,
   L1_CYCLE1_EXAM_DATE_LABEL,
   L1_CYCLE2_EXAM_DATE_LABEL,
+  L1_JUNE14_ORG_ASSESSMENT_ID,
   L1_JULY12_EXAM_DATE_LABEL,
   L1_JULY12_ORG_ASSESSMENT_ID,
+  L1_JULY26_EXAM_DATE_LABEL,
+  L1_JULY26_ORG_ASSESSMENT_ID,
 } from "@/lib/irpDates";
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
@@ -162,10 +167,18 @@ export function pickAssessmentForLevel(
   level: 1 | 2 | 3,
 ): AssessmentResult | null {
   if (level === 1) {
-    const online = assessments
-      .filter(isL1OnlineAssessment)
-      .sort((a, b) => scoreRank(b) - scoreRank(a));
-    if (online.length > 0) return online[0];
+    const online = assessments.filter(isL1OnlineAssessment);
+    const written = online
+      .filter(assessmentWasWritten)
+      .sort((a, b) => {
+        const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
+        if (dateDiff !== 0) return dateDiff;
+        return scoreRank(b) - scoreRank(a);
+      });
+    if (written.length > 0) return written[0];
+
+    const byDate = [...online].sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
+    if (byDate.length > 0) return byDate[0];
   }
 
   const forLevel = assessments
@@ -177,6 +190,23 @@ export function pickAssessmentForLevel(
   if (unlabeled.length === 1) return unlabeled[0];
 
   return null;
+}
+
+/**
+ * All L1 online sits that were attempted, newest first.
+ * Used for Assessment Results history; clearance still uses pickAssessmentForLevel (latest only).
+ */
+export function listAttemptedL1OnlineAssessments(
+  assessments: AssessmentResult[],
+): AssessmentResult[] {
+  return assessments
+    .filter(isL1OnlineAssessment)
+    .filter(assessmentWasWritten)
+    .sort((a, b) => {
+      const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
+      if (dateDiff !== 0) return dateDiff;
+      return scoreRank(b) - scoreRank(a);
+    });
 }
 
 function assessmentWasWritten(assessment: AssessmentResult): boolean {
@@ -213,10 +243,6 @@ export function hasClearedAssessment(
   return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
 }
 
-function assessmentCycle(assessment: AssessmentResult | null | undefined): string {
-  return (assessment?.cycle ?? "").trim().toUpperCase();
-}
-
 /** True when the student's best L1 online sit is a cleared Cycle 2 row. */
 export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
   const assessment = pickAssessmentForLevel(assessments, 1);
@@ -225,12 +251,60 @@ export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
   return assessmentCycle(assessment) === "C2";
 }
 
-/** Returns the exam date label for a given assessment row, checking org ID for July 12 re-conduction. */
+function assessmentCycle(assessment: AssessmentResult | null | undefined): string {
+  return (assessment?.cycle ?? "").trim().toUpperCase();
+}
+
+function assessmentStartMs(assessment: AssessmentResult | null | undefined): number {
+  const raw = assessment?.assessmentStartDatetime;
+  if (!raw) return 0;
+  const t = new Date(raw).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+/** Ordinal day label like "9th August 2026" in Asia/Kolkata. */
+export function formatExamDateLabelFromIso(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).formatToParts(d);
+  const day = Number(parts.find((p) => p.type === "day")?.value ?? NaN);
+  const month = parts.find((p) => p.type === "month")?.value;
+  const year = parts.find((p) => p.type === "year")?.value;
+  if (!Number.isFinite(day) || !month || !year) return null;
+  const j = day % 10;
+  const k = day % 100;
+  const ord =
+    j === 1 && k !== 11 ? "st" : j === 2 && k !== 12 ? "nd" : j === 3 && k !== 13 ? "rd" : "th";
+  return `${day}${ord} ${month} ${year}`;
+}
+
+/** Returns the exam date label for a given assessment row. */
 function examDateLabelForAssessment(assessment: AssessmentResult | null | undefined): string {
   if (!assessment) return EXAM_DATE_LABEL;
-  if (assessment.organisationAssessmentId === L1_JULY12_ORG_ASSESSMENT_ID) return L1_JULY12_EXAM_DATE_LABEL;
+
+  const fromIso = formatExamDateLabelFromIso(assessment.assessmentStartDatetime);
+  if (fromIso) return fromIso;
+
+  const orgId = assessment.organisationAssessmentId;
+  if (orgId === L1_AUG9_ORG_ASSESSMENT_ID) return L1_AUG9_EXAM_DATE_LABEL;
+  if (orgId === L1_JULY26_ORG_ASSESSMENT_ID) return L1_JULY26_EXAM_DATE_LABEL;
+  if (orgId === L1_JULY12_ORG_ASSESSMENT_ID) return L1_JULY12_EXAM_DATE_LABEL;
+  if (orgId === L1_JUNE14_ORG_ASSESSMENT_ID) return L1_CYCLE1_EXAM_DATE_LABEL;
   if (assessmentCycle(assessment) === "C2") return L1_CYCLE2_EXAM_DATE_LABEL;
   return L1_CYCLE1_EXAM_DATE_LABEL;
+}
+
+/** Public helper — exam date label for a specific assessment sit. */
+export function getExamDateLabelForAssessment(
+  assessment: AssessmentResult | null | undefined,
+): string {
+  return examDateLabelForAssessment(assessment);
 }
 
 /** Exam date label for the sit that cleared L1 (Cycle 1 vs Cycle 2). */

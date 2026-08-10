@@ -8,6 +8,17 @@ export const EXAM_DATE_LABEL = "5th July 2026";
 export const L1_CYCLE2_EXAM_DATE = EXAM_DATE;
 export const L1_CYCLE2_EXAM_DATE_LABEL = EXAM_DATE_LABEL;
 
+/** Org assessment ID for the 14 June 2026 L1 Hustler Assessment (A1). */
+export const L1_JUNE14_ORG_ASSESSMENT_ID = "d502c083b7a9465eb1c1caa10f62908a";
+
+/** Org assessment ID for the 26 July 2026 L1 Hustler Assessment (A4). */
+export const L1_JULY26_ORG_ASSESSMENT_ID = "e6a9ac0a495e4ccd90bcfe58b82bb38e";
+
+/** Org assessment ID for the 9 August 2026 L1 Hustler Assessment (A5). */
+export const L1_AUG9_ORG_ASSESSMENT_ID = "51f4592e98f44b0e9a5c56122d27a387";
+export const L1_AUG9_EXAM_DATE = new Date("2026-08-09T00:00:00+05:30");
+export const L1_AUG9_EXAM_DATE_LABEL = "9th August 2026";
+
 /** Org assessment ID for the 12th July 2026 L1 re-conduction (Assessment II). */
 export const L1_JULY12_ORG_ASSESSMENT_ID = "248f8108292246cb9fd7af5edd025a9a";
 

@@ -21,6 +21,8 @@ export interface AssessmentResult {
   overallScore: number;
   overallMax: number;
   overallPct: number;
+  /** Scheduled assessment start (ISO). Used for exam date labels on the dashboard. */
+  assessmentStartDatetime?: string;
   /** True when assessment_user_score or section scores exist — the exam was attempted. */
   hasWrittenAssessment: boolean;
 }

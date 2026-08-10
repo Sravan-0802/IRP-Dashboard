@@ -410,6 +410,10 @@ components:
           type: number
         overallPct:
           type: number
+        assessmentStartDatetime:
+          type: string
+          format: date-time
+          description: Scheduled assessment start (ISO). Used for exam date labels on the dashboard.
         hasWrittenAssessment:
           type: boolean
           description: True when assessment_user_score or section scores exist — the exam was attempted.

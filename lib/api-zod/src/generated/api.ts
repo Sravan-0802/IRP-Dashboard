@@ -91,6 +91,7 @@ export const GetStudentAssessmentsResponse = zod.object({
   "overallScore": zod.number(),
   "overallMax": zod.number(),
   "overallPct": zod.number(),
+  "assessmentStartDatetime": zod.string().optional().describe('Scheduled assessment start (ISO). Used for exam date labels on the dashboard.'),
   "hasWrittenAssessment": zod.boolean().describe('True when assessment_user_score or section scores exist — the exam was attempted.')
 }))
 })
