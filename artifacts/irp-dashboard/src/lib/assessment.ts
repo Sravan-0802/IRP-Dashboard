@@ -12,6 +12,10 @@ import {
   L1_JULY26_EXAM_DATE_LABEL,
   L1_JULY26_ORG_ASSESSMENT_ID,
 } from "@/lib/irpDates";
+import {
+  FE_AUG5_CLEAR_MIN_SCORE,
+  FE_AUG5_ORG_ASSESSMENT_ID,
+} from "@/lib/feProjectConfig";
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
 
@@ -77,6 +81,13 @@ export function isFeProjectAssessment(a: AssessmentResult): boolean {
   );
 }
 
+/** 5 Aug 2026 FE Project Main (A4) — org window clears at ≥18/20 for everyone. */
+export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
+  if (a.organisationAssessmentId === FE_AUG5_ORG_ASSESSMENT_ID) return true;
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  return tag.includes("FE-PROJECT_A4");
+}
+
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
 ): AssessmentResult | null {
@@ -120,10 +131,10 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
 
 /**
  * FE Project clears:
- * - FE Project C2 (and FE C2 cohort users) → score ≥ 18/20
- * - Main II (Cycle 1) → perfect score (100%)
- * If `minScore` is provided it overrides per-user logic.
- * Pass `minScore` (e.g. 18) for reduced-threshold students; defaults to full max.
+ * - 5 Aug FE Project Main (A4) → score ≥ 18/20 for all sitters
+ * - FE Project C2 / reduced-threshold users → score ≥ 18/20 (via `minScore`)
+ * - Main II (and other FE sits) → perfect score (100%)
+ * If `minScore` is provided it overrides per-assessment defaults.
  */
 export function hasClearedFeProject(
   assessments: AssessmentResult[],
@@ -132,6 +143,9 @@ export function hasClearedFeProject(
   const fe = pickFeProjectAssessment(assessments);
   if (!fe || !feAssessmentWasWritten(fe)) return false;
   if (minScore != null) return fe.overallScore >= minScore;
+  if (isFeProjectAug5A4Assessment(fe)) {
+    return fe.overallScore >= FE_AUG5_CLEAR_MIN_SCORE;
+  }
   return fe.overallMax > 0 && fe.overallScore >= fe.overallMax;
 }
 

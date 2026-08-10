@@ -1,5 +1,6 @@
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { FE_AUG5_ORG_ASSESSMENT_ID } from "./feProjectAug5";
 
 export type VisibilityKey =
   | "online_l1_results"
@@ -111,12 +112,16 @@ async function feProjectCounts(): Promise<StageCounts> {
                   (
                     UPPER(COALESCE(cycle, '')) = 'C2'
                     OR UPPER(COALESCE(assessment_tag, '')) LIKE '%FE-PROJECT_C2%'
+                    OR organisation_assessment_id = ${FE_AUG5_ORG_ASSESSMENT_ID}
+                    OR UPPER(COALESCE(assessment_tag, '')) LIKE '%FE-PROJECT_A4%'
                   )
                 AND assessment_user_score >= 18
               )
               OR (
                 UPPER(COALESCE(cycle, '')) IS DISTINCT FROM 'C2'
                 AND UPPER(COALESCE(assessment_tag, '')) NOT LIKE '%FE-PROJECT_C2%'
+                AND organisation_assessment_id IS DISTINCT FROM ${FE_AUG5_ORG_ASSESSMENT_ID}
+                AND UPPER(COALESCE(assessment_tag, '')) NOT LIKE '%FE-PROJECT_A4%'
                 AND assessment_user_score >= assessment_total_score
               )
               )
@@ -137,7 +142,7 @@ async function feProjectCounts(): Promise<StageCounts> {
   `);
   const row = firstRow(result as { rows?: CountRow[] } | CountRow[]);
   return {
-    scope: "FE Project (C2 ≥18/20 / Main II 100%)",
+    scope: "FE Project (C2/A4 ≥18/20 / Main II 100%)",
     assigned: n(row.assigned),
     attempted: n(row.attempted),
     cleared: n(row.cleared),

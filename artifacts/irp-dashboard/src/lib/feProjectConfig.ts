@@ -1,3 +1,9 @@
+/** 5 August 2026 FE Project Main (A4) — clears at ≥18/20 for all sitters. */
+export const FE_AUG5_ORG_ASSESSMENT_ID = "c62633e2059845b68a9829245af43bf4";
+export const FE_AUG5_ASSESSMENT_TAG = "ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A4";
+export const FE_AUG5_CLEAR_MIN_SCORE = 18;
+export const FE_AUG5_EXAM_DATE_LABEL = "5th August 2026";
+
 /** FE Project Main II — shown to students who cleared L1 online assessment. */
 export const FE_PROJECT_MAIN_II_URL =
   "https://assessment.topin.tech/assessment?org_id=0d298693-0e67-45af-9f66-cb9dac7f6cfd&auto_redirect=1";
