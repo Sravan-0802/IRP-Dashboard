@@ -9,4 +9,5 @@
 - [Dev seeding flow](dev-seeding-flow.md) — to run locally: curl /api/auth/me to find ACADEMY_USER_ID, then seed academy_user_basic_details + academy_user_assessment_details for that UUID.
 - [Analytics admin-key auth](analytics-admin-key-auth.md) — `dev` key fails locally because TOKEN_SECRET is set; secret values are redacted, so test admin routes via SQL not curl.
 - [Previewing gated views](preview-gated-views.md) — can't switch the ACADEMY_USER_ID secret; to screenshot a per-user gate, temporarily move the row in/out of the gating table for the current preview user.
+- [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures often come from committed `<<<<<<<` markers; grep artifacts/ for markers after any merge, before publish.
 - [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.
