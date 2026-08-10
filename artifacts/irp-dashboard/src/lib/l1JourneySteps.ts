@@ -26,7 +26,8 @@ const L1_STEPS: Omit<JourneyStep, "status">[] = [
 ];
 
 /** Level 1 · The Hustler — full pipeline through Level 2 access.
- * Result-stage statuses stay hidden until admin releases that stage.
+ * Score cards can stay hidden until admin releases a stage, but journey
+ * advancement (FE cleared → AI Mock unlocked) always follows clearance ≥18.
  */
 export function l1HustlerJourneySteps(
   journey: Journey,
@@ -42,7 +43,7 @@ export function l1HustlerJourneySteps(
   userId?: string | null,
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
-  const showFe = visibility?.feProjectResults === true;
+  const showFeResults = visibility?.feProjectResults === true;
   const showAi = visibility?.aiMockResults === true;
   const showHuman = visibility?.humanInterviewResults === true;
 
@@ -81,15 +82,17 @@ export function l1HustlerJourneySteps(
         ? "active"
         : assessmentStatus;
 
+  // FE clearance always advances the pipeline. Only "not cleared" score status
+  // stays hidden until admin releases FE results.
   let feProjectStatus: JourneyStep["status"] = "locked";
-  if (showFe && feCleared) feProjectStatus = "done";
-  else if (showFe && feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
+  if (feCleared) feProjectStatus = "done";
+  else if (showFeResults && feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
   let aiMockStatus: JourneyStep["status"] = "locked";
   if (showAi && pastAiMock) aiMockStatus = "done";
   else if (showAi && nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
-  else if (showFe && feCleared) aiMockStatus = "active";
+  else if (feCleared) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";
   if (showHuman && (phase === "PLACED" || state.startsWith("L3_"))) humanInterviewStatus = "done";

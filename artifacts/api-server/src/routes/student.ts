@@ -185,12 +185,17 @@ async function getAssessmentResultsResponse(userId: string) {
       const mcqMax = a.mcqSectionMaxScore ?? 0;
       const codingScore = a.codingUserSectionScore ?? 0;
       const codingMax = a.codingSectionMaxScore ?? 0;
-      const overallScore = a.assessmentUserScore ?? mcqScore + codingScore;
-      const overallMax = a.assessmentTotalScore ?? mcqMax + codingMax;
+      const feScore = a.feUserSectionScore ?? 0;
+      const feMax = a.feSectionMaxScore ?? 0;
+      const overallScore =
+        a.assessmentUserScore ?? (mcqScore + codingScore + feScore || 0);
+      const overallMax =
+        a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || 0);
       const hasWrittenAssessment =
         a.assessmentUserScore != null ||
         a.mcqUserSectionScore != null ||
-        a.codingUserSectionScore != null;
+        a.codingUserSectionScore != null ||
+        a.feUserSectionScore != null;
 
       return {
         organisationAssessmentId: a.organisationAssessmentId,
@@ -207,8 +212,8 @@ async function getAssessmentResultsResponse(userId: string) {
         overallScore,
         overallMax,
         overallPct: pct(
-          a.assessmentUserScore ?? (mcqScore + codingScore || null),
-          a.assessmentTotalScore ?? (mcqMax + codingMax || null),
+          a.assessmentUserScore ?? (mcqScore + codingScore + feScore || null),
+          a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || null),
         ),
         assessmentStartDatetime: a.assessmentStartDatetime
           ? a.assessmentStartDatetime.toISOString()

@@ -1,6 +1,11 @@
 /** Universal FE Project clearance threshold — any FE sit with overallScore ≥ this clears. */
 export const FE_PROJECT_CLEAR_MIN_SCORE = 18;
 
+/** Normalize org assessment ids so hyphenated / compact forms match. */
+export function normalizeOrgAssessmentId(id: string | null | undefined): string {
+  return (id ?? "").replace(/-/g, "").toLowerCase();
+}
+
 /** 5 August 2026 FE Project Main (A4). */
 export const FE_AUG5_ORG_ASSESSMENT_ID = "c62633e2059845b68a9829245af43bf4";
 export const FE_AUG5_ASSESSMENT_TAG = "ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A4";
@@ -9,6 +14,7 @@ export const FE_AUG5_CLEAR_MIN_SCORE = FE_PROJECT_CLEAR_MIN_SCORE;
 export const FE_AUG5_EXAM_DATE_LABEL = "5th August 2026";
 
 /** FE Project Main II — shown to students who cleared L1 online assessment. */
+export const FE_PROJECT_MAIN_II_ORG_ASSESSMENT_ID = "0d2986930e6745af9f66cb9dac7f6cfd";
 export const FE_PROJECT_MAIN_II_URL =
   "https://assessment.topin.tech/assessment?org_id=0d298693-0e67-45af-9f66-cb9dac7f6cfd&auto_redirect=1";
 
@@ -43,6 +49,7 @@ export const FE_PROJECT_MAIN_II_NOT_CLEARED_BODY =
   "You attempted FE Project Main II but haven't cleared it yet. You need at least 18/20 to advance to the AI Mock Interview.";
 
 /** FE Project Main — available 17th July 12:00 PM to 19th July 11:00 PM IST (allowlist only). */
+export const FE_PROJECT_MOCK_ORG_ASSESSMENT_ID = "98c2d7a223a3438f973a6d7e6f7c5b4b";
 export const FE_PROJECT_MOCK_URL =
   "https://assessment.topin.tech/assessment?org_id=98c2d7a2-23a3-438f-973a-6d7e6f7c5b4b&auto_redirect=1";
 export const FE_PROJECT_MOCK_TITLE = "IRP 2.0 FE Project Main";

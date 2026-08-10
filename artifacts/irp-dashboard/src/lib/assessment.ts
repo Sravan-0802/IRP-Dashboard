@@ -15,6 +15,9 @@ import {
 import {
   FE_AUG5_ORG_ASSESSMENT_ID,
   FE_PROJECT_CLEAR_MIN_SCORE,
+  FE_PROJECT_MAIN_II_ORG_ASSESSMENT_ID,
+  FE_PROJECT_MOCK_ORG_ASSESSMENT_ID,
+  normalizeOrgAssessmentId,
 } from "@/lib/feProjectConfig";
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
@@ -68,8 +71,18 @@ export function isL1OnlineAssessment(a: AssessmentResult): boolean {
   return parseAssessmentLevel(a.level) === 1 && !level.includes("FE");
 }
 
-/** True for FE Project assessment rows (Main / Main II). */
+/** Known FE Project organisation_assessment_id values (hyphens stripped). */
+const FE_PROJECT_ORG_IDS = new Set([
+  normalizeOrgAssessmentId(FE_AUG5_ORG_ASSESSMENT_ID),
+  normalizeOrgAssessmentId(FE_PROJECT_MAIN_II_ORG_ASSESSMENT_ID),
+  normalizeOrgAssessmentId(FE_PROJECT_MOCK_ORG_ASSESSMENT_ID),
+]);
+
+/** True for FE Project assessment rows (Main / Main II / A4 / known FE org windows). */
 export function isFeProjectAssessment(a: AssessmentResult): boolean {
+  const orgId = normalizeOrgAssessmentId(a.organisationAssessmentId);
+  if (orgId && FE_PROJECT_ORG_IDS.has(orgId)) return true;
+
   const level = (a.level ?? "").toUpperCase();
   const tag = (a.assessmentTag ?? "").toUpperCase();
   const title = (a.assessmentTitle ?? "").toUpperCase();
@@ -77,13 +90,23 @@ export function isFeProjectAssessment(a: AssessmentResult): boolean {
     level.includes("FE-PROJECT") ||
     level.includes("FE_PROJECT") ||
     tag.includes("FE-PROJECT") ||
-    title.includes("FE PROJECT")
+    tag.includes("FE_PROJECT") ||
+    title.includes("FE PROJECT") ||
+    title.includes("FE-PROJECT") ||
+    // BigQuery sometimes omits "FE Project" and only says Main / Main II.
+    (title.includes("MAIN II") && (title.includes("IRP") || title.includes("PROJECT"))) ||
+    (title.includes("FE ") && title.includes("MAIN"))
   );
 }
 
 /** 5 Aug 2026 FE Project Main (A4) assessment window. */
 export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
-  if (a.organisationAssessmentId === FE_AUG5_ORG_ASSESSMENT_ID) return true;
+  if (
+    normalizeOrgAssessmentId(a.organisationAssessmentId) ===
+    normalizeOrgAssessmentId(FE_AUG5_ORG_ASSESSMENT_ID)
+  ) {
+    return true;
+  }
   const tag = (a.assessmentTag ?? "").toUpperCase();
   return tag.includes("FE-PROJECT_A4");
 }

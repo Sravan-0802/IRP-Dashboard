@@ -27,7 +27,21 @@ const FE_PRED = sql`(
   UPPER(COALESCE(level, '')) LIKE '%FE-PROJECT%'
   OR UPPER(COALESCE(level, '')) LIKE '%FE_PROJECT%'
   OR UPPER(COALESCE(assessment_tag, '')) LIKE '%FE-PROJECT%'
+  OR UPPER(COALESCE(assessment_tag, '')) LIKE '%FE_PROJECT%'
   OR UPPER(COALESCE(assessment_title, '')) LIKE '%FE PROJECT%'
+  OR UPPER(COALESCE(assessment_title, '')) LIKE '%FE-PROJECT%'
+  OR (
+    UPPER(COALESCE(assessment_title, '')) LIKE '%MAIN II%'
+    AND (
+      UPPER(COALESCE(assessment_title, '')) LIKE '%IRP%'
+      OR UPPER(COALESCE(assessment_title, '')) LIKE '%PROJECT%'
+    )
+  )
+  OR REPLACE(LOWER(COALESCE(organisation_assessment_id, '')), '-', '') IN (
+    'c62633e2059845b68a9829245af43bf4',
+    '0d2986930e6745af9f66cb9dac7f6cfd',
+    '98c2d7a223a3438f973a6d7e6f7c5b4b'
+  )
 )`;
 
 const ONLINE_PRED = sql`NOT ${FE_PRED}`;

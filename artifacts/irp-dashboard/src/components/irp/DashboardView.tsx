@@ -151,15 +151,16 @@ function assessmentMotivation(
     if (visibility.aiMockResults && hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
       return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
     }
-    if (visibility.feProjectResults && hasAttemptedFeProject(assessments) && !hasClearedFeProject(assessments, feProjectMinScore)) {
-      const required = `${feProjectMinScore ?? 18}/20`;
-      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} on any sit to unlock the AI Mock Interview. 💪`;
-    }
-    if (visibility.feProjectResults && hasClearedFeProject(assessments, feProjectMinScore)) {
+    // FE clearance advances the journey even before Admin releases score cards.
+    if (hasClearedFeProject(assessments, feProjectMinScore)) {
       if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
         return `You cleared the ${clearedDateLabel} assessment and FE Project. Next-step results will appear once released. 💪`;
       }
       return `You cleared the ${clearedDateLabel} assessment and FE Project. Continue with your next interview step. 💪`;
+    }
+    if (visibility.feProjectResults && hasAttemptedFeProject(assessments)) {
+      const required = `${feProjectMinScore ?? 18}/20`;
+      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} on any sit to unlock the AI Mock Interview. 💪`;
     }
     return `You cleared the ${clearedDateLabel} assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪`;
   }
