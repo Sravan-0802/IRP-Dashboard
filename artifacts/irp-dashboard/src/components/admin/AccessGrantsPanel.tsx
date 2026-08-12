@@ -51,7 +51,12 @@ type AccessBatchDetail = AccessBatchSummary & {
 };
 
 function stageNeedsMockMain(stage: AccessStage): boolean {
-  return stage === "online_assessment" || stage === "fe_project";
+  return (
+    stage === "online_assessment" ||
+    stage === "fe_project" ||
+    stage === "ai_mock" ||
+    stage === "human_interview"
+  );
 }
 
 function stageLabel(stage: string): string {
