@@ -5,19 +5,19 @@ import { cn } from "@/lib/utils";
 type RingTone = "purple" | "blue" | "green" | "pink" | "gold";
 
 const RING_STOPS: Record<RingTone, [string, string]> = {
-  purple: ["#a855f7", "#ec4899"],
-  blue: ["#818cf8", "#a855f7"],
-  green: ["#22d3ee", "#a3e635"],
-  pink: ["#f472b6", "#ec4899"],
-  gold: ["#fbbf24", "#f472b6"],
+  purple: ["#6941c6", "#7f56d9"],
+  blue: ["#6941c6", "#5925dc"],
+  green: ["#12b76a", "#039855"],
+  pink: ["#f04438", "#d92d20"],
+  gold: ["#f79009", "#dc6803"],
 };
 
 const RING_TRACK: Record<RingTone, string> = {
-  purple: "rgba(168,85,247,0.12)",
-  blue: "rgba(129,140,248,0.12)",
-  green: "rgba(34,211,238,0.12)",
-  pink: "rgba(244,114,182,0.12)",
-  gold: "rgba(251,191,36,0.12)",
+  purple: "rgba(105, 65, 198, 0.12)",
+  blue: "rgba(105, 65, 198, 0.12)",
+  green: "rgba(18, 183, 106, 0.12)",
+  pink: "rgba(240, 68, 56, 0.12)",
+  gold: "rgba(247, 144, 9, 0.12)",
 };
 
 export function ProgressRing({
@@ -111,11 +111,11 @@ export function ProgressRing({
 type PillTone = "purple" | "green" | "amber" | "grey" | "pink";
 
 const PILL_TONE: Record<PillTone, string> = {
-  purple: "bg-[#eef2ff] text-[#3b5bdb] border border-[#3b5bdb]/[0.18]",
-  green: "bg-[#d3f9d8] text-[#2b8a3e] border border-[#0ca678]/20",
-  amber: "bg-[#fff9db] text-[#e67700] border border-[#f59f00]/20",
-  grey: "bg-[#f1f3f5] text-[#aaa5c0] border border-[#dee2e6]",
-  pink: "bg-[#fff0f6] text-[#c2255c] border border-[#e64980]/20",
+  purple: "bg-[#f9f5ff] text-[#6941c6] border border-[#e9d7fe]",
+  green: "bg-[#ecfdf3] text-[#067647] border border-[#abefc6]",
+  amber: "bg-[#fffaeb] text-[#b54708] border border-[#fedf89]",
+  grey: "bg-[#f9fafb] text-[#667085] border border-[#eaecf0]",
+  pink: "bg-[#fef3f2] text-[#b42318] border border-[#fecdca]",
 };
 
 export function Pill({

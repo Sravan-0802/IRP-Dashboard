@@ -176,7 +176,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-[100dvh] overflow-hidden">
-      <aside className="glass-panel hidden w-[220px] shrink-0 border-r border-[rgba(103,65,217,0.1)] shadow-[2px_0_20px_rgba(103,65,217,0.05)] md:flex">
+      <aside className="glass-panel hidden w-[240px] shrink-0 border-r border-[#eaecf0] shadow-sm md:flex">
         <SidebarContent
           name={displayStudent.name}
           yog={displayStudent.yog}
@@ -192,7 +192,7 @@ export default function Dashboard() {
       {mobileOpen && (
         <div className="fixed inset-0 z-[110] md:hidden">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-[rgba(13,17,23,0.35)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-[min(280px,85vw)] border-r border-[rgba(103,65,217,0.1)] bg-[rgba(255,255,255,0.96)] backdrop-blur-xl">
+          <div className="absolute left-0 top-0 h-full w-[min(280px,85vw)] border-r border-[#eaecf0] bg-white">
             <button type="button" onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-muted2">
               <X className="h-5 w-5" />
             </button>
@@ -210,8 +210,8 @@ export default function Dashboard() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="glass-bar sticky top-0 z-40 flex items-center gap-3 border-b border-[rgba(103,65,217,0.1)] px-4 py-3 md:hidden">
-          <button type="button" onClick={() => setMobileOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(59,91,219,0.18)] bg-l1-bg text-l1">
+        <header className="glass-bar sticky top-0 z-40 flex items-center gap-3 border-b border-[#eaecf0] px-4 py-3 md:hidden">
+          <button type="button" onClick={() => setMobileOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#eaecf0] bg-white text-[#6941c6]">
             <Menu className="h-5 w-5" />
           </button>
           <span className="font-display text-base font-extrabold text-ink">IRP 2.0</span>
