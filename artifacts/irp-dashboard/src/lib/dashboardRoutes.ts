@@ -5,6 +5,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   dashboard: "/",
   assessments: "/assessments-hub",
   slot: "/assessment-calendar",
+  about: "/about",
 };
 
 /** Resolve the active tab from the current (base-stripped) wouter location. */
@@ -12,5 +13,6 @@ export function pathToPage(path: string): PageKey {
   const clean = path.replace(/\/+$/, "") || "/";
   if (clean === PAGE_PATHS.assessments) return "assessments";
   if (clean === PAGE_PATHS.slot) return "slot";
+  if (clean === PAGE_PATHS.about) return "about";
   return "dashboard";
 }

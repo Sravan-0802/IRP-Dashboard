@@ -3,14 +3,13 @@ import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
-
 const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   1: "#6941c6",
   2: "#dc6803",
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "assessments" | "slot";
+export type PageKey = "dashboard" | "assessments" | "slot" | "about";
 
 const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -89,15 +88,19 @@ export function SidebarContent({
             {label}
           </button>
         ))}
-        <a
-          href="https://irp-dashboard-academy.replit.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#667085] transition-colors hover:bg-[#f9fafb] hover:text-[#344054]"
+        <button
+          type="button"
+          onClick={() => onNavigate("about")}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
+            active === "about"
+              ? "bg-[#f9f5ff] text-[#6941c6]"
+              : "text-[#667085] hover:bg-[#f9fafb] hover:text-[#344054]",
+          )}
         >
           <Info className="h-4 w-4 shrink-0" />
           About
-        </a>
+        </button>
       </nav>
 
       <div className="space-y-2 border-t border-[#eaecf0] px-3 py-3">

@@ -358,11 +358,13 @@ export function JourneyBar({
 export function IrpCard({
   className,
   children,
+  style,
 }: {
   className?: string;
   children: React.ReactNode;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div className={cn("irp-card", className)}>{children}</div>
+    <div className={cn("irp-card", className)} style={style}>{children}</div>
   );
 }

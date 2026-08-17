@@ -113,6 +113,9 @@ function Router() {
       <Route path="/assessment-calendar">
         <Home />
       </Route>
+      <Route path="/about">
+        <Home />
+      </Route>
       <Route path="/">
         <Home />
       </Route>

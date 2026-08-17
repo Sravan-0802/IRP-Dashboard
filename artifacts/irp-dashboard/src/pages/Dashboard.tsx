@@ -24,6 +24,7 @@ import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
+import { AboutIrp } from "./AboutIrp";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
 import { useAcademyUserId } from "@/lib/useAcademyUserId";
@@ -241,6 +242,7 @@ export default function Dashboard() {
               />
             )}
             {page === "slot" && <BookSlot assessments={displayAssessments} userId={userId} />}
+            {page === "about" && <AboutIrp />}
           </div>
         </main>
       </div>
