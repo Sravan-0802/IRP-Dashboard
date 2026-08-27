@@ -22,6 +22,18 @@ import {
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
 export const ASSESSMENT_CLEAR_THRESHOLD = 70;
 
+/** Synthetic org ids from GET /api/student/assessments when round-wise is the results source. */
+export const ROUND_WISE_HUSTLER_ORG_ID = "round-wise:hustler";
+export const ROUND_WISE_FE_ORG_ID = "round-wise:fe";
+
+export function isRoundWiseHustlerResult(a: AssessmentResult): boolean {
+  return a.organisationAssessmentId === ROUND_WISE_HUSTLER_ORG_ID;
+}
+
+export function isRoundWiseFeResult(a: AssessmentResult): boolean {
+  return a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID;
+}
+
 /** BigQuery sometimes stores organisation_assessment_id in assessment_title — hide for display. */
 export function formatAssessmentTitle(
   title: string | null | undefined,
@@ -62,6 +74,8 @@ function scoreRank(assessment: AssessmentResult): number {
 
 /** True for L1 Hustler online assessment rows — excludes FE Project attempts. */
 export function isL1OnlineAssessment(a: AssessmentResult): boolean {
+  if (isRoundWiseHustlerResult(a)) return true;
+  if (isRoundWiseFeResult(a)) return false;
   const level = (a.level ?? "").toUpperCase();
   const tag = (a.assessmentTag ?? "").toUpperCase();
   if (level.includes("FE-PROJECT") || level.includes("FE_PROJECT") || tag.includes("FE-PROJECT")) {
@@ -80,6 +94,8 @@ const FE_PROJECT_ORG_IDS = new Set([
 
 /** True for FE Project assessment rows (Main / Main II / A4 / known FE org windows). */
 export function isFeProjectAssessment(a: AssessmentResult): boolean {
+  if (isRoundWiseFeResult(a)) return true;
+  if (isRoundWiseHustlerResult(a)) return false;
   const orgId = normalizeOrgAssessmentId(a.organisationAssessmentId);
   if (orgId && FE_PROJECT_ORG_IDS.has(orgId)) return true;
 
@@ -118,11 +134,16 @@ export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
 ): AssessmentResult | null {
+  const roundWise = assessments.find(isRoundWiseFeResult);
+  if (roundWise && (roundWise.hasWrittenAssessment || feAssessmentWasWritten(roundWise))) {
+    return roundWise;
+  }
   const attempted = listAttemptedFeProjectAssessments(assessments);
   if (attempted.length > 0) return attempted[0];
 
   const registered = assessments
     .filter(isFeProjectAssessment)
+    .filter((a) => !isRoundWiseFeResult(a))
     .sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
   return registered[0] ?? null;
 }
@@ -136,6 +157,7 @@ export function listAttemptedFeProjectAssessments(
 ): AssessmentResult[] {
   return assessments
     .filter(isFeProjectAssessment)
+    .filter((a) => !isRoundWiseFeResult(a))
     .filter(feAssessmentWasWritten)
     .sort((a, b) => {
       const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
@@ -239,8 +261,13 @@ export function pickAssessmentForLevel(
   level: 1 | 2 | 3,
 ): AssessmentResult | null {
   if (level === 1) {
+    const roundWise = assessments.find(isRoundWiseHustlerResult);
+    if (roundWise && (roundWise.hasWrittenAssessment || assessmentWasWritten(roundWise))) {
+      return roundWise;
+    }
     const online = assessments.filter(isL1OnlineAssessment);
     const written = online
+      .filter((a) => !isRoundWiseHustlerResult(a))
       .filter(assessmentWasWritten)
       .sort((a, b) => {
         const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
@@ -249,7 +276,9 @@ export function pickAssessmentForLevel(
       });
     if (written.length > 0) return written[0];
 
-    const byDate = [...online].sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
+    const byDate = [...online]
+      .filter((a) => !isRoundWiseHustlerResult(a))
+      .sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
     if (byDate.length > 0) return byDate[0];
   }
 
@@ -273,6 +302,7 @@ export function listAttemptedL1OnlineAssessments(
 ): AssessmentResult[] {
   return assessments
     .filter(isL1OnlineAssessment)
+    .filter((a) => !isRoundWiseHustlerResult(a))
     .filter(assessmentWasWritten)
     .sort((a, b) => {
       const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);

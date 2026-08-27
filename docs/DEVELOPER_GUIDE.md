@@ -267,6 +267,44 @@ cd artifacts/api-server && node bq-probe.mjs
 
 **HTTP (needs admin key):** `POST /api/sync/bigquery`
 
+### IRP 2.0 z_* tables (attempt counts)
+
+| BigQuery table | Neon target | Role |
+|----------------|-------------|------|
+| `z_academy_irp_2_0_l1_user_round_wise_summary` | `irp_l1_round_wise_summary` | **Primary results** (cleared / %, Attempt N, dates) for Hero + result cards |
+| `z_academy_irp_2_0_l1_hustler_assessment_user_attempt_details` | `academy_user_assessment_details` | Online L1 **previous attempts** history |
+| `z_academy_irp_2_0_l1_fe_project_user_attempt_details` | same | FE **previous attempts** history |
+| `z_academy_irp_2_0_l1_nxtmock_user_attempt_details` | `academy_user_nxtmock_details` | AI Mock history + **`section_wise_rating_json`** → skill bars |
+
+**Results rule:** student APIs prefer round-wise for the main score cards. Detail tables fill “Previous attempts”. NxtMock skill rows (HTML / JS / CSS / …) come only from detail `section_wise_rating_json`.
+
+**Attempt count rule:** use **`attempt_number`** / round-wise `*_attempt_number`. Do **not** count BQ rows — many rows are access-only (`NOT ATTEMPTED`).
+
+Only completed sits sync from detail tables: `QUALIFIED` / `NOT QUALIFIED`, or rows where `attempt_number IS NOT NULL`.
+
+**Probe z_* tables:**
+
+```bash
+cd artifacts/api-server && node check-z-academy-tables.mjs
+```
+
+### Timed result release (Visibility)
+
+Admin **Visibility** tab controls when students see synced scores (separate from Access Loader links):
+
+- Manual: **Release now** / **Hide** → `visibility_settings.visible`
+- Scheduled: **Release at** datetime → `visibility_settings.release_at`
+- **Effective for students:** `visible = 1` **OR** `now >= release_at`
+
+After schema changes, run `pnpm --filter @workspace/db run push` on the deployment target (Replit / Neon).
+
+**Smoke checklist**
+
+1. `POST /api/sync/bigquery` (admin key) — confirm `irp_l1_round_wise_summary` + assessment/nxtmock rows in sync status.
+2. Analytics → Visibility — stage counts appear; schedule a future **Release at**; student dashboard stays locked until time passes or **Release now**.
+3. Student with synced data — after release, Assessment Results / Hero show scores from **round-wise** and **Attempt N**; previous sits from detail tables.
+4. NxtMock Results — skill bars populated from `section_wise_rating_json` when present.
+
 ### Known gotcha — VPC Service Controls
 
 Org policy can block BQ from some runtimes (403 / VPC SC). Design assumes **sync into Neon**, then all reads from Postgres. See `.agents/memory/bigquery-vpc-blocker.md`.

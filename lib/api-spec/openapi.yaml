@@ -417,6 +417,12 @@ components:
         hasWrittenAssessment:
           type: boolean
           description: True when assessment_user_score or section scores exist — the exam was attempted.
+        attemptNumber:
+          type: integer
+          description: How many times the student sat this assessment (from z_* attempt_number). Null if unknown / not attempted.
+        assessmentStatus:
+          type: string
+          description: QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED when synced from z_* tables.
 
     StudentAssessments:
       type: object

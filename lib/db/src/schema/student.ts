@@ -256,6 +256,10 @@ export const academyUserAssessmentDetailsTable = pgTable(
     feAttemptDurationMins: real("fe_attempt_duration_mins"),
     assessmentTotalScore: real("assessment_total_score"),
     assessmentUserScore: real("assessment_user_score"),
+    /** From z_* attempt tables — how many times the student sat (null = access only / not attempted). */
+    attemptNumber: integer("attempt_number"),
+    /** QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED | … from z_* when available. */
+    assessmentStatus: text("assessment_status"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -284,6 +288,10 @@ export const academyUserNxtmockDetailsTable = pgTable(
     htmlRating: integer("html_rating"),
     reactJsRating: integer("react_js_rating"),
     averageRating: real("average_rating"),
+    /** From z_* nxtmock attempt table (null = access granted but not sat). */
+    attemptNumber: integer("attempt_number"),
+    /** QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED | … */
+    interviewStatus: text("interview_status"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -350,11 +358,63 @@ export const bigquerySyncStatusTable = pgTable("bigquery_sync_status", {
  * Admin-controlled student visibility flags.
  * Data still syncs from BigQuery; these keys decide what students can see.
  * Keys: online_l1_results | fe_project_results | ai_mock_results | human_interview_results | course_progress
+ *
+ * Effective visibility for students = visible OR (release_at IS NOT NULL AND now >= release_at).
+ * release_at: optional scheduled release; null = no schedule (manual Release / Hide only).
  */
 export const visibilitySettingsTable = pgTable("visibility_settings", {
   key: text("key").primaryKey(),
   visible: integer("visible").notNull().default(0),
+  releaseAt: timestamp("release_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Mirror of BigQuery `z_academy_irp_2_0_l1_user_round_wise_summary`.
+ * One row per user — best student-facing rollup (status + attempt_number + score %).
+ */
+export const irpL1RoundWiseSummaryTable = pgTable("irp_l1_round_wise_summary", {
+  userId: text("user_id").primaryKey(),
+  hustlerAssessmentStatus: text("hustler_assessment_status"),
+  hustlerAssessmentScorePercentage: real("hustler_assessment_score_percentage"),
+  hustlerAssessmentNumber: text("hustler_assessment_number"),
+  hustlerAssessmentAttemptNumber: integer("hustler_assessment_attempt_number"),
+  hustlerAssessmentAttemptDate: timestamp("hustler_assessment_attempt_date", {
+    withTimezone: true,
+  }),
+  hustlerAssessmentTheorySectionAttemptStatus: text(
+    "hustler_assessment_theory_section_attempt_status",
+  ),
+  hustlerAssessmentTheorySectionScore: real("hustler_assessment_theory_section_score"),
+  hustlerAssessmentTheorySectionScorePercentage: real(
+    "hustler_assessment_theory_section_score_percentage",
+  ),
+  hustlerAssessmentCodingSectionAttemptStatus: text(
+    "hustler_assessment_coding_section_attempt_status",
+  ),
+  hustlerAssessmentCodingSectionScore: real("hustler_assessment_coding_section_score"),
+  hustlerAssessmentCodingSectionScorePercentage: real(
+    "hustler_assessment_coding_section_score_percentage",
+  ),
+  feProjectStatus: text("fe_project_status"),
+  feProjectScorePercentage: real("fe_project_score_percentage"),
+  feProjectAssessmentNumber: text("fe_project_assessment_number"),
+  feProjectAttemptNumber: integer("fe_project_attempt_number"),
+  feProjectAttemptDate: timestamp("fe_project_attempt_date", { withTimezone: true }),
+  feProjectReactJsCodingSectionAttemptStatus: text(
+    "fe_project_react_js_coding_section_attempt_status",
+  ),
+  feProjectReactJsCodingSectionScore: real("fe_project_react_js_coding_section_score"),
+  feProjectReactJsCodingSectionScorePercentage: real(
+    "fe_project_react_js_coding_section_score_percentage",
+  ),
+  nxtmockStatus: text("nxtmock_status"),
+  /** BQ column is misspelled `nxtmock_interivew_rating`. */
+  nxtmockInterviewRating: real("nxtmock_interview_rating"),
+  nxtmockInterviewNumber: text("nxtmock_interview_number"),
+  nxtmockAttemptNumber: integer("nxtmock_attempt_number"),
+  nxtmockAttemptDate: timestamp("nxtmock_attempt_date", { withTimezone: true }),
+  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /**

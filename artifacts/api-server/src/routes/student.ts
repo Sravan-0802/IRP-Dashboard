@@ -9,6 +9,7 @@ import {
   academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
   academyUserCourseProgressTable,
+  irpL1RoundWiseSummaryTable,
   contactUsMessagesTable,
   dashboardFeedbackTable,
   dashboardAnalyticsEventsTable,
@@ -171,57 +172,234 @@ function parseAssessmentLevel(level: string | null): number | null {
   return null;
 }
 
+/** Synthetic ids so the UI can prefer round-wise as the primary result cards. */
+export const ROUND_WISE_HUSTLER_ORG_ID = "round-wise:hustler";
+export const ROUND_WISE_FE_ORG_ID = "round-wise:fe";
+
+function scoreFromPct(pctVal: number | null | undefined): {
+  score: number;
+  max: number;
+  pct: number;
+} | null {
+  if (pctVal == null || !Number.isFinite(Number(pctVal))) return null;
+  const p = Math.round(Number(pctVal));
+  return { score: p, max: 100, pct: p };
+}
+
+function sectionFromAbsAndPct(
+  abs: number | null | undefined,
+  pctVal: number | null | undefined,
+): { score: number; max: number; pct: number } {
+  const score = abs != null && Number.isFinite(Number(abs)) ? Number(abs) : 0;
+  const p = pctVal != null && Number.isFinite(Number(pctVal)) ? Number(pctVal) : null;
+  if (p != null && p > 0 && score > 0) {
+    const max = score / (p / 100);
+    return { score, max: Number.isFinite(max) ? max : 100, pct: Math.round(p) };
+  }
+  if (p != null) return { score: Math.round(p), max: 100, pct: Math.round(p) };
+  return { score, max: score > 0 ? score : 0, pct: 0 };
+}
+
+type AssessmentApiRow = {
+  organisationAssessmentId: string;
+  assessmentTitle: string;
+  assessmentTag?: string;
+  level: string;
+  cycle?: string;
+  mcqScore: number;
+  mcqMax: number;
+  mcqPct: number;
+  codingScore: number;
+  codingMax: number;
+  codingPct: number;
+  overallScore: number;
+  overallMax: number;
+  overallPct: number;
+  assessmentStartDatetime?: string;
+  hasWrittenAssessment: boolean;
+  attemptNumber?: number;
+  assessmentStatus?: string;
+  levelNumber: number | null;
+};
+
+function mapDetailAssessmentRow(
+  a: typeof academyUserAssessmentDetailsTable.$inferSelect,
+): AssessmentApiRow {
+  const mcqScore = a.mcqUserSectionScore ?? 0;
+  const mcqMax = a.mcqSectionMaxScore ?? 0;
+  const codingScore = a.codingUserSectionScore ?? 0;
+  const codingMax = a.codingSectionMaxScore ?? 0;
+  const feScore = a.feUserSectionScore ?? 0;
+  const feMax = a.feSectionMaxScore ?? 0;
+  const overallScore =
+    a.assessmentUserScore ?? (mcqScore + codingScore + feScore || 0);
+  const overallMax =
+    a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || 0);
+  const hasWrittenAssessment =
+    a.assessmentUserScore != null ||
+    a.mcqUserSectionScore != null ||
+    a.codingUserSectionScore != null ||
+    a.feUserSectionScore != null ||
+    a.attemptNumber != null ||
+    (a.assessmentStatus != null &&
+      /qualified/i.test(a.assessmentStatus));
+
+  return {
+    organisationAssessmentId: a.organisationAssessmentId,
+    assessmentTitle: a.assessmentTitle ?? "Assessment",
+    assessmentTag: a.assessmentTag ?? undefined,
+    level: a.level ?? "",
+    cycle: a.cycle ?? undefined,
+    mcqScore,
+    mcqMax,
+    mcqPct: pct(a.mcqUserSectionScore, a.mcqSectionMaxScore),
+    codingScore,
+    codingMax,
+    codingPct: pct(a.codingUserSectionScore, a.codingSectionMaxScore),
+    overallScore,
+    overallMax,
+    overallPct: pct(
+      a.assessmentUserScore ?? (mcqScore + codingScore + feScore || null),
+      a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || null),
+    ),
+    assessmentStartDatetime: a.assessmentStartDatetime
+      ? a.assessmentStartDatetime.toISOString()
+      : a.userAssessmentStartDatetime
+        ? a.userAssessmentStartDatetime.toISOString()
+        : undefined,
+    hasWrittenAssessment,
+    attemptNumber: a.attemptNumber ?? undefined,
+    assessmentStatus: a.assessmentStatus ?? undefined,
+    levelNumber: parseAssessmentLevel(a.level),
+  };
+}
+
+/**
+ * Canonical results from round-wise summary (1 row / user).
+ * Detail tables remain for previous-attempt history.
+ */
+function assessmentsFromRoundWise(
+  summary: typeof irpL1RoundWiseSummaryTable.$inferSelect,
+): AssessmentApiRow[] {
+  const out: AssessmentApiRow[] = [];
+
+  const hustlerWritten =
+    summary.hustlerAssessmentStatus != null &&
+    /qualified|not\s*qualified/i.test(summary.hustlerAssessmentStatus);
+  if (hustlerWritten || summary.hustlerAssessmentAttemptNumber != null) {
+    const theory = sectionFromAbsAndPct(
+      summary.hustlerAssessmentTheorySectionScore,
+      summary.hustlerAssessmentTheorySectionScorePercentage,
+    );
+    const coding = sectionFromAbsAndPct(
+      summary.hustlerAssessmentCodingSectionScore,
+      summary.hustlerAssessmentCodingSectionScorePercentage,
+    );
+    const overallFromPct = scoreFromPct(summary.hustlerAssessmentScorePercentage);
+    const overallScore =
+      overallFromPct?.score ?? theory.score + coding.score;
+    const overallMax =
+      overallFromPct?.max ??
+      (theory.max + coding.max > 0 ? theory.max + coding.max : 100);
+    const overallPct =
+      overallFromPct?.pct ??
+      pct(overallScore, overallMax > 0 ? overallMax : null);
+    const num = summary.hustlerAssessmentNumber?.trim();
+    out.push({
+      organisationAssessmentId: ROUND_WISE_HUSTLER_ORG_ID,
+      assessmentTitle: num
+        ? `IRP 2.0 L1 Hustler Assessment ${num}`
+        : "IRP 2.0 L1 Hustler Assessment",
+      assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_HUSTLER-ASSESSMENT",
+      level: "L1",
+      cycle: num ?? undefined,
+      mcqScore: theory.score,
+      mcqMax: theory.max,
+      mcqPct: theory.pct,
+      codingScore: coding.score,
+      codingMax: coding.max,
+      codingPct: coding.pct,
+      overallScore,
+      overallMax,
+      overallPct,
+      assessmentStartDatetime: summary.hustlerAssessmentAttemptDate
+        ? summary.hustlerAssessmentAttemptDate.toISOString()
+        : undefined,
+      hasWrittenAssessment: true,
+      attemptNumber: summary.hustlerAssessmentAttemptNumber ?? undefined,
+      assessmentStatus: summary.hustlerAssessmentStatus ?? undefined,
+      levelNumber: 1,
+    });
+  }
+
+  const feWritten =
+    summary.feProjectStatus != null &&
+    /qualified|not\s*qualified/i.test(summary.feProjectStatus);
+  if (feWritten || summary.feProjectAttemptNumber != null) {
+    const fe = sectionFromAbsAndPct(
+      summary.feProjectReactJsCodingSectionScore,
+      summary.feProjectReactJsCodingSectionScorePercentage ??
+        summary.feProjectScorePercentage,
+    );
+    const overallFromPct = scoreFromPct(summary.feProjectScorePercentage);
+    const overallScore = overallFromPct?.score ?? fe.score;
+    const overallMax = overallFromPct?.max ?? (fe.max > 0 ? fe.max : 20);
+    const overallPct = overallFromPct?.pct ?? fe.pct;
+    const num = summary.feProjectAssessmentNumber?.trim();
+    out.push({
+      organisationAssessmentId: ROUND_WISE_FE_ORG_ID,
+      assessmentTitle: num
+        ? `IRP 2.0 FE Project ${num}`
+        : "IRP 2.0 FE Project",
+      assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_FE-PROJECT",
+      level: "L1 FE-PROJECT",
+      cycle: num ?? undefined,
+      mcqScore: 0,
+      mcqMax: 0,
+      mcqPct: 0,
+      codingScore: 0,
+      codingMax: 0,
+      codingPct: 0,
+      overallScore,
+      overallMax,
+      overallPct,
+      assessmentStartDatetime: summary.feProjectAttemptDate
+        ? summary.feProjectAttemptDate.toISOString()
+        : undefined,
+      hasWrittenAssessment: true,
+      attemptNumber: summary.feProjectAttemptNumber ?? undefined,
+      assessmentStatus: summary.feProjectStatus ?? undefined,
+      levelNumber: 1,
+    });
+  }
+
+  return out;
+}
+
 async function getAssessmentResultsResponse(userId: string) {
   if (!(await userHasAssessmentData(userId))) return null;
 
-  const rows = await db
-    .select()
-    .from(academyUserAssessmentDetailsTable)
-    .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+  const [detailRows, summaryRows] = await Promise.all([
+    db
+      .select()
+      .from(academyUserAssessmentDetailsTable)
+      .where(eq(academyUserAssessmentDetailsTable.userId, userId)),
+    db
+      .select()
+      .from(irpL1RoundWiseSummaryTable)
+      .where(eq(irpL1RoundWiseSummaryTable.userId, userId))
+      .limit(1),
+  ]);
 
+  const summary = summaryRows[0];
+  const fromRoundWise = summary ? assessmentsFromRoundWise(summary) : [];
+  const fromDetail = detailRows
+    .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
+    .map(mapDetailAssessmentRow);
+
+  // Round-wise first (primary results); detail rows = attempt history / legacy sits.
   return {
-    assessments: rows.map((a) => {
-      const mcqScore = a.mcqUserSectionScore ?? 0;
-      const mcqMax = a.mcqSectionMaxScore ?? 0;
-      const codingScore = a.codingUserSectionScore ?? 0;
-      const codingMax = a.codingSectionMaxScore ?? 0;
-      const feScore = a.feUserSectionScore ?? 0;
-      const feMax = a.feSectionMaxScore ?? 0;
-      const overallScore =
-        a.assessmentUserScore ?? (mcqScore + codingScore + feScore || 0);
-      const overallMax =
-        a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || 0);
-      const hasWrittenAssessment =
-        a.assessmentUserScore != null ||
-        a.mcqUserSectionScore != null ||
-        a.codingUserSectionScore != null ||
-        a.feUserSectionScore != null;
-
-      return {
-        organisationAssessmentId: a.organisationAssessmentId,
-        assessmentTitle: a.assessmentTitle ?? "Assessment",
-        assessmentTag: a.assessmentTag ?? undefined,
-        level: a.level ?? "",
-        cycle: a.cycle ?? undefined,
-        mcqScore,
-        mcqMax,
-        mcqPct: pct(a.mcqUserSectionScore, a.mcqSectionMaxScore),
-        codingScore,
-        codingMax,
-        codingPct: pct(a.codingUserSectionScore, a.codingSectionMaxScore),
-        overallScore,
-        overallMax,
-        overallPct: pct(
-          a.assessmentUserScore ?? (mcqScore + codingScore + feScore || null),
-          a.assessmentTotalScore ?? (mcqMax + codingMax + feMax || null),
-        ),
-        assessmentStartDatetime: a.assessmentStartDatetime
-          ? a.assessmentStartDatetime.toISOString()
-          : undefined,
-        hasWrittenAssessment,
-        levelNumber: parseAssessmentLevel(a.level),
-      };
-    }),
+    assessments: [...fromRoundWise, ...fromDetail],
   };
 }
 
@@ -920,8 +1098,10 @@ router.get("/student/visibility-settings", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const { map, updatedAt, syncByTable } = await getVisibilitySettings({ includeCounts: false });
-    res.json(toResponse(map, updatedAt, syncByTable));
+    const { map, releaseAtByKey, updatedAt, syncByTable } = await getVisibilitySettings({
+      includeCounts: false,
+    });
+    res.json(toResponse(map, releaseAtByKey, updatedAt, syncByTable));
   } catch (err) {
     req.log.error({ err }, "Failed to get visibility settings");
     res.status(500).json({ error: "Internal server error" });

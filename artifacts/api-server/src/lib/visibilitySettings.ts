@@ -31,7 +31,12 @@ export type VisibilityStageCard = {
     | "courseProgress";
   label: string;
   description: string;
+  /** Manual toggle stored in DB. */
   visibleToStudents: boolean;
+  /** Scheduled release ISO datetime, if set. */
+  releaseAt: string | null;
+  /** visible OR now >= releaseAt — what students actually see. */
+  effectiveVisible: boolean;
   awaitingApproval: boolean;
   sync: SyncInfo;
   counts: StageCounts | null;
@@ -80,19 +85,19 @@ const STAGE_META: Record<
     camelKey: "onlineL1Results",
     label: "Online L1 assessment results",
     description:
-      "Latest online L1 scores synced from BigQuery. Review cleared / not-cleared counts, then Release once to show on student dashboards.",
+      "Latest online L1 scores synced from BigQuery (incl. IRP 2.0 z_*). Review counts, then Release now or schedule a release time.",
   },
   fe_project_results: {
     camelKey: "feProjectResults",
     label: "FE Project results (≥18/20)",
     description:
-      "Latest FE Project Main / Main II scores from BigQuery (≥18/20 on any sit clears). Review counts, then Release to show on student dashboards.",
+      "Latest FE Project scores from BigQuery (≥18/20 clears). Review counts, then Release now or schedule.",
   },
   ai_mock_results: {
     camelKey: "aiMockResults",
     label: "AI Mock Interview results",
     description:
-      "Latest NxtMock ratings synced from BigQuery. Review counts, then Release to show AI Mock results on dashboards.",
+      "Latest NxtMock ratings synced from BigQuery. Review counts, then Release now or schedule.",
   },
   human_interview_results: {
     camelKey: "humanInterviewResults",
@@ -108,11 +113,28 @@ const STAGE_META: Record<
   },
 };
 
+export function isEffectivelyVisible(
+  visible: boolean,
+  releaseAt: Date | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (visible) return true;
+  if (releaseAt != null && !Number.isNaN(releaseAt.getTime()) && now >= releaseAt) return true;
+  return false;
+}
+
+type RowState = {
+  visible: boolean;
+  releaseAt: Date | null;
+};
+
 export function toResponse(
   map: VisibilitySettingsMap,
+  releaseAtByKey: Partial<Record<VisibilityKey, Date | null>>,
   updatedAt: Date | null,
   syncByTable: Record<string, SyncInfo> = {},
   countsByKey: Partial<Record<VisibilityKey, StageCounts>> = {},
+  now: Date = new Date(),
 ): VisibilitySettingsResponse {
   const stages: VisibilityStageCard[] = VISIBILITY_KEYS.map((key) => {
     const meta = STAGE_META[key];
@@ -126,6 +148,8 @@ export function toResponse(
         })
       : { tableName: null, status: null, rowCount: null, lastSyncedAt: null };
     const visibleToStudents = map[key];
+    const releaseAt = releaseAtByKey[key] ?? null;
+    const effectiveVisible = isEffectivelyVisible(visibleToStudents, releaseAt, now);
     const counts = countsByKey[key] ?? null;
     const hasSyncedData =
       Boolean(sync.lastSyncedAt) ||
@@ -137,18 +161,41 @@ export function toResponse(
       label: meta.label,
       description: meta.description,
       visibleToStudents,
-      awaitingApproval: hasSyncedData && !visibleToStudents,
+      releaseAt: releaseAt ? releaseAt.toISOString() : null,
+      effectiveVisible,
+      awaitingApproval: hasSyncedData && !effectiveVisible,
       sync,
       counts,
     };
   });
 
   return {
-    onlineL1Results: map.online_l1_results,
-    feProjectResults: map.fe_project_results,
-    aiMockResults: map.ai_mock_results,
-    humanInterviewResults: map.human_interview_results,
-    courseProgress: map.course_progress,
+    // Student-facing flags use effective visibility (manual OR scheduled).
+    onlineL1Results: isEffectivelyVisible(
+      map.online_l1_results,
+      releaseAtByKey.online_l1_results ?? null,
+      now,
+    ),
+    feProjectResults: isEffectivelyVisible(
+      map.fe_project_results,
+      releaseAtByKey.fe_project_results ?? null,
+      now,
+    ),
+    aiMockResults: isEffectivelyVisible(
+      map.ai_mock_results,
+      releaseAtByKey.ai_mock_results ?? null,
+      now,
+    ),
+    humanInterviewResults: isEffectivelyVisible(
+      map.human_interview_results,
+      releaseAtByKey.human_interview_results ?? null,
+      now,
+    ),
+    courseProgress: isEffectivelyVisible(
+      map.course_progress,
+      releaseAtByKey.course_progress ?? null,
+      now,
+    ),
     updatedAt: updatedAt ? updatedAt.toISOString() : null,
     stages,
   };
@@ -170,6 +217,7 @@ export async function ensureVisibilityDefaults(): Promise<void> {
       missing.map((key) => ({
         key,
         visible: DEFAULT_VISIBLE[key] ? 1 : 0,
+        releaseAt: null,
         updatedAt: now,
       })),
     )
@@ -178,7 +226,12 @@ export async function ensureVisibilityDefaults(): Promise<void> {
 
 async function loadSyncByTable(): Promise<Record<string, SyncInfo>> {
   const tables = [
-    ...new Set(Object.values(STAGE_SYNC_TABLE).filter((t): t is string => Boolean(t))),
+    ...new Set(
+      [
+        ...Object.values(STAGE_SYNC_TABLE).filter((t): t is string => Boolean(t)),
+        "irp_l1_round_wise_summary",
+      ],
+    ),
   ];
   if (tables.length === 0) return {};
   const rows = await db
@@ -201,6 +254,7 @@ export async function getVisibilitySettings(options?: {
   includeCounts?: boolean;
 }): Promise<{
   map: VisibilitySettingsMap;
+  releaseAtByKey: Partial<Record<VisibilityKey, Date | null>>;
   updatedAt: Date | null;
   syncByTable: Record<string, SyncInfo>;
   countsByKey: Partial<Record<VisibilityKey, StageCounts>>;
@@ -218,53 +272,104 @@ export async function getVisibilitySettings(options?: {
   ]);
 
   const map: VisibilitySettingsMap = { ...DEFAULT_VISIBLE };
+  const releaseAtByKey: Partial<Record<VisibilityKey, Date | null>> = {};
   let updatedAt: Date | null = null;
   for (const row of rows) {
     if ((VISIBILITY_KEYS as readonly string[]).includes(row.key)) {
-      map[row.key as VisibilityKey] = row.visible === 1;
+      const key = row.key as VisibilityKey;
+      map[key] = row.visible === 1;
+      releaseAtByKey[key] = row.releaseAt ?? null;
       if (!updatedAt || row.updatedAt > updatedAt) updatedAt = row.updatedAt;
     }
   }
-  return { map, updatedAt, syncByTable, countsByKey };
+  return { map, releaseAtByKey, updatedAt, syncByTable, countsByKey };
 }
 
+export type VisibilityUpdatePartial = {
+  visible?: Partial<VisibilitySettingsMap>;
+  /** ISO string, Date, or null to clear schedule. Omitted keys unchanged. */
+  releaseAt?: Partial<Record<VisibilityKey, string | Date | null>>;
+};
+
 export async function updateVisibilitySettings(
-  partial: Partial<VisibilitySettingsMap>,
+  partial: VisibilityUpdatePartial,
 ): Promise<{
   map: VisibilitySettingsMap;
+  releaseAtByKey: Partial<Record<VisibilityKey, Date | null>>;
   updatedAt: Date | null;
   syncByTable: Record<string, SyncInfo>;
   countsByKey: Partial<Record<VisibilityKey, StageCounts>>;
 }> {
   await ensureVisibilityDefaults();
   const now = new Date();
-  const entries = (Object.entries(partial) as [VisibilityKey, boolean][]).filter(
+  const visibleEntries = (Object.entries(partial.visible ?? {}) as [VisibilityKey, boolean][]).filter(
     ([key]) => (VISIBILITY_KEYS as readonly string[]).includes(key),
   );
+  const releaseEntries = (
+    Object.entries(partial.releaseAt ?? {}) as [VisibilityKey, string | Date | null][]
+  ).filter(([key]) => (VISIBILITY_KEYS as readonly string[]).includes(key));
 
-  for (const [key, visible] of entries) {
+  const keysTouched = new Set<VisibilityKey>([
+    ...visibleEntries.map(([k]) => k),
+    ...releaseEntries.map(([k]) => k),
+  ]);
+
+  for (const key of keysTouched) {
+    const visibleEntry = visibleEntries.find(([k]) => k === key);
+    const releaseEntry = releaseEntries.find(([k]) => k === key);
+
+    let releaseAtValue: Date | null | undefined = undefined;
+    if (releaseEntry) {
+      const raw = releaseEntry[1];
+      if (raw === null) releaseAtValue = null;
+      else if (raw instanceof Date) releaseAtValue = Number.isNaN(raw.getTime()) ? null : raw;
+      else {
+        const d = new Date(String(raw));
+        releaseAtValue = Number.isNaN(d.getTime()) ? null : d;
+      }
+    }
+
+    // Release now → visible=true clears schedule unless a new releaseAt is also sent.
+    // Hide → visible=false clears schedule unless a future releaseAt is also sent.
+    if (visibleEntry && releaseAtValue === undefined) {
+      if (visibleEntry[1] === true || visibleEntry[1] === false) {
+        releaseAtValue = null;
+      }
+    }
+
+    const set: { visible?: number; releaseAt?: Date | null; updatedAt: Date } = {
+      updatedAt: now,
+    };
+    if (visibleEntry) set.visible = visibleEntry[1] ? 1 : 0;
+    if (releaseAtValue !== undefined) set.releaseAt = releaseAtValue;
+
+    const insertVisible =
+      visibleEntry != null ? (visibleEntry[1] ? 1 : 0) : DEFAULT_VISIBLE[key] ? 1 : 0;
+    const insertReleaseAt = releaseAtValue !== undefined ? releaseAtValue : null;
+
     await db
       .insert(visibilitySettingsTable)
-      .values({ key, visible: visible ? 1 : 0, updatedAt: now })
+      .values({
+        key,
+        visible: insertVisible,
+        releaseAt: insertReleaseAt,
+        updatedAt: now,
+      })
       .onConflictDoUpdate({
         target: visibilitySettingsTable.key,
-        set: { visible: visible ? 1 : 0, updatedAt: now },
+        set,
       });
   }
 
   return getVisibilitySettings({ includeCounts: true });
 }
 
-/** Snake_case keys accepted from admin PUT body. */
-export function parseAdminSettingsBody(
-  raw: unknown,
-): Partial<VisibilitySettingsMap> | null {
+/** Snake_case / camelCase keys accepted from admin PUT body. */
+export function parseAdminSettingsBody(raw: unknown): VisibilityUpdatePartial | null {
   if (!raw || typeof raw !== "object") return null;
-  const settings = (raw as { settings?: unknown }).settings ?? raw;
+  const root = raw as Record<string, unknown>;
+  const settings = (root.settings ?? raw) as Record<string, unknown>;
   if (!settings || typeof settings !== "object") return null;
-
-  const out: Partial<VisibilitySettingsMap> = {};
-  const obj = settings as Record<string, unknown>;
 
   const aliases: Record<string, VisibilityKey> = {
     online_l1_results: "online_l1_results",
@@ -279,11 +384,41 @@ export function parseAdminSettingsBody(
     courseProgress: "course_progress",
   };
 
-  for (const [k, v] of Object.entries(obj)) {
+  const visible: Partial<VisibilitySettingsMap> = {};
+  for (const [k, v] of Object.entries(settings)) {
     const key = aliases[k];
     if (!key || typeof v !== "boolean") continue;
-    out[key] = v;
+    visible[key] = v;
   }
 
-  return Object.keys(out).length > 0 ? out : null;
+  const releaseAt: Partial<Record<VisibilityKey, string | Date | null>> = {};
+  const releaseRoot =
+    (root.releaseAt as Record<string, unknown> | undefined) ??
+    (root.release_at as Record<string, unknown> | undefined) ??
+    (settings.releaseAt as Record<string, unknown> | undefined) ??
+    (settings.release_at as Record<string, unknown> | undefined);
+
+  if (releaseRoot && typeof releaseRoot === "object") {
+    for (const [k, v] of Object.entries(releaseRoot)) {
+      const key = aliases[k];
+      if (!key) continue;
+      if (v === null) releaseAt[key] = null;
+      else if (typeof v === "string") releaseAt[key] = v;
+    }
+  }
+
+  // Also accept flat `onlineL1ResultsReleaseAt` style
+  for (const [k, v] of Object.entries(settings)) {
+    const m = /^(onlineL1Results|feProjectResults|aiMockResults|humanInterviewResults|courseProgress)ReleaseAt$/.exec(
+      k,
+    );
+    if (!m) continue;
+    const key = aliases[m[1]];
+    if (!key) continue;
+    if (v === null) releaseAt[key] = null;
+    else if (typeof v === "string") releaseAt[key] = v;
+  }
+
+  if (Object.keys(visible).length === 0 && Object.keys(releaseAt).length === 0) return null;
+  return { visible, releaseAt };
 }

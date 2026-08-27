@@ -120,6 +120,8 @@ type VisibilityStage = {
   label: string;
   description: string;
   visibleToStudents: boolean;
+  releaseAt: string | null;
+  effectiveVisible: boolean;
   awaitingApproval: boolean;
   sync: VisibilitySyncInfo;
   counts: VisibilityStageCounts | null;
@@ -419,7 +421,7 @@ export default function AnalyticsPage() {
 
   const [visibility, setVisibility] = useState<VisibilitySettings | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
-  const [visibilitySavingField, setVisibilitySavingField] = useState<VisibilityFlag | "__all__" | null>(null);
+  const [visibilitySavingField, setVisibilitySavingField] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState("");
   const [syncRunning, setSyncRunning] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -530,6 +532,27 @@ export default function AnalyticsPage() {
       setVisibility(body as VisibilitySettings);
     } catch (err) {
       setVisibilityError(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setVisibilitySavingField(null);
+    }
+  }
+
+  /** Schedule (or clear) automatic release for a stage. ISO string or null. */
+  async function setStageReleaseAt(field: VisibilityFlag, releaseAt: string | null) {
+    if (!apiKey || visibilitySavingField) return;
+    setVisibilitySavingField(`${field}:release`);
+    setVisibilityError("");
+    try {
+      const res = await fetch("/api/admin/visibility-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify({ releaseAt: { [field]: releaseAt } }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to schedule");
+      setVisibility(body as VisibilitySettings);
+    } catch (err) {
+      setVisibilityError(err instanceof Error ? err.message : "Could not schedule release");
     } finally {
       setVisibilitySavingField(null);
     }
@@ -1527,8 +1550,8 @@ export default function AnalyticsPage() {
               <p className="mb-4 text-sm text-[#6e6a8a]">
                 After <strong>Sync now</strong>, latest counts and sync timestamps appear below for every
                 stage (Online L1, FE Project, AI Mock, etc.). Students do not see those results until you
-                release them — use <strong>Release all awaiting</strong> for one click, or release each
-                stage individually.
+                <strong> Release now</strong>, or until a scheduled <strong>Release at</strong> time
+                passes — use <strong>Release all awaiting</strong> for one click, or manage each stage.
               </p>
 
               {visibility?.stages?.length ? (
@@ -1537,7 +1560,7 @@ export default function AnalyticsPage() {
                     <span
                       key={`chip-${stage.key}`}
                       className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                        stage.visibleToStudents
+                        stage.effectiveVisible ?? stage.visibleToStudents
                           ? "bg-emerald-100 text-emerald-900"
                           : stage.awaitingApproval
                             ? "bg-amber-100 text-amber-900"
@@ -1545,8 +1568,10 @@ export default function AnalyticsPage() {
                       }`}
                     >
                       {stage.label}:{" "}
-                      {stage.visibleToStudents
-                        ? "Released"
+                      {stage.effectiveVisible ?? stage.visibleToStudents
+                        ? stage.visibleToStudents
+                          ? "Released"
+                          : "Scheduled (live)"
                         : stage.awaitingApproval
                           ? "Awaiting approval"
                           : "Hidden"}
@@ -1580,14 +1605,17 @@ export default function AnalyticsPage() {
                   {visibility.stages.map((stage) => {
                     const synced = Boolean(stage.sync.lastSyncedAt);
                     const saving =
-                      visibilitySavingField === stage.camelKey || visibilitySavingField === "__all__";
+                      visibilitySavingField === stage.camelKey ||
+                      visibilitySavingField === `${stage.camelKey}:release` ||
+                      visibilitySavingField === "__all__";
+                    const isLive = stage.effectiveVisible ?? stage.visibleToStudents;
                     return (
                       <div
                         key={stage.key}
                         className={`rounded-xl border px-4 py-3 ${
                           stage.awaitingApproval
                             ? "border-amber-200 bg-amber-50/60"
-                            : stage.visibleToStudents
+                            : isLive
                               ? "border-emerald-200 bg-emerald-50/50"
                               : "border-[rgba(103,65,217,0.10)] bg-[#faf9ff]"
                         }`}
@@ -1601,14 +1629,21 @@ export default function AnalyticsPage() {
                                   Awaiting approval
                                 </span>
                               )}
-                              {stage.visibleToStudents && (
+                              {(stage.effectiveVisible ?? stage.visibleToStudents) && (
                                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
                                   Visible to students
+                                  {!stage.visibleToStudents && stage.releaseAt ? " (scheduled)" : ""}
                                 </span>
                               )}
-                              {!stage.visibleToStudents && !stage.awaitingApproval && (
+                              {!(stage.effectiveVisible ?? stage.visibleToStudents) &&
+                                !stage.awaitingApproval && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
                                   Hidden
+                                </span>
+                              )}
+                              {stage.releaseAt && !(stage.effectiveVisible ?? false) && (
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-800">
+                                  Scheduled {formatDate(stage.releaseAt)}
                                 </span>
                               )}
                             </div>
@@ -1682,30 +1717,87 @@ export default function AnalyticsPage() {
                               </div>
                             )}
                           </div>
-                          <div className="flex shrink-0 flex-wrap gap-2">
-                            {stage.visibleToStudents ? (
+                          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
+                            <div className="flex flex-wrap gap-2">
+                              {(stage.effectiveVisible ?? stage.visibleToStudents) &&
+                              stage.visibleToStudents ? (
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void setStageVisibility(stage.camelKey, false)}
+                                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                                >
+                                  {saving && visibilitySavingField === stage.camelKey
+                                    ? "Saving…"
+                                    : "Hide from students"}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void setStageVisibility(stage.camelKey, true)}
+                                  className="rounded-xl bg-[#6741d9] px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                                >
+                                  {saving && visibilitySavingField === stage.camelKey
+                                    ? "Saving…"
+                                    : "Release now"}
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[rgba(103,65,217,0.12)] bg-white px-2 py-1.5">
+                              <label
+                                htmlFor={`release-at-${stage.key}`}
+                                className="text-[10px] font-bold uppercase tracking-wide text-[#6e6a8a]"
+                              >
+                                Release at
+                              </label>
+                              <input
+                                id={`release-at-${stage.key}`}
+                                type="datetime-local"
+                                disabled={saving || visibilitySavingField === `${stage.camelKey}:release`}
+                                defaultValue={
+                                  stage.releaseAt
+                                    ? (() => {
+                                        const d = new Date(stage.releaseAt);
+                                        const pad = (n: number) => String(n).padStart(2, "0");
+                                        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                      })()
+                                    : ""
+                                }
+                                key={`${stage.key}-${stage.releaseAt ?? "none"}`}
+                                className="rounded border border-[rgba(103,65,217,0.18)] px-2 py-1 text-xs text-[#0d1117]"
+                              />
                               <button
                                 type="button"
                                 disabled={saving}
-                                onClick={() => void setStageVisibility(stage.camelKey, false)}
-                                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+                                onClick={() => {
+                                  const el = document.getElementById(
+                                    `release-at-${stage.key}`,
+                                  ) as HTMLInputElement | null;
+                                  const v = el?.value?.trim() ?? "";
+                                  if (!v) {
+                                    void setStageReleaseAt(stage.camelKey, null);
+                                    return;
+                                  }
+                                  void setStageReleaseAt(stage.camelKey, new Date(v).toISOString());
+                                }}
+                                className="rounded-lg bg-[#3b3069] px-2.5 py-1 text-[11px] font-bold text-white disabled:opacity-50"
                               >
-                                {saving && visibilitySavingField === stage.camelKey
+                                {visibilitySavingField === `${stage.camelKey}:release`
                                   ? "Saving…"
-                                  : "Hide from students"}
+                                  : "Schedule"}
                               </button>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={saving}
-                                onClick={() => void setStageVisibility(stage.camelKey, true)}
-                                className="rounded-xl bg-[#6741d9] px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-                              >
-                                {saving && visibilitySavingField === stage.camelKey
-                                  ? "Saving…"
-                                  : "Release to students"}
-                              </button>
-                            )}
+                              {stage.releaseAt ? (
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void setStageReleaseAt(stage.camelKey, null)}
+                                  className="text-[11px] font-semibold text-slate-600 underline disabled:opacity-50"
+                                >
+                                  Clear
+                                </button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </div>

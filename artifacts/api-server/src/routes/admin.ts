@@ -652,10 +652,10 @@ router.get("/admin/visibility-settings", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const { map, updatedAt, syncByTable, countsByKey } = await getVisibilitySettings({
+    const { map, releaseAtByKey, updatedAt, syncByTable, countsByKey } = await getVisibilitySettings({
       includeCounts: true,
     });
-    res.json(toResponse(map, updatedAt, syncByTable, countsByKey));
+    res.json(toResponse(map, releaseAtByKey, updatedAt, syncByTable, countsByKey));
   } catch (err) {
     req.log.error({ err }, "Failed to get visibility settings");
     res.status(500).json({ error: "Internal server error" });
@@ -663,7 +663,7 @@ router.get("/admin/visibility-settings", async (req, res) => {
 });
 
 // PUT /api/admin/visibility-settings — upsert toggles (admin API key required)
-// Body: { settings: { onlineL1Results?: boolean, feProjectResults?: boolean, ... } }
+// Body: { settings: { onlineL1Results?: boolean, ... }, releaseAt?: { onlineL1Results?: string|null } }
 //    or { settings: { online_l1_results?: boolean, ... } }
 router.put("/admin/visibility-settings", async (req, res) => {
   try {
@@ -675,12 +675,13 @@ router.put("/admin/visibility-settings", async (req, res) => {
     if (!partial) {
       res.status(400).json({
         error:
-          "Provide settings with at least one boolean: onlineL1Results, feProjectResults, aiMockResults, courseProgress",
+          "Provide settings and/or releaseAt with at least one key: onlineL1Results, feProjectResults, aiMockResults, courseProgress",
       });
       return;
     }
-    const { map, updatedAt, syncByTable, countsByKey } = await updateVisibilitySettings(partial);
-    res.json(toResponse(map, updatedAt, syncByTable, countsByKey));
+    const { map, releaseAtByKey, updatedAt, syncByTable, countsByKey } =
+      await updateVisibilitySettings(partial);
+    res.json(toResponse(map, releaseAtByKey, updatedAt, syncByTable, countsByKey));
   } catch (err) {
     req.log.error({ err }, "Failed to update visibility settings");
     res.status(500).json({ error: "Internal server error" });

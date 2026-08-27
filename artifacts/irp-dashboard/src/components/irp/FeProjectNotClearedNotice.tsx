@@ -47,7 +47,7 @@ export function FeProjectNotClearedNotice({
   const pct = fe ? assessmentOverallPct(fe) : 0;
   const score = fe?.overallScore ?? 0;
   const max = fe?.overallMax ?? 20;
-  const previousSits = listAttemptedFeProjectAssessments(assessments).slice(1);
+  const previousSits = listAttemptedFeProjectAssessments(assessments);
 
   return (
     <div

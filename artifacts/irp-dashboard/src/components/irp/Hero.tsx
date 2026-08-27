@@ -65,9 +65,11 @@ function PulsingDot({ color }: { color: string }) {
 function ClearedAssessmentHero({
   level,
   examDateLabel,
+  attemptNumber,
 }: {
   level: 1 | 2 | 3;
   examDateLabel: string;
+  attemptNumber?: number | null;
 }) {
   const meta = LEVEL_META[level];
 
@@ -86,7 +88,9 @@ function ClearedAssessmentHero({
             You cleared the assessment
           </h2>
           <p className="mt-2 max-w-md text-sm text-muted2">
-            Great work on {examDateLabel}. Continue with post-assessment tasks below.
+            Great work on {examDateLabel}
+            {attemptNumber != null ? ` (Attempt ${attemptNumber})` : ""}. Continue with
+            post-assessment tasks below.
           </p>
         </div>
 
@@ -315,6 +319,7 @@ export function Hero({
       <ClearedAssessmentHero
         level={level}
         examDateLabel={clearedDateLabel}
+        attemptNumber={pickAssessmentForLevel(assessments, 1)?.attemptNumber}
       />
     );
   }
@@ -405,6 +410,7 @@ export function Hero({
         <ClearedAssessmentHero
           level={level}
           examDateLabel={completedDateLabel}
+          attemptNumber={pickAssessmentForLevel(assessments, level)?.attemptNumber}
         />
       );
     }
@@ -513,6 +519,7 @@ export function Hero({
         <ClearedAssessmentHero
           level={level}
           examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
+          attemptNumber={pickAssessmentForLevel(assessments, level)?.attemptNumber}
         />
       );
     }

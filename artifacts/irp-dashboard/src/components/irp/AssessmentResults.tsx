@@ -41,15 +41,14 @@ export function AssessmentResults({
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
 
-  // Latest attempted sit drives hero-equivalent status + main score cards / clearance.
+  // Latest result card = round-wise (or best detail). History = detail sits only.
   const assessment =
     level === 1
       ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
       : pickAssessmentForLevel(assessments, level);
 
-  const attemptedHistory =
-    level === 1 ? listAttemptedL1OnlineAssessments(assessments) : assessment ? [assessment] : [];
-  const previousSits = attemptedHistory.slice(1);
+  const previousSits =
+    level === 1 ? listAttemptedL1OnlineAssessments(assessments) : [];
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
   const cycle1Cleared = level === 1 && isCycle1Cleared(assessments);
@@ -131,6 +130,7 @@ export function AssessmentResults({
           </h3>
           <p className="mt-0.5 text-xs text-muted2">
             {title} · Latest: {resultsDateLabel}
+            {assessment?.attemptNumber != null ? ` · Attempt ${assessment.attemptNumber}` : ""}
           </p>
           {assessment && (assessmentStatus === "attempted_not_cleared" || assessmentStatus === "done") ? (
             <p className="mt-1 text-xs text-muted2">
@@ -193,6 +193,7 @@ export function AssessmentResults({
               <thead>
                 <tr className="border-b border-[rgba(103,65,217,0.10)] bg-[rgba(103,65,217,0.04)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
                   <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">Attempt</th>
                   <th className="px-3 py-2">Overall</th>
                   <th className="px-3 py-2">MCQ</th>
                   <th className="px-3 py-2">Coding</th>
@@ -209,6 +210,9 @@ export function AssessmentResults({
                     >
                       <td className="px-3 py-2.5 font-medium text-ink">
                         {getExamDateLabelForAssessment(sit)}
+                      </td>
+                      <td className="px-3 py-2.5 text-[#6e6a8a]">
+                        {sit.attemptNumber != null ? sit.attemptNumber : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-[#6e6a8a]">
                         {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({pct}%)

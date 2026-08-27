@@ -74,6 +74,10 @@ export interface AssessmentResult {
   assessmentStartDatetime?: string;
   /** True when assessment_user_score or section scores exist — the exam was attempted. */
   hasWrittenAssessment: boolean;
+  /** How many times the student sat (from z_* attempt_number). */
+  attemptNumber?: number;
+  /** QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED when synced from z_*. */
+  assessmentStatus?: string;
 }
 
 export interface StudentAssessments {

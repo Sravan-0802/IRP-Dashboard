@@ -1,4 +1,9 @@
-import { db, academyUserNxtmockDetailsTable, studentsTable } from "@workspace/db";
+import {
+  db,
+  academyUserNxtmockDetailsTable,
+  irpL1RoundWiseSummaryTable,
+  studentsTable,
+} from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 
 /** Minimum average rating (inclusive) to clear the AI Mock Interview. */
@@ -17,10 +22,18 @@ export type NxtmockInterviewResponse = {
   htmlRating: number | null;
   reactJsRating: number | null;
   averageRating: number | null;
+  attemptNumber: number | null;
+  interviewStatus: string | null;
   cleared: boolean;
 };
 
-export function isNxtmockCleared(averageRating: number | null | undefined): boolean {
+export function isNxtmockCleared(
+  averageRating: number | null | undefined,
+  interviewStatus?: string | null,
+): boolean {
+  if (interviewStatus && /qualified/i.test(interviewStatus) && !/not\s*qualified/i.test(interviewStatus)) {
+    return true;
+  }
   return averageRating != null && averageRating >= NXTMOCK_CLEAR_RATING_THRESHOLD;
 }
 
@@ -40,33 +53,102 @@ function rowToResponse(
     htmlRating: row.htmlRating,
     reactJsRating: row.reactJsRating,
     averageRating: row.averageRating,
-    cleared: isNxtmockCleared(row.averageRating),
+    attemptNumber: row.attemptNumber ?? null,
+    interviewStatus: row.interviewStatus ?? null,
+    cleared: isNxtmockCleared(row.averageRating, row.interviewStatus),
   };
 }
 
-/** Latest synced row per user, preferring the highest average rating when multiple exist. */
+/**
+ * Prefer round-wise for Attempt N / status / avg rating; skill bars from detail
+ * (section_wise_rating_json synced into discrete columns).
+ */
 export async function getNxtmockInterviewForUser(
   userId: string,
 ): Promise<NxtmockInterviewResponse | null> {
-  const rows = await db
-    .select()
-    .from(academyUserNxtmockDetailsTable)
-    .where(eq(academyUserNxtmockDetailsTable.userId, userId))
-    .orderBy(desc(academyUserNxtmockDetailsTable.syncedAt));
+  const [detailRows, summaryRows] = await Promise.all([
+    db
+      .select()
+      .from(academyUserNxtmockDetailsTable)
+      .where(eq(academyUserNxtmockDetailsTable.userId, userId))
+      .orderBy(desc(academyUserNxtmockDetailsTable.syncedAt)),
+    db
+      .select()
+      .from(irpL1RoundWiseSummaryTable)
+      .where(eq(irpL1RoundWiseSummaryTable.userId, userId))
+      .limit(1),
+  ]);
 
-  if (rows.length === 0) return null;
+  const summary = summaryRows[0];
+  const hasRoundWiseNxtmock =
+    summary != null &&
+    (summary.nxtmockStatus != null ||
+      summary.nxtmockAttemptNumber != null ||
+      summary.nxtmockInterviewRating != null);
 
-  const best = rows.reduce((current, candidate) => {
-    const currentAvg = current.averageRating ?? -Infinity;
-    const candidateAvg = candidate.averageRating ?? -Infinity;
-    if (candidateAvg > currentAvg) return candidate;
-    if (candidateAvg < currentAvg) return current;
-    const currentSynced = current.syncedAt?.getTime() ?? 0;
-    const candidateSynced = candidate.syncedAt?.getTime() ?? 0;
-    return candidateSynced > currentSynced ? candidate : current;
-  });
+  const bestDetail =
+    detailRows.length === 0
+      ? null
+      : detailRows.reduce((current, candidate) => {
+          const currentAvg = current.averageRating ?? -Infinity;
+          const candidateAvg = candidate.averageRating ?? -Infinity;
+          if (candidateAvg > currentAvg) return candidate;
+          if (candidateAvg < currentAvg) return current;
+          const currentAttempt = current.attemptNumber ?? -1;
+          const candidateAttempt = candidate.attemptNumber ?? -1;
+          if (candidateAttempt > currentAttempt) return candidate;
+          if (candidateAttempt < currentAttempt) return current;
+          const currentSynced = current.syncedAt?.getTime() ?? 0;
+          const candidateSynced = candidate.syncedAt?.getTime() ?? 0;
+          return candidateSynced > currentSynced ? candidate : current;
+        });
 
-  return rowToResponse(best);
+  if (!hasRoundWiseNxtmock && !bestDetail) return null;
+
+  if (hasRoundWiseNxtmock && summary) {
+    const skills = bestDetail
+      ? {
+          selfIntroRating: bestDetail.selfIntroRating,
+          javascriptCodingRating: bestDetail.javascriptCodingRating,
+          javascriptRating: bestDetail.javascriptRating,
+          cssRating: bestDetail.cssRating,
+          htmlRating: bestDetail.htmlRating,
+          reactJsRating: bestDetail.reactJsRating,
+        }
+      : {
+          selfIntroRating: null,
+          javascriptCodingRating: null,
+          javascriptRating: null,
+          cssRating: null,
+          htmlRating: null,
+          reactJsRating: null,
+        };
+
+    const averageRating =
+      summary.nxtmockInterviewRating ?? bestDetail?.averageRating ?? null;
+    const interviewStatus =
+      summary.nxtmockStatus ?? bestDetail?.interviewStatus ?? null;
+
+    return {
+      interviewId: bestDetail?.interviewId ?? "round-wise:nxtmock",
+      interviewTitle:
+        bestDetail?.interviewTitle ??
+        (summary.nxtmockInterviewNumber
+          ? `AI Mock Interview ${summary.nxtmockInterviewNumber}`
+          : "AI Mock Interview"),
+      examType: bestDetail?.examType ?? null,
+      level: bestDetail?.level ?? "L1",
+      cycle: summary.nxtmockInterviewNumber ?? bestDetail?.cycle ?? null,
+      ...skills,
+      averageRating,
+      attemptNumber:
+        summary.nxtmockAttemptNumber ?? bestDetail?.attemptNumber ?? null,
+      interviewStatus,
+      cleared: isNxtmockCleared(averageRating, interviewStatus),
+    };
+  }
+
+  return bestDetail ? rowToResponse(bestDetail) : null;
 }
 
 /** Persist L1_HUMAN_INTERVIEW when synced NxtMock data shows a cleared attempt. */

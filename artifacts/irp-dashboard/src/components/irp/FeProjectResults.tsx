@@ -37,8 +37,8 @@ export function FeProjectResults({
   const feCleared = hasClearedFeProject(assessments, threshold);
   const fe = pickFeProjectAssessment(assessments);
   const hasScoreData = fe != null && feCleared;
-  const attemptedHistory = listAttemptedFeProjectAssessments(assessments);
-  const previousSits = attemptedHistory.slice(1);
+  // Detail sits only (round-wise primary is excluded from this list).
+  const previousSits = listAttemptedFeProjectAssessments(assessments);
 
   if (!clearedL1 || !feCleared || !fe) return null;
 
@@ -86,6 +86,7 @@ export function FeProjectResults({
               <p className="mt-0.5 line-clamp-1 text-[11px] text-muted2">{FE_PROJECT_CLEARED_BODY}</p>
               <p className="mt-0.5 text-[10px] text-muted2">
                 Latest: {latestDateLabel}
+                {fe.attemptNumber != null ? ` · Attempt ${fe.attemptNumber}` : ""}
                 {!latestClears
                   ? " · Cleared on an earlier sit (≥18/20)"
                   : previousSits.length > 0

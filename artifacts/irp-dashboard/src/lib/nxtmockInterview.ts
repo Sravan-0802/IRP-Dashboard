@@ -16,6 +16,8 @@ export type NxtmockInterview = {
   htmlRating: number | null;
   reactJsRating: number | null;
   averageRating: number | null;
+  attemptNumber?: number | null;
+  interviewStatus?: string | null;
   cleared: boolean;
 };
 
@@ -24,7 +26,14 @@ export type NxtmockInterviewResponse = {
 };
 
 export function isNxtmockCleared(interview: NxtmockInterview | null | undefined): boolean {
-  return interview?.cleared === true;
+  if (!interview) return false;
+  if (interview.cleared === true) return true;
+  const status = interview.interviewStatus;
+  if (status && /qualified/i.test(status) && !/not\s*qualified/i.test(status)) return true;
+  return (
+    interview.averageRating != null &&
+    interview.averageRating >= NXTMOCK_CLEAR_RATING_THRESHOLD
+  );
 }
 
 export function hasNxtmockAttempt(interview: NxtmockInterview | null | undefined): boolean {
