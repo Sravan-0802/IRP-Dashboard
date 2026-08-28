@@ -15,18 +15,15 @@ import {
   FE_PROJECT_MAIN_II_BODY,
   FE_PROJECT_MAIN_II_LABEL,
   FE_PROJECT_MAIN_II_TITLE,
-  FE_PROJECT_MAIN_II_URL,
   FE_PROJECT_REATTEMPT_BODY,
   FE_PROJECT_REATTEMPT_LABEL,
 } from "@/lib/feProjectConfig";
-import { useStudentAccess, isAssessmentWindowEnded } from "@/lib/useStudentAccess";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { Pill } from "./ui";
 
 /**
- * First-time FE CTA (live grant or static URL while the window is open).
- * Re-attempt CTAs only appear when admin uploads a *new* live access grant —
- * never reuse the old/static link after the sit is done.
- * Attempted-not-cleared scores without a live grant are shown by FeProjectNotClearedNotice.
+ * FE start/re-attempt CTA — URL only from a live access-grant row.
+ * Scores come from assessment rows; FeProjectNotClearedNotice covers no-grant cases.
  */
 export function FeProjectCallout({
   journey,
@@ -42,8 +39,7 @@ export function FeProjectCallout({
   userId?: string;
 }) {
   const { findGrant } = useStudentAccess();
-  const grant = findGrant("fe_project", "main");
-  const liveGrantUrl = grant?.url?.trim() || null;
+  const href = findGrant("fe_project", "main")?.url?.trim() || null;
   const threshold = feProjectMinScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
 
   const clearedL1 = isCycle1Cleared(assessments, userId);
@@ -52,15 +48,8 @@ export function FeProjectCallout({
   const feAssessment = pickFeProjectAssessment(assessments);
   const fePct = feAssessment ? assessmentOverallPct(feAssessment) : 0;
   const isReattempt = feAttempted && !feCleared;
-  const windowEnded = isAssessmentWindowEnded(feAssessment?.assessmentEndDatetime);
 
-  // Re-attempt: only a fresh admin grant. First sit: grant, else static until window ends.
-  const href = isReattempt
-    ? liveGrantUrl
-    : liveGrantUrl || (!windowEnded ? FE_PROJECT_MAIN_II_URL : null);
-
-  if (!clearedL1 || feCleared) return null;
-  if (!href) return null;
+  if (!clearedL1 || feCleared || !href) return null;
 
   return (
     <div

@@ -200,7 +200,7 @@ export async function getNxtmockInterviewForUser(
           : "AI Mock Interview"),
       examType: bestDetail?.examType ?? null,
       level: bestDetail?.level ?? "L1",
-      cycle: summary.nxtmockInterviewNumber ?? bestDetail?.cycle ?? null,
+      cycle: summary.nxtmockInterviewNumber ?? null,
       ...skills,
       averageRating,
       attemptNumber:

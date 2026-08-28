@@ -12,22 +12,16 @@ import {
   NXTMOCK_MAIN_II_BODY,
   NXTMOCK_MAIN_LABEL,
   NXTMOCK_MAIN_TITLE,
-  NXTMOCK_MAIN_URL,
   NXTMOCK_MAIN_WINDOW_HINT,
   NXTMOCK_MAIN_WINDOW_LABEL,
   NXTMOCK_MOCK_HINT,
   NXTMOCK_MOCK_LABEL,
   NXTMOCK_MOCK_TITLE,
-  NXTMOCK_MOCK_URL,
   NXTMOCK_REATTEMPT_BODY,
 } from "@/lib/nxtmockConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 
-/**
- * First sit: live grant or static practice URLs.
- * Re-attempt: only show start links when admin uploads a new live grant —
- * never reuse expired/static links. Previous score stays visible either way.
- */
+/** AI Mock CTA — links only from live access grants; scores from nxtmock row. */
 export function AiMockCallout({
   assessments,
   nxtmock,
@@ -42,10 +36,13 @@ export function AiMockCallout({
   userId?: string;
 }) {
   const { findGrant } = useStudentAccess();
-  const mainGrant = findGrant("ai_mock", "main") ?? findGrant("ai_mock", "default");
-  const mockGrant = findGrant("ai_mock", "mock");
-  const liveMainUrl = mainGrant?.url?.trim() || null;
-  const liveMockUrl = mockGrant?.url?.trim() || null;
+  const mainUrl =
+    findGrant("ai_mock", "main")?.url?.trim() ||
+    findGrant("ai_mock", "default")?.url?.trim() ||
+    null;
+  const mockUrl = findGrant("ai_mock", "mock")?.url?.trim() || null;
+  const showMain = Boolean(mainUrl);
+  const showMock = Boolean(mockUrl);
 
   const clearedL1 = isCycle1Cleared(assessments, userId);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
@@ -53,14 +50,9 @@ export function AiMockCallout({
   const mockAttempted = hasNxtmockAttempt(nxtmock);
   const isReattempt = mockAttempted && !mockCleared;
 
-  const resolvedMainUrl = isReattempt ? liveMainUrl : liveMainUrl || NXTMOCK_MAIN_URL;
-  const resolvedMockUrl = isReattempt ? liveMockUrl : liveMockUrl || NXTMOCK_MOCK_URL;
-  const showMain = Boolean(resolvedMainUrl);
-  const showMock = Boolean(resolvedMockUrl);
-
   if (!clearedL1 || !feCleared || mockCleared) return null;
-  // Re-attempt with no new grants: still show previous score, no start links.
-  if (!isReattempt && !showMain && !showMock) return null;
+  // No grant + never attempted → nothing to show from tables.
+  if (!showMain && !showMock && !isReattempt) return null;
 
   return (
     <div
@@ -96,7 +88,7 @@ export function AiMockCallout({
             {isReattempt
               ? showMain || showMock
                 ? NXTMOCK_REATTEMPT_BODY
-                : "You attempted the AI Mock Interview but have not cleared yet. A new re-attempt link will appear here when the team releases it."
+                : "You attempted the AI Mock Interview but have not cleared yet. A new link will appear when a grant is uploaded."
               : NXTMOCK_MAIN_II_BODY}
           </p>
           {isReattempt && nxtmock?.averageRating != null ? (
@@ -127,7 +119,7 @@ export function AiMockCallout({
               </p>
               <p className="mt-1.5 text-xs text-muted2">{NXTMOCK_MAIN_WINDOW_HINT}</p>
               <a
-                href={resolvedMainUrl!}
+                href={mainUrl!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
@@ -146,7 +138,7 @@ export function AiMockCallout({
               <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MOCK_TITLE}</p>
               <p className="mt-2 text-xs font-medium text-muted2">{NXTMOCK_MOCK_HINT}</p>
               <a
-                href={resolvedMockUrl!}
+                href={mockUrl!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"

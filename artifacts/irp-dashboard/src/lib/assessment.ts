@@ -166,22 +166,9 @@ export function listAttemptedFeProjectAssessments(
     });
 }
 
-/**
- * FE Project counts as *attempted* when the student has a written sit — including
- * score 0/20. Prefer `hasWrittenAssessment` from the API (null section scores =
- * access-only / not sat; non-null 0 = submitted).
- */
+/** Attempted = API `hasWrittenAssessment` from synced table scores (includes 0/20). */
 function feAssessmentWasWritten(assessment: AssessmentResult): boolean {
-  if (assessment.hasWrittenAssessment === true) return true;
-  if (assessment.hasWrittenAssessment === false) return false;
-  return (
-    assessment.overallMax > 0 &&
-    (assessment.overallScore > 0 ||
-      assessment.mcqScore > 0 ||
-      assessment.codingScore > 0 ||
-      // Explicit zero overall with a max means a submitted sit that scored 0.
-      (assessment.overallScore === 0 && assessment.overallMax > 0 && assessment.attemptNumber != null))
-  );
+  return assessment.hasWrittenAssessment === true;
 }
 
 export function hasAttemptedFeProject(assessments: AssessmentResult[]): boolean {
@@ -197,12 +184,17 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
-/** True when a single FE assessment sit clears (overallScore ≥ threshold). */
+/** True when a single FE assessment sit clears (table status or score ≥ threshold). */
 export function hasClearedFeSit(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
 ): boolean {
   if (!feAssessmentWasWritten(assessment)) return false;
+  const status = (assessment.assessmentStatus ?? "").trim();
+  if (status) {
+    if (/not\s*qualified/i.test(status)) return false;
+    if (/qualified/i.test(status)) return true;
+  }
   return assessment.overallScore >= minScore;
 }
 
@@ -316,21 +308,19 @@ export function listAttemptedL1OnlineAssessments(
     });
 }
 
+/** Attempted = API `hasWrittenAssessment` from synced table scores (includes 0). */
 function assessmentWasWritten(assessment: AssessmentResult): boolean {
-  if (assessment.hasWrittenAssessment === true) return true;
-  if (assessment.hasWrittenAssessment === false) return false;
-  // Fallback when flag missing: any non-null attempt metadata, or positive scores.
-  if (assessment.attemptNumber != null) return true;
-  if (
-    assessment.assessmentStatus != null &&
-    /qualified|not\s*qualified/i.test(assessment.assessmentStatus)
-  ) {
-    return true;
+  return assessment.hasWrittenAssessment === true;
+}
+
+/** Cleared / not cleared from round-wise status when present; else overall %. */
+function assessmentClearedFromRow(assessment: AssessmentResult): boolean {
+  const status = (assessment.assessmentStatus ?? "").trim();
+  if (status) {
+    if (/not\s*qualified/i.test(status)) return false;
+    if (/qualified/i.test(status)) return true;
   }
-  return (
-    assessment.overallMax > 0 &&
-    (assessment.overallScore > 0 || assessment.mcqScore > 0 || assessment.codingScore > 0)
-  );
+  return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
 }
 
 export function assessmentOverallPct(assessment: AssessmentResult): number {
@@ -355,15 +345,16 @@ export function hasClearedAssessment(
 ): boolean {
   const assessment = pickAssessmentForLevel(assessments, level);
   if (!assessment || !assessmentWasWritten(assessment)) return false;
-  return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
+  return assessmentClearedFromRow(assessment);
 }
 
 /** True when the student's best L1 online sit is a cleared Cycle 2 row. */
 export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
   const assessment = pickAssessmentForLevel(assessments, 1);
   if (!assessment || !assessmentWasWritten(assessment)) return false;
-  if (assessmentOverallPct(assessment) < ASSESSMENT_CLEAR_THRESHOLD) return false;
-  return assessmentCycle(assessment) === "C2";
+  if (!assessmentClearedFromRow(assessment)) return false;
+  const cycle = assessmentCycle(assessment);
+  return cycle === "C2" || /\bC\s*2\b/i.test(cycle) || cycle === "2";
 }
 
 function assessmentCycle(assessment: AssessmentResult | null | undefined): string {
@@ -399,13 +390,25 @@ export function formatExamDateLabelFromIso(iso: string | null | undefined): stri
   return `${day}${ord} ${month} ${year}`;
 }
 
-/** Returns the exam date label for a given assessment row. */
+/**
+ * Exam / cycle label for a sit.
+ * Prefer attempt date from the row; else the cycle/assessment_number from
+ * round-wise (`hustler_assessment_number` / `fe_project_assessment_number`).
+ */
 function examDateLabelForAssessment(assessment: AssessmentResult | null | undefined): string {
   if (!assessment) return EXAM_DATE_LABEL;
 
   const fromIso = formatExamDateLabelFromIso(assessment.assessmentStartDatetime);
   if (fromIso) return fromIso;
 
+  const cycle = (assessment.cycle ?? "").trim();
+  if (cycle) return cycle;
+
+  if (isRoundWiseHustlerResult(assessment) || isRoundWiseFeResult(assessment)) {
+    return assessment.assessmentTitle?.trim() || EXAM_DATE_LABEL;
+  }
+
+  // Legacy detail rows only (no round-wise summary for this user).
   const orgId = assessment.organisationAssessmentId;
   if (orgId === L1_AUG9_ORG_ASSESSMENT_ID) return L1_AUG9_EXAM_DATE_LABEL;
   if (orgId === L1_JULY26_ORG_ASSESSMENT_ID) return L1_JULY26_EXAM_DATE_LABEL;

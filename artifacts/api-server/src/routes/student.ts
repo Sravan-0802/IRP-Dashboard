@@ -279,18 +279,20 @@ function mapDetailAssessmentRow(
 }
 
 /**
- * Canonical results from round-wise summary (1 row / user).
- * Detail tables remain for previous-attempt history.
+ * Canonical L1 results from round-wise summary only
+ * (`z_academy_irp_2_0_l1_user_round_wise_summary` → irp_l1_round_wise_summary).
+ * Cycle = hustler_assessment_number / fe_project_assessment_number as stored.
  */
 function assessmentsFromRoundWise(
   summary: typeof irpL1RoundWiseSummaryTable.$inferSelect,
 ): AssessmentApiRow[] {
   const out: AssessmentApiRow[] = [];
 
+  const hustlerStatus = summary.hustlerAssessmentStatus?.trim() || null;
   const hustlerWritten =
-    summary.hustlerAssessmentStatus != null &&
-    /qualified|not\s*qualified/i.test(summary.hustlerAssessmentStatus);
-  if (hustlerWritten || summary.hustlerAssessmentAttemptNumber != null) {
+    summary.hustlerAssessmentAttemptNumber != null ||
+    (hustlerStatus != null && /qualified|not\s*qualified/i.test(hustlerStatus));
+  if (hustlerWritten) {
     const theory = sectionFromAbsAndPct(
       summary.hustlerAssessmentTheorySectionScore,
       summary.hustlerAssessmentTheorySectionScorePercentage,
@@ -308,7 +310,7 @@ function assessmentsFromRoundWise(
     const overallPct =
       overallFromPct?.pct ??
       pct(overallScore, overallMax > 0 ? overallMax : null);
-    const num = summary.hustlerAssessmentNumber?.trim();
+    const num = summary.hustlerAssessmentNumber?.trim() || undefined;
     out.push({
       organisationAssessmentId: ROUND_WISE_HUSTLER_ORG_ID,
       assessmentTitle: num
@@ -316,7 +318,7 @@ function assessmentsFromRoundWise(
         : "IRP 2.0 L1 Hustler Assessment",
       assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_HUSTLER-ASSESSMENT",
       level: "L1",
-      cycle: num ?? undefined,
+      cycle: num,
       mcqScore: theory.score,
       mcqMax: theory.max,
       mcqPct: theory.pct,
@@ -331,15 +333,16 @@ function assessmentsFromRoundWise(
         : undefined,
       hasWrittenAssessment: true,
       attemptNumber: summary.hustlerAssessmentAttemptNumber ?? undefined,
-      assessmentStatus: summary.hustlerAssessmentStatus ?? undefined,
+      assessmentStatus: hustlerStatus ?? undefined,
       levelNumber: 1,
     });
   }
 
+  const feStatus = summary.feProjectStatus?.trim() || null;
   const feWritten =
-    summary.feProjectStatus != null &&
-    /qualified|not\s*qualified/i.test(summary.feProjectStatus);
-  if (feWritten || summary.feProjectAttemptNumber != null) {
+    summary.feProjectAttemptNumber != null ||
+    (feStatus != null && /qualified|not\s*qualified/i.test(feStatus));
+  if (feWritten) {
     const fe = sectionFromAbsAndPct(
       summary.feProjectReactJsCodingSectionScore,
       summary.feProjectReactJsCodingSectionScorePercentage ??
@@ -349,7 +352,7 @@ function assessmentsFromRoundWise(
     const overallScore = overallFromPct?.score ?? fe.score;
     const overallMax = overallFromPct?.max ?? (fe.max > 0 ? fe.max : 20);
     const overallPct = overallFromPct?.pct ?? fe.pct;
-    const num = summary.feProjectAssessmentNumber?.trim();
+    const num = summary.feProjectAssessmentNumber?.trim() || undefined;
     out.push({
       organisationAssessmentId: ROUND_WISE_FE_ORG_ID,
       assessmentTitle: num
@@ -357,7 +360,7 @@ function assessmentsFromRoundWise(
         : "IRP 2.0 FE Project",
       assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_FE-PROJECT",
       level: "L1 FE-PROJECT",
-      cycle: num ?? undefined,
+      cycle: num,
       mcqScore: 0,
       mcqMax: 0,
       mcqPct: 0,
@@ -372,7 +375,7 @@ function assessmentsFromRoundWise(
         : undefined,
       hasWrittenAssessment: true,
       attemptNumber: summary.feProjectAttemptNumber ?? undefined,
-      assessmentStatus: summary.feProjectStatus ?? undefined,
+      assessmentStatus: feStatus ?? undefined,
       levelNumber: 1,
     });
   }
@@ -383,11 +386,6 @@ function assessmentsFromRoundWise(
 async function getAssessmentResultsResponse(userId: string) {
   if (!(await userHasAssessmentData(userId))) return null;
 
-  const detailRows = await db
-    .select()
-    .from(academyUserAssessmentDetailsTable)
-    .where(eq(academyUserAssessmentDetailsTable.userId, userId));
-
   let summary: typeof irpL1RoundWiseSummaryTable.$inferSelect | undefined;
   try {
     const summaryRows = await db
@@ -397,19 +395,26 @@ async function getAssessmentResultsResponse(userId: string) {
       .limit(1);
     summary = summaryRows[0];
   } catch (err) {
-    // Schema may lag a deploy — keep assessments readable from detail rows only.
+    // Schema may lag a deploy — fall back to detail rows only.
     const text = err instanceof Error ? err.message : String(err);
     if (!/irp_l1_round_wise_summary|does not exist|undefined_table/i.test(text)) throw err;
   }
 
-  const fromRoundWise = summary ? assessmentsFromRoundWise(summary) : [];
-  const fromDetail = detailRows
-    .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
-    .map(mapDetailAssessmentRow);
+  // Cycles + L1 scores: only z_academy_irp_2_0_l1_user_round_wise_summary
+  // (mirrored in irp_l1_round_wise_summary). Do not mix detail-table cycles.
+  if (summary) {
+    return { assessments: assessmentsFromRoundWise(summary) };
+  }
 
-  // Round-wise first (primary results); detail rows = attempt history / legacy sits.
+  const detailRows = await db
+    .select()
+    .from(academyUserAssessmentDetailsTable)
+    .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+
   return {
-    assessments: [...fromRoundWise, ...fromDetail],
+    assessments: detailRows
+      .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
+      .map(mapDetailAssessmentRow),
   };
 }
 

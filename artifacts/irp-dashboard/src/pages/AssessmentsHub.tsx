@@ -449,11 +449,11 @@ export function AssessmentsHub({
       </div>
 
       {level === 1 && (hasOnlineMockGrant || onJuly25MockAllowlist) ? (
-        <L1July25MockCallout userId={userId} assessments={assessments} />
+        <L1July25MockCallout userId={userId} />
       ) : null}
 
       {level === 1 && (hasOnlineMainGrant || onJuly25MockAllowlist) ? (
-        <L1July26MainCallout userId={userId} assessments={assessments} />
+        <L1July26MainCallout userId={userId} />
       ) : null}
 
       {level === 1 && <RegistrationBatchCallout />}
