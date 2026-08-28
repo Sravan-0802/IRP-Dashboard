@@ -23,6 +23,12 @@ export interface AssessmentResult {
   overallPct: number;
   /** Scheduled assessment start (ISO). Used for exam date labels on the dashboard. */
   assessmentStartDatetime?: string;
+  /** Scheduled assessment end (ISO). Used to hide start links after the window closes. */
+  assessmentEndDatetime?: string;
   /** True when assessment_user_score or section scores exist — the exam was attempted. */
   hasWrittenAssessment: boolean;
+  /** How many times the student sat (from z_* attempt_number). */
+  attemptNumber?: number;
+  /** QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED when synced from z_*. */
+  assessmentStatus?: string;
 }

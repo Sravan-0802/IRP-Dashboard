@@ -92,7 +92,10 @@ export const GetStudentAssessmentsResponse = zod.object({
   "overallMax": zod.number(),
   "overallPct": zod.number(),
   "assessmentStartDatetime": zod.string().optional().describe('Scheduled assessment start (ISO). Used for exam date labels on the dashboard.'),
-  "hasWrittenAssessment": zod.boolean().describe('True when assessment_user_score or section scores exist — the exam was attempted.')
+  "assessmentEndDatetime": zod.string().optional().describe('Scheduled assessment end (ISO). Used to hide start links after the window closes.'),
+  "hasWrittenAssessment": zod.boolean().describe('True when assessment_user_score or section scores exist — the exam was attempted.'),
+  "attemptNumber": zod.number().optional().describe('How many times the student sat (from z_* attempt_number).'),
+  "assessmentStatus": zod.string().optional().describe('QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED when synced from z_*.')
 }))
 })
 

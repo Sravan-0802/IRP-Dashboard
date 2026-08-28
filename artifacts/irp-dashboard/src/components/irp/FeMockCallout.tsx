@@ -1,6 +1,6 @@
 import { ExternalLink, FlaskConical } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
-import { hasClearedFeProject } from "@/lib/assessment";
+import { hasAttemptedFeProject, hasClearedFeProject } from "@/lib/assessment";
 import { isFeMockLinkOpen } from "@/lib/irpDates";
 import { isInFeMockAllowlist } from "@/lib/feMockAllowlist";
 import {
@@ -17,22 +17,25 @@ interface FeMockCalloutProps {
   feProjectMinScore?: number | null;
 }
 
-/** Shown for allowlisted students (fallback) or users with an FE mock grant. */
+/**
+ * FE mock practice link. After a student has already sat FE (reattempt track),
+ * only a live admin grant shows the button — never the stale static URL.
+ */
 export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMockCalloutProps) {
   const { findGrant } = useStudentAccess();
   const grant = findGrant("fe_project", "mock");
-  const grantUrl = grant?.url?.trim() || null;
+  const liveGrantUrl = grant?.url?.trim() || null;
 
-  const fallbackOpen =
-    isFeMockLinkOpen() && isInFeMockAllowlist(userId) && !hasClearedFeProject(assessments, feProjectMinScore);
+  if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
 
-  if (grantUrl) {
-    if (hasClearedFeProject(assessments, feProjectMinScore)) return null;
-  } else if (!fallbackOpen) {
-    return null;
-  }
+  const alreadyAttempted = hasAttemptedFeProject(assessments);
+  // Re-attempt track: grant only. First sit: grant or allowlist date window.
+  const href = alreadyAttempted
+    ? liveGrantUrl
+    : liveGrantUrl ||
+      (isFeMockLinkOpen() && isInFeMockAllowlist(userId) ? FE_PROJECT_MOCK_URL : null);
 
-  const href = grantUrl ?? FE_PROJECT_MOCK_URL;
+  if (!href) return null;
 
   return (
     <div className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">
@@ -43,17 +46,17 @@ export function FeMockCallout({ assessments, userId, feProjectMinScore }: FeMock
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
-              FE Project · {grantUrl ? "Mock" : "Main Assessment"}
+              FE Project · {liveGrantUrl ? "Mock" : "Main Assessment"}
             </p>
             <h3 className="font-display text-base font-extrabold text-ink sm:text-lg">
               {FE_PROJECT_MOCK_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              {grantUrl
+              {liveGrantUrl
                 ? "Your FE Project mock link is ready."
                 : `Complete the FE Project Main assessment. Available until ${FE_PROJECT_MOCK_AVAILABLE_UNTIL}.`}
             </p>
-            {!grantUrl ? (
+            {!liveGrantUrl ? (
               <p className="mt-1.5 text-xs font-semibold text-brand">
                 🕐 {FE_PROJECT_MOCK_WINDOW_LABEL}
               </p>

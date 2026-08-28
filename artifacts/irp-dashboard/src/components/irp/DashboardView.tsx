@@ -348,7 +348,7 @@ export function DashboardView({
         />
       </IrpCard>
 
-      {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
+      {level === 1 && !journey.isWildcard ? (
         <FeProjectNotClearedNotice
           journey={journey}
           assessments={assessments}
@@ -357,7 +357,7 @@ export function DashboardView({
         />
       ) : null}
 
-      {level === 1 && !journey.isWildcard && settings.feProjectResults ? (
+      {level === 1 && !journey.isWildcard ? (
         <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
       ) : null}
 
@@ -366,6 +366,7 @@ export function DashboardView({
           journey={journey}
           assessments={assessments}
           feProjectMinScore={feProjectMinScore}
+          userId={userId}
         />
       ) : null}
 

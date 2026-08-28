@@ -23,7 +23,11 @@ import {
 } from "@/lib/nxtmockConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 
-/** Shown for FE-cleared L1 students who still need to clear the AI Mock Interview. */
+/**
+ * First sit: live grant or static practice URLs.
+ * Re-attempt: only show start links when admin uploads a new live grant —
+ * never reuse expired/static links. Previous score stays visible either way.
+ */
 export function AiMockCallout({
   assessments,
   nxtmock,
@@ -40,8 +44,8 @@ export function AiMockCallout({
   const { findGrant } = useStudentAccess();
   const mainGrant = findGrant("ai_mock", "main") ?? findGrant("ai_mock", "default");
   const mockGrant = findGrant("ai_mock", "mock");
-  const mainUrl = mainGrant?.url?.trim() || NXTMOCK_MAIN_URL;
-  const mockUrl = mockGrant?.url?.trim() || NXTMOCK_MOCK_URL;
+  const liveMainUrl = mainGrant?.url?.trim() || null;
+  const liveMockUrl = mockGrant?.url?.trim() || null;
 
   const clearedL1 = isCycle1Cleared(assessments, userId);
   const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
@@ -49,7 +53,14 @@ export function AiMockCallout({
   const mockAttempted = hasNxtmockAttempt(nxtmock);
   const isReattempt = mockAttempted && !mockCleared;
 
+  const resolvedMainUrl = isReattempt ? liveMainUrl : liveMainUrl || NXTMOCK_MAIN_URL;
+  const resolvedMockUrl = isReattempt ? liveMockUrl : liveMockUrl || NXTMOCK_MOCK_URL;
+  const showMain = Boolean(resolvedMainUrl);
+  const showMock = Boolean(resolvedMockUrl);
+
   if (!clearedL1 || !feCleared || mockCleared) return null;
+  // Re-attempt with no new grants: still show previous score, no start links.
+  if (!isReattempt && !showMain && !showMock) return null;
 
   return (
     <div
@@ -82,50 +93,71 @@ export function AiMockCallout({
             NxtMock AI Interview
           </h3>
           <p className="mt-0.5 text-sm text-muted2">
-            {isReattempt ? NXTMOCK_REATTEMPT_BODY : NXTMOCK_MAIN_II_BODY}
+            {isReattempt
+              ? showMain || showMock
+                ? NXTMOCK_REATTEMPT_BODY
+                : "You attempted the AI Mock Interview but have not cleared yet. A new re-attempt link will appear here when the team releases it."
+              : NXTMOCK_MAIN_II_BODY}
           </p>
+          {isReattempt && nxtmock?.averageRating != null ? (
+            <p className="mt-2 text-sm font-semibold text-[#e67700]">
+              Previous score · avg {nxtmock.averageRating.toFixed(1)}
+              {nxtmock.attemptNumber != null ? ` · Attempt ${nxtmock.attemptNumber}` : ""}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col rounded-xl border border-[rgba(103,65,217,0.22)] bg-white/85 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
-            Main Interview
-          </p>
-          <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MAIN_TITLE}</p>
-          <p className="mt-2 inline-flex items-start gap-1.5 text-xs font-semibold text-ink">
-            <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
-            <span>{NXTMOCK_MAIN_WINDOW_LABEL}</span>
-          </p>
-          <p className="mt-1.5 text-xs text-muted2">{NXTMOCK_MAIN_WINDOW_HINT}</p>
-          <a
-            href={mainUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
-          >
-            {NXTMOCK_MAIN_LABEL}
-            <ArrowRight className="h-4 w-4" />
-          </a>
-        </div>
+      {showMain || showMock ? (
+        <div
+          className={cn(
+            "mt-4 grid gap-3",
+            showMain && showMock ? "sm:grid-cols-2" : "sm:grid-cols-1",
+          )}
+        >
+          {showMain ? (
+            <div className="flex flex-col rounded-xl border border-[rgba(103,65,217,0.22)] bg-white/85 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
+                Main Interview
+              </p>
+              <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MAIN_TITLE}</p>
+              <p className="mt-2 inline-flex items-start gap-1.5 text-xs font-semibold text-ink">
+                <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
+                <span>{NXTMOCK_MAIN_WINDOW_LABEL}</span>
+              </p>
+              <p className="mt-1.5 text-xs text-muted2">{NXTMOCK_MAIN_WINDOW_HINT}</p>
+              <a
+                href={resolvedMainUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
+              >
+                {NXTMOCK_MAIN_LABEL}
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          ) : null}
 
-        <div className="flex flex-col rounded-xl border border-[rgba(103,65,217,0.14)] bg-white/70 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#0ca678]">
-            Mock Interview (practice)
-          </p>
-          <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MOCK_TITLE}</p>
-          <p className="mt-2 text-xs font-medium text-muted2">{NXTMOCK_MOCK_HINT}</p>
-          <a
-            href={mockUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
-          >
-            {NXTMOCK_MOCK_LABEL}
-            <ArrowRight className="h-4 w-4" />
-          </a>
+          {showMock ? (
+            <div className="flex flex-col rounded-xl border border-[rgba(103,65,217,0.14)] bg-white/70 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#0ca678]">
+                Mock Interview (practice)
+              </p>
+              <p className="mt-1 font-display text-sm font-extrabold text-ink">{NXTMOCK_MOCK_TITLE}</p>
+              <p className="mt-2 text-xs font-medium text-muted2">{NXTMOCK_MOCK_HINT}</p>
+              <a
+                href={resolvedMockUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-pop mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:mt-4"
+              >
+                {NXTMOCK_MOCK_LABEL}
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          ) : null}
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

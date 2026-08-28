@@ -1,4 +1,6 @@
 import { ExternalLink, FlaskConical, Timer } from "lucide-react";
+import type { AssessmentResult } from "@workspace/api-client-react";
+import { hasWrittenAssessment } from "@/lib/assessment";
 import { isL1July25MockLinkOpen } from "@/lib/irpDates";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import {
@@ -13,23 +15,30 @@ import { useCountdown } from "@/lib/useCountdown";
 
 interface L1July25MockCalloutProps {
   userId: string;
+  assessments?: AssessmentResult[];
 }
 
-/** Online Assessment mock — grant URL preferred; else allowlist + date window. */
-export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
+/**
+ * Online Assessment mock — live grant preferred.
+ * After the student already sat L1, only a new admin grant shows the link.
+ */
+export function L1July25MockCallout({ userId, assessments = [] }: L1July25MockCalloutProps) {
   const { findGrant } = useStudentAccess();
   const grant = findGrant("online_assessment", "mock");
-  const grantUrl = grant?.url?.trim() || null;
+  const liveGrantUrl = grant?.url?.trim() || null;
   const { timeLeft, isExpired } = useCountdown(grant?.expiresAt);
 
-  // Grant exists but expired client-side → hide
-  if (grantUrl && isExpired) return null;
+  if (liveGrantUrl && isExpired) return null;
 
-  if (!grantUrl) {
-    if (!isInL1July25MockAllowlist(userId) || !isL1July25MockLinkOpen()) return null;
-  }
+  const alreadyAttempted = hasWrittenAssessment(assessments, 1);
+  const href = alreadyAttempted
+    ? liveGrantUrl
+    : liveGrantUrl ||
+      (isInL1July25MockAllowlist(userId) && isL1July25MockLinkOpen()
+        ? L1_JULY25_MOCK_URL
+        : null);
 
-  const href = grantUrl ?? L1_JULY25_MOCK_URL;
+  if (!href) return null;
 
   function onStartMock() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.L1_JULY25_MOCK_START_CLICK);
@@ -50,16 +59,16 @@ export function L1July25MockCallout({ userId }: L1July25MockCalloutProps) {
               {L1_JULY25_MOCK_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              {grantUrl
+              {liveGrantUrl
                 ? "Your L1 mock assessment link is ready."
                 : `Complete the L1 mock assessment. Available until ${L1_JULY25_MOCK_AVAILABLE_UNTIL}.`}
             </p>
-            {grantUrl && timeLeft ? (
+            {liveGrantUrl && timeLeft ? (
               <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-[rgba(103,65,217,0.08)] px-2 py-1 text-xs font-bold text-brand">
                 <Timer className="h-3 w-3 shrink-0" />
                 {timeLeft} remaining
               </p>
-            ) : !grantUrl ? (
+            ) : !liveGrantUrl ? (
               <p className="mt-1.5 text-xs font-semibold text-brand">
                 🕐 {L1_JULY25_MOCK_WINDOW_LABEL}
               </p>

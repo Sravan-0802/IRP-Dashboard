@@ -43,7 +43,6 @@ export function l1HustlerJourneySteps(
   userId?: string | null,
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
-  const showFeResults = visibility?.feProjectResults === true;
   const showAi = visibility?.aiMockResults === true;
   const showHuman = visibility?.humanInterviewResults === true;
 
@@ -82,16 +81,16 @@ export function l1HustlerJourneySteps(
         ? "active"
         : assessmentStatus;
 
-  // FE clearance always advances the pipeline. Only "not cleared" score status
-  // stays hidden until admin releases FE results.
+  // FE clearance always advances the pipeline. Attempted-not-cleared is always
+  // shown so students see they already sat (full score cards may still be gated).
   let feProjectStatus: JourneyStep["status"] = "locked";
   if (feCleared) feProjectStatus = "done";
-  else if (showFeResults && feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
+  else if (feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
   let aiMockStatus: JourneyStep["status"] = "locked";
   if (showAi && pastAiMock) aiMockStatus = "done";
-  else if (showAi && nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
+  else if (nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
   else if (feCleared) aiMockStatus = "active";
 
   let humanInterviewStatus: JourneyStep["status"] = "locked";

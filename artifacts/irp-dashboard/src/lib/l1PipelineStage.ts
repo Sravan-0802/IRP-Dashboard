@@ -78,8 +78,8 @@ export function l1StageHeroContent(
     case "fe_project_not_cleared":
       return {
         eyebrow: "FE Project · Not cleared yet",
-        title: "Re-attempt FE Project",
-        body: `${clearedOn} Reach ≥18/20 on any FE Project sit to advance to the AI Mock Interview.`,
+        title: "FE Project not cleared",
+        body: `${clearedOn} Your previous score is on the dashboard. A new re-attempt link will appear when the team releases it — score ≥18/20 to unlock the AI Mock Interview.`,
         dotColor: "#f59f00",
         eyebrowClass: "border-[rgba(245,159,0,0.35)] text-[#e67700]",
         borderClass: "border-[rgba(245,159,0,0.28)]",

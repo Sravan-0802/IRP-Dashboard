@@ -18,12 +18,12 @@ import {
   FE_PROJECT_NOT_CLEARED_EYEBROW,
   FE_PROJECT_NOT_CLEARED_TITLE,
 } from "@/lib/feProjectConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { Pill } from "./ui";
 
 /**
- * Shown for cleared-L1 students who attempted the FE Project but have not
- * cleared it (below 18/20 on all sits). Informational only — no
- * external assessment link.
+ * Shown when the student attempted FE but has not cleared — score only, no link.
+ * When admin uploads a live re-attempt grant, FeProjectCallout shows score + CTA instead.
  */
 export function FeProjectNotClearedNotice({
   journey,
@@ -36,12 +36,16 @@ export function FeProjectNotClearedNotice({
   feProjectMinScore?: number | null;
   userId?: string;
 }) {
+  const { findGrant } = useStudentAccess();
+  const liveReattemptGrant = findGrant("fe_project", "main");
   const threshold = feProjectMinScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
   const clearedL1 = isCycle1Cleared(assessments, userId);
   const feCleared = hasClearedFeProject(assessments, threshold);
   const feAttempted = hasAttemptedFeProject(assessments);
 
   if (!clearedL1 || feCleared || !feAttempted) return null;
+  // Live grant → FeProjectCallout owns the re-attempt CTA + score pill.
+  if (liveReattemptGrant?.url?.trim()) return null;
 
   const fe = pickFeProjectAssessment(assessments);
   const pct = fe ? assessmentOverallPct(fe) : 0;

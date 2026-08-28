@@ -257,12 +257,9 @@ export function Hero({
     ) {
       // Keep the AI Mock take/reattempt stage visible; only results cards stay gated.
       // Do not fall back to "complete FE Project" when FE is already cleared.
-    } else if (
-      (pipelineStage === "fe_project_not_cleared") &&
-      !settings.feProjectResults
-    ) {
-      pipelineStage = "fe_project_active";
     }
+    // FE / AI attempted-not-cleared stay visible even before admin releases full
+    // results cards — students must see that they already sat and their score.
 
     if (
       (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&

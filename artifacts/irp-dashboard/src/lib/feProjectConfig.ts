@@ -28,7 +28,7 @@ export const FE_PROJECT_MAIN_II_BODY =
 export const FE_PROJECT_REATTEMPT_LABEL = "Re-attempt assessment";
 
 export const FE_PROJECT_REATTEMPT_BODY =
-  "You attempted the FE Project but did not clear yet. Re-attempt when you are ready.";
+  "You attempted the FE Project but did not clear yet. A new re-attempt link will appear here when the team releases it.";
 
 /** Eyebrow + copy for the FE Project "not cleared" notice shown on the dashboard. */
 export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
@@ -36,7 +36,7 @@ export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
 export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 18/20 to unlock the AI Mock Interview";
 
 export const FE_PROJECT_NOT_CLEARED_BODY =
-  "You attempted the FE Project but haven't cleared it yet. You need at least 18/20 on any FE Project sit to advance to the AI Mock Interview.";
+  "You attempted the FE Project but haven't cleared it yet. You need at least 18/20 on any FE Project sit to advance. A new re-attempt link will appear when the team releases it.";
 
 export const FE_PROJECT_C2_NOT_CLEARED_TITLE = "Score 18/20 to unlock the AI Mock Interview";
 

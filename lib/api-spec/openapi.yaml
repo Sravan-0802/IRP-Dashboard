@@ -414,6 +414,10 @@ components:
           type: string
           format: date-time
           description: Scheduled assessment start (ISO). Used for exam date labels on the dashboard.
+        assessmentEndDatetime:
+          type: string
+          format: date-time
+          description: Scheduled assessment end (ISO). Used to hide start links after the window closes.
         hasWrittenAssessment:
           type: boolean
           description: True when assessment_user_score or section scores exist — the exam was attempted.

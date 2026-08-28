@@ -1,4 +1,6 @@
 import { ExternalLink, Timer, Trophy } from "lucide-react";
+import type { AssessmentResult } from "@workspace/api-client-react";
+import { hasWrittenAssessment } from "@/lib/assessment";
 import { isL1July26MainLinkLive } from "@/lib/irpDates";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import {
@@ -12,23 +14,31 @@ import { useCountdown } from "@/lib/useCountdown";
 
 interface L1July26MainCalloutProps {
   userId: string;
+  assessments?: AssessmentResult[];
 }
 
-/** Online Assessment main — grant URL preferred; else allowlist fallback. */
-export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
+/**
+ * Online Assessment main — live grant preferred.
+ * After the student already sat L1, only a *new* admin grant shows the link
+ * (never reuse the static/allowlist URL for re-attempt).
+ */
+export function L1July26MainCallout({ userId, assessments = [] }: L1July26MainCalloutProps) {
   const { findGrant } = useStudentAccess();
   const grant = findGrant("online_assessment", "main");
-  const grantUrl = grant?.url?.trim() || null;
+  const liveGrantUrl = grant?.url?.trim() || null;
   const { timeLeft, isExpired } = useCountdown(grant?.expiresAt);
 
-  // Grant exists but expired client-side → hide
-  if (grantUrl && isExpired) return null;
+  if (liveGrantUrl && isExpired) return null;
 
-  const fallback = isInL1July25MockAllowlist(userId);
-  if (!grantUrl && !fallback) return null;
+  const alreadyAttempted = hasWrittenAssessment(assessments, 1);
+  const href = alreadyAttempted
+    ? liveGrantUrl
+    : liveGrantUrl ||
+      (isInL1July25MockAllowlist(userId) ? L1_JULY26_MAIN_ASSESSMENT_URL : null);
 
-  const href = grantUrl ?? L1_JULY26_MAIN_ASSESSMENT_URL;
-  const live = grantUrl ? true : isL1July26MainLinkLive();
+  if (!href) return null;
+
+  const live = liveGrantUrl ? true : isL1July26MainLinkLive();
 
   function onStartMain() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.MAIN_ASSESSMENT_LINK_CLICK);
@@ -49,13 +59,13 @@ export function L1July26MainCallout({ userId }: L1July26MainCalloutProps) {
               {L1_JULY26_MAIN_ASSESSMENT_TITLE}
             </h3>
             <p className="mt-0.5 text-sm text-muted2">
-              {grantUrl
+              {liveGrantUrl
                 ? "Your main assessment link is ready. Open the link and begin."
                 : live
                   ? "Your main assessment is live. Open the link and begin now."
                   : `This is your official Level 1 assessment. The link becomes active at ${L1_JULY26_MAIN_START_LABEL}.`}
             </p>
-            {grantUrl && timeLeft ? (
+            {liveGrantUrl && timeLeft ? (
               <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-[rgba(230,119,0,0.1)] px-2 py-1 text-xs font-bold text-[#e67700]">
                 <Timer className="h-3 w-3 shrink-0" />
                 {timeLeft} remaining

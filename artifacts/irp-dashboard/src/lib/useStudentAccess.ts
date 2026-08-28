@@ -11,10 +11,39 @@ export type StudentAccessGrant = {
   url: string;
   batchId: number;
   name: string | null;
+  startsAt?: string | null;
   expiresAt?: string | null;
 };
 
 const STUDENT_ACCESS_KEY = ["student", "access"] as const;
+
+/** True when a grant window is currently live (started and not expired). */
+export function isAccessGrantLive(
+  grant: Pick<StudentAccessGrant, "startsAt" | "expiresAt"> | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (!grant) return false;
+  if (grant.startsAt) {
+    const start = new Date(grant.startsAt).getTime();
+    if (!Number.isNaN(start) && start > now) return false;
+  }
+  if (grant.expiresAt) {
+    const end = new Date(grant.expiresAt).getTime();
+    if (!Number.isNaN(end) && end <= now) return false;
+  }
+  return true;
+}
+
+/** True when an assessment's scheduled end datetime has already passed. */
+export function isAssessmentWindowEnded(
+  endIso: string | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (!endIso) return false;
+  const end = new Date(endIso).getTime();
+  if (Number.isNaN(end)) return false;
+  return end <= now;
+}
 
 async function fetchStudentAccess(): Promise<{ grants: StudentAccessGrant[] }> {
   const token = getAuthToken();
@@ -35,6 +64,7 @@ export function findAccessGrant(
   linkKind?: AccessLinkKind,
 ): StudentAccessGrant | undefined {
   if (!grants?.length) return undefined;
+  // API already returns only live grants; keep helpers for client-side window checks.
   const forStage = grants.filter((g) => g.stage === stage);
   if (forStage.length === 0) return undefined;
   if (!linkKind) return forStage[0];

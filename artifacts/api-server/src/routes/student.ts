@@ -219,6 +219,7 @@ type AssessmentApiRow = {
   hasWrittenAssessment: boolean;
   attemptNumber?: number;
   assessmentStatus?: string;
+  assessmentEndDatetime?: string;
   levelNumber: number | null;
 };
 
@@ -267,6 +268,9 @@ function mapDetailAssessmentRow(
       : a.userAssessmentStartDatetime
         ? a.userAssessmentStartDatetime.toISOString()
         : undefined,
+    assessmentEndDatetime: a.assessmentEndDatetime
+      ? a.assessmentEndDatetime.toISOString()
+      : undefined,
     hasWrittenAssessment,
     attemptNumber: a.attemptNumber ?? undefined,
     assessmentStatus: a.assessmentStatus ?? undefined,

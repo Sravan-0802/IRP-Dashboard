@@ -167,15 +167,20 @@ export function listAttemptedFeProjectAssessments(
 }
 
 /**
- * FE Project counts as *attempted* only with a positive score. A synced row that
- * exists with score 0 (and no section scores) means the student was registered /
- * assigned the project but has not submitted — treated as "in progress", not attempted.
+ * FE Project counts as *attempted* when the student has a written sit — including
+ * score 0/20. Prefer `hasWrittenAssessment` from the API (null section scores =
+ * access-only / not sat; non-null 0 = submitted).
  */
 function feAssessmentWasWritten(assessment: AssessmentResult): boolean {
+  if (assessment.hasWrittenAssessment === true) return true;
+  if (assessment.hasWrittenAssessment === false) return false;
   return (
-    (assessment.overallScore ?? 0) > 0 ||
-    (assessment.mcqScore ?? 0) > 0 ||
-    (assessment.codingScore ?? 0) > 0
+    assessment.overallMax > 0 &&
+    (assessment.overallScore > 0 ||
+      assessment.mcqScore > 0 ||
+      assessment.codingScore > 0 ||
+      // Explicit zero overall with a max means a submitted sit that scored 0.
+      (assessment.overallScore === 0 && assessment.overallMax > 0 && assessment.attemptNumber != null))
   );
 }
 
@@ -314,6 +319,14 @@ export function listAttemptedL1OnlineAssessments(
 function assessmentWasWritten(assessment: AssessmentResult): boolean {
   if (assessment.hasWrittenAssessment === true) return true;
   if (assessment.hasWrittenAssessment === false) return false;
+  // Fallback when flag missing: any non-null attempt metadata, or positive scores.
+  if (assessment.attemptNumber != null) return true;
+  if (
+    assessment.assessmentStatus != null &&
+    /qualified|not\s*qualified/i.test(assessment.assessmentStatus)
+  ) {
+    return true;
+  }
   return (
     assessment.overallMax > 0 &&
     (assessment.overallScore > 0 || assessment.mcqScore > 0 || assessment.codingScore > 0)
