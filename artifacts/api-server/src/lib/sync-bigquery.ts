@@ -326,12 +326,12 @@ function mapZHustlerToAssessment(r: ZHustlerAttemptRow) {
   const theoryPct = toReal(r.theory_section_score_percentage);
   const codingScore = toReal(r.coding_section_score);
   const codingPct = toReal(r.coding_section_score_percentage);
-  const cycleParts = [toStr(r.assessment_type), toStr(r.assessment_number)].filter(Boolean);
+  const cycleParts = [toStr(r.assessment_number)].filter(Boolean);
   return {
     userId: String(r.user_id),
     organisationAssessmentId: String(r.primary_organisation_assessment_id),
     assessmentTitle: toStr(r.assessment_title),
-    assessmentTag: toStr(r.assessment_specific_tag),
+    assessmentTag: toStr(r.assessment_number),
     level: toStr(r.assessment_level),
     cycle: cycleParts.length ? cycleParts.join("_") : null,
     assessmentStartDatetime: toDate(r.assessment_start_datetime),
@@ -359,12 +359,12 @@ function mapZFeToAssessment(r: ZFeProjectAttemptRow) {
   const fePct = toReal(r.react_js_coding_section_score_percentage);
   const feMax =
     maxFromPct(feScore, fePct) ?? toReal(r.assessment_actual_score);
-  const cycleParts = [toStr(r.assessment_type), toStr(r.assessment_number)].filter(Boolean);
+  const cycleParts = [toStr(r.assessment_number)].filter(Boolean);
   return {
     userId: String(r.user_id),
     organisationAssessmentId: String(r.primary_organisation_assessment_id),
     assessmentTitle: toStr(r.assessment_title),
-    assessmentTag: toStr(r.assessment_specific_tag),
+    assessmentTag: toStr(r.assessment_number),
     level: toStr(r.assessment_level),
     cycle: cycleParts.length ? cycleParts.join("_") : null,
     assessmentStartDatetime: toDate(r.assessment_start_datetime),

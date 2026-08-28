@@ -387,9 +387,10 @@ async function resolveDatasetId(bq: BigQuery): Promise<{ projectId: string; data
   return { projectId, dataset };
 }
 
-/** Prefer completed sits; still include rows with attempt_number set. */
+/** Prefer completed MAIN sits only (exclude MOCK). Still include rows with attempt_number set. */
 function zAttemptFilterSql(statusCol: string): string {
-  return `(${statusCol} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
+  return `UPPER(COALESCE(assessment_type, '')) = 'MAIN'
+    AND (${statusCol} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 }
 
 export async function fetchZHustlerAttempts(): Promise<ZHustlerAttemptRow[]> {
@@ -433,13 +434,14 @@ export async function fetchZNxtmockAttempts(): Promise<ZNxtmockAttemptRow[]> {
   const bq = getBigQueryClient();
   const { projectId, dataset } = await resolveDatasetId(bq);
   const fq = `${projectId}.${dataset}.${Z_NXTMOCK_ATTEMPT_TABLE}`;
+  // NxtMock has no assessment_type; keep status / attempt filter only.
   const query = `SELECT
       user_id, interview_id, interview_attempt_id, interview_tag,
       interview_attempt_start_datetime, avg_user_interview_rating, user_interview_overall_rating,
       interview_program, interview_level, interview_name, interview_number,
       interview_status, attempt_number, section_wise_rating_json
     FROM \`${fq}\`
-    WHERE ${zAttemptFilterSql("interview_status")}`;
+    WHERE (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
   const [rows] = await bq.query({ query });
   logger.info({ table: Z_NXTMOCK_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched z_* nxtmock attempts");
   return rows as ZNxtmockAttemptRow[];

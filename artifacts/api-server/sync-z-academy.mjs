@@ -88,7 +88,10 @@ function fq(table) {
   return `\`${projectId}.${dataset}.${table}\``;
 }
 const attemptFilter = (col) =>
-  `(${col} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
+  `UPPER(COALESCE(assessment_type, '')) = 'MAIN'
+    AND (${col} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
+const nxtmockFilter =
+  `(interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 
 async function recordStatus(tableName, status, rowCount, durationMs, error) {
   const now = new Date();
@@ -139,7 +142,7 @@ async function syncHustlerAndFe() {
     const theoryPct = toReal(r.theory_section_score_percentage);
     const codingScore = toReal(r.coding_section_score);
     const codingPct = toReal(r.coding_section_score_percentage);
-    const cycleParts = [toStr(r.assessment_type), toStr(r.assessment_number)].filter(Boolean);
+    const cycleParts = [toStr(r.assessment_number)].filter(Boolean);
     mapped.push([
       String(r.user_id),
       String(r.primary_organisation_assessment_id),
@@ -166,7 +169,7 @@ async function syncHustlerAndFe() {
     const feScore = toReal(r.react_js_coding_section_score);
     const fePct = toReal(r.react_js_coding_section_score_percentage);
     const feMax = maxFromPct(feScore, fePct) ?? toReal(r.assessment_actual_score);
-    const cycleParts = [toStr(r.assessment_type), toStr(r.assessment_number)].filter(Boolean);
+    const cycleParts = [toStr(r.assessment_number)].filter(Boolean);
     mapped.push([
       String(r.user_id),
       String(r.primary_organisation_assessment_id),
@@ -294,7 +297,7 @@ async function syncNxtmock() {
       interview_program, interview_level, interview_name, interview_number,
       interview_status, attempt_number, section_wise_rating_json
     FROM ${fq("z_academy_irp_2_0_l1_nxtmock_user_attempt_details")}
-    WHERE ${attemptFilter("interview_status")}`,
+    WHERE ${nxtmockFilter}`,
   });
 
   const byKey = new Map();
