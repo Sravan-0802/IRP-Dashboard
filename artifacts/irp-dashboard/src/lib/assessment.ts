@@ -173,11 +173,17 @@ export function pickFeProjectAssessment(
 
 /**
  * All FE Project sits that were attempted, newest first.
- * Used for FE Results history; the main card shows the latest sit.
+ * When round-wise summary exists it is the canonical sit (and sole source).
+ * Otherwise detail-table FE attempts are listed for history.
  */
 export function listAttemptedFeProjectAssessments(
   assessments: AssessmentResult[],
 ): AssessmentResult[] {
+  const roundWise = assessments.find(
+    (a) => isRoundWiseFeResult(a) && feAssessmentWasWritten(a),
+  );
+  if (roundWise) return [roundWise];
+
   return assessments
     .filter(isFeProjectAssessment)
     .filter((a) => !isRoundWiseFeResult(a))
@@ -222,14 +228,17 @@ export function hasClearedFeSit(
 }
 
 /**
- * FE Project clears when any attempted FE sit reaches ≥ minScore (default 18/20).
- * Clearance is not limited to the latest sit — an earlier ≥18 clears the stage.
+ * FE Project clears from round-wise status/score when present, else any detail sit ≥ minScore.
+ * Clearance is not limited to the latest detail sit — an earlier ≥ threshold clears the stage.
  */
 export function hasClearedFeProject(
   assessments: AssessmentResult[],
   minScore?: number | null,
 ): boolean {
   const threshold = minScore ?? FE_PROJECT_CLEAR_MIN_SCORE;
+  // Prefer the featured sit (round-wise first) so QUALIFIED summary rows always clear.
+  const featured = pickFeProjectAssessment(assessments);
+  if (featured && hasClearedFeSit(featured, threshold)) return true;
   return listAttemptedFeProjectAssessments(assessments).some((fe) =>
     hasClearedFeSit(fe, threshold),
   );
@@ -317,11 +326,17 @@ export function pickAssessmentForLevel(
 
 /**
  * All L1 online sits that were attempted, newest first.
- * Used for Assessment Results history; clearance still uses pickAssessmentForLevel (latest only).
+ * When round-wise summary exists it is the canonical sit (and sole source).
+ * Otherwise detail-table L1 attempts are listed for history.
  */
 export function listAttemptedL1OnlineAssessments(
   assessments: AssessmentResult[],
 ): AssessmentResult[] {
+  const roundWise = assessments.find(
+    (a) => isRoundWiseHustlerResult(a) && assessmentWasWritten(a),
+  );
+  if (roundWise) return [roundWise];
+
   return assessments
     .filter(isL1OnlineAssessment)
     .filter((a) => !isRoundWiseHustlerResult(a))

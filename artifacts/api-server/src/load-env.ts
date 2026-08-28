@@ -18,6 +18,6 @@ if (existsSync(envPath)) {
     ) {
       value = value.slice(1, -1);
     }
-    process.env[key] = value;
+    process.env[key] ??= value;
   }
 }
