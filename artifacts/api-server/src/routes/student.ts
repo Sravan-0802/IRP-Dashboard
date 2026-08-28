@@ -379,19 +379,25 @@ function assessmentsFromRoundWise(
 async function getAssessmentResultsResponse(userId: string) {
   if (!(await userHasAssessmentData(userId))) return null;
 
-  const [detailRows, summaryRows] = await Promise.all([
-    db
-      .select()
-      .from(academyUserAssessmentDetailsTable)
-      .where(eq(academyUserAssessmentDetailsTable.userId, userId)),
-    db
+  const detailRows = await db
+    .select()
+    .from(academyUserAssessmentDetailsTable)
+    .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+
+  let summary: typeof irpL1RoundWiseSummaryTable.$inferSelect | undefined;
+  try {
+    const summaryRows = await db
       .select()
       .from(irpL1RoundWiseSummaryTable)
       .where(eq(irpL1RoundWiseSummaryTable.userId, userId))
-      .limit(1),
-  ]);
+      .limit(1);
+    summary = summaryRows[0];
+  } catch (err) {
+    // Schema may lag a deploy — keep assessments readable from detail rows only.
+    const text = err instanceof Error ? err.message : String(err);
+    if (!/irp_l1_round_wise_summary|does not exist|undefined_table/i.test(text)) throw err;
+  }
 
-  const summary = summaryRows[0];
   const fromRoundWise = summary ? assessmentsFromRoundWise(summary) : [];
   const fromDetail = detailRows
     .filter((r) => r.organisationAssessmentId !== "manual-access-grant")

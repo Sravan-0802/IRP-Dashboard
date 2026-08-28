@@ -59,6 +59,77 @@ function rowToResponse(
   };
 }
 
+function isMissingRelationError(err: unknown): boolean {
+  const text = [
+    err instanceof Error ? err.message : String(err),
+    err instanceof Error && err.cause instanceof Error ? err.cause.message : "",
+  ].join(" ");
+  return (
+    /irp_l1_round_wise_summary/i.test(text) ||
+    /does not exist/i.test(text) ||
+    /undefined_table/i.test(text) ||
+    /attempt_number/i.test(text) ||
+    /interview_status/i.test(text)
+  );
+}
+
+async function loadNxtmockDetailRows(userId: string) {
+  try {
+    return await db
+      .select()
+      .from(academyUserNxtmockDetailsTable)
+      .where(eq(academyUserNxtmockDetailsTable.userId, userId))
+      .orderBy(desc(academyUserNxtmockDetailsTable.syncedAt));
+  } catch (err) {
+    // Pre-migration DBs may lack attempt_number / interview_status — fall back
+    // to the legacy column set so journey still loads.
+    if (!isMissingRelationError(err)) throw err;
+    return db
+      .select({
+        id: academyUserNxtmockDetailsTable.id,
+        userId: academyUserNxtmockDetailsTable.userId,
+        interviewId: academyUserNxtmockDetailsTable.interviewId,
+        interviewTitle: academyUserNxtmockDetailsTable.interviewTitle,
+        examType: academyUserNxtmockDetailsTable.examType,
+        level: academyUserNxtmockDetailsTable.level,
+        cycle: academyUserNxtmockDetailsTable.cycle,
+        selfIntroRating: academyUserNxtmockDetailsTable.selfIntroRating,
+        javascriptCodingRating: academyUserNxtmockDetailsTable.javascriptCodingRating,
+        javascriptRating: academyUserNxtmockDetailsTable.javascriptRating,
+        cssRating: academyUserNxtmockDetailsTable.cssRating,
+        htmlRating: academyUserNxtmockDetailsTable.htmlRating,
+        reactJsRating: academyUserNxtmockDetailsTable.reactJsRating,
+        averageRating: academyUserNxtmockDetailsTable.averageRating,
+        syncedAt: academyUserNxtmockDetailsTable.syncedAt,
+      })
+      .from(academyUserNxtmockDetailsTable)
+      .where(eq(academyUserNxtmockDetailsTable.userId, userId))
+      .orderBy(desc(academyUserNxtmockDetailsTable.syncedAt))
+      .then((rows) =>
+        rows.map((row) => ({
+          ...row,
+          attemptNumber: null as number | null,
+          interviewStatus: null as string | null,
+        })),
+      );
+  }
+}
+
+async function loadRoundWiseSummary(userId: string) {
+  try {
+    const [summary] = await db
+      .select()
+      .from(irpL1RoundWiseSummaryTable)
+      .where(eq(irpL1RoundWiseSummaryTable.userId, userId))
+      .limit(1);
+    return summary ?? null;
+  } catch (err) {
+    // Deployed code can land before Neon schema push — do not 500 the journey.
+    if (isMissingRelationError(err)) return null;
+    throw err;
+  }
+}
+
 /**
  * Prefer round-wise for Attempt N / status / avg rating; skill bars from detail
  * (section_wise_rating_json synced into discrete columns).
@@ -66,20 +137,11 @@ function rowToResponse(
 export async function getNxtmockInterviewForUser(
   userId: string,
 ): Promise<NxtmockInterviewResponse | null> {
-  const [detailRows, summaryRows] = await Promise.all([
-    db
-      .select()
-      .from(academyUserNxtmockDetailsTable)
-      .where(eq(academyUserNxtmockDetailsTable.userId, userId))
-      .orderBy(desc(academyUserNxtmockDetailsTable.syncedAt)),
-    db
-      .select()
-      .from(irpL1RoundWiseSummaryTable)
-      .where(eq(irpL1RoundWiseSummaryTable.userId, userId))
-      .limit(1),
+  const [detailRows, summary] = await Promise.all([
+    loadNxtmockDetailRows(userId),
+    loadRoundWiseSummary(userId),
   ]);
 
-  const summary = summaryRows[0];
   const hasRoundWiseNxtmock =
     summary != null &&
     (summary.nxtmockStatus != null ||
@@ -156,7 +218,14 @@ export async function maybeAdvanceJourneyFromNxtmock(
   userId: string,
   student: typeof studentsTable.$inferSelect,
 ): Promise<typeof studentsTable.$inferSelect> {
-  const nxtmock = await getNxtmockInterviewForUser(userId);
+  let nxtmock: NxtmockInterviewResponse | null = null;
+  try {
+    nxtmock = await getNxtmockInterviewForUser(userId);
+  } catch (err) {
+    // Journey must remain readable even if NxtMock/round-wise reads fail.
+    console.error("[maybeAdvanceJourneyFromNxtmock] skipped", err);
+    return student;
+  }
   if (!nxtmock?.cleared) return student;
 
   const state = student.journeyState;
