@@ -281,7 +281,8 @@ function mapDetailAssessmentRow(
 /**
  * Canonical L1 results from round-wise summary only
  * (`z_academy_irp_2_0_l1_user_round_wise_summary` → irp_l1_round_wise_summary).
- * Cycle = hustler_assessment_number / fe_project_assessment_number as stored.
+ * Cycle + tag = hustler_assessment_number / fe_project_assessment_number only.
+ * Status = hustler_assessment_status / fe_project_status. No external tags.
  */
 function assessmentsFromRoundWise(
   summary: typeof irpL1RoundWiseSummaryTable.$inferSelect,
@@ -316,7 +317,7 @@ function assessmentsFromRoundWise(
       assessmentTitle: num
         ? `IRP 2.0 L1 Hustler Assessment ${num}`
         : "IRP 2.0 L1 Hustler Assessment",
-      assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_HUSTLER-ASSESSMENT",
+      assessmentTag: num,
       level: "L1",
       cycle: num,
       mcqScore: theory.score,
@@ -358,7 +359,7 @@ function assessmentsFromRoundWise(
       assessmentTitle: num
         ? `IRP 2.0 FE Project ${num}`
         : "IRP 2.0 FE Project",
-      assessmentTag: "ACADEMY-IRP-2.0_ROUND_WISE_FE-PROJECT",
+      assessmentTag: num,
       level: "L1 FE-PROJECT",
       cycle: num,
       mcqScore: 0,

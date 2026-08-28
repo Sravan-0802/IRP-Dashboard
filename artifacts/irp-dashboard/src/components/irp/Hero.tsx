@@ -381,7 +381,7 @@ export function Hero({
             </p>
             {assessment ? (
               <div className="mt-3">
-                <Pill tone="amber">{resultLabel(overallPct)} · {overallPct}%</Pill>
+                <Pill tone="amber">{resultLabel(overallPct, assessment)} · {overallPct}%</Pill>
               </div>
             ) : null}
           </div>

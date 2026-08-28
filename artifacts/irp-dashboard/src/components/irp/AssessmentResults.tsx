@@ -146,7 +146,7 @@ export function AssessmentResults({
           ) : null}
         </div>
         {showResults && assessment && (
-          <Pill tone={resultTone(overallPct)}>{resultLabel(overallPct)}</Pill>
+          <Pill tone={resultTone(overallPct)}>{resultLabel(overallPct, assessment)}</Pill>
         )}
       </div>
 
@@ -192,7 +192,7 @@ export function AssessmentResults({
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[rgba(103,65,217,0.10)] bg-[rgba(103,65,217,0.04)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                  <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">Cycle</th>
                   <th className="px-3 py-2">Attempt</th>
                   <th className="px-3 py-2">Overall</th>
                   <th className="px-3 py-2">MCQ</th>
@@ -224,7 +224,7 @@ export function AssessmentResults({
                         {Math.round(sit.codingScore)}/{Math.round(sit.codingMax)}
                       </td>
                       <td className="px-3 py-2.5">
-                        <Pill tone={resultTone(pct)}>{resultLabel(pct)}</Pill>
+                        <Pill tone={resultTone(pct)}>{resultLabel(pct, sit)}</Pill>
                       </td>
                     </tr>
                   );

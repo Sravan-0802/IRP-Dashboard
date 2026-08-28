@@ -34,6 +34,29 @@ export function isRoundWiseFeResult(a: AssessmentResult): boolean {
   return a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID;
 }
 
+/**
+ * Cycle label from round-wise summary only
+ * (`hustler_assessment_number` / `fe_project_assessment_number` → `cycle` / `assessmentTag`).
+ */
+export function getAssessmentCycleTag(
+  assessment: AssessmentResult | null | undefined,
+): string | null {
+  if (!assessment) return null;
+  const cycle = (assessment.cycle ?? "").trim();
+  if (cycle) return cycle;
+  const tag = (assessment.assessmentTag ?? "").trim();
+  if (tag && !/^ACADEMY-IRP/i.test(tag) && !/^round-wise:/i.test(tag)) return tag;
+  return null;
+}
+
+/** Status from round-wise (`hustler_assessment_status` / `fe_project_status` → assessmentStatus). */
+export function getAssessmentStatusTag(
+  assessment: AssessmentResult | null | undefined,
+): string | null {
+  const status = (assessment?.assessmentStatus ?? "").trim();
+  return status || null;
+}
+
 /** BigQuery sometimes stores organisation_assessment_id in assessment_title — hide for display. */
 export function formatAssessmentTitle(
   title: string | null | undefined,
@@ -215,7 +238,9 @@ export function hasClearedFeProject(
 export function feResultLabel(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
-): "Cleared" | "Not cleared" {
+): "Cleared" | "Not cleared" | string {
+  const status = getAssessmentStatusTag(assessment);
+  if (status) return status;
   return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
 }
 
@@ -391,22 +416,23 @@ export function formatExamDateLabelFromIso(iso: string | null | undefined): stri
 }
 
 /**
- * Exam / cycle label for a sit.
- * Prefer attempt date from the row; else the cycle/assessment_number from
- * round-wise (`hustler_assessment_number` / `fe_project_assessment_number`).
+ * Cycle label for a sit — round-wise table tags only
+ * (`hustler_assessment_number` / `fe_project_assessment_number` / tag).
+ * No external C1/C2 or org-id date labels when table cycle/tag exists.
  */
 function examDateLabelForAssessment(assessment: AssessmentResult | null | undefined): string {
   if (!assessment) return EXAM_DATE_LABEL;
 
-  const fromIso = formatExamDateLabelFromIso(assessment.assessmentStartDatetime);
-  if (fromIso) return fromIso;
-
-  const cycle = (assessment.cycle ?? "").trim();
-  if (cycle) return cycle;
+  // Round-wise / table cycle tag first (A1, A2, …) — not invented date labels.
+  const tableCycle = getAssessmentCycleTag(assessment);
+  if (tableCycle) return tableCycle;
 
   if (isRoundWiseHustlerResult(assessment) || isRoundWiseFeResult(assessment)) {
     return assessment.assessmentTitle?.trim() || EXAM_DATE_LABEL;
   }
+
+  const fromIso = formatExamDateLabelFromIso(assessment.assessmentStartDatetime);
+  if (fromIso) return fromIso;
 
   // Legacy detail rows only (no round-wise summary for this user).
   const orgId = assessment.organisationAssessmentId;
@@ -444,7 +470,12 @@ export function getAssessmentCompletedDateLabel(
   return upcomingLabel;
 }
 
-export function resultLabel(pct: number): "Cleared" | "Not cleared" {
+export function resultLabel(
+  pct: number,
+  assessment?: AssessmentResult | null,
+): "Cleared" | "Not cleared" | string {
+  const status = getAssessmentStatusTag(assessment);
+  if (status) return status;
   return pct >= ASSESSMENT_CLEAR_THRESHOLD ? "Cleared" : "Not cleared";
 }
 

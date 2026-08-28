@@ -7,7 +7,7 @@ import {
   isL1July12RegistrationOpen,
   isL1July26RegistrationOpen,
 } from "@/lib/irpDates";
-import { hasClearedAssessment, hasWrittenAssessment } from "@/lib/assessment";
+import { hasClearedAssessment, hasWrittenAssessment, getAssessmentCycleTag, getExamDateLabelForAssessment, pickAssessmentForLevel } from "@/lib/assessment";
 import {
   L1_ASSESSMENT_CALENDAR_VISIBLE,
   L1_CYCLE2_BANNER_VISIBLE,
@@ -49,7 +49,10 @@ export function isCycle2Candidate(
 
 /** Cycle 1 completion date — only for cleared or attempted-not-cleared (their Cycle 1 sit). */
 export function getL1Cycle1CompletedDateLabel(assessments: AssessmentResult[]): string | null {
-  if (hasWrittenAssessment(assessments, 1)) return L1_CYCLE1_EXAM_DATE_LABEL;
+  if (hasWrittenAssessment(assessments, 1)) {
+    const a = pickAssessmentForLevel(assessments, 1);
+    return getAssessmentCycleTag(a) ?? getExamDateLabelForAssessment(a);
+  }
   return null;
 }
 

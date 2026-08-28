@@ -91,7 +91,7 @@ export function FeProjectNotClearedNotice({
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[rgba(245,159,0,0.12)] bg-[rgba(245,159,0,0.06)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Cycle</th>
                       <th className="px-3 py-2">Assessment</th>
                       <th className="px-3 py-2">Overall</th>
                       <th className="px-3 py-2">Result</th>
