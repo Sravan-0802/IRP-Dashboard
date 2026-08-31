@@ -259,6 +259,13 @@ function isFeAssessmentApiRow(a: AssessmentApiRow): boolean {
   );
 }
 
+/** MOCK sits must not drive main FE / L1 result cards. */
+function isMockAssessmentApiRow(a: AssessmentApiRow): boolean {
+  const title = (a.assessmentTitle ?? "").toUpperCase();
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  return /\bMOCK\b/.test(title) || tag.includes("_MOCK_") || /(?:^|_)MOCK(?:_|$)/.test(tag);
+}
+
 function mapDetailAssessmentRow(
   a: typeof academyUserAssessmentDetailsTable.$inferSelect,
 ): AssessmentApiRow {
@@ -455,14 +462,21 @@ async function getAssessmentResultsResponse(userId: string) {
   }
 
   // Prefer round-wise when QUALIFIED. If round-wise is still on an older
-  // NOT QUALIFIED sit (z_* lag), fall back to portal/detail attempts so a
+  // NOT QUALIFIED sit (z_* lag), fall back to portal/detail MAIN attempts so a
   // later cleared MAIN sit (e.g. A2) is not hidden behind attempt 1.
+  // Never treat MOCK-only FE as a main FE attempt (round-wise often mirrors mock).
   const roundAssessments = assessmentsFromRoundWise(summary);
   const detailL1 = detailAssessments.filter(
-    (a) => a.hasWrittenAssessment && !isFeAssessmentApiRow(a),
+    (a) =>
+      a.hasWrittenAssessment &&
+      !isFeAssessmentApiRow(a) &&
+      !isMockAssessmentApiRow(a),
   );
-  const detailFe = detailAssessments.filter(
-    (a) => a.hasWrittenAssessment && isFeAssessmentApiRow(a),
+  const detailFeMain = detailAssessments.filter(
+    (a) =>
+      a.hasWrittenAssessment &&
+      isFeAssessmentApiRow(a) &&
+      !isMockAssessmentApiRow(a),
   );
 
   const out: AssessmentApiRow[] = [];
@@ -479,11 +493,12 @@ async function getAssessmentResultsResponse(userId: string) {
     out.push(...detailL1);
   }
 
-  if (isQualifiedStatus(summary.feProjectStatus) || detailFe.length === 0) {
+  if (isQualifiedStatus(summary.feProjectStatus)) {
     out.push(...roundFe);
-  } else {
-    out.push(...detailFe);
+  } else if (detailFeMain.length > 0) {
+    out.push(...detailFeMain);
   }
+  // else: omit FE — round-wise NOT QUALIFIED with no MAIN detail often means mock-only
 
   return { assessments: out };
 }
