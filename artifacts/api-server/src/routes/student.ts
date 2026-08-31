@@ -44,6 +44,7 @@ import {
   validateL1RegistrationPayload,
 } from "../lib/l1Registration";
 import { getActiveRegistrationBatchForStudent } from "../lib/registrationBatches";
+import { isMainAssessmentFields } from "../lib/mainOnly";
 
 const router = Router();
 
@@ -259,11 +260,11 @@ function isFeAssessmentApiRow(a: AssessmentApiRow): boolean {
   );
 }
 
-/** MOCK sits must not drive main FE / L1 result cards. */
-function isMockAssessmentApiRow(a: AssessmentApiRow): boolean {
-  const title = (a.assessmentTitle ?? "").toUpperCase();
-  const tag = (a.assessmentTag ?? "").toUpperCase();
-  return /\bMOCK\b/.test(title) || tag.includes("_MOCK_") || /(?:^|_)MOCK(?:_|$)/.test(tag);
+function isMainAssessmentApiRow(a: AssessmentApiRow): boolean {
+  return isMainAssessmentFields({
+    title: a.assessmentTitle,
+    tag: a.assessmentTag,
+  });
 }
 
 function mapDetailAssessmentRow(
@@ -455,29 +456,23 @@ async function getAssessmentResultsResponse(userId: string) {
     .where(eq(academyUserAssessmentDetailsTable.userId, userId));
   const detailAssessments = detailRows
     .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
-    .map(mapDetailAssessmentRow);
+    .map(mapDetailAssessmentRow)
+    .filter(isMainAssessmentApiRow);
 
   if (!summary) {
     return { assessments: detailAssessments };
   }
 
-  // Prefer round-wise when QUALIFIED. If round-wise is still on an older
-  // NOT QUALIFIED sit (z_* lag), fall back to portal/detail MAIN attempts so a
-  // later cleared MAIN sit (e.g. A2) is not hidden behind attempt 1.
-  // Never treat MOCK-only FE as a main FE attempt (round-wise often mirrors mock).
+  // MAIN-only stage results:
+  // 1) Prefer written MAIN detail sits (portal + z_* MAIN sync).
+  // 2) Round-wise QUALIFIED is fallback only when no MAIN details exist.
+  // 3) Never surface round-wise NOT QUALIFIED alone — it often mirrors MOCK.
   const roundAssessments = assessmentsFromRoundWise(summary);
-  const detailL1 = detailAssessments.filter(
-    (a) =>
-      a.hasWrittenAssessment &&
-      !isFeAssessmentApiRow(a) &&
-      !isMockAssessmentApiRow(a),
+  const detailMain = detailAssessments.filter(
+    (a) => a.hasWrittenAssessment && isMainAssessmentApiRow(a),
   );
-  const detailFeMain = detailAssessments.filter(
-    (a) =>
-      a.hasWrittenAssessment &&
-      isFeAssessmentApiRow(a) &&
-      !isMockAssessmentApiRow(a),
-  );
+  const detailL1 = detailMain.filter((a) => !isFeAssessmentApiRow(a));
+  const detailFeMain = detailMain.filter((a) => isFeAssessmentApiRow(a));
 
   const out: AssessmentApiRow[] = [];
   const roundHustler = roundAssessments.filter(
@@ -487,18 +482,17 @@ async function getAssessmentResultsResponse(userId: string) {
     (a) => a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID,
   );
 
-  if (isQualifiedStatus(summary.hustlerAssessmentStatus) || detailL1.length === 0) {
-    out.push(...roundHustler);
-  } else {
+  if (detailL1.length > 0) {
     out.push(...detailL1);
+  } else if (isQualifiedStatus(summary.hustlerAssessmentStatus)) {
+    out.push(...roundHustler);
   }
 
-  if (isQualifiedStatus(summary.feProjectStatus)) {
-    out.push(...roundFe);
-  } else if (detailFeMain.length > 0) {
+  if (detailFeMain.length > 0) {
     out.push(...detailFeMain);
+  } else if (isQualifiedStatus(summary.feProjectStatus)) {
+    out.push(...roundFe);
   }
-  // else: omit FE — round-wise NOT QUALIFIED with no MAIN detail often means mock-only
 
   return { assessments: out };
 }

@@ -91,7 +91,8 @@ const attemptFilter = (col) =>
   `UPPER(COALESCE(assessment_type, '')) = 'MAIN'
     AND (${col} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 const nxtmockFilter =
-  `(interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
+  `UPPER(COALESCE(interview_program, '')) = 'MAIN'
+    AND (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 
 async function recordStatus(tableName, status, rowCount, durationMs, error) {
   const now = new Date();

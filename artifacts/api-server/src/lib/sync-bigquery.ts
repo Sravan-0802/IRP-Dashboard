@@ -23,6 +23,7 @@ import {
   type ZFeProjectAttemptRow,
   type ZNxtmockAttemptRow,
 } from "./bigquery";
+import { isMainAssessmentFields } from "./mainOnly";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
@@ -191,7 +192,11 @@ async function syncMainAssessmentDetails(): Promise<number> {
           r.user_id != null &&
           String(r.user_id).trim() !== "" &&
           r.organisation_assessment_id != null &&
-          String(r.organisation_assessment_id).trim() !== ""
+          String(r.organisation_assessment_id).trim() !== "" &&
+          isMainAssessmentFields({
+            title: toStr(r.assessment_title),
+            tag: toStr(r.assessment_tag_str_extracted),
+          }),
       )
       .map((r) => ({
         userId: String(r.user_id),
@@ -264,7 +269,12 @@ async function syncNxtmockDetails(): Promise<number> {
           r.user_id != null &&
           String(r.user_id).trim() !== "" &&
           r.interview_id != null &&
-          String(r.interview_id).trim() !== "",
+          String(r.interview_id).trim() !== "" &&
+          isMainAssessmentFields({
+            title: toStr(r.interview_title),
+            tag: toStr(r.interview_title),
+            type: toStr(r.exam_type),
+          }),
       )
       .map((r) => ({
         userId: String(r.user_id),

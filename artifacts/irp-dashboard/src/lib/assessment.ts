@@ -16,7 +16,6 @@ import {
   FE_AUG5_ORG_ASSESSMENT_ID,
   FE_PROJECT_CLEAR_MIN_SCORE,
   FE_PROJECT_MAIN_II_ORG_ASSESSMENT_ID,
-  FE_PROJECT_MOCK_ORG_ASSESSMENT_ID,
   normalizeOrgAssessmentId,
 } from "@/lib/feProjectConfig";
 /** Minimum overall % (assessment_user_score / assessment_total_score) to count as cleared. */
@@ -25,6 +24,19 @@ export const ASSESSMENT_CLEAR_THRESHOLD = 70;
 /** Synthetic org ids from GET /api/student/assessments when round-wise is the results source. */
 export const ROUND_WISE_HUSTLER_ORG_ID = "round-wise:hustler";
 export const ROUND_WISE_FE_ORG_ID = "round-wise:fe";
+
+/** Stage results ignore MOCK practice sits — MAIN only. */
+export function isMockAssessment(a: AssessmentResult): boolean {
+  const title = (a.assessmentTitle ?? "").toUpperCase();
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  if (/(?:^|_)MOCK(?:_|$)/.test(tag)) return true;
+  if (/\bMOCK\b/.test(title)) return true;
+  return false;
+}
+
+export function mainAssessmentsOnly(assessments: AssessmentResult[]): AssessmentResult[] {
+  return assessments.filter((a) => !isMockAssessment(a));
+}
 
 export function isRoundWiseHustlerResult(a: AssessmentResult): boolean {
   return a.organisationAssessmentId === ROUND_WISE_HUSTLER_ORG_ID;
@@ -95,8 +107,9 @@ function scoreRank(assessment: AssessmentResult): number {
   return -1;
 }
 
-/** True for L1 Hustler online assessment rows — excludes FE Project attempts. */
+/** True for L1 Hustler online assessment rows — excludes FE Project and MOCK. */
 export function isL1OnlineAssessment(a: AssessmentResult): boolean {
+  if (isMockAssessment(a)) return false;
   if (isRoundWiseHustlerResult(a)) return true;
   if (isRoundWiseFeResult(a)) return false;
   const level = (a.level ?? "").toUpperCase();
@@ -108,15 +121,15 @@ export function isL1OnlineAssessment(a: AssessmentResult): boolean {
   return parseAssessmentLevel(a.level) === 1 && !level.includes("FE");
 }
 
-/** Known FE Project organisation_assessment_id values (hyphens stripped). */
+/** Known FE Project MAIN organisation_assessment_id values (hyphens stripped). */
 const FE_PROJECT_ORG_IDS = new Set([
   normalizeOrgAssessmentId(FE_AUG5_ORG_ASSESSMENT_ID),
   normalizeOrgAssessmentId(FE_PROJECT_MAIN_II_ORG_ASSESSMENT_ID),
-  normalizeOrgAssessmentId(FE_PROJECT_MOCK_ORG_ASSESSMENT_ID),
 ]);
 
 /** True for FE Project assessment rows (Main / Main II / A4 / known FE org windows). */
 export function isFeProjectAssessment(a: AssessmentResult): boolean {
+  if (isMockAssessment(a)) return false;
   if (isRoundWiseFeResult(a)) return true;
   if (isRoundWiseHustlerResult(a)) return false;
   const orgId = normalizeOrgAssessmentId(a.organisationAssessmentId);

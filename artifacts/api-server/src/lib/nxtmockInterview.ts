@@ -5,6 +5,7 @@ import {
   studentsTable,
 } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
+import { isMainAssessmentFields } from "./mainOnly";
 
 /** Minimum average rating (inclusive) to clear the AI Mock Interview. */
 export const NXTMOCK_CLEAR_RATING_THRESHOLD = 5;
@@ -131,8 +132,8 @@ async function loadRoundWiseSummary(userId: string) {
 }
 
 /**
- * Prefer round-wise for Attempt N / status / avg rating; skill bars from detail
- * (section_wise_rating_json synced into discrete columns).
+ * Prefer MAIN detail sits for scores/skills. Round-wise QUALIFIED is fallback
+ * only when no MAIN detail exists (never use MOCK details or mock-only summary).
  */
 export async function getNxtmockInterviewForUser(
   userId: string,
@@ -142,16 +143,18 @@ export async function getNxtmockInterviewForUser(
     loadRoundWiseSummary(userId),
   ]);
 
-  const hasRoundWiseNxtmock =
-    summary != null &&
-    (summary.nxtmockStatus != null ||
-      summary.nxtmockAttemptNumber != null ||
-      summary.nxtmockInterviewRating != null);
+  const mainDetails = detailRows.filter((row) =>
+    isMainAssessmentFields({
+      title: row.interviewTitle,
+      tag: row.interviewTitle,
+      type: row.examType,
+    }),
+  );
 
   const bestDetail =
-    detailRows.length === 0
+    mainDetails.length === 0
       ? null
-      : detailRows.reduce((current, candidate) => {
+      : mainDetails.reduce((current, candidate) => {
           const currentAvg = current.averageRating ?? -Infinity;
           const candidateAvg = candidate.averageRating ?? -Infinity;
           if (candidateAvg > currentAvg) return candidate;
@@ -165,52 +168,45 @@ export async function getNxtmockInterviewForUser(
           return candidateSynced > currentSynced ? candidate : current;
         });
 
-  if (!hasRoundWiseNxtmock && !bestDetail) return null;
+  const roundWiseQualified =
+    summary != null &&
+    summary.nxtmockStatus != null &&
+    /qualified/i.test(summary.nxtmockStatus) &&
+    !/not\s*qualified/i.test(summary.nxtmockStatus);
 
-  if (hasRoundWiseNxtmock && summary) {
-    const skills = bestDetail
-      ? {
-          selfIntroRating: bestDetail.selfIntroRating,
-          javascriptCodingRating: bestDetail.javascriptCodingRating,
-          javascriptRating: bestDetail.javascriptRating,
-          cssRating: bestDetail.cssRating,
-          htmlRating: bestDetail.htmlRating,
-          reactJsRating: bestDetail.reactJsRating,
-        }
-      : {
-          selfIntroRating: null,
-          javascriptCodingRating: null,
-          javascriptRating: null,
-          cssRating: null,
-          htmlRating: null,
-          reactJsRating: null,
-        };
+  if (bestDetail) {
+    const response = rowToResponse(bestDetail);
+    if (summary?.nxtmockInterviewNumber) {
+      response.cycle = summary.nxtmockInterviewNumber;
+    }
+    return response;
+  }
 
-    const averageRating =
-      summary.nxtmockInterviewRating ?? bestDetail?.averageRating ?? null;
-    const interviewStatus =
-      summary.nxtmockStatus ?? bestDetail?.interviewStatus ?? null;
-
+  if (roundWiseQualified && summary) {
+    const averageRating = summary.nxtmockInterviewRating ?? null;
+    const interviewStatus = summary.nxtmockStatus ?? null;
     return {
-      interviewId: bestDetail?.interviewId ?? "round-wise:nxtmock",
-      interviewTitle:
-        bestDetail?.interviewTitle ??
-        (summary.nxtmockInterviewNumber
-          ? `AI Mock Interview ${summary.nxtmockInterviewNumber}`
-          : "AI Mock Interview"),
-      examType: bestDetail?.examType ?? null,
-      level: bestDetail?.level ?? "L1",
+      interviewId: "round-wise:nxtmock",
+      interviewTitle: summary.nxtmockInterviewNumber
+        ? `AI Mock Interview ${summary.nxtmockInterviewNumber}`
+        : "AI Mock Interview",
+      examType: "MAIN",
+      level: "L1",
       cycle: summary.nxtmockInterviewNumber ?? null,
-      ...skills,
+      selfIntroRating: null,
+      javascriptCodingRating: null,
+      javascriptRating: null,
+      cssRating: null,
+      htmlRating: null,
+      reactJsRating: null,
       averageRating,
-      attemptNumber:
-        summary.nxtmockAttemptNumber ?? bestDetail?.attemptNumber ?? null,
+      attemptNumber: summary.nxtmockAttemptNumber ?? null,
       interviewStatus,
       cleared: isNxtmockCleared(averageRating, interviewStatus),
     };
   }
 
-  return bestDetail ? rowToResponse(bestDetail) : null;
+  return null;
 }
 
 /** Persist L1_HUMAN_INTERVIEW when synced NxtMock data shows a cleared attempt. */

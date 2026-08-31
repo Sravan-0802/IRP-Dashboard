@@ -434,16 +434,17 @@ export async function fetchZNxtmockAttempts(): Promise<ZNxtmockAttemptRow[]> {
   const bq = getBigQueryClient();
   const { projectId, dataset } = await resolveDatasetId(bq);
   const fq = `${projectId}.${dataset}.${Z_NXTMOCK_ATTEMPT_TABLE}`;
-  // NxtMock has no assessment_type; keep status / attempt filter only.
+  // MAIN interviews only (interview_program); exclude MOCK practice sits.
   const query = `SELECT
       user_id, interview_id, interview_attempt_id, interview_tag,
       interview_attempt_start_datetime, avg_user_interview_rating, user_interview_overall_rating,
       interview_program, interview_level, interview_name, interview_number,
       interview_status, attempt_number, section_wise_rating_json
     FROM \`${fq}\`
-    WHERE (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
+    WHERE UPPER(COALESCE(interview_program, '')) = 'MAIN'
+      AND (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
   const [rows] = await bq.query({ query });
-  logger.info({ table: Z_NXTMOCK_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched z_* nxtmock attempts");
+  logger.info({ table: Z_NXTMOCK_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched z_* nxtmock MAIN attempts");
   return rows as ZNxtmockAttemptRow[];
 }
 
