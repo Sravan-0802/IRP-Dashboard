@@ -223,6 +223,42 @@ type AssessmentApiRow = {
   levelNumber: number | null;
 };
 
+function cycleFromAssessmentFields(
+  cycle: string | null | undefined,
+  tag: string | null | undefined,
+  title: string | null | undefined,
+): string | undefined {
+  const direct = cycle?.trim();
+  if (direct) return direct;
+  const fromTag = tag?.match(/\b(A\d+)\b/i)?.[1];
+  if (fromTag) return fromTag.toUpperCase();
+  const fromTitle = title?.match(/\b(A\d+)\b/i)?.[1];
+  if (fromTitle) return fromTitle.toUpperCase();
+  return undefined;
+}
+
+function isQualifiedStatus(status: string | null | undefined): boolean {
+  if (!status?.trim()) return false;
+  return /qualified/i.test(status) && !/not\s*qualified/i.test(status);
+}
+
+function isFeAssessmentApiRow(a: AssessmentApiRow): boolean {
+  if (a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID) return true;
+  if (a.organisationAssessmentId === ROUND_WISE_HUSTLER_ORG_ID) return false;
+  const level = (a.level ?? "").toUpperCase();
+  const tag = (a.assessmentTag ?? "").toUpperCase();
+  const title = (a.assessmentTitle ?? "").toUpperCase();
+  return (
+    level.includes("FE-PROJECT") ||
+    level.includes("FE_PROJECT") ||
+    tag.includes("FE-PROJECT") ||
+    tag.includes("FE_PROJECT") ||
+    title.includes("FE PROJECT") ||
+    title.includes("FE-PROJECT") ||
+    (title.includes("MAIN II") && (title.includes("IRP") || title.includes("PROJECT")))
+  );
+}
+
 function mapDetailAssessmentRow(
   a: typeof academyUserAssessmentDetailsTable.$inferSelect,
 ): AssessmentApiRow {
@@ -244,13 +280,18 @@ function mapDetailAssessmentRow(
     a.attemptNumber != null ||
     (a.assessmentStatus != null &&
       /qualified/i.test(a.assessmentStatus));
+  const cycle = cycleFromAssessmentFields(
+    a.cycle,
+    a.assessmentTag,
+    a.assessmentTitle,
+  );
 
   return {
     organisationAssessmentId: a.organisationAssessmentId,
     assessmentTitle: a.assessmentTitle ?? "Assessment",
-    assessmentTag: a.assessmentTag ?? undefined,
+    assessmentTag: a.assessmentTag ?? cycle ?? undefined,
     level: a.level ?? "",
-    cycle: a.cycle ?? undefined,
+    cycle,
     mcqScore,
     mcqMax,
     mcqPct: pct(a.mcqUserSectionScore, a.mcqSectionMaxScore),
@@ -401,22 +442,50 @@ async function getAssessmentResultsResponse(userId: string) {
     if (!/irp_l1_round_wise_summary|does not exist|undefined_table/i.test(text)) throw err;
   }
 
-  // Cycles + L1 scores: only z_academy_irp_2_0_l1_user_round_wise_summary
-  // (mirrored in irp_l1_round_wise_summary). Do not mix detail-table cycles.
-  if (summary) {
-    return { assessments: assessmentsFromRoundWise(summary) };
-  }
-
   const detailRows = await db
     .select()
     .from(academyUserAssessmentDetailsTable)
     .where(eq(academyUserAssessmentDetailsTable.userId, userId));
+  const detailAssessments = detailRows
+    .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
+    .map(mapDetailAssessmentRow);
 
-  return {
-    assessments: detailRows
-      .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
-      .map(mapDetailAssessmentRow),
-  };
+  if (!summary) {
+    return { assessments: detailAssessments };
+  }
+
+  // Prefer round-wise when QUALIFIED. If round-wise is still on an older
+  // NOT QUALIFIED sit (z_* lag), fall back to portal/detail attempts so a
+  // later cleared MAIN sit (e.g. A2) is not hidden behind attempt 1.
+  const roundAssessments = assessmentsFromRoundWise(summary);
+  const detailL1 = detailAssessments.filter(
+    (a) => a.hasWrittenAssessment && !isFeAssessmentApiRow(a),
+  );
+  const detailFe = detailAssessments.filter(
+    (a) => a.hasWrittenAssessment && isFeAssessmentApiRow(a),
+  );
+
+  const out: AssessmentApiRow[] = [];
+  const roundHustler = roundAssessments.filter(
+    (a) => a.organisationAssessmentId === ROUND_WISE_HUSTLER_ORG_ID,
+  );
+  const roundFe = roundAssessments.filter(
+    (a) => a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID,
+  );
+
+  if (isQualifiedStatus(summary.hustlerAssessmentStatus) || detailL1.length === 0) {
+    out.push(...roundHustler);
+  } else {
+    out.push(...detailL1);
+  }
+
+  if (isQualifiedStatus(summary.feProjectStatus) || detailFe.length === 0) {
+    out.push(...roundFe);
+  } else {
+    out.push(...detailFe);
+  }
+
+  return { assessments: out };
 }
 
 router.get("/student", async (req, res) => {
