@@ -62,6 +62,20 @@ CREATE TABLE IF NOT EXISTS irp_l1_round_wise_summary (
   nxtmock_attempt_date timestamptz,
   synced_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS genai_training_popup (
+  id integer PRIMARY KEY DEFAULT 1,
+  enabled integer NOT NULL DEFAULT 0,
+  version text NOT NULL DEFAULT '2026-09',
+  title text NOT NULL,
+  body text NOT NULL,
+  schedule text NOT NULL,
+  time text NOT NULL,
+  footer text NOT NULL,
+  cta_label text NOT NULL,
+  live_url text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -71,7 +85,7 @@ async function main() {
     throw new Error("DATABASE_URL is required");
   }
   await pool.query(SQL);
-  console.log("Schema ensured: irp_l1_round_wise_summary + nxtmock/visibility columns");
+  console.log("Schema ensured: irp_l1_round_wise_summary + nxtmock/visibility columns + genai_training_popup");
   await pool.end();
 }
 

@@ -29,6 +29,7 @@ import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
+import { getGenAiTrainingPopup } from "../lib/genAiTrainingPopup";
 import {
   canRegisterForL1July12,
   canRegisterForL1July26,
@@ -1198,6 +1199,21 @@ router.get("/student/visibility-settings", async (req, res) => {
     res.json(toResponse(map, releaseAtByKey, updatedAt, syncByTable));
   } catch (err) {
     req.log.error({ err }, "Failed to get visibility settings");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/genai-training-popup — admin-managed GenAI Training pop-up content.
+router.get("/student/genai-training-popup", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json(await getGenAiTrainingPopup());
+  } catch (err) {
+    req.log.error({ err }, "Failed to get GenAI training popup");
     res.status(500).json({ error: "Internal server error" });
   }
 });

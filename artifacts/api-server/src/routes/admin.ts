@@ -21,6 +21,11 @@ import {
   toResponse,
   updateVisibilitySettings,
 } from "../lib/visibilitySettings";
+import {
+  getGenAiTrainingPopup,
+  parseGenAiTrainingPopupBody,
+  updateGenAiTrainingPopup,
+} from "../lib/genAiTrainingPopup";
 
 const router = Router();
 
@@ -684,6 +689,39 @@ router.put("/admin/visibility-settings", async (req, res) => {
     res.json(toResponse(map, releaseAtByKey, updatedAt, syncByTable, countsByKey));
   } catch (err) {
     req.log.error({ err }, "Failed to update visibility settings");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/genai-training-popup — read GenAI Training pop-up content
+router.get("/admin/genai-training-popup", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json(await getGenAiTrainingPopup());
+  } catch (err) {
+    req.log.error({ err }, "Failed to get GenAI training popup settings");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/genai-training-popup — update GenAI Training pop-up content
+router.put("/admin/genai-training-popup", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const parsed = parseGenAiTrainingPopupBody(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    res.json(await updateGenAiTrainingPopup(parsed.patch));
+  } catch (err) {
+    req.log.error({ err }, "Failed to update GenAI training popup settings");
     res.status(500).json({ error: "Internal server error" });
   }
 });

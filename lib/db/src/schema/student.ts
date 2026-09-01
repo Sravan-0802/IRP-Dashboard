@@ -485,6 +485,27 @@ export const registrationBatchUsersTable = pgTable(
   }),
 );
 
+/**
+ * Singleton admin-managed GenAI Training dashboard pop-up (row id = 1).
+ * Bump `version` when copy changes to re-show for students who dismissed earlier.
+ */
+export const genAiTrainingPopupTable = pgTable("genai_training_popup", {
+  id: integer("id").primaryKey().default(1),
+  enabled: integer("enabled").notNull().default(0),
+  version: text("version").notNull().default("2026-09"),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  schedule: text("schedule").notNull(),
+  time: text("time").notNull(),
+  footer: text("footer").notNull(),
+  ctaLabel: text("cta_label").notNull(),
+  liveUrl: text("live_url").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type GenAiTrainingPopup = typeof genAiTrainingPopupTable.$inferSelect;
+export type InsertGenAiTrainingPopup = typeof genAiTrainingPopupTable.$inferInsert;
+
 export type RegistrationBatch = typeof registrationBatchesTable.$inferSelect;
 export type InsertRegistrationBatch = typeof registrationBatchesTable.$inferInsert;
 export type RegistrationBatchUser = typeof registrationBatchUsersTable.$inferSelect;

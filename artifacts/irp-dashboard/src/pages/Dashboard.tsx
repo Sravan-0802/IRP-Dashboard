@@ -5,6 +5,7 @@ import {
   useGetStudent, getGetStudentQueryKey,
   useGetStudentProgress, getGetStudentProgressQueryKey,
   useGetStudentAssessments, getGetStudentAssessmentsQueryKey,
+  type AssessmentResult,
 } from "@workspace/api-client-react";
 import { L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
 import { useJourney } from "@/lib/useJourney";
@@ -29,6 +30,11 @@ import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
 import { useAcademyUserId } from "@/lib/useAcademyUserId";
 import { PAYMENT_CONCERNS_FORM_URL } from "@/pages/PaymentRequired";
+import { GenAiTrainingPopup } from "@/components/irp/GenAiTrainingPopup";
+import { useGenAiTrainingPopup } from "@/lib/useGenAiTrainingPopup";
+import { useGenAiTrainingConfig } from "@/lib/useGenAiTrainingConfig";
+
+const EMPTY_ASSESSMENTS: AssessmentResult[] = [];
 
 export default function Dashboard() {
   const { paid, loading: loadingPayment } = usePaymentStatus();
@@ -82,21 +88,22 @@ export default function Dashboard() {
 
   const displayStudent = student ?? (studentError ? DEMO_STUDENT : null);
   const displayProgress = progress ?? (progressError ? DEMO_PROGRESS : null);
-  const displayAssessments =
-    assessmentsData?.assessments ?? (assessmentsError ? DEMO_ASSESSMENTS.assessments : []);
+  const displayAssessments = useMemo(
+    () =>
+      assessmentsData?.assessments ??
+      (assessmentsError ? DEMO_ASSESSMENTS.assessments : EMPTY_ASSESSMENTS),
+    [assessmentsData?.assessments, assessmentsError],
+  );
 
   useEffect(() => {
     const tick = () => {
       const level = journey ? getLevel(journey.journeyState) : 1;
-      if (level === 1 && !isCycle2Candidate(displayAssessments)) {
-        setCountdown({ days: 0 });
-        return;
+      let days = 0;
+      if (level === 1 && isCycle2Candidate(displayAssessments)) {
+        const dist = getL1UpcomingExamDate(displayAssessments).getTime() - Date.now();
+        if (dist >= 0) days = Math.floor(dist / 86_400_000);
       }
-      const dist = getL1UpcomingExamDate(displayAssessments).getTime() - Date.now();
-      if (dist < 0) return setCountdown({ days: 0 });
-      setCountdown({
-        days: Math.floor(dist / 86_400_000),
-      });
+      setCountdown((prev) => (prev.days === days ? prev : { days }));
     };
     tick();
     const id = setInterval(tick, 60_000);
@@ -131,6 +138,11 @@ export default function Dashboard() {
 
   const emailDerivedUserId = displayStudent?.email?.split("@")[0] ?? "";
   const userId = useAcademyUserId(emailDerivedUserId);
+  const { config: genAiConfig } = useGenAiTrainingConfig();
+  const genAiPopup = useGenAiTrainingPopup(paid ? userId : null, {
+    enabled: genAiConfig.enabled,
+    version: genAiConfig.version,
+  });
 
   if (loadingJourney || loadingPayment || !journey || !displayStudent) {
     return (
@@ -256,6 +268,14 @@ export default function Dashboard() {
       />
 
       <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+
+      {genAiPopup.open ? (
+        <GenAiTrainingPopup
+          open={genAiPopup.open}
+          onOpenChange={genAiPopup.onOpenChange}
+          content={genAiConfig}
+        />
+      ) : null}
 
       <div className="fixed bottom-6 right-6 z-40">
         <FeedbackButton variant="floating" onClick={openFeedback} />

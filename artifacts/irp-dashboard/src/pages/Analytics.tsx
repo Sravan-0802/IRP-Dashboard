@@ -4,6 +4,7 @@ import { AccessGrantsPanel } from "@/components/admin/AccessGrantsPanel";
 import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
 import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/components/admin/RegistrationBatchesPanel";
 import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
+import { GenAiTrainingPopupPanel } from "@/components/admin/GenAiTrainingPopupPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -86,6 +87,7 @@ type AnalyticsTab =
   | "feedback"
   | "support"
   | "visibility"
+  | "genai_popup"
   | "dashboard_access"
   | "access"
   | "access_viewer"
@@ -215,6 +217,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "feedback",
       "support",
       "visibility",
+      "genai_popup",
       "dashboard_access",
       "access",
       "access_viewer",
@@ -592,6 +595,7 @@ export default function AnalyticsPage() {
     if (!data) {
       return apiKey
         ? [
+            { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
@@ -607,6 +611,9 @@ export default function AnalyticsPage() {
       { id: "feedback" as const, label: "Feedback", count: data.feedbackCount },
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
+      ...(apiKey
+        ? [{ id: "genai_popup" as const, label: "GenAI pop-up", count: undefined }]
+        : []),
       ...(apiKey
         ? [
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
@@ -1817,6 +1824,10 @@ export default function AnalyticsPage() {
 
             {activeTab === "dashboard_access" && apiKey ? (
               <DashboardAccessPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "genai_popup" && apiKey ? (
+              <GenAiTrainingPopupPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "access" && apiKey ? (
