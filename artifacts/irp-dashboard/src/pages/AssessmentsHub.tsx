@@ -77,15 +77,7 @@ function resolveAssessmentUrl(config: AssessmentConfig, slotId?: string): string
 }
 
 const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
-  1: [
-    {
-      id: "l1-hustler",
-      title: "L1 Hustler",
-      description: "The official Level 1 assessment. Pick a slot and give it your best shot.",
-      kind: "main",
-      slots: L1_JULY12_HUSTLER_SLOTS,
-    },
-  ],
+  1: [],
   2: [],
   3: [],
 };
@@ -465,7 +457,7 @@ export function AssessmentsHub({
       {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
-        showOnlineGrantCards ? null : (
+        showOnlineGrantCards || level === 1 ? null : (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[rgba(103,65,217,0.1)] bg-[rgba(103,65,217,0.03)] py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-l1-bg text-l1">
             <ClipboardList className="h-5 w-5" />
