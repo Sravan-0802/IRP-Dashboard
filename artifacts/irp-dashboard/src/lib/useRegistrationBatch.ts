@@ -17,6 +17,11 @@ export type RegistrationBatchState = {
   hasResponded: boolean;
 };
 
+/** Remove accidental caret markers from admin-entered date labels before display. */
+export function formatRegistrationBatchDate(value: string): string {
+  return value.replace(/\^/g, "").trim();
+}
+
 const REG_BATCH_KEY = ["student", "registration-batch"] as const;
 
 async function fetchRegistrationBatch(): Promise<RegistrationBatchState> {

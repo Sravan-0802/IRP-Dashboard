@@ -46,7 +46,7 @@ import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
 import { L1July26MainCallout } from "@/components/irp/L1July26MainCallout";
 import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 import { useStudentAccess } from "@/lib/useStudentAccess";
-import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
+import { formatRegistrationBatchDate, useRegistrationBatch } from "@/lib/useRegistrationBatch";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // Per-level assessments. Add L2/L3 entries here when those levels go live.
@@ -429,7 +429,7 @@ export function AssessmentsHub({
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
           {level === 1 && registrationBatch
-            ? `Your ${registrationBatch.assessmentLabel} registration is open for ${registrationBatch.assessmentDate}. Choose your slot below.`
+            ? `Your ${registrationBatch.assessmentLabel} registration is open for ${formatRegistrationBatchDate(registrationBatch.assessmentDate)}. Choose your slot below.`
             : level === 1 && hasExamAccess && examSlotId === "slot-3"
             ? "Your L1 Hustler assessment link is available from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
             : level === 1 && showOnlineGrantCards
