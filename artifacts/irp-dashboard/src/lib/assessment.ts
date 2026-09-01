@@ -107,6 +107,22 @@ function scoreRank(assessment: AssessmentResult): number {
   return -1;
 }
 
+function sortWrittenByNewestFirst(a: AssessmentResult, b: AssessmentResult): number {
+  const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
+  if (dateDiff !== 0) return dateDiff;
+  return scoreRank(b) - scoreRank(a);
+}
+
+/** Cleared / not cleared from round-wise status when present; else overall %. */
+export function isAssessmentSitCleared(assessment: AssessmentResult): boolean {
+  const status = (assessment.assessmentStatus ?? "").trim();
+  if (status) {
+    if (/not\s*qualified/i.test(status)) return false;
+    if (/qualified/i.test(status)) return true;
+  }
+  return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
+}
+
 /** True for L1 Hustler online assessment rows — excludes FE Project and MOCK. */
 export function isL1OnlineAssessment(a: AssessmentResult): boolean {
   if (isMockAssessment(a)) return false;
@@ -170,11 +186,14 @@ export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
 ): AssessmentResult | null {
+  const attempted = listAttemptedFeProjectAssessments(assessments);
+  const cleared = attempted.filter((a) => hasClearedFeSit(a));
+  if (cleared.length > 0) return cleared[0];
+
   const roundWise = assessments.find(isRoundWiseFeResult);
   if (roundWise && (roundWise.hasWrittenAssessment || feAssessmentWasWritten(roundWise))) {
     return roundWise;
   }
-  const attempted = listAttemptedFeProjectAssessments(assessments);
   if (attempted.length > 0) return attempted[0];
 
   const registered = assessments
@@ -192,20 +211,17 @@ export function pickFeProjectAssessment(
 export function listAttemptedFeProjectAssessments(
   assessments: AssessmentResult[],
 ): AssessmentResult[] {
-  const roundWise = assessments.find(
-    (a) => isRoundWiseFeResult(a) && feAssessmentWasWritten(a),
-  );
-  if (roundWise) return [roundWise];
-
-  return assessments
+  const detailSits = assessments
     .filter(isFeProjectAssessment)
     .filter((a) => !isRoundWiseFeResult(a))
     .filter(feAssessmentWasWritten)
-    .sort((a, b) => {
-      const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
-      if (dateDiff !== 0) return dateDiff;
-      return scoreRank(b) - scoreRank(a);
-    });
+    .sort(sortWrittenByNewestFirst);
+  if (detailSits.length > 0) return detailSits;
+
+  const roundWise = assessments.find(
+    (a) => isRoundWiseFeResult(a) && feAssessmentWasWritten(a),
+  );
+  return roundWise ? [roundWise] : [];
 }
 
 /** Attempted = API `hasWrittenAssessment` from synced table scores (includes 0/20). */
@@ -305,20 +321,19 @@ export function pickAssessmentForLevel(
   level: 1 | 2 | 3,
 ): AssessmentResult | null {
   if (level === 1) {
-    const roundWise = assessments.find(isRoundWiseHustlerResult);
-    if (roundWise && (roundWise.hasWrittenAssessment || assessmentWasWritten(roundWise))) {
-      return roundWise;
-    }
     const online = assessments.filter(isL1OnlineAssessment);
     const written = online
       .filter((a) => !isRoundWiseHustlerResult(a))
       .filter(assessmentWasWritten)
-      .sort((a, b) => {
-        const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
-        if (dateDiff !== 0) return dateDiff;
-        return scoreRank(b) - scoreRank(a);
-      });
+      .sort(sortWrittenByNewestFirst);
+    const cleared = written.filter(isAssessmentSitCleared);
+    if (cleared.length > 0) return cleared[0];
     if (written.length > 0) return written[0];
+
+    const roundWise = assessments.find(isRoundWiseHustlerResult);
+    if (roundWise && (roundWise.hasWrittenAssessment || assessmentWasWritten(roundWise))) {
+      return roundWise;
+    }
 
     const byDate = [...online]
       .filter((a) => !isRoundWiseHustlerResult(a))
@@ -328,7 +343,10 @@ export function pickAssessmentForLevel(
 
   const forLevel = assessments
     .filter((a) => parseAssessmentLevel(a.level) === level)
-    .sort((a, b) => scoreRank(b) - scoreRank(a));
+    .filter(assessmentWasWritten)
+    .sort(sortWrittenByNewestFirst);
+  const clearedForLevel = forLevel.filter(isAssessmentSitCleared);
+  if (clearedForLevel.length > 0) return clearedForLevel[0];
   if (forLevel.length > 0) return forLevel[0];
 
   const unlabeled = assessments.filter((a) => parseAssessmentLevel(a.level) === null);
@@ -345,35 +363,22 @@ export function pickAssessmentForLevel(
 export function listAttemptedL1OnlineAssessments(
   assessments: AssessmentResult[],
 ): AssessmentResult[] {
-  const roundWise = assessments.find(
-    (a) => isRoundWiseHustlerResult(a) && assessmentWasWritten(a),
-  );
-  if (roundWise) return [roundWise];
-
-  return assessments
+  const detailSits = assessments
     .filter(isL1OnlineAssessment)
     .filter((a) => !isRoundWiseHustlerResult(a))
     .filter(assessmentWasWritten)
-    .sort((a, b) => {
-      const dateDiff = assessmentStartMs(b) - assessmentStartMs(a);
-      if (dateDiff !== 0) return dateDiff;
-      return scoreRank(b) - scoreRank(a);
-    });
+    .sort(sortWrittenByNewestFirst);
+  if (detailSits.length > 0) return detailSits;
+
+  const roundWise = assessments.find(
+    (a) => isRoundWiseHustlerResult(a) && assessmentWasWritten(a),
+  );
+  return roundWise ? [roundWise] : [];
 }
 
 /** Attempted = API `hasWrittenAssessment` from synced table scores (includes 0). */
 function assessmentWasWritten(assessment: AssessmentResult): boolean {
   return assessment.hasWrittenAssessment === true;
-}
-
-/** Cleared / not cleared from round-wise status when present; else overall %. */
-function assessmentClearedFromRow(assessment: AssessmentResult): boolean {
-  const status = (assessment.assessmentStatus ?? "").trim();
-  if (status) {
-    if (/not\s*qualified/i.test(status)) return false;
-    if (/qualified/i.test(status)) return true;
-  }
-  return assessmentOverallPct(assessment) >= ASSESSMENT_CLEAR_THRESHOLD;
 }
 
 export function assessmentOverallPct(assessment: AssessmentResult): number {
@@ -387,25 +392,36 @@ export function hasWrittenAssessment(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
 ): boolean {
-  const assessment = pickAssessmentForLevel(assessments, level);
-  if (!assessment) return false;
-  return assessmentWasWritten(assessment);
+  if (level === 1) {
+    return listAttemptedL1OnlineAssessments(assessments).length > 0;
+  }
+  return assessments.some(
+    (a) => parseAssessmentLevel(a.level) === level && assessmentWasWritten(a),
+  );
 }
 
 export function hasClearedAssessment(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
 ): boolean {
-  const assessment = pickAssessmentForLevel(assessments, level);
-  if (!assessment || !assessmentWasWritten(assessment)) return false;
-  return assessmentClearedFromRow(assessment);
+  if (level === 1) {
+    return listAttemptedL1OnlineAssessments(assessments).some(
+      (a) => isAssessmentSitCleared(a),
+    );
+  }
+  return assessments.some(
+    (a) =>
+      parseAssessmentLevel(a.level) === level &&
+      assessmentWasWritten(a) &&
+      isAssessmentSitCleared(a),
+  );
 }
 
 /** True when the student's best L1 online sit is a cleared Cycle 2 row. */
 export function clearedL1ViaC2(assessments: AssessmentResult[]): boolean {
   const assessment = pickAssessmentForLevel(assessments, 1);
   if (!assessment || !assessmentWasWritten(assessment)) return false;
-  if (!assessmentClearedFromRow(assessment)) return false;
+  if (!isAssessmentSitCleared(assessment)) return false;
   const cycle = assessmentCycle(assessment);
   return cycle === "C2" || /\bC\s*2\b/i.test(cycle) || cycle === "2";
 }

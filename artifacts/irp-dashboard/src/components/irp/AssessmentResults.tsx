@@ -134,11 +134,10 @@ export function AssessmentResults({
           </p>
           {assessment && (assessmentStatus === "attempted_not_cleared" || assessmentStatus === "done") ? (
             <p className="mt-1 text-xs text-muted2">
-              Clearance is based on your latest attempt ({getExamDateLabelForAssessment(assessment)}
-              ).
-              {previousSits.length > 0
-                ? " Earlier sits are listed below."
-                : null}
+              {hasClearedAssessment(assessments, level)
+                ? `You cleared on ${getExamDateLabelForAssessment(assessment)} (attempt ${assessment.attemptNumber ?? "—"}).`
+                : `Clearance is based on your latest attempt (${getExamDateLabelForAssessment(assessment)}).`}
+              {previousSits.length > 1 ? " All attempts are listed below." : null}
               {cycle2Track && !hasClearedAssessment(assessments, 1)
                 ? ` Register for ${L1_JULY12_EXAM_DATE_LABEL} to reattempt if needed.`
                 : null}
@@ -157,7 +156,7 @@ export function AssessmentResults({
           title="Total score"
           value={showResults && assessment ? `${Math.round(assessment.overallScore)}` : "—"}
           suffix={showResults && assessment ? `/${Math.round(assessment.overallMax)}` : ""}
-          sub={showResults ? "Combined MCQs & coding (latest)" : "Unlocks after assessment"}
+          sub={showResults ? "Combined MCQs & coding (qualifying sit)" : "Unlocks after assessment"}
           pct={showResults ? overallPct : 0}
           locked={locked}
         />
