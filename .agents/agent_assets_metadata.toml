@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "yJ8ZpTnOga3NrT-ZBwTSH"
+uri = "file://outputs/dashboard-access-paid-unpaid-summary.csv"
+type = "table"
+title = "Dashboard access paid/unpaid summary"
+description = "Production dashboard-access counts split by paid and unpaid status."
+logical_id = "da2b3067-ad1d-4dc2-bc8a-f4b7f694a01b"
+content_hash = "sha256:761f85ca8028a4b8b94b3cfdb4ced344ca8f6c717bc3d268a2f10dc545113557"
+size = 147
+mtime_ms = 1788267517904
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:5c489bbb-61b7-402c-97fc-b6eddf2a18c1/da2b3067-ad1d-4dc2-bc8a-f4b7f694a01b/ecd29fde-f46e-46ab-8002-eae54499e4d6"
+storage_version_token = "1788267519128156"
+content_type = "text/csv"

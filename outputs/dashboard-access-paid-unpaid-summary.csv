@@ -1,0 +1,5 @@
+environment,metric,count
+production,total_dashboard_access,9016
+production,paid,8903
+production,unpaid,113
+production,blocked_with_access_record,0
