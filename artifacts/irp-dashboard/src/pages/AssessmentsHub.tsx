@@ -401,7 +401,7 @@ export function AssessmentsHub({
   const aug3MockLinkLive = examSlotId === "slot-3" && isL1Aug3MainLinkLive();
   const assessmentsForLevel = examSlotId === "slot-3"
     ? [...(aug3MockLinkLive ? [AUG3_MOCK_CONFIG] : []), ...ASSESSMENTS_BY_LEVEL[level]]
-    : showOnlineGrantCards ? [] : ASSESSMENTS_BY_LEVEL[level];
+    : registrationBatch || showOnlineGrantCards ? [] : ASSESSMENTS_BY_LEVEL[level];
   const meta = LEVEL_META[level];
 
   function update(id: string, next: { status: AssessmentStatus; slot?: string }) {
