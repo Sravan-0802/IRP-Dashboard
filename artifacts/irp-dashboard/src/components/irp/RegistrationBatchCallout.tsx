@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, CheckCircle2, Sparkles } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, Sparkles } from "lucide-react";
 import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
 import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
 import { getAuthToken } from "@/lib/authToken";
@@ -44,7 +44,7 @@ export function RegistrationBatchCallout() {
   if (loading || !batch) return null;
 
   const alreadyDone = hasResponded || submitted;
-  const { dateLabel, showDateMeta: _showDateMeta } = resolveRegistrationBatchDate(
+  const { dateLabel, showDateMeta } = resolveRegistrationBatchDate(
     batch.assessmentLabel,
     batch.assessmentDate,
   );
@@ -171,6 +171,18 @@ export function RegistrationBatchCallout() {
 
                 {/* Meta — slot time only; no exam dates for students */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+<<<<<<< HEAD
+=======
+                  {showDateMeta ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold"
+                      style={{ color: "#6e6a8a" }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
+                      {dateLabel}
+                    </span>
+                  ) : null}
+>>>>>>> 7172d2c (Resolve registration callout conflict before publish)
                   {batch.slotLabel ? (
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
