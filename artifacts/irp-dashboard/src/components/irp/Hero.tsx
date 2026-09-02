@@ -338,7 +338,7 @@ export function Hero({
         <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
           <div className="text-center sm:text-left">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,159,0,0.35)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#e67700]">
-              <PulsingDot color="#f59f00" /> L1 online assessment
+              <PulsingDot color="#f59f00" /> Not qualified
             </div>
             <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
@@ -351,7 +351,7 @@ export function Hero({
             </p>
             {assessment ? (
               <div className="mt-3">
-                <Pill tone="amber">{statusLabel} · {overallPct}%</Pill>
+                <Pill tone="amber">Not qualified · {overallPct}%</Pill>
               </div>
             ) : null}
           </div>
@@ -359,7 +359,6 @@ export function Hero({
           <div className="flex shrink-0 flex-col items-center gap-2">
             <Pill tone="amber">{statusLabel}</Pill>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Keep preparing</p>
-            <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
           </div>
         </div>
       </div>
@@ -398,7 +397,7 @@ export function Hero({
               }
             >
               {attempted ? (
-                <><PulsingDot color="#f59f00" /> Assessment attempted</>
+                <><PulsingDot color="#f59f00" /> Not qualified</>
               ) : (
                 <><PulsingDot color="#6741d9" /> Assessment window closed</>
               )}
@@ -406,12 +405,12 @@ export function Hero({
             <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               {attempted
-                ? "Your results are ready"
+                ? "Not qualified yet"
                 : "Assessment day is over"}
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
               {attempted ? (
-                <>You attempted the L1 online assessment. Review your score below — you need 70% to qualify.</>
+                <>You scored below 70% on the L1 online assessment. Register for the next sit when it opens on your dashboard.</>
               ) : resultsVisible ? (
                 <>Assessment completed. The next assessment window will be announced on your dashboard.</>
               ) : (
