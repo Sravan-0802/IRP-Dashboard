@@ -169,22 +169,9 @@ export function RegistrationBatchCallout() {
                   {batch.assessmentLabel}
                 </h3>
 
-                {/* Meta */}
+                {/* Meta — slot time only; no exam dates for students */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-<<<<<<< HEAD
                   {batch.slotLabel ? (
-=======
-                  {showDateMeta ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold"
-                      style={{ color: "#6e6a8a" }}
-                    >
-                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
-                      {dateLabel}
-                    </span>
-                  ) : null}
-                  {batch.slotLabel && (
->>>>>>> 0a4539b (Resolve registration callout merge conflict)
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
                       style={{ color: "#6e6a8a" }}
