@@ -121,6 +121,7 @@ export function isAssessmentSitCleared(assessment: AssessmentResult): boolean {
 /** True for L1 Hustler online assessment rows — excludes FE Project and MOCK. */
 export function isL1OnlineAssessment(a: AssessmentResult): boolean {
   if (isMockAssessment(a)) return false;
+  if (isFeProjectAssessment(a)) return false;
   if (isRoundWiseHustlerResult(a)) return true;
   if (isRoundWiseFeResult(a)) return false;
   const level = (a.level ?? "").toUpperCase();
@@ -130,6 +131,36 @@ export function isL1OnlineAssessment(a: AssessmentResult): boolean {
   }
   if (level.includes("ASSESSMENT") || tag.includes("ASSESSMENT")) return true;
   return parseAssessmentLevel(a.level) === 1 && !level.includes("FE");
+}
+
+/**
+ * Detail rows with only a small overall (e.g. 20/20) and no MCQ/coding sections
+ * are FE-style sync noise — not L1 Hustler online exams (typically /150 with sections).
+ */
+export function isValidL1OnlineDetailSit(a: AssessmentResult): boolean {
+  if (isRoundWiseHustlerResult(a)) return true;
+  if (!isL1OnlineAssessment(a)) return false;
+  const mcqMax = a.mcqMax ?? 0;
+  const codingMax = a.codingMax ?? 0;
+  if (mcqMax > 0 || codingMax > 0) return true;
+  return (a.overallMax ?? 0) >= 100;
+}
+
+function l1OnlineSitQualityRank(a: AssessmentResult): number {
+  const mcqMax = a.mcqMax ?? 0;
+  const codingMax = a.codingMax ?? 0;
+  if (mcqMax > 0 && codingMax > 0) return 3;
+  if (mcqMax > 0 || codingMax > 0) return 2;
+  if ((a.overallMax ?? 0) >= 100) return 1;
+  return 0;
+}
+
+function sortL1OnlineSitsForDisplay(a: AssessmentResult, b: AssessmentResult): number {
+  const qualityDiff = l1OnlineSitQualityRank(b) - l1OnlineSitQualityRank(a);
+  if (qualityDiff !== 0) return qualityDiff;
+  const clearedDiff = Number(isAssessmentSitCleared(b)) - Number(isAssessmentSitCleared(a));
+  if (clearedDiff !== 0) return clearedDiff;
+  return sortWrittenByNewestFirst(a, b);
 }
 
 /** Known FE Project MAIN organisation_assessment_id values (hyphens stripped). */
@@ -321,7 +352,8 @@ export function pickAssessmentForLevel(
     const written = online
       .filter((a) => !isRoundWiseHustlerResult(a))
       .filter(assessmentWasWritten)
-      .sort(sortWrittenByNewestFirst);
+      .filter(isValidL1OnlineDetailSit)
+      .sort(sortL1OnlineSitsForDisplay);
     const cleared = written.filter(isAssessmentSitCleared);
     if (cleared.length > 0) return cleared[0];
     if (written.length > 0) return written[0];
@@ -333,6 +365,7 @@ export function pickAssessmentForLevel(
 
     const byDate = [...online]
       .filter((a) => !isRoundWiseHustlerResult(a))
+      .filter(isValidL1OnlineDetailSit)
       .sort((a, b) => assessmentStartMs(b) - assessmentStartMs(a));
     if (byDate.length > 0) return byDate[0];
   }
@@ -362,8 +395,9 @@ export function listAttemptedL1OnlineAssessments(
   const detailSits = assessments
     .filter(isL1OnlineAssessment)
     .filter((a) => !isRoundWiseHustlerResult(a))
+    .filter(isValidL1OnlineDetailSit)
     .filter(assessmentWasWritten)
-    .sort(sortWrittenByNewestFirst);
+    .sort(sortL1OnlineSitsForDisplay);
   if (detailSits.length > 0) return detailSits;
 
   const roundWise = assessments.find(

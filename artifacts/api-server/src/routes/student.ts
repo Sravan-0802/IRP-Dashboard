@@ -434,6 +434,12 @@ function assessmentsFromRoundWise(
   return out;
 }
 
+function isValidL1OnlineDetailRow(a: AssessmentApiRow): boolean {
+  if (isFeAssessmentApiRow(a)) return false;
+  if ((a.mcqMax ?? 0) > 0 || (a.codingMax ?? 0) > 0) return true;
+  return (a.overallMax ?? 0) >= 100;
+}
+
 async function getAssessmentResultsResponse(userId: string) {
   if (!(await userHasAssessmentData(userId))) return null;
 
@@ -472,7 +478,9 @@ async function getAssessmentResultsResponse(userId: string) {
   const detailMain = detailAssessments.filter(
     (a) => a.hasWrittenAssessment && isMainAssessmentApiRow(a),
   );
-  const detailL1 = detailMain.filter((a) => !isFeAssessmentApiRow(a));
+  const detailL1 = detailMain.filter(
+    (a) => !isFeAssessmentApiRow(a) && isValidL1OnlineDetailRow(a),
+  );
   const detailFeMain = detailMain.filter((a) => isFeAssessmentApiRow(a));
 
   const out: AssessmentApiRow[] = [];
