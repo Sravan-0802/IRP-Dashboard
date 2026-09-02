@@ -1,4 +1,4 @@
-import { Calendar, CalendarClock, ClipboardList, ExternalLink, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
+import { CalendarClock, ClipboardList, ExternalLink, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -7,24 +7,19 @@ import {
   isAssessmentLive,
   isExamWindowClosed,
   isL1July12AssessmentLive,
-  L1_CYCLE1_EXAM_DATE_LABEL,
-  L1_CYCLE2_EXAM_DATE_LABEL,
-  PROGRESS_UNLOCK_LABEL,
 } from "@/lib/irpDates";
 import {
-  clearedL1ViaC2,
   getAssessmentStepStatus,
-  getAssessmentCompletedDateLabel,
-  getL1ClearedExamDateLabel,
   assessmentOverallPct,
   hasAttemptedL1Cycle2,
+  hasClearedAssessment,
   pickAssessmentForLevel,
   pickL1AssessmentForResults,
-  getExamDateLabelForAssessment,
-  resultLabel,
 } from "@/lib/assessment";
 import {
-  getL1UpcomingExamDateLabel,
+  formatL1OnlineStatus,
+} from "@/lib/studentStatusDisplay";
+import {
   isCycle1Cleared,
   isCycle2Candidate,
 } from "@/lib/l1StudentTrack";
@@ -64,12 +59,10 @@ function PulsingDot({ color }: { color: string }) {
 
 function ClearedAssessmentHero({
   level,
-  examDateLabel,
-  attemptNumber,
+  statusLabel = "Qualified",
 }: {
   level: 1 | 2 | 3;
-  examDateLabel: string;
-  attemptNumber?: number | null;
+  statusLabel?: string;
 }) {
   const meta = LEVEL_META[level];
 
@@ -85,18 +78,16 @@ function ClearedAssessmentHero({
           </div>
           <LevelHeading name={meta.name} level={level} />
           <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-            You cleared the assessment
+            You cleared the online assessment
           </h2>
           <p className="mt-2 max-w-md text-sm text-muted2">
-            Great work on {examDateLabel}
-            {attemptNumber != null ? ` (Attempt ${attemptNumber})` : ""}. Continue with
-            post-assessment tasks below.
+            Great work — continue with the next steps in your IRP journey below.
           </p>
         </div>
 
         <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
-          <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-            <Calendar className="h-3.5 w-3.5 text-brand" /> {examDateLabel}
+          <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-teal">
+            {statusLabel}
           </span>
           <div className="relative flex h-28 w-36 items-center justify-center sm:h-32 sm:w-44" aria-hidden>
             <ShieldCheck className="h-20 w-20 text-[#0ca678]/90" strokeWidth={1.25} />
@@ -111,24 +102,16 @@ function ClearedAssessmentHero({
 function L1PipelineStageHero({
   level,
   stage,
-  examDateLabel,
   ctaUrl,
   ctaLabel,
 }: {
   level: 1 | 2 | 3;
   stage: L1PipelineStage;
-  examDateLabel: string;
   ctaUrl?: string | null;
   ctaLabel?: string;
 }) {
   const meta = LEVEL_META[level];
-  const content = l1StageHeroContent(stage, examDateLabel);
-  const calendarIconClass =
-    content.dateAccent === "teal"
-      ? "text-teal"
-      : content.dateAccent === "blue"
-        ? "text-[#3b5bdb]"
-        : "text-brand";
+  const content = l1StageHeroContent(stage);
 
   const StageIcon =
     stage === "fe_project_active" || stage === "fe_project_not_cleared"
@@ -180,7 +163,7 @@ function L1PipelineStageHero({
 
         <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
           <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-            <Calendar className={`h-3.5 w-3.5 ${calendarIconClass}`} /> {examDateLabel}
+            {content.statusBadge}
           </span>
           <div className="relative flex h-28 w-36 items-center justify-center sm:h-32 sm:w-44" aria-hidden>
             <StageIcon className={`h-20 w-20 ${iconColor}`} strokeWidth={1.25} />
@@ -194,7 +177,7 @@ function L1PipelineStageHero({
 export function Hero({
   journey,
   days,
-  examDateLabel,
+  examDateLabel: _examDateLabel,
   assessments = [],
   nxtmock,
   feProjectMinScore,
@@ -219,14 +202,6 @@ export function Hero({
   const level = getLevel(journey.journeyState);
   const meta = LEVEL_META[level];
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
-  const l1UpcomingDateLabel =
-    level === 1 ? getL1UpcomingExamDateLabel(assessments, userId) : examDateLabel;
-  const activeDateLabel = l1UpcomingDateLabel;
-  const completedDateLabel = getAssessmentCompletedDateLabel(
-    assessments,
-    level,
-    l1UpcomingDateLabel,
-  );
   const resultsVisible = areAssignmentResultsVisible();
   const cycle2Track = level === 1 && isCycle2Candidate(assessments, userId);
   const assessmentLive = cycle2Track ? isL1July12AssessmentLive() : isAssessmentLive();
@@ -237,7 +212,6 @@ export function Hero({
 
   // Cleared Online L1 → FE / AI Mock pipeline (always show cleared path; never "results coming soon").
   if (level === 1 && isCycle1Cleared(assessments, userId)) {
-    const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
     let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, feProjectMinScore);
 
     // Hold pipeline result stages until admin releases that stage.
@@ -299,7 +273,6 @@ export function Hero({
               ? "human_interview_active"
               : pipelineStage
           }
-          examDateLabel={clearedDateLabel}
           ctaUrl={
             (pipelineStage === "human_interview_active" ||
               (humanInterviewGrantUrl &&
@@ -312,17 +285,15 @@ export function Hero({
       );
     }
 
-    return (
-      <ClearedAssessmentHero
-        level={level}
-        examDateLabel={clearedDateLabel}
-        attemptNumber={pickAssessmentForLevel(assessments, 1)?.attemptNumber}
-      />
-    );
+    return <ClearedAssessmentHero level={level} statusLabel="Qualified" />;
   }
 
   // Cycle 2 track: attempted Cycle 1 but did not clear — show past results + upcoming exam.
-  if (level === 1 && assessmentStatus === "attempted_not_cleared") {
+  if (
+    level === 1 &&
+    assessmentStatus === "attempted_not_cleared" &&
+    !hasClearedAssessment(assessments, 1)
+  ) {
     if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
       return (
         <div
@@ -339,13 +310,13 @@ export function Hero({
                 Results coming soon
               </h2>
               <p className="mt-2 max-w-md text-sm text-muted2">
-                You completed the {L1_CYCLE2_EXAM_DATE_LABEL} assessment. Your results are being
-                processed and will appear here once released.
+                You completed the L1 online assessment. Your results are being processed and will
+                appear here once released.
               </p>
             </div>
             <div className="relative flex shrink-0 flex-col items-center gap-3 lg:items-end">
-              <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-                <Calendar className="h-3.5 w-3.5 text-brand" /> {L1_CYCLE2_EXAM_DATE_LABEL}
+              <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-brand">
+                Processing
               </span>
             </div>
           </div>
@@ -357,7 +328,7 @@ export function Hero({
       ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
       : pickAssessmentForLevel(assessments, 1);
     const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
-    const resultsDateLabel = getExamDateLabelForAssessment(assessment);
+    const statusLabel = assessment ? formatL1OnlineStatus(assessment) : "Not qualified";
 
     return (
       <div
@@ -367,31 +338,27 @@ export function Hero({
         <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
           <div className="text-center sm:text-left">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,159,0,0.35)] bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#e67700]">
-              <PulsingDot color="#f59f00" /> Attempted but not cleared
+              <PulsingDot color="#f59f00" /> Not qualified
             </div>
             <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-              Your {resultsDateLabel} results
+              Not qualified yet
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
               You scored{" "}
-              <span className="font-bold text-ink">{overallPct}%</span> on the {resultsDateLabel} assessment — you need 70% to
-              clear. Register for the upcoming assessment on{" "}
-              <span className="font-bold text-ink">{l1UpcomingDateLabel}</span> below.
+              <span className="font-bold text-ink">{overallPct}%</span> — you need 70% to qualify.
+              Register for the next assessment when it opens on your dashboard.
             </p>
             {assessment ? (
               <div className="mt-3">
-                <Pill tone="amber">{resultLabel(overallPct, assessment)} · {overallPct}%</Pill>
+                <Pill tone="amber">Not qualified · {overallPct}%</Pill>
               </div>
             ) : null}
           </div>
 
           <div className="flex shrink-0 flex-col items-center gap-2">
-            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> Next: {l1UpcomingDateLabel}
-            </span>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Countdown</p>
-            <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
+            <Pill tone="amber">{statusLabel}</Pill>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Keep preparing</p>
           </div>
         </div>
       </div>
@@ -401,15 +368,10 @@ export function Hero({
   if (showPostExamHero) {
     const cleared = assessmentStatus === "done";
     const attempted = assessmentStatus === "attempted_not_cleared";
+    const assessment = pickAssessmentForLevel(assessments, level);
 
     if (cleared) {
-      return (
-        <ClearedAssessmentHero
-          level={level}
-          examDateLabel={completedDateLabel}
-          attemptNumber={pickAssessmentForLevel(assessments, level)?.attemptNumber}
-        />
-      );
+      return <ClearedAssessmentHero level={level} statusLabel="Qualified" />;
     }
 
     return (
@@ -435,7 +397,7 @@ export function Hero({
               }
             >
               {attempted ? (
-                <><PulsingDot color="#f59f00" /> Assessment attempted</>
+                <><PulsingDot color="#f59f00" /> Not qualified</>
               ) : (
                 <><PulsingDot color="#6741d9" /> Assessment window closed</>
               )}
@@ -443,24 +405,24 @@ export function Hero({
             <LevelHeading name={meta.name} level={level} />
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               {attempted
-                ? "Your results are ready"
+                ? "Not qualified yet"
                 : "Assessment day is over"}
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
               {attempted ? (
-                <>You attempted the {completedDateLabel} assessment. Review your score below — you need 70% to clear.</>
+                <>You scored below 70% on the L1 online assessment. Register for the next sit when it opens on your dashboard.</>
               ) : resultsVisible ? (
-                <>Assessment completed. New assessment dates will be announced soon—stay tuned.</>
+                <>Assessment completed. The next assessment window will be announced on your dashboard.</>
               ) : (
-                <>The assessment on {l1UpcomingDateLabel} has ended. Results unlock on {PROGRESS_UNLOCK_LABEL}.</>
+                <>The assessment window has ended. Results will appear here once released.</>
               )}
             </p>
           </div>
 
           <div className="flex shrink-0 flex-col items-center gap-2">
-            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {l1UpcomingDateLabel}
-            </span>
+            {attempted && assessment ? (
+              <Pill tone="amber">{formatL1OnlineStatus(assessment)}</Pill>
+            ) : null}
           </div>
         </div>
       </div>
@@ -483,7 +445,7 @@ export function Hero({
             <h2 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               {meta.tag}
             </h2>
-            <p className="mt-1 text-sm font-medium text-muted2">{examDateLabel} • L3 Assessment</p>
+            <p className="mt-1 text-sm font-medium text-muted2">L3 Assessment</p>
           </div>
           <div className="flex flex-col items-center gap-2">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted2">Assessment Countdown</p>
@@ -512,13 +474,7 @@ export function Hero({
   // ── POST_ASSESSMENT (non-cleared path — rare if journey state ahead of scores) ──
   if (phase === "POST_ASSESSMENT") {
     if (assessmentStatus === "done") {
-      return (
-        <ClearedAssessmentHero
-          level={level}
-          examDateLabel={L1_CYCLE1_EXAM_DATE_LABEL}
-          attemptNumber={pickAssessmentForLevel(assessments, level)?.attemptNumber}
-        />
-      );
+      return <ClearedAssessmentHero level={level} statusLabel="Qualified" />;
     }
 
     return (
@@ -540,9 +496,7 @@ export function Hero({
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-center gap-2">
-            <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {l1UpcomingDateLabel}
-            </span>
+            <Pill tone="green">Qualified</Pill>
           </div>
         </div>
       </div>
@@ -563,16 +517,14 @@ export function Hero({
               Your next attempt is coming up
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
-              This round didn't go through — that happens. Next attempt window opens on{" "}
-              <span className="font-bold text-ink">{journey.reattemptDate ?? activeDateLabel}</span>.
+              This round didn't go through — that happens. We'll notify you here when the next
+              attempt window opens on your dashboard.
             </p>
           </div>
           <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-[rgba(59,91,219,0.18)] bg-l1-bg px-6 py-5">
             <CalendarClock className="h-6 w-6 text-l1" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-l1">Next attempt</p>
-            <p className="font-display text-base font-extrabold text-ink">
-              {journey.reattemptDate ?? activeDateLabel}
-            </p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-l1">Status</p>
+            <p className="font-display text-base font-extrabold text-ink">Re-attempt pending</p>
           </div>
         </div>
       </div>
@@ -597,15 +549,14 @@ export function Hero({
             <div className="select-none shrink-0 text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">🗓️</div>
             <div className="min-w-0 text-left">
               <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
-                <Calendar className="h-3.5 w-3.5" /> Assessment day approaching
+                Assessment day approaching
               </div>
               <LevelHeading name={meta.name} level={level} />
               <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">
                 {meta.tag}
               </h2>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-muted2">
-                Your {meta.name} assessment goes live on{" "}
-                <span className="font-bold text-brand-2">{activeDateLabel}</span>. Keep prepping — MCQs &amp; coding. 🔥
+                Your assessment goes live soon. Keep prepping — MCQs &amp; coding. 🔥
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="genz-chip-violet rounded-lg px-2.5 py-1 text-[10px] font-bold">MCQs</span>
@@ -616,7 +567,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
+              Upcoming
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Goes live in</p>
             <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
@@ -673,7 +624,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand-2" /> {activeDateLabel}
+              Live now
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-2/80">Closes in</p>
             <CountdownRing value={days} unit="Days" total={14} tone="neon" size={96} showUnit />
@@ -715,7 +666,7 @@ export function Hero({
 
           <div className="flex shrink-0 flex-col items-center gap-2">
             <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-              <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
+              Re-attempt live
             </span>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand/80">Closes in</p>
             <CountdownRing value={days} unit="Days" tone="pink" size={96} showUnit />
@@ -765,7 +716,7 @@ export function Hero({
         </div>
         <div className="flex shrink-0 flex-col items-center gap-2">
           <span className="genz-badge inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold text-ink">
-            <Calendar className="h-3.5 w-3.5 text-brand" /> {activeDateLabel}
+            Upcoming
           </span>
           <CountdownRing value={days} unit="Days" tone="blue" size={96} showUnit />
         </div>

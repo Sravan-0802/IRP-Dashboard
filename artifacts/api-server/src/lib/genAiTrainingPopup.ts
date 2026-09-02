@@ -1,7 +1,47 @@
-import { db, genAiTrainingPopupTable } from "@workspace/db";
+import { db, genAiTrainingPopupTable, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const ROW_ID = 1;
+
+const ENSURE_GENAI_POPUP_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS genai_training_popup (
+  id integer PRIMARY KEY DEFAULT 1,
+  enabled integer NOT NULL DEFAULT 0,
+  version text NOT NULL DEFAULT '2026-09',
+  title text NOT NULL,
+  body text NOT NULL,
+  schedule text NOT NULL,
+  time text NOT NULL,
+  footer text NOT NULL,
+  cta_label text NOT NULL,
+  live_url text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+`;
+
+let ensureTablePromise: Promise<void> | null = null;
+
+/** Prod may lag schema publish — create the singleton table on first use if missing. */
+async function ensureGenAiTrainingPopupTable(): Promise<void> {
+  if (!ensureTablePromise) {
+    ensureTablePromise = pool
+      .query(ENSURE_GENAI_POPUP_TABLE_SQL)
+      .then(() => undefined)
+      .catch((err) => {
+        ensureTablePromise = null;
+        throw err;
+      });
+  }
+  await ensureTablePromise;
+}
+
+function isMissingRelationError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = "code" in err ? String((err as { code?: string }).code) : "";
+  if (code === "42P01") return true;
+  const message = "message" in err ? String((err as { message?: string }).message) : "";
+  return /relation .* does not exist/i.test(message);
+}
 
 export const GENAI_TRAINING_POPUP_DEFAULTS = {
   enabled: false,
@@ -63,14 +103,22 @@ function defaultsRow(): typeof genAiTrainingPopupTable.$inferSelect {
 }
 
 export async function getGenAiTrainingPopup(): Promise<GenAiTrainingPopupResponse> {
-  const [row] = await db
-    .select()
-    .from(genAiTrainingPopupTable)
-    .where(eq(genAiTrainingPopupTable.id, ROW_ID))
-    .limit(1);
+  await ensureGenAiTrainingPopupTable();
 
-  if (!row) return toResponse(defaultsRow());
-  return toResponse(row);
+  try {
+    const [row] = await db
+      .select()
+      .from(genAiTrainingPopupTable)
+      .where(eq(genAiTrainingPopupTable.id, ROW_ID))
+      .limit(1);
+
+    if (!row) return toResponse(defaultsRow());
+    return toResponse(row);
+  } catch (err) {
+    if (!isMissingRelationError(err)) throw err;
+    await ensureGenAiTrainingPopupTable();
+    return toResponse(defaultsRow());
+  }
 }
 
 export type GenAiTrainingPopupUpdate = Partial<{
@@ -149,6 +197,7 @@ export function parseGenAiTrainingPopupBody(
 export async function updateGenAiTrainingPopup(
   patch: GenAiTrainingPopupUpdate,
 ): Promise<GenAiTrainingPopupResponse> {
+  await ensureGenAiTrainingPopupTable();
   const current = await getGenAiTrainingPopup();
   const merged = {
     enabled: patch.enabled ?? current.enabled,

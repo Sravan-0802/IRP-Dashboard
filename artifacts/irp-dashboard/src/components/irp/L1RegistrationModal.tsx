@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Bell,
-  Calendar,
   CheckCircle2,
   Clock,
   Sparkles,
@@ -198,12 +197,6 @@ export function L1RegistrationModal({
                 {calendar.title}
               </h2>
               <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted2">
-                {calendar.dateLabel ? (
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-brand" />
-                    {calendar.dateLabel}
-                  </span>
-                ) : null}
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 text-brand" />
                   {calendar.duration}
@@ -217,7 +210,7 @@ export function L1RegistrationModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
           <QuestionCard step={1} title="Availability">
             <p className="mb-3 text-sm leading-relaxed text-muted2">
-              Are you available to attend the Internship Readiness Path 2.0 Assessment on {calendar.dateLabel}?
+              Are you available to attend the Internship Readiness Path 2.0 Assessment?
             </p>
             <select
               id="l1-availability"
@@ -364,7 +357,7 @@ export function L1RegistrationSuccess({
     <div className="flex items-start gap-3 rounded-2xl border border-[rgba(12,166,120,0.25)] bg-gradient-to-r from-[#e8faf0] to-white px-4 py-3.5">
       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal" />
       <p className="text-sm font-semibold text-teal">
-        Registered for {slotLabel ?? "your slot"} on {calendar.dateLabel}.
+        Registered for {slotLabel ?? "your slot"}. Your response has been recorded.
       </p>
     </div>
   );

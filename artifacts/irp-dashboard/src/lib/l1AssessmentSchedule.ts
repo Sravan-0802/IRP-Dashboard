@@ -105,41 +105,41 @@ export const L1_JULY26_HUSTLER_CALENDAR = {
 } as const;
 
 export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
-export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 5th July 2026";
+export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
 export const L1_BANNER_TEXT =
-  `We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 5th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar. Registration closes on ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
 
 export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
 export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
-  `Registrations for the 5th July L1 Hustler Assessment are now closed as of ${L1_REGISTRATION_CLOSE_DATE_LABEL}.`;
+  "Registrations for the L1 Hustler Assessment are now closed.";
 
-export const L1_JULY12_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 12th July 2026";
+export const L1_JULY12_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
 export const L1_JULY12_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 12th July 2026. If you are interested and willing to appear, please confirm your availability by registering through the Assessment Calendar.";
-export const L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE = "Registration opens tonight";
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessment Calendar.";
+export const L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE = "Registration opens soon";
 export const L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT =
-  "Slot registration for the 12th July L1 Hustler Assessment opens at 9:00 PM IST today (7th July 2026). Please return then to book your 6:00 PM – 8:00 PM IST slot.";
+  "Slot registration for the L1 Hustler Assessment opens soon. Please return to book your time slot.";
 export const L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT =
-  "Registrations for the 12th July L1 Hustler Assessment are now closed.";
+  "Registrations for the L1 Hustler Assessment are now closed.";
 
-/** July 26 (Cycle 3) banner text. */
-export const L1_JULY26_REGISTRATION_BANNER_TITLE = "IRP 2.0 Assessment — 26th July 2026";
+/** Cycle 3 banner text. */
+export const L1_JULY26_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
 export const L1_JULY26_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler on 26th July 2026. Registration is open now — confirm your slot via the Assessment Calendar before 5:30 PM IST on 26th July.";
+  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. Registration is open now — confirm your slot via the Assessment Calendar.";
 export const L1_JULY26_REGISTRATION_CLOSED_BANNER_TEXT =
-  "Registrations for the 26th July L1 Hustler Assessment are now closed.";
+  "Registrations for the L1 Hustler Assessment are now closed.";
 
 /** Confirmation shown to the fixed 12 July (Cycle 2) assessment cohort. */
 export const L1_JULY12_REGISTERED_BANNER_EYEBROW = "Level 1 · The Hustler";
 export const L1_JULY12_REGISTERED_BANNER_TITLE =
-  "Already registered for the 12th July 2026 assessment";
+  "Already registered for the L1 online assessment";
 export const L1_JULY12_REGISTERED_BANNER_TEXT =
-  "You registered for the 5th July L1 Hustler assessment. Due to technical issues, the assessment is being conducted again on 12th July 2026. Your 6:00 PM – 8:00 PM IST slot is already booked — no further action is needed. Your assessment details will appear here closer to the exam.";
+  "Your registration is confirmed. No further action is needed — assessment details will appear on your dashboard when available.";
 export const L1_JULY12_REGISTERED_HUB_NOTE =
-  "Already registered for 12th July 2026. Your 6:00 PM – 8:00 PM IST slot is booked.";
-export const L1_JULY12_REGISTERED_CALENDAR_TITLE = "Already registered for 12th July 2026";
+  "Your L1 online assessment registration is confirmed.";
+export const L1_JULY12_REGISTERED_CALENDAR_TITLE = "L1 assessment registration confirmed";
 export const L1_JULY12_REGISTERED_CALENDAR_DESCRIPTION =
-  "Your assessment registration is confirmed. The 6:00 PM – 8:00 PM IST slot on 12th July 2026 is already booked for you.";
+  "Your assessment registration is confirmed. Check your dashboard for updates.";
 
 export function hasSuccessfulSlotRegistration(
   record: L1RegistrationRecord | null | undefined,

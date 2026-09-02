@@ -34,9 +34,8 @@ export function L1July26MockBanner({ compact = false }: { compact?: boolean }) {
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted2">
               Your mock assessment is live. Attempting the mock is{" "}
-              <span className="font-semibold text-ink">mandatory</span> before the main exam on
-              26th July 2026. Click the button to begin — the link is active until 10:00 AM IST
-              on 26th July.
+              <span className="font-semibold text-ink">mandatory</span> before the main exam.
+              Click the button to begin when you're ready.
             </p>
           </div>
         </div>

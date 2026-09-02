@@ -2,35 +2,37 @@ import { ClipboardCheck, Lock } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase } from "@/lib/journey";
-import { areAssignmentResultsVisible, L1_CYCLE1_EXAM_DATE_LABEL, L1_CYCLE2_EXAM_DATE_LABEL, L1_JULY12_EXAM_DATE_LABEL } from "@/lib/irpDates";
+import { areAssignmentResultsVisible } from "@/lib/irpDates";
 import {
   assessmentOverallPct,
   formatAssessmentTitle,
   getAssessmentStepStatus,
-  getExamDateLabelForAssessment,
-  getL1ClearedExamDateLabel,
-  hasAttemptedL1Cycle2,
   hasClearedAssessment,
   hasWrittenAssessment,
   isAssessmentResultsLocked,
   listAttemptedL1OnlineAssessments,
   pickAssessmentForLevel,
   pickL1AssessmentForResults,
-  resultLabel,
-  resultTone,
 } from "@/lib/assessment";
-import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { isCycle1Cleared } from "@/lib/l1StudentTrack";
+import {
+  formatL1OnlineStatus,
+  formatL1OnlineStatusForAssessments,
+  l1OnlineStatusTone,
+  studentResultStatusLabel,
+} from "@/lib/studentStatusDisplay";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { ProgressRing, Pill } from "./ui";
 
 export function AssessmentResults({
   journey,
-  examDateLabel,
   assessments,
+  userId,
 }: {
   journey: Journey;
-  examDateLabel: string;
+  examDateLabel?: string;
   assessments: AssessmentResult[];
+  userId?: string;
 }) {
   const { settings } = useVisibilitySettings();
   const onlineL1ResultsVisible = settings.onlineL1Results;
@@ -41,7 +43,6 @@ export function AssessmentResults({
     phase === "POST_ASSESSMENT" ||
     phase === "PLACED";
 
-  // Latest result card = round-wise (or best detail). History = detail sits only.
   const assessment =
     level === 1
       ? pickL1AssessmentForResults(assessments, onlineL1ResultsVisible)
@@ -51,31 +52,16 @@ export function AssessmentResults({
     level === 1 ? listAttemptedL1OnlineAssessments(assessments) : [];
 
   const assessmentStatus = getAssessmentStepStatus(assessments, level);
-  const cycle1Cleared = level === 1 && isCycle1Cleared(assessments);
-  const cycle2Track = level === 1 && isCycle2Candidate(assessments);
+  const l1Cleared = level === 1 && hasClearedAssessment(assessments, 1);
+  const cycle1Track = level === 1 && isCycle1Cleared(assessments, userId);
   const title = formatAssessmentTitle(assessment?.assessmentTitle, level);
-
-  const resultsDateLabel = (() => {
-    if (cycle1Cleared) return getL1ClearedExamDateLabel(assessments);
-    if (assessment && (assessmentStatus === "attempted_not_cleared" || assessmentStatus === "done")) {
-      const sitLabel = getExamDateLabelForAssessment(assessment);
-      if (cycle2Track && hasAttemptedL1Cycle2(assessments)) {
-        return `${sitLabel} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
-      }
-      if (cycle2Track && assessmentStatus === "attempted_not_cleared") {
-        return `${sitLabel} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
-      }
-      return sitLabel;
-    }
-    if (cycle2Track && hasAttemptedL1Cycle2(assessments)) {
-      return `${L1_CYCLE2_EXAM_DATE_LABEL} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
-    }
-    if (cycle2Track && assessmentStatus === "attempted_not_cleared") {
-      return `${L1_CYCLE1_EXAM_DATE_LABEL} · Next: ${L1_JULY12_EXAM_DATE_LABEL}`;
-    }
-    if (cycle2Track) return L1_JULY12_EXAM_DATE_LABEL;
-    return examDateLabel;
-  })();
+  const statusLabel =
+    level === 1
+      ? formatL1OnlineStatusForAssessments(assessments)
+      : assessment
+        ? studentResultStatusLabel(assessment)
+        : "Not attempted";
+  const featuredStatusLabel = assessment ? formatL1OnlineStatus(assessment) : statusLabel;
 
   const locked = isAssessmentResultsLocked(
     assessments,
@@ -87,35 +73,11 @@ export function AssessmentResults({
   const overallPct = assessment ? assessmentOverallPct(assessment) : 0;
 
   const lockedMessage = (() => {
-    if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
-      return (
-        <>
-          You completed the {L1_CYCLE2_EXAM_DATE_LABEL} / 12th July assessment. Results are synced
-          and will appear on your dashboard once released by the team.
-        </>
-      );
-    }
-    if (!resultsUnlockedByDate && !hasWrittenAssessment(assessments, level)) {
-      return (
-        <>
-          Your assessment is on{" "}
-          <span className="font-bold text-ink">
-            {cycle2Track ? L1_JULY12_EXAM_DATE_LABEL : examDateLabel}
-          </span>
-          . Results will appear here after you complete it.
-        </>
-      );
+    if (hasWrittenAssessment(assessments, level) && !showResults) {
+      return "Your assessment results are syncing. Check back shortly.";
     }
     if (!hasWrittenAssessment(assessments, level)) {
-      return (
-        <>
-          Complete your online assessment on{" "}
-          <span className="font-bold text-ink">
-            {cycle2Track ? L1_JULY12_EXAM_DATE_LABEL : examDateLabel}
-          </span>{" "}
-          to unlock your results.
-        </>
-      );
+      return "Complete your online L1 assessment to unlock your results here.";
     }
     return "Your assessment results are syncing. Check back shortly.";
   })();
@@ -128,24 +90,20 @@ export function AssessmentResults({
             <ClipboardCheck className="h-4 w-4 text-brand-2" />
             <span className="text-gradient-brand">Assessment Results</span>
           </h3>
-          <p className="mt-0.5 text-xs text-muted2">
-            {title} · Latest: {resultsDateLabel}
-            {assessment?.attemptNumber != null ? ` · Attempt ${assessment.attemptNumber}` : ""}
-          </p>
+          <p className="mt-0.5 text-xs text-muted2">{title}</p>
           {assessment && (assessmentStatus === "attempted_not_cleared" || assessmentStatus === "done") ? (
             <p className="mt-1 text-xs text-muted2">
-              {hasClearedAssessment(assessments, level)
-                ? `You cleared on ${getExamDateLabelForAssessment(assessment)} (attempt ${assessment.attemptNumber ?? "—"}).`
-                : `Clearance is based on your latest attempt (${getExamDateLabelForAssessment(assessment)}).`}
-              {previousSits.length > 1 ? " All attempts are listed below." : null}
-              {cycle2Track && !hasClearedAssessment(assessments, 1)
-                ? ` Register for ${L1_JULY12_EXAM_DATE_LABEL} to reattempt if needed.`
-                : null}
+              {l1Cleared || cycle1Track
+                ? "Your qualifying L1 online assessment result is shown below."
+                : "Your latest L1 online assessment result is shown below."}
+              {previousSits.length > 1 ? " Earlier sits are listed in the table." : null}
             </p>
           ) : null}
         </div>
-        {showResults && assessment && (
-          <Pill tone={resultTone(overallPct)}>{resultLabel(overallPct, assessment)}</Pill>
+        {showResults && assessment ? (
+          <Pill tone={l1OnlineStatusTone(assessment)}>{featuredStatusLabel}</Pill>
+        ) : (
+          <Pill tone="grey">{statusLabel}</Pill>
         )}
       </div>
 
@@ -156,7 +114,7 @@ export function AssessmentResults({
           title="Total score"
           value={showResults && assessment ? `${Math.round(assessment.overallScore)}` : "—"}
           suffix={showResults && assessment ? `/${Math.round(assessment.overallMax)}` : ""}
-          sub={showResults ? "Combined MCQs & coding (qualifying sit)" : "Unlocks after assessment"}
+          sub={showResults ? "Combined MCQs & coding" : "Unlocks after assessment"}
           pct={showResults ? overallPct : 0}
           locked={locked}
         />
@@ -182,37 +140,32 @@ export function AssessmentResults({
         />
       </div>
 
-      {showResults && previousSits.length > 0 ? (
+      {showResults && previousSits.length > 1 ? (
         <div className="mt-5">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-            Previous attempts
+            All sits
           </p>
           <div className="overflow-hidden rounded-xl border border-[rgba(103,65,217,0.12)]">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[rgba(103,65,217,0.10)] bg-[rgba(103,65,217,0.04)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                  <th className="px-3 py-2">Cycle</th>
-                  <th className="px-3 py-2">Attempt</th>
+                  <th className="px-3 py-2">Sit</th>
                   <th className="px-3 py-2">Overall</th>
                   <th className="px-3 py-2">MCQ</th>
                   <th className="px-3 py-2">Coding</th>
-                  <th className="px-3 py-2">Result</th>
+                  <th className="px-3 py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {previousSits.map((sit) => {
+                {previousSits.map((sit, index) => {
                   const pct = assessmentOverallPct(sit);
+                  const sitStatus = formatL1OnlineStatus(sit);
                   return (
                     <tr
-                      key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? ""}`}
+                      key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? index}`}
                       className="border-b border-[rgba(103,65,217,0.06)] last:border-b-0"
                     >
-                      <td className="px-3 py-2.5 font-medium text-ink">
-                        {getExamDateLabelForAssessment(sit)}
-                      </td>
-                      <td className="px-3 py-2.5 text-[#6e6a8a]">
-                        {sit.attemptNumber != null ? sit.attemptNumber : "—"}
-                      </td>
+                      <td className="px-3 py-2.5 font-medium text-ink">Sit {previousSits.length - index}</td>
                       <td className="px-3 py-2.5 text-[#6e6a8a]">
                         {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({pct}%)
                       </td>
@@ -223,7 +176,7 @@ export function AssessmentResults({
                         {Math.round(sit.codingScore)}/{Math.round(sit.codingMax)}
                       </td>
                       <td className="px-3 py-2.5">
-                        <Pill tone={resultTone(pct)}>{resultLabel(pct, sit)}</Pill>
+                        <Pill tone={l1OnlineStatusTone(sit)}>{sitStatus}</Pill>
                       </td>
                     </tr>
                   );

@@ -145,8 +145,7 @@ export function AssessmentScores({
         <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-[rgba(248,247,255,0.8)] px-4 py-3">
           <Lock className="h-4 w-4 shrink-0 text-muted2" />
           <p className="text-xs font-medium text-muted2">
-            Marks unlock after your assessment on{" "}
-            <span className="font-bold text-ink">{examDateLabel}</span>.
+            Marks unlock after you complete your assessment.
           </p>
         </div>
       )}

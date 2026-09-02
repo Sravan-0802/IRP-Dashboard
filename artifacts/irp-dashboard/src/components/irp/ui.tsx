@@ -247,7 +247,11 @@ export function JourneyBar({
                   : "border-[#dee2e6] bg-[#f1f3f5] text-[#aaa5c0]";
         const badge =
           step.status === "done"
-            ? <Pill tone="green" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>Completed</Pill>
+            ? (
+              <Pill tone="green" className={horizontal ? "px-2 py-0.5 text-[9px]" : undefined}>
+                {step.badgeLabel ?? "Completed"}
+              </Pill>
+            )
             : step.status === "attempted_not_cleared"
               ? (
                 <Pill
@@ -259,7 +263,7 @@ export function JourneyBar({
                       : "px-2 py-0.5 text-[9px] normal-case",
                   )}
                 >
-                  {horizontal ? "Not cleared" : "Attempted but not cleared"}
+                  {step.badgeLabel ?? "Not qualified"}
                 </Pill>
               )
               : step.status === "active"

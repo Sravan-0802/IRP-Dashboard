@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Calendar, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { Clock, CheckCircle2, Sparkles } from "lucide-react";
 import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
-import { formatRegistrationBatchDate, useRegistrationBatch } from "@/lib/useRegistrationBatch";
+import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
 import { getAuthToken } from "@/lib/authToken";
 import type { L1AssessmentCalendar, L1RegistrationRecord } from "@/lib/l1AssessmentSchedule";
 import {
@@ -44,7 +44,7 @@ export function RegistrationBatchCallout() {
   if (loading || !batch) return null;
 
   const alreadyDone = hasResponded || submitted;
-  const { dateLabel, showDateMeta } = resolveRegistrationBatchDate(
+  const { dateLabel, showDateMeta: _showDateMeta } = resolveRegistrationBatchDate(
     batch.assessmentLabel,
     batch.assessmentDate,
   );
@@ -54,11 +54,7 @@ export function RegistrationBatchCallout() {
     title: batch.assessmentLabel,
     subtitle: "Registration",
     cycleLabel: "Batch Registration",
-<<<<<<< HEAD
     dateLabel,
-=======
-    dateLabel: formatRegistrationBatchDate(batch.assessmentDate),
->>>>>>> 79883a4 (Remove caret markers from registration batch dates)
     duration: batch.slotLabel ?? "TBD",
     slots: batch.slotId && batch.slotLabel
       ? [{ id: batch.slotId, label: batch.slotLabel }]
@@ -175,26 +171,7 @@ export function RegistrationBatchCallout() {
 
                 {/* Meta */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-<<<<<<< HEAD
-                  {showDateMeta ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold"
-                      style={{ color: "#6e6a8a" }}
-                    >
-                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
-                      {dateLabel}
-                    </span>
-                  ) : null}
-=======
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold"
-                    style={{ color: "#6e6a8a" }}
-                  >
-                    <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
-                    {formatRegistrationBatchDate(batch.assessmentDate)}
-                  </span>
->>>>>>> 79883a4 (Remove caret markers from registration batch dates)
-                  {batch.slotLabel && (
+                  {batch.slotLabel ? (
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
                       style={{ color: "#6e6a8a" }}
@@ -202,7 +179,7 @@ export function RegistrationBatchCallout() {
                       <Clock className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
                       {batch.slotLabel}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

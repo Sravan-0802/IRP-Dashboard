@@ -22,7 +22,6 @@ import {
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
 import {
-  L1_JULY12_EXAM_DATE_LABEL,
   L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL,
   L1_JULY12_REGISTRATION_OPEN_DATE_LABEL,
   isL1July12RegistrationOpen,
@@ -87,7 +86,7 @@ const ASSESSMENTS_BY_LEVEL: Record<1 | 2 | 3, AssessmentConfig[]> = {
 const AUG3_MOCK_CONFIG: AssessmentConfig = {
   id: "l1-hustler-aug3-mock",
   title: "L1 Hustler Mock Assessment",
-  description: "Practice run before your main assessment. Available 3rd Aug 2:00 PM – 5th Aug 10:00 AM IST.",
+  description: "Practice run before your main assessment. Available when your assessment window opens.",
   kind: "mock",
   url: L1_AUG3_MAIN_URL,
 };
@@ -429,17 +428,17 @@ export function AssessmentsHub({
         <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
         <p className="mt-1 text-sm text-muted2">
           {level === 1 && registrationBatch
-            ? `Your ${registrationBatch.assessmentLabel} registration is open for ${formatRegistrationBatchDate(registrationBatch.assessmentDate)}. Choose your slot below.`
+            ? "Your assessment registration is open. Choose your slot below."
             : level === 1 && hasExamAccess && examSlotId === "slot-3"
-            ? "Your L1 Hustler assessment link is available from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+            ? "Your L1 Hustler assessment link will appear here when your assessment window opens."
             : level === 1 && showOnlineGrantCards
             ? "Your L1 mock and/or main assessment links are below when granted or scheduled."
             : level === 1 && isCycle1Cleared(assessments)
             ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
             : level === 1 && july12Registered
-            ? `Already registered for ${L1_JULY12_EXAM_DATE_LABEL}. Your 6:00 PM – 8:00 PM IST slot is booked — details will appear closer to the exam.`
+            ? L1_JULY12_REGISTERED_HUB_NOTE
             : level === 1
-              ? `Attempting Mock Assessment is Mandatory. Your Assessment link will be functional from 6:00 PM – 8:00 PM IST on 12th July 2026.`
+              ? "Attempting the mock assessment is mandatory before the main exam. Your assessment link will appear here when available."
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
@@ -452,7 +451,7 @@ export function AssessmentsHub({
         <L1July26MainCallout userId={userId} />
       ) : null}
 
-      {level === 1 && <RegistrationBatchCallout />}
+      {level === 1 && !isCycle1Cleared(assessments, userId) ? <RegistrationBatchCallout /> : null}
 
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
@@ -489,9 +488,9 @@ export function AssessmentsHub({
               mainLinkOpen={mainLinkOpenForSlot}
               examMainPendingNote={
                 a.id === "l1-hustler" && examSlotId === "slot-3"
-                  ? "Your L1 Hustler assessment link will be available here from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+                  ? "Your L1 Hustler assessment link will appear here when your assessment window opens."
                   : a.id === "l1-hustler"
-                  ? `Your L1 Hustler assessment link will be available here on exam day (${L1_JULY12_EXAM_DATE_LABEL}).`
+                  ? "Your L1 Hustler assessment link will appear here on exam day."
                   : undefined
               }
               onBook={undefined}
@@ -499,13 +498,13 @@ export function AssessmentsHub({
               registrationClosed={a.id === "l1-hustler"}
               registrationClosedNote={
                 a.id === "l1-hustler" && examSlotId === "slot-3"
-                  ? "Your L1 Hustler assessment link is active from 3rd Aug 2:00 PM IST to 5th Aug 10:00 AM IST."
+                  ? "Your L1 Hustler assessment link is active during your assessment window."
                   : a.id === "l1-hustler" && july12Registered
                   ? L1_JULY12_REGISTERED_HUB_NOTE
                   : a.id === "l1-hustler" && isCycle1Cleared(assessments)
-                  ? "You cleared the 14 June assessment. Your FE Project status is shown on your dashboard."
+                  ? "You cleared the online assessment. Your FE Project status is shown on your dashboard."
                   : a.id === "l1-hustler"
-                  ? `Registration for the ${L1_JULY12_EXAM_DATE_LABEL} assessment is now closed.`
+                  ? "Registration for the L1 Hustler assessment is now closed."
                   : undefined
               }
             />

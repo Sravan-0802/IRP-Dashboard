@@ -94,7 +94,6 @@ export function AiMockCallout({
           {isReattempt && nxtmock?.averageRating != null ? (
             <p className="mt-2 text-sm font-semibold text-[#e67700]">
               Previous score · avg {nxtmock.averageRating.toFixed(1)}
-              {nxtmock.attemptNumber != null ? ` · Attempt ${nxtmock.attemptNumber}` : ""}
             </p>
           ) : null}
         </div>
