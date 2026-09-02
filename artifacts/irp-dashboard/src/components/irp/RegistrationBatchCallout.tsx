@@ -171,7 +171,20 @@ export function RegistrationBatchCallout() {
 
                 {/* Meta */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+<<<<<<< HEAD
                   {batch.slotLabel ? (
+=======
+                  {showDateMeta ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold"
+                      style={{ color: "#6e6a8a" }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
+                      {dateLabel}
+                    </span>
+                  ) : null}
+                  {batch.slotLabel && (
+>>>>>>> 0a4539b (Resolve registration callout merge conflict)
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
                       style={{ color: "#6e6a8a" }}
