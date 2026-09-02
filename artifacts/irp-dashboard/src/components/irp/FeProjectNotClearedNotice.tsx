@@ -4,14 +4,13 @@ import type { Journey } from "@/lib/journey";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   assessmentOverallPct,
-  feResultLabel,
   feResultTone,
-  getExamDateLabelForAssessment,
   hasAttemptedFeProject,
   hasClearedFeProject,
   listAttemptedFeProjectAssessments,
   pickFeProjectAssessment,
 } from "@/lib/assessment";
+import { formatFeProjectStatus } from "@/lib/studentStatusDisplay";
 import {
   FE_PROJECT_CLEAR_MIN_SCORE,
   FE_PROJECT_NOT_CLEARED_BODY,
@@ -91,31 +90,28 @@ export function FeProjectNotClearedNotice({
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[rgba(245,159,0,0.12)] bg-[rgba(245,159,0,0.06)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                      <th className="px-3 py-2">Cycle</th>
-                      <th className="px-3 py-2">Assessment</th>
+                      <th className="px-3 py-2">Sit</th>
                       <th className="px-3 py-2">Overall</th>
-                      <th className="px-3 py-2">Result</th>
+                      <th className="px-3 py-2">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {previousSits.map((sit) => {
+                    {previousSits.map((sit, index) => {
                       const sitPct = assessmentOverallPct(sit);
-                      const sitTitle = sit.assessmentTitle?.trim() || "FE Project";
                       return (
                         <tr
-                          key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? ""}`}
+                          key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? index}`}
                           className="border-b border-[rgba(245,159,0,0.08)] last:border-b-0"
                         >
                           <td className="px-3 py-2.5 font-medium text-ink">
-                            {getExamDateLabelForAssessment(sit)}
+                            Sit {previousSits.length - index}
                           </td>
-                          <td className="px-3 py-2.5 text-[#6e6a8a]">{sitTitle}</td>
                           <td className="px-3 py-2.5 text-[#6e6a8a]">
                             {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({sitPct}%)
                           </td>
                           <td className="px-3 py-2.5">
                             <Pill tone={feResultTone(sit, threshold)}>
-                              {feResultLabel(sit, threshold)}
+                              {formatFeProjectStatus(sit, threshold)}
                             </Pill>
                           </td>
                         </tr>

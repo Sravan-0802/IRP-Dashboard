@@ -74,12 +74,7 @@ export function formatAssessmentTitle(
   title: string | null | undefined,
   level: 1 | 2 | 3,
 ): string {
-  const fallback = `${LEVEL_META[level].name} online assessment`;
-  if (!title?.trim()) return fallback;
-  const t = title.trim();
-  if (/^[0-9a-f]{32}$/i.test(t)) return fallback;
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) return fallback;
-  return t;
+  return `${LEVEL_META[level].name} online assessment`;
 }
 
 export function parseAssessmentLevel(level: string | null | undefined): number | null {
@@ -303,15 +298,16 @@ export function hasAttemptedL1Cycle2(assessments: AssessmentResult[]): boolean {
   return c2 != null && assessmentWasWritten(c2);
 }
 
-/** Prefer the Cycle 2 sit for results once online L1 results are visible (admin flag). */
+/** Prefer the sit students should see: most recent cleared MAIN, else latest attempt. */
 export function pickL1AssessmentForResults(
   assessments: AssessmentResult[],
   onlineL1ResultsVisible = true,
 ): AssessmentResult | null {
+  if (hasClearedAssessment(assessments, 1)) {
+    return pickAssessmentForLevel(assessments, 1);
+  }
   if (onlineL1ResultsVisible && hasAttemptedL1Cycle2(assessments)) {
-    const showCycle2Sit =
-      !hasClearedAssessment(assessments, 1) || clearedL1ViaC2(assessments);
-    if (showCycle2Sit) return pickL1Cycle2Assessment(assessments);
+    return pickL1Cycle2Assessment(assessments);
   }
   return pickAssessmentForLevel(assessments, 1);
 }

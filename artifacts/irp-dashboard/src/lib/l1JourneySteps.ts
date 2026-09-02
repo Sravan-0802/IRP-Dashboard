@@ -46,7 +46,8 @@ export function l1HustlerJourneySteps(
   const showAi = visibility?.aiMockResults === true;
   const showHuman = visibility?.humanInterviewResults === true;
 
-  const forceOnlineBookingTrack = isJuly26BookingTestUser(userId);
+  const forceOnlineBookingTrack =
+    isJuly26BookingTestUser(userId) && !hasClearedAssessment(assessments, 1);
   const assessmentStatus = forceOnlineBookingTrack
     ? "active"
     : getAssessmentStepStatus(assessments, 1);
@@ -115,14 +116,47 @@ export function l1HustlerJourneySteps(
     {
       ...L1_STEPS[0],
       status: onlineStatus,
+      badgeLabel:
+        onlineStatus === "done"
+          ? "Qualified"
+          : onlineStatus === "attempted_not_cleared"
+            ? "Not qualified"
+            : undefined,
     },
     {
       ...L1_STEPS[1],
       status: feProjectStatus,
-      ...(feProjectStatus === "active" ? { badgeLabel: "In progress" } : {}),
+      badgeLabel:
+        feProjectStatus === "done"
+          ? "Cleared"
+          : feProjectStatus === "attempted_not_cleared"
+            ? "Not cleared"
+            : feProjectStatus === "active"
+              ? "In progress"
+              : undefined,
     },
-    { ...L1_STEPS[2], status: aiMockStatus },
-    { ...L1_STEPS[3], status: humanInterviewStatus },
+    {
+      ...L1_STEPS[2],
+      status: aiMockStatus,
+      badgeLabel:
+        aiMockStatus === "done"
+          ? "Cleared"
+          : aiMockStatus === "attempted_not_cleared"
+            ? "Not cleared"
+            : aiMockStatus === "active"
+              ? "In progress"
+              : undefined,
+    },
+    {
+      ...L1_STEPS[3],
+      status: humanInterviewStatus,
+      badgeLabel:
+        humanInterviewStatus === "done"
+          ? "Complete"
+          : humanInterviewStatus === "active"
+            ? "In progress"
+            : undefined,
+    },
     { ...L1_STEPS[4], status: level2AccessStatus },
   ];
 }

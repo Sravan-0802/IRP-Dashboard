@@ -29,8 +29,10 @@ export function getL1OnlineTrack(
   assessments: AssessmentResult[],
   userId?: string | null,
 ): L1OnlineTrack {
+  // Cleared students always follow the FE → interview pipeline, even on booking test lists.
+  if (hasClearedAssessment(assessments, 1)) return "cycle1_cleared";
   if (isJuly26BookingTestUser(userId)) return "cycle2_pending";
-  return hasClearedAssessment(assessments, 1) ? "cycle1_cleared" : "cycle2_pending";
+  return "cycle2_pending";
 }
 
 export function isCycle1Cleared(

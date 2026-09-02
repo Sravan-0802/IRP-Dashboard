@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { Clock, CheckCircle2, Sparkles } from "lucide-react";
 import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
 import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
 import { getAuthToken } from "@/lib/authToken";
@@ -44,7 +44,7 @@ export function RegistrationBatchCallout() {
   if (loading || !batch) return null;
 
   const alreadyDone = hasResponded || submitted;
-  const { dateLabel, showDateMeta } = resolveRegistrationBatchDate(
+  const { dateLabel, showDateMeta: _showDateMeta } = resolveRegistrationBatchDate(
     batch.assessmentLabel,
     batch.assessmentDate,
   );
@@ -171,16 +171,7 @@ export function RegistrationBatchCallout() {
 
                 {/* Meta */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  {showDateMeta ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold"
-                      style={{ color: "#6e6a8a" }}
-                    >
-                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
-                      {dateLabel}
-                    </span>
-                  ) : null}
-                  {batch.slotLabel && (
+                  {batch.slotLabel ? (
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
                       style={{ color: "#6e6a8a" }}
@@ -188,7 +179,7 @@ export function RegistrationBatchCallout() {
                       <Clock className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
                       {batch.slotLabel}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -10,18 +10,16 @@ import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
 import {
   clearedL1ViaC2,
   getAssessmentStepStatus,
-  getL1ClearedExamDateLabel,
   hasAttemptedFeProject,
   hasAttemptedL1Cycle2,
   hasClearedFeProject,
-  hasWrittenAssessment,
   isAssessmentResultsLocked,
+  hasWrittenAssessment,
 } from "@/lib/assessment";
 import {
   areAssignmentResultsVisible,
-  L1_CYCLE2_EXAM_DATE_LABEL,
 } from "@/lib/irpDates";
-import { getL1UpcomingExamDateLabel, isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
+import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import {
   hasNxtmockAttempt,
@@ -139,9 +137,8 @@ function assessmentMotivation(
       clearedL1ViaC2(assessments) &&
       !onlineL1ResultsVisible
     ) {
-      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results are being processed and will appear once released.`;
+      return "You completed the L1 online assessment. Results are being processed and will appear once released.";
     }
-    const clearedDateLabel = getL1ClearedExamDateLabel(assessments);
     if (
       visibility.humanInterviewResults &&
       (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")
@@ -149,37 +146,35 @@ function assessmentMotivation(
       return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
     }
     if (visibility.aiMockResults && hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
-      return "You attempted the AI Mock Interview. Your re-attempt date will be announced soon — stay tuned to your dashboard. 💪";
+      return "You attempted the AI Mock Interview. Your re-attempt will be announced soon — stay tuned to your dashboard. 💪";
     }
-    // FE clearance advances the journey even before Admin releases score cards.
     if (hasClearedFeProject(assessments, feProjectMinScore)) {
       if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
-        return `You cleared the ${clearedDateLabel} assessment and FE Project. Next-step results will appear once released. 💪`;
+        return "You qualified in L1 and cleared the FE Project. Next-step results will appear once released. 💪";
       }
-      return `You cleared the ${clearedDateLabel} assessment and FE Project. Continue with your next interview step. 💪`;
+      return "You qualified in L1 and cleared the FE Project. Continue with your next interview step. 💪";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments)) {
       const required = `${feProjectMinScore ?? 18}/20`;
-      return `You cleared the ${clearedDateLabel} assessment but haven't cleared FE Project yet — score ${required} on any sit to unlock the AI Mock Interview. 💪`;
+      return `You qualified in the L1 online assessment but haven't cleared FE Project yet — score ${required} to unlock the AI Mock Interview. 💪`;
     }
-    return `You cleared the ${clearedDateLabel} assessment. Complete IRP 2.0 FE Project Main II to move forward. 💪`;
+    return "You qualified in the L1 online assessment. Complete your FE Project to move forward. 💪";
   }
 
-  if (level === 1 && isCycle2Candidate(assessments)) {
-    const upcomingLabel = getL1UpcomingExamDateLabel(assessments);
+  if (level === 1 && isCycle2Candidate(assessments, userId)) {
     if (hasAttemptedL1Cycle2(assessments) && !onlineL1ResultsVisible) {
-      return `You completed the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment. Results are being processed and will appear once released.`;
+      return "You completed the L1 online assessment. Results are being processed and will appear once released.";
     }
     if (assessmentStatus === "attempted_not_cleared") {
       if (hasAttemptedL1Cycle2(assessments)) {
-        return `You attempted the ${L1_CYCLE2_EXAM_DATE_LABEL} assessment but didn't clear yet. Register for the 26th July 2026 assessment to reattempt. 🔥`;
+        return "You attempted the L1 online assessment but didn't qualify yet. Register for the next assessment when it opens. 🔥";
       }
-      return `The assessment is on ${upcomingLabel}. Register via the Assessment Calendar and keep preparing. 🔥`;
+      return "Keep preparing for the L1 online assessment. Register via the Assessment Calendar when registration opens. 🔥";
     }
     if (days > 0) {
-      return `${days} ${days === 1 ? "day" : "days"} until the assessment on ${upcomingLabel}. Keep preparing. 🔥`;
+      return `${days} ${days === 1 ? "day" : "days"} until the next assessment window. Keep preparing. 🔥`;
     }
-    return `IRP 2.0 assessment on ${upcomingLabel}. Register your slot when ready. 🔥`;
+    return "Register for the L1 online assessment when registration opens on your dashboard. 🔥";
   }
 
   switch (phase) {
@@ -300,9 +295,9 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {level === 1 && !journey.isWildcard && july12Registered && !isInL1July25MockAllowlist(userId) && !isCycle1Cleared(assessments, userId) ? (
+      {level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) && july12Registered && !isInL1July25MockAllowlist(userId) ? (
         <L1July12RegisteredBanner />
-      ) : level === 1 && !journey.isWildcard && july26Allowed && !isCycle1Cleared(assessments, userId) ? (
+      ) : level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) && july26Allowed ? (
         <L1AssessmentBanner
           assessments={assessments}
           registration={registration}
@@ -312,7 +307,7 @@ export function DashboardView({
         />
       ) : null}
 
-      {level === 1 && !journey.isWildcard ? (
+      {level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) ? (
         <RegistrationBatchCallout />
       ) : null}
 
@@ -423,7 +418,12 @@ export function DashboardView({
       ) : null}
 
       {hasOnlineScores && !onlineResultsLocked ? (
-        <AssessmentResults journey={journey} examDateLabel={examDateLabel} assessments={assessments} />
+        <AssessmentResults
+          journey={journey}
+          examDateLabel={examDateLabel}
+          assessments={assessments}
+          userId={userId}
+        />
       ) : null}
       {/* Wildcard: what L3 covers + opt-back */}
       {phase === "WILDCARD" && (

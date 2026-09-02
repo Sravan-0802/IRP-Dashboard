@@ -51,7 +51,7 @@ export function NxtmockResults({
 
   const cleared = interview.cleared;
   const avgPct = nxtmockRatingPct(interview.averageRating);
-  const title = interview.interviewTitle?.trim() || "AI Mock Interview";
+  const title = NXTMOCK_RESULTS_TITLE;
 
   return (
     <div
@@ -67,10 +67,7 @@ export function NxtmockResults({
             <Mic className={cn("h-4 w-4", cleared ? "text-teal" : "text-brand-2")} />
             <span className={cleared ? "text-teal" : "text-gradient-brand"}>{NXTMOCK_RESULTS_TITLE}</span>
           </h3>
-          <p className="mt-0.5 text-xs text-muted2">
-            {title}
-            {interview.attemptNumber != null ? ` · Attempt ${interview.attemptNumber}` : ""}
-          </p>
+          <p className="mt-0.5 text-xs text-muted2">{title}</p>
         </div>
         <Pill tone={cleared ? "green" : "amber"}>
           {cleared ? "Cleared" : "Not cleared"}

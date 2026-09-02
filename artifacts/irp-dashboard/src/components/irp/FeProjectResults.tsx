@@ -3,18 +3,16 @@ import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import {
   assessmentOverallPct,
-  feResultLabel,
   feResultTone,
-  getExamDateLabelForAssessment,
   hasClearedFeProject,
   listAttemptedFeProjectAssessments,
   pickFeProjectAssessment,
 } from "@/lib/assessment";
+import { formatFeProjectStatus } from "@/lib/studentStatusDisplay";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   FE_PROJECT_CLEARED_BODY,
   FE_PROJECT_CLEAR_MIN_SCORE,
-  FE_PROJECT_MAIN_II_TITLE,
   FE_PROJECT_RESULTS_TITLE,
 } from "@/lib/feProjectConfig";
 import { Pill } from "./ui";
@@ -56,13 +54,11 @@ export function FeProjectResults({
     );
   }
 
-  const title = fe.assessmentTitle?.trim() || FE_PROJECT_MAIN_II_TITLE;
+  const title = FE_PROJECT_RESULTS_TITLE;
   const overallPct = assessmentOverallPct(fe);
   const scoreLabel = hasScoreData
     ? `${Math.round(fe.overallScore)}/${Math.round(fe.overallMax)}`
     : null;
-  const latestDateLabel = getExamDateLabelForAssessment(fe);
-  const latestClears = fe.overallScore >= threshold;
 
   return (
     <div
@@ -84,14 +80,9 @@ export function FeProjectResults({
               </div>
               <p className="truncate text-[11px] text-muted2 sm:hidden">{title}</p>
               <p className="mt-0.5 line-clamp-1 text-[11px] text-muted2">{FE_PROJECT_CLEARED_BODY}</p>
-              <p className="mt-0.5 text-[10px] text-muted2">
-                Latest: {latestDateLabel}
-                {fe.attemptNumber != null ? ` · Attempt ${fe.attemptNumber}` : ""}
-                {!latestClears
-                  ? " · Cleared on an earlier sit (≥18/20)"
-                  : previousSits.length > 0
-                    ? " · Earlier sits listed below"
-                    : ""}
+              <p className="mt-0.5 text-[10px] font-semibold text-teal">
+                Status: Cleared
+                {previousSits.length > 1 ? " · Earlier sits listed below" : ""}
               </p>
             </div>
           </div>
@@ -134,31 +125,28 @@ export function FeProjectResults({
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[rgba(12,166,120,0.10)] bg-[rgba(12,166,120,0.04)] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
-                  <th className="px-3 py-2">Cycle</th>
-                  <th className="px-3 py-2">Assessment</th>
+                  <th className="px-3 py-2">Sit</th>
                   <th className="px-3 py-2">Overall</th>
-                  <th className="px-3 py-2">Result</th>
+                  <th className="px-3 py-2">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {previousSits.map((sit) => {
+                {previousSits.map((sit, index) => {
                   const pct = assessmentOverallPct(sit);
-                  const sitTitle = sit.assessmentTitle?.trim() || "FE Project";
                   return (
                     <tr
-                      key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? ""}`}
+                      key={`${sit.organisationAssessmentId}-${sit.assessmentStartDatetime ?? index}`}
                       className="border-b border-[rgba(12,166,120,0.06)] last:border-b-0"
                     >
                       <td className="px-3 py-2.5 font-medium text-ink">
-                        {getExamDateLabelForAssessment(sit)}
+                        Sit {previousSits.length - index}
                       </td>
-                      <td className="px-3 py-2.5 text-[#6e6a8a]">{sitTitle}</td>
                       <td className="px-3 py-2.5 text-[#6e6a8a]">
                         {Math.round(sit.overallScore)}/{Math.round(sit.overallMax)} ({pct}%)
                       </td>
                       <td className="px-3 py-2.5">
                         <Pill tone={feResultTone(sit, threshold)}>
-                          {feResultLabel(sit, threshold)}
+                          {formatFeProjectStatus(sit, threshold)}
                         </Pill>
                       </td>
                     </tr>
