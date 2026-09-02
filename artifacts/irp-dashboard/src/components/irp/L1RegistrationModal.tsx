@@ -198,10 +198,12 @@ export function L1RegistrationModal({
                 {calendar.title}
               </h2>
               <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted2">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-brand" />
-                  {calendar.dateLabel}
-                </span>
+                {calendar.dateLabel ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5 text-brand" />
+                    {calendar.dateLabel}
+                  </span>
+                ) : null}
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 text-brand" />
                   {calendar.duration}

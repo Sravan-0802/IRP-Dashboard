@@ -4,6 +4,9 @@ import { L1RegistrationModal } from "@/components/irp/L1RegistrationModal";
 import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
 import { getAuthToken } from "@/lib/authToken";
 import type { L1AssessmentCalendar, L1RegistrationRecord } from "@/lib/l1AssessmentSchedule";
+import {
+  resolveRegistrationBatchDate,
+} from "@/lib/registrationBatchDisplay";
 
 async function submitBatchRegistration(
   record: L1RegistrationRecord,
@@ -41,13 +44,17 @@ export function RegistrationBatchCallout() {
   if (loading || !batch) return null;
 
   const alreadyDone = hasResponded || submitted;
+  const { dateLabel, showDateMeta } = resolveRegistrationBatchDate(
+    batch.assessmentLabel,
+    batch.assessmentDate,
+  );
 
   const calendar: L1AssessmentCalendar = {
     id: `batch-${batch.id}`,
     title: batch.assessmentLabel,
     subtitle: "Registration",
     cycleLabel: "Batch Registration",
-    dateLabel: batch.assessmentDate,
+    dateLabel,
     duration: batch.slotLabel ?? "TBD",
     slots: batch.slotId && batch.slotLabel
       ? [{ id: batch.slotId, label: batch.slotLabel }]
@@ -164,13 +171,15 @@ export function RegistrationBatchCallout() {
 
                 {/* Meta */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold"
-                    style={{ color: "#6e6a8a" }}
-                  >
-                    <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
-                    {batch.assessmentDate}
-                  </span>
+                  {showDateMeta ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold"
+                      style={{ color: "#6e6a8a" }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" style={{ color: "#6741d9" }} />
+                      {dateLabel}
+                    </span>
+                  ) : null}
                   {batch.slotLabel && (
                     <span
                       className="inline-flex items-center gap-1 text-xs font-semibold"
