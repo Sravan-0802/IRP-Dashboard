@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, ExternalLink, FileCode2, Mic, ShieldCheck, UserRound } from "lucide-react";
+import { CalendarClock, ClipboardList, ExternalLink, FileCode2, ShieldCheck, UserRound } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
@@ -13,6 +13,7 @@ import {
   assessmentOverallPct,
   hasAttemptedL1Cycle2,
   hasClearedAssessment,
+  hasClearedFeProject,
   pickAssessmentForLevel,
   pickL1AssessmentForResults,
 } from "@/lib/assessment";
@@ -28,8 +29,6 @@ import {
   l1StageHeroContent,
   type L1PipelineStage,
 } from "@/lib/l1PipelineStage";
-import type { NxtmockInterview } from "@/lib/nxtmockInterview";
-import { isNxtmockCleared } from "@/lib/nxtmockInterview";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { CountdownRing } from "./CountdownRing";
@@ -116,20 +115,16 @@ function L1PipelineStageHero({
   const StageIcon =
     stage === "fe_project_active" || stage === "fe_project_not_cleared"
       ? FileCode2
-      : stage === "ai_mock_active" || stage === "ai_mock_not_cleared"
-        ? Mic
-        : stage === "human_interview_active"
-          ? UserRound
-          : ShieldCheck;
+      : stage === "human_interview_active"
+        ? UserRound
+        : ShieldCheck;
 
   const iconColor =
     stage === "human_interview_active"
       ? "text-[#3b5bdb]/90"
-      : stage === "ai_mock_active"
-        ? "text-brand/90"
-        : stage === "fe_project_not_cleared" || stage === "ai_mock_not_cleared"
-          ? "text-[#e67700]/90"
-          : "text-[#0ca678]/90";
+      : stage === "fe_project_not_cleared"
+        ? "text-[#e67700]/90"
+        : "text-[#0ca678]/90";
 
   return (
     <div
@@ -179,7 +174,7 @@ export function Hero({
   days,
   examDateLabel: _examDateLabel,
   assessments = [],
-  nxtmock,
+  nxtmock: _nxtmock,
   feProjectMinScore,
   userId,
 }: {
@@ -187,7 +182,7 @@ export function Hero({
   days: number;
   examDateLabel: string;
   assessments?: AssessmentResult[];
-  nxtmock?: NxtmockInterview | null;
+  nxtmock?: unknown;
   feProjectMinScore?: number | null;
   userId?: string;
 }) {
@@ -210,36 +205,20 @@ export function Hero({
     (isExamWindowClosed() || resultsVisible) &&
     (phase === "PREP" || phase === "EXAM_OPEN");
 
-  // Cleared Online L1 → FE / AI Mock pipeline (always show cleared path; never "results coming soon").
+  // Cleared Online L1 → FE / Human Interview pipeline (AI Mock removed).
   if (level === 1 && isCycle1Cleared(assessments, userId)) {
-    let pipelineStage = getL1PipelineStage(journey, assessments, nxtmock, feProjectMinScore);
+    let pipelineStage = getL1PipelineStage(journey, assessments, null, feProjectMinScore);
+    const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
 
-    // Hold pipeline result stages until admin releases that stage.
-    // Access grants can unlock Human Interview CTA even before results release.
     if (pipelineStage === "human_interview_active" && !settings.humanInterviewResults && !humanInterviewGrantUrl) {
-      if (settings.aiMockResults) {
-        // AI mock released; human not yet — keep AI-cleared messaging via pending hero below
-        pipelineStage = null;
-      } else if (settings.feProjectResults) {
-        pipelineStage = "ai_mock_active";
-      } else {
-        pipelineStage = "fe_project_active";
-      }
-    } else if (
-      (pipelineStage === "ai_mock_active" || pipelineStage === "ai_mock_not_cleared") &&
-      !settings.aiMockResults
-    ) {
-      // Keep the AI Mock take/reattempt stage visible; only results cards stay gated.
-      // Do not fall back to "complete FE Project" when FE is already cleared.
+      pipelineStage = settings.feProjectResults || feCleared ? "human_interview_active" : "fe_project_active";
     }
-    // FE / AI attempted-not-cleared stay visible even before admin releases full
-    // results cards — students must see that they already sat and their score.
 
     if (
-      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
+      feCleared &&
       !settings.humanInterviewResults &&
-      settings.aiMockResults &&
-      !humanInterviewGrantUrl
+      !humanInterviewGrantUrl &&
+      pipelineStage === "human_interview_active"
     ) {
       return (
         <div
@@ -255,8 +234,8 @@ export function Hero({
               Human Interview coming soon
             </h2>
             <p className="mt-2 max-w-md text-sm text-muted2">
-              Your AI Mock Interview is cleared. Human Interview details will appear here once
-              released by the team.
+              You cleared the FE Project. Human Interview details will appear here once released by
+              the team.
             </p>
           </div>
         </div>
@@ -264,22 +243,13 @@ export function Hero({
     }
 
     if (pipelineStage) {
+      const showHumanCta =
+        pipelineStage === "human_interview_active" && Boolean(humanInterviewGrantUrl);
       return (
         <L1PipelineStageHero
           level={level}
-          stage={
-            humanInterviewGrantUrl &&
-            (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")
-              ? "human_interview_active"
-              : pipelineStage
-          }
-          ctaUrl={
-            (pipelineStage === "human_interview_active" ||
-              (humanInterviewGrantUrl &&
-                (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")))
-              ? humanInterviewGrantUrl
-              : null
-          }
+          stage={pipelineStage}
+          ctaUrl={showHumanCta ? humanInterviewGrantUrl : null}
           ctaLabel="Open Human Interview"
         />
       );

@@ -40,10 +40,8 @@ import { isL1Aug3MainLinkLive } from "@/lib/irpDates";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
-import { AiMockCallout } from "@/components/irp/AiMockCallout";
 import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
 import { L1July26MainCallout } from "@/components/irp/L1July26MainCallout";
-import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { formatRegistrationBatchDate, useRegistrationBatch } from "@/lib/useRegistrationBatch";
 
@@ -361,8 +359,6 @@ export function AssessmentsHub({
   const { examAccess } = useL1ExamAccess();
   const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const { allowed: july26Allowed } = useL1July26Allowlist();
-  const { data: nxtmockData } = useNxtmockInterview();
-  const nxtmock = nxtmockData?.interview ?? null;
   const { batch: registrationBatch } = useRegistrationBatch();
   const { findGrant } = useStudentAccess();
   const hasOnlineMockGrant = Boolean(findGrant("online_assessment", "mock"));
@@ -456,8 +452,6 @@ export function AssessmentsHub({
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
-
-      {level === 1 ? <AiMockCallout assessments={assessments} nxtmock={nxtmock} userId={userId} /> : null}
 
       {assessmentsForLevel.length === 0 ? (
         showOnlineGrantCards || level === 1 ? null : (

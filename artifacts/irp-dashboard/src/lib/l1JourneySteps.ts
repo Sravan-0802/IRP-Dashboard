@@ -10,29 +10,21 @@ import {
   hasClearedFeProject,
 } from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
-import {
-  hasNxtmockAttempt,
-  isNxtmockCleared,
-  type NxtmockInterview,
-} from "@/lib/nxtmockInterview";
 import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 
+/** L1 cycle without NxtMock AI Interview — FE cleared unlocks Human Interview. */
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
   { label: "Online Assessment", icon: "assessment" },
   { label: "FE Project", icon: "post" },
-  { label: "NxtMock AI Interview", icon: "mock" },
   { label: "Human Interview", icon: "human" },
   { label: "Level 2 Access", icon: "access" },
 ];
 
-/** Level 1 · The Hustler — full pipeline through Level 2 access.
- * Score cards can stay hidden until admin releases a stage, but journey
- * advancement (FE cleared → AI Mock unlocked) always follows clearance ≥18.
- */
+/** Level 1 · The Hustler — pipeline through Level 2 access (AI Mock removed). */
 export function l1HustlerJourneySteps(
   journey: Journey,
   assessments: AssessmentResult[],
-  nxtmock?: NxtmockInterview | null,
+  _nxtmock?: unknown,
   visibility?: {
     onlineL1Results?: boolean;
     feProjectResults?: boolean;
@@ -43,7 +35,6 @@ export function l1HustlerJourneySteps(
   userId?: string | null,
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
-  const showAi = visibility?.aiMockResults === true;
   const showHuman = visibility?.humanInterviewResults === true;
 
   const forceOnlineBookingTrack =
@@ -63,12 +54,7 @@ export function l1HustlerJourneySteps(
     !forceOnlineBookingTrack && !feCleared && hasAttemptedFeProject(assessments);
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
-  const nxtmockCleared = isNxtmockCleared(nxtmock);
-  const nxtmockAttemptedNotCleared = hasNxtmockAttempt(nxtmock) && !nxtmockCleared;
-  const pastAiMock = state === "L1_HUMAN_INTERVIEW" || advancedToL2 || nxtmockCleared;
 
-  // Only hide Online Assessment cleared/not-cleared while July 12 / C2 results
-  // are gated. Cycle 1 students who already scored ≥70% keep "Completed".
   const awaitingJuly12OnlineRelease =
     !showOnline &&
     assessmentStatus !== "active" &&
@@ -82,21 +68,16 @@ export function l1HustlerJourneySteps(
         ? "active"
         : assessmentStatus;
 
-  // FE clearance always advances the pipeline. Attempted-not-cleared is always
-  // shown so students see they already sat (full score cards may still be gated).
   let feProjectStatus: JourneyStep["status"] = "locked";
   if (feCleared) feProjectStatus = "done";
   else if (feAttemptedNotCleared) feProjectStatus = "attempted_not_cleared";
   else if (assessmentCleared || phase === "POST_ASSESSMENT") feProjectStatus = "active";
 
-  let aiMockStatus: JourneyStep["status"] = "locked";
-  if (showAi && pastAiMock) aiMockStatus = "done";
-  else if (nxtmockAttemptedNotCleared) aiMockStatus = "attempted_not_cleared";
-  else if (feCleared) aiMockStatus = "active";
-
   let humanInterviewStatus: JourneyStep["status"] = "locked";
   if (showHuman && (phase === "PLACED" || state.startsWith("L3_"))) humanInterviewStatus = "done";
-  else if (showHuman && showAi && pastAiMock) humanInterviewStatus = "active";
+  else if (feCleared || state === "L1_HUMAN_INTERVIEW") {
+    humanInterviewStatus = "active";
+  }
 
   let level2AccessStatus: JourneyStep["status"] = "locked";
   if (phase === "PLACED") level2AccessStatus = "done";
@@ -137,18 +118,6 @@ export function l1HustlerJourneySteps(
     },
     {
       ...L1_STEPS[2],
-      status: aiMockStatus,
-      badgeLabel:
-        aiMockStatus === "done"
-          ? "Cleared"
-          : aiMockStatus === "attempted_not_cleared"
-            ? "Not cleared"
-            : aiMockStatus === "active"
-              ? "In progress"
-              : undefined,
-    },
-    {
-      ...L1_STEPS[3],
       status: humanInterviewStatus,
       badgeLabel:
         humanInterviewStatus === "done"
@@ -157,6 +126,6 @@ export function l1HustlerJourneySteps(
             ? "In progress"
             : undefined,
     },
-    { ...L1_STEPS[4], status: level2AccessStatus },
+    { ...L1_STEPS[3], status: level2AccessStatus },
   ];
 }

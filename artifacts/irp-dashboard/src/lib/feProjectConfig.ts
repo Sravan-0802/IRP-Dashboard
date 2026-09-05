@@ -33,20 +33,20 @@ export const FE_PROJECT_REATTEMPT_BODY =
 /** Eyebrow + copy for the FE Project "not cleared" notice shown on the dashboard. */
 export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
 
-export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 18/20 to unlock the AI Mock Interview";
+export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
 
 export const FE_PROJECT_NOT_CLEARED_BODY =
   "You attempted the FE Project but haven't cleared it yet. You need at least 18/20 on any FE Project sit to advance. A new re-attempt link will appear when the team releases it.";
 
-export const FE_PROJECT_C2_NOT_CLEARED_TITLE = "Score 18/20 to unlock the AI Mock Interview";
+export const FE_PROJECT_C2_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
 
 export const FE_PROJECT_C2_NOT_CLEARED_BODY =
-  "You attempted FE Project but haven't cleared it yet. You need at least 18/20 to advance to the AI Mock Interview.";
+  "You attempted FE Project but haven't cleared it yet. You need at least 18/20 to advance to the Human Interview.";
 
-export const FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE = "Score 18/20 to unlock the AI Mock Interview";
+export const FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
 
 export const FE_PROJECT_MAIN_II_NOT_CLEARED_BODY =
-  "You attempted FE Project Main II but haven't cleared it yet. You need at least 18/20 to advance to the AI Mock Interview.";
+  "You attempted FE Project Main II but haven't cleared it yet. You need at least 18/20 to advance to the Human Interview.";
 
 /** FE Project Main — available 17th July 12:00 PM to 19th July 11:00 PM IST (allowlist only). */
 export const FE_PROJECT_MOCK_ORG_ASSESSMENT_ID = "98c2d7a223a3438f973a6d7e6f7c5b4b";
@@ -61,10 +61,10 @@ export const FE_PROJECT_RESULTS_TITLE = "FE Project Results";
 export const FE_PROJECT_CLEARED_TITLE = "You cleared the FE Project";
 
 export const FE_PROJECT_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your AI Mock Interview.";
+  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";
 
 export const FE_PROJECT_C2_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your AI Mock Interview.";
+  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";
 
 export const FE_PROJECT_MAIN_II_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your AI Mock Interview.";
+  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";

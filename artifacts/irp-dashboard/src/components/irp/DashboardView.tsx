@@ -21,12 +21,6 @@ import {
 } from "@/lib/irpDates";
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
-import {
-  hasNxtmockAttempt,
-  isNxtmockCleared,
-  type NxtmockInterview,
-} from "@/lib/nxtmockInterview";
-import { useNxtmockInterview } from "@/lib/useNxtmockInterview";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { Hero } from "./Hero";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
@@ -36,8 +30,6 @@ import { FeMockCallout } from "./FeMockCallout";
 import { FeProjectCallout } from "./FeProjectCallout";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
-import { AiMockCallout } from "./AiMockCallout";
-import { NxtmockResults } from "./NxtmockResults";
 import { L1AssessmentBanner } from "./L1AssessmentBanner";
 import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
 import { useL1Registration } from "@/lib/useL1Registration";
@@ -52,7 +44,6 @@ import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 function journeySteps(
   journey: Journey,
   assessments: AssessmentResult[],
-  nxtmock: NxtmockInterview | null | undefined,
   visibility?: {
     onlineL1Results?: boolean;
     feProjectResults?: boolean;
@@ -69,7 +60,7 @@ function journeySteps(
     return l1HustlerJourneySteps(
       journey,
       assessments,
-      nxtmock,
+      null,
       visibility,
       feProjectMinScore,
       userId,
@@ -119,7 +110,6 @@ function assessmentMotivation(
   assessments: AssessmentResult[],
   level: 1 | 2 | 3,
   journey: Journey,
-  nxtmock: NxtmockInterview | null | undefined,
   onlineL1ResultsVisible: boolean,
   visibility: {
     feProjectResults: boolean;
@@ -139,24 +129,15 @@ function assessmentMotivation(
     ) {
       return "You completed the L1 online assessment. Results are being processed and will appear once released.";
     }
-    if (
-      visibility.humanInterviewResults &&
-      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW")
-    ) {
-      return "You cleared the AI Mock Interview. Prepare for your Human Interview — the next step in your IRP journey. 💪";
-    }
-    if (visibility.aiMockResults && hasNxtmockAttempt(nxtmock) && !isNxtmockCleared(nxtmock)) {
-      return "You attempted the AI Mock Interview. Your re-attempt will be announced soon — stay tuned to your dashboard. 💪";
-    }
     if (hasClearedFeProject(assessments, feProjectMinScore)) {
-      if (!visibility.aiMockResults && isNxtmockCleared(nxtmock)) {
-        return "You qualified in L1 and cleared the FE Project. Next-step results will appear once released. 💪";
+      if (visibility.humanInterviewResults || journey.journeyState === "L1_HUMAN_INTERVIEW") {
+        return "You cleared the FE Project. Prepare for your Human Interview — the next step in your IRP journey. 💪";
       }
-      return "You qualified in L1 and cleared the FE Project. Continue with your next interview step. 💪";
+      return "You qualified in L1 and cleared the FE Project. Continue with your Human Interview when it opens. 💪";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments)) {
       const required = `${feProjectMinScore ?? 18}/20`;
-      return `You qualified in the L1 online assessment but haven't cleared FE Project yet — score ${required} to unlock the AI Mock Interview. 💪`;
+      return `You qualified in the L1 online assessment but haven't cleared FE Project yet — score ${required} to unlock the Human Interview. 💪`;
     }
     return "You qualified in the L1 online assessment. Complete your FE Project to move forward. 💪";
   }
@@ -243,7 +224,6 @@ export function DashboardView({
   const { registration } = useL1Registration();
   const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
   const { allowed: july26Allowed } = useL1July26Allowlist();
-  const { data: nxtmockData } = useNxtmockInterview();
   const { settings } = useVisibilitySettings();
   const { minScore: feProjectMinScore } = useFeProjectConfig();
   const { findGrant } = useStudentAccess();
@@ -251,7 +231,9 @@ export function DashboardView({
     findGrant("human_interview", "default")?.url?.trim() ||
     findGrant("human_interview", "main")?.url?.trim() ||
     null;
-  const nxtmock = nxtmockData?.interview ?? null;
+  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+  const humanInterviewReady =
+    feCleared || journey.journeyState === "L1_HUMAN_INTERVIEW";
 
   const motivation = assessmentMotivation(
     phase,
@@ -260,7 +242,6 @@ export function DashboardView({
     assessments,
     level,
     journey,
-    nxtmock,
     settings.onlineL1Results,
     {
       feProjectResults: settings.feProjectResults,
@@ -325,7 +306,6 @@ export function DashboardView({
         days={days}
         examDateLabel={examDateLabel}
         assessments={assessments}
-        nxtmock={nxtmock}
         feProjectMinScore={feProjectMinScore}
         userId={userId}
       />
@@ -337,7 +317,7 @@ export function DashboardView({
           </p>
         )}
         <JourneyBar
-          steps={journeySteps(journey, assessments, nxtmock, settings, feProjectMinScore, userId)}
+          steps={journeySteps(journey, assessments, settings, feProjectMinScore, userId)}
           compact={level === 1 && !journey.isWildcard}
           onAssessmentCalendarClick={onOpenAssessmentCalendar}
         />
@@ -366,19 +346,6 @@ export function DashboardView({
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <AiMockCallout
-          assessments={assessments}
-          nxtmock={nxtmock}
-          feProjectMinScore={feProjectMinScore}
-          userId={userId}
-        />
-      ) : null}
-
-      {level === 1 && !journey.isWildcard ? (
-        <NxtmockResults interview={nxtmock} visible={settings.aiMockResults} />
-      ) : null}
-
-      {level === 1 && !journey.isWildcard ? (
         <FeProjectResults
           journey={journey}
           assessments={assessments}
@@ -391,7 +358,7 @@ export function DashboardView({
 
       {level === 1 &&
       !journey.isWildcard &&
-      (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
+      humanInterviewReady &&
       humanInterviewGrantUrl ? (
         <div className="flex flex-col gap-3 rounded-xl border border-[rgba(59,91,219,0.2)] bg-[linear-gradient(120deg,#edf2ff_0%,#f8f7ff_100%)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-semibold text-ink">
@@ -408,8 +375,9 @@ export function DashboardView({
         </div>
       ) : level === 1 &&
         !journey.isWildcard &&
-        (isNxtmockCleared(nxtmock) || journey.journeyState === "L1_HUMAN_INTERVIEW") &&
-        !settings.humanInterviewResults ? (
+        humanInterviewReady &&
+        !settings.humanInterviewResults &&
+        !humanInterviewGrantUrl ? (
         <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft">
           <span className="text-sm font-medium text-muted2">
             Human Interview details are being processed. They will appear here once released.
