@@ -379,6 +379,61 @@ router.put("/admin/unpaid-users/:academyUserId", async (req, res) => {
   }
 });
 
+// GET /api/admin/dashboard-access/summary — current dashboard eligibility and
+// payment-gate counts from the BigQuery assessment mirror.
+router.get("/admin/dashboard-access/summary", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const result = await db.execute(sql`
+      WITH eligible AS (
+        SELECT DISTINCT user_id
+        FROM academy_user_assessment_details
+        WHERE user_id IS NOT NULL
+          AND BTRIM(user_id) <> ''
+      ),
+      sync AS (
+        SELECT status, last_synced_at
+        FROM bigquery_sync_status
+        WHERE table_name = 'academy_user_assessment_details'
+        LIMIT 1
+      )
+      SELECT
+        (SELECT COUNT(*)::int FROM academy_user_assessment_details) AS assessment_rows,
+        (SELECT COUNT(*)::int FROM eligible) AS eligible_users,
+        (SELECT COUNT(*)::int FROM unpaid_users) AS unpaid_users_total,
+        COUNT(*) FILTER (WHERE unpaid_users.academy_user_id IS NULL)::int
+          AS paid_dashboard_users,
+        COUNT(*) FILTER (WHERE unpaid_users.academy_user_id IS NOT NULL)::int
+          AS unpaid_eligible_users,
+        (SELECT status FROM sync) AS sync_status,
+        (SELECT last_synced_at FROM sync) AS last_synced_at
+      FROM eligible
+      LEFT JOIN unpaid_users
+        ON unpaid_users.academy_user_id = eligible.user_id
+    `);
+
+    const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
+    const numberValue = (value: unknown) => Number(value ?? 0);
+
+    res.json({
+      assessmentRows: numberValue(row.assessment_rows),
+      eligibleUsers: numberValue(row.eligible_users),
+      unpaidUsersTotal: numberValue(row.unpaid_users_total),
+      paidDashboardUsers: numberValue(row.paid_dashboard_users),
+      unpaidEligibleUsers: numberValue(row.unpaid_eligible_users),
+      syncStatus: row.sync_status ?? null,
+      lastSyncedAt: row.last_synced_at ?? null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to load dashboard access summary");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/admin/dashboard-access/grant — unlock dashboard for academy users:
 // 1) remove payment lock (unpaid_users)
 // 2) seed basic + placeholder assessment rows if missing, so

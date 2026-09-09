@@ -1,6 +1,16 @@
-import { useMemo, useState } from "react";
-import { Eye, KeyRound, Loader2, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CreditCard, Database, Eye, KeyRound, Loader2, RefreshCw, ShieldCheck, Upload, Users } from "lucide-react";
 import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
+
+type DashboardAccessSummary = {
+  assessmentRows: number;
+  eligibleUsers: number;
+  unpaidUsersTotal: number;
+  paidDashboardUsers: number;
+  unpaidEligibleUsers: number;
+  syncStatus: string | null;
+  lastSyncedAt: string | null;
+};
 
 type GrantResult = {
   requested: number;
@@ -29,8 +39,45 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
   const [previewUid, setPreviewUid] = useState("");
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
+  const [summary, setSummary] = useState<DashboardAccessSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState("");
 
   const parsedIds = useMemo(() => parseAcademyUserIds(uidsText), [uidsText]);
+
+  async function loadSummary() {
+    setSummaryLoading(true);
+    setSummaryError("");
+    try {
+      const res = await fetch("/api/admin/dashboard-access/summary", {
+        headers: { "x-api-key": apiKey.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((body as { error?: string }).error ?? `Could not load summary (${res.status})`);
+      }
+      setSummary(body as DashboardAccessSummary);
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : "Could not load dashboard access summary");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadSummary();
+  }, [apiKey]);
+
+  function formatSummaryDate(value: string | null) {
+    if (!value) return "Not recorded";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Not recorded";
+    return date.toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Kolkata",
+    });
+  }
 
   function onCsvFile(file: File | null) {
     if (!file) return;
@@ -158,6 +205,98 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
 
   return (
     <div className="space-y-5">
+      <div className="irp-card p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <Database className="mt-0.5 h-4 w-4 shrink-0 text-[#6741d9]" />
+            <div>
+              <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+                Dashboard access summary
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-[#6e6a8a]">
+                Live counts from the BigQuery assessment-data mirror and the payment gate.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadSummary()}
+            disabled={summaryLoading}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-bold text-[#6741d9] transition-colors hover:bg-[#f3f0ff] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${summaryLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
+
+        {summaryError ? (
+          <p className="rounded-lg bg-[#fff0f4] px-3 py-2 text-sm font-semibold text-[#c2255c]">
+            {summaryError}
+          </p>
+        ) : summaryLoading && !summary ? (
+          <div className="flex items-center gap-2 py-5 text-sm font-semibold text-[#6e6a8a]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading access counts…
+          </div>
+        ) : summary ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-[rgba(103,65,217,0.15)] bg-[#f8f7ff] p-4">
+                <Users className="h-4 w-4 text-[#6741d9]" />
+                <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
+                  {summary.eligibleUsers.toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
+                  Eligible users
+                </p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Distinct IDs with assessment data</p>
+              </div>
+              <div className="rounded-xl border border-[rgba(59,91,219,0.15)] bg-[#f3f6ff] p-4">
+                <Database className="h-4 w-4 text-[#3b5bdb]" />
+                <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
+                  {summary.assessmentRows.toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
+                  Assessment records
+                </p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Rows in the access source mirror</p>
+              </div>
+              <div className="rounded-xl border border-[rgba(12,166,120,0.2)] bg-[#effbf6] p-4">
+                <ShieldCheck className="h-4 w-4 text-[#0ca678]" />
+                <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
+                  {summary.paidDashboardUsers.toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
+                  Dashboard access
+                </p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and not in the unpaid list</p>
+              </div>
+              <div className="rounded-xl border border-[rgba(245,159,0,0.22)] bg-[#fff9e9] p-4">
+                <CreditCard className="h-4 w-4 text-[#e67700]" />
+                <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
+                  {summary.unpaidEligibleUsers.toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
+                  Unpaid eligible users
+                </p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">See the payment-required screen</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6e6a8a]">
+              <span>
+                Unpaid list total: <strong className="text-[#0d1117]">{summary.unpaidUsersTotal.toLocaleString("en-IN")}</strong>
+              </span>
+              <span>
+                Sync status: <strong className="capitalize text-[#0d1117]">{summary.syncStatus ?? "Not recorded"}</strong>
+              </span>
+              <span>
+                Last BigQuery sync: <strong className="text-[#0d1117]">{formatSummaryDate(summary.lastSyncedAt)}</strong>
+              </span>
+            </div>
+          </>
+        ) : null}
+      </div>
+
       <div className="irp-card p-5">
         <div className="mb-4 flex items-start gap-2">
           <Eye className="mt-0.5 h-4 w-4 shrink-0 text-[#6741d9]" />
