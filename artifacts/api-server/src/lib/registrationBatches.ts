@@ -251,6 +251,69 @@ export async function updateRegistrationBatch(
   return getRegistrationBatch(id);
 }
 
+export async function addRegistrationBatchUsers(
+  id: number,
+  academyUserIds: string[],
+): Promise<RegistrationBatchDetail | null> {
+  const existing = await getRegistrationBatch(id);
+  if (!existing) return null;
+
+  const ids = parseIds(academyUserIds);
+  if (ids.length === 0) throw new Error("academyUserIds must be a non-empty array");
+
+  const now = new Date();
+  const chunk = 500;
+  for (let i = 0; i < ids.length; i += chunk) {
+    await db
+      .insert(registrationBatchUsersTable)
+      .values(
+        ids.slice(i, i + chunk).map((academyUserId) => ({
+          batchId: id,
+          academyUserId,
+          createdAt: now,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+
+  await db
+    .update(registrationBatchesTable)
+    .set({ updatedAt: now })
+    .where(eq(registrationBatchesTable.id, id));
+
+  return getRegistrationBatch(id);
+}
+
+export async function removeRegistrationBatchUser(
+  id: number,
+  academyUserId: string,
+): Promise<"removed" | "not_found" | "batch_not_found"> {
+  const [batch] = await db
+    .select({ id: registrationBatchesTable.id })
+    .from(registrationBatchesTable)
+    .where(eq(registrationBatchesTable.id, id))
+    .limit(1);
+  if (!batch) return "batch_not_found";
+
+  const deleted = await db
+    .delete(registrationBatchUsersTable)
+    .where(
+      and(
+        eq(registrationBatchUsersTable.batchId, id),
+        eq(registrationBatchUsersTable.academyUserId, academyUserId),
+      ),
+    )
+    .returning({ academyUserId: registrationBatchUsersTable.academyUserId });
+  if (deleted.length === 0) return "not_found";
+
+  await db
+    .update(registrationBatchesTable)
+    .set({ updatedAt: new Date() })
+    .where(eq(registrationBatchesTable.id, id));
+
+  return "removed";
+}
+
 export async function deleteRegistrationBatch(id: number): Promise<boolean> {
   const deleted = await db
     .delete(registrationBatchesTable)

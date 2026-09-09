@@ -2,12 +2,14 @@ import { Router } from "express";
 import { checkApiKey } from "../lib/apiKey";
 import { parseOptionalDate } from "../lib/accessBatches";
 import {
+  addRegistrationBatchUsers,
   createRegistrationBatch,
   deleteRegistrationBatch,
   getAllRegistrationBatchResponses,
   getRegistrationBatch,
   getRegistrationBatchResponses,
   listRegistrationBatches,
+  removeRegistrationBatchUser,
   updateRegistrationBatch,
 } from "../lib/registrationBatches";
 
@@ -146,6 +148,46 @@ router.patch("/admin/registration-batches/:id", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to update registration batch");
     res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+  }
+});
+
+// PATCH /api/admin/registration-batches/:id/users — add users without replacing existing membership
+router.patch("/admin/registration-batches/:id/users", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const id = Number(req.params["id"]);
+    if (!Number.isFinite(id) || id <= 0) { res.status(400).json({ error: "Invalid id" }); return; }
+    const academyUserIds = parseUserIds(req.body);
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "academyUserIds must be non-empty" });
+      return;
+    }
+
+    const batch = await addRegistrationBatchUsers(id, academyUserIds);
+    if (!batch) { res.status(404).json({ error: "Batch not found" }); return; }
+    res.json({ batch });
+  } catch (err) {
+    req.log.error({ err }, "Failed to add registration batch users");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+  }
+});
+
+// DELETE /api/admin/registration-batches/:id/users/:userId — membership only; responses are preserved
+router.delete("/admin/registration-batches/:id/users/:userId", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const id = Number(req.params["id"]);
+    if (!Number.isFinite(id) || id <= 0) { res.status(400).json({ error: "Invalid id" }); return; }
+    const academyUserId = String(req.params["userId"] ?? "").trim();
+    if (!academyUserId) { res.status(400).json({ error: "Invalid userId" }); return; }
+
+    const result = await removeRegistrationBatchUser(id, academyUserId);
+    if (result === "batch_not_found") { res.status(404).json({ error: "Batch not found" }); return; }
+    if (result === "not_found") { res.status(404).json({ error: "User is not in this batch" }); return; }
+    res.json({ ok: true, id, academyUserId });
+  } catch (err) {
+    req.log.error({ err }, "Failed to remove registration batch user");
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
