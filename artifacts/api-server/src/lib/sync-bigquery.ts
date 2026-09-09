@@ -19,11 +19,16 @@ import {
   fetchZNxtmockAttempts,
   fetchZRoundWiseSummary,
   isBigQueryConfigured,
+  type BasicDetailRow,
   type ZHustlerAttemptRow,
   type ZFeProjectAttemptRow,
   type ZNxtmockAttemptRow,
 } from "./bigquery";
 import { isMainAssessmentFields } from "./mainOnly";
+import {
+  ensureAcademyUserBasicDetailsColumns,
+  normalizePaymentStatusValue,
+} from "./academyUserProfile";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
@@ -97,14 +102,40 @@ function dedupeByKey<T>(rows: T[], keyFn: (row: T) => string): T[] {
   return [...map.values()];
 }
 
+/**
+ * Display name for a student: the certificate name wins, then first + last,
+ * then whatever the legacy table carried.
+ */
+function resolveBasicDetailDisplayName(row: BasicDetailRow): string | null {
+  const certificate = toStr(row.name_on_certificate)?.trim();
+  if (certificate) return certificate;
+
+  const joined = [toStr(row.first_name)?.trim(), toStr(row.last_name)?.trim()]
+    .filter((part): part is string => Boolean(part))
+    .join(" ");
+  if (joined) return joined;
+
+  return toStr(row.user_name)?.trim() || null;
+}
+
 async function syncBasicDetails(): Promise<number> {
+  await ensureAcademyUserBasicDetailsColumns();
   const rows = await fetchBasicDetails();
   const mapped = dedupeByKey(
     rows
       .filter((r) => r.user_id != null && String(r.user_id).trim() !== "")
       .map((r) => ({
         userId: String(r.user_id),
-        userName: toStr(r.user_name),
+        userName: resolveBasicDetailDisplayName(r),
+        firstName: toStr(r.first_name),
+        lastName: toStr(r.last_name),
+        nameOnCertificate: toStr(r.name_on_certificate),
+        yog: toInt(r.yog),
+        lpoad: toDate(r.lpoad),
+        paymentStatus: normalizePaymentStatusValue(r.payment_status),
+        paymentPlan: toStr(r.payment_plan),
+        irpEligibleStatus: toStr(r.irp_eligible_status),
+        profilePicUrl: toStr(r.profile_pic_url),
         syncedAt: new Date(),
       })),
     (r) => r.userId,
@@ -119,6 +150,15 @@ async function syncBasicDetails(): Promise<number> {
         target: academyUserBasicDetailsTable.userId,
         set: {
           userName: sql`excluded.user_name`,
+          firstName: sql`excluded.first_name`,
+          lastName: sql`excluded.last_name`,
+          nameOnCertificate: sql`excluded.name_on_certificate`,
+          yog: sql`excluded.yog`,
+          lpoad: sql`excluded.lpoad`,
+          paymentStatus: sql`excluded.payment_status`,
+          paymentPlan: sql`excluded.payment_plan`,
+          irpEligibleStatus: sql`excluded.irp_eligible_status`,
+          profilePicUrl: sql`excluded.profile_pic_url`,
           syncedAt: sql`excluded.synced_at`,
         },
       });
@@ -797,11 +837,12 @@ const MINUTES_PER_DAY = 24 * 60;
 
 /**
  * Parses the configured daily sync times (IST) into minutes-of-day in UTC.
- * Override with BQ_SYNC_TIMES_IST, e.g. "10:00,18:00". Defaults to 10:00 & 18:00 IST.
+ * Override with BQ_SYNC_TIMES_IST, e.g. "10:00" or "10:00,18:00".
+ * Default: 10:00 IST every day (automatic, no manual trigger).
  */
 function getSyncTargetsUtcMinutes(): number[] {
   const raw = process.env["BQ_SYNC_TIMES_IST"]?.trim();
-  const items = (raw ? raw.split(",") : ["10:00", "18:00"])
+  const items = (raw ? raw.split(",") : ["10:00"])
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -817,8 +858,10 @@ function getSyncTargetsUtcMinutes(): number[] {
   }
 
   const unique = [...new Set(targets)].sort((a, b) => a - b);
-  // Fallback to 10:00 & 18:00 IST if config was empty/invalid.
-  return unique.length ? unique : [(10 * 60 - IST_OFFSET_MINUTES + MINUTES_PER_DAY) % MINUTES_PER_DAY, (18 * 60 - IST_OFFSET_MINUTES + MINUTES_PER_DAY) % MINUTES_PER_DAY].sort((a, b) => a - b);
+  // Fallback to 10:00 IST if config was empty/invalid.
+  return unique.length
+    ? unique
+    : [((10 * 60 - IST_OFFSET_MINUTES) % MINUTES_PER_DAY + MINUTES_PER_DAY) % MINUTES_PER_DAY];
 }
 
 function msUntilNextTarget(targetsUtcMinutes: number[]): number {
@@ -838,9 +881,10 @@ function msUntilNextTarget(targetsUtcMinutes: number[]): number {
 }
 
 /**
- * Schedules the sync to run at fixed daily times (default 10:00 & 18:00 IST,
- * override with BQ_SYNC_TIMES_IST). Runs once shortly after startup unless
- * BQ_SYNC_ON_BOOT is "false". Failures are logged but never crash the server.
+ * Schedules the sync to run at fixed daily times (default 10:00 IST,
+ * override with BQ_SYNC_TIMES_IST). Automatic — no admin click required.
+ * Runs once shortly after startup unless BQ_SYNC_ON_BOOT is "false".
+ * Failures are logged but never crash the server.
  */
 export function startBigQuerySyncScheduler(): void {
   if (!isBigQueryConfigured()) {

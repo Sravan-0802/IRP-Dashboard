@@ -193,6 +193,7 @@ export default function Dashboard() {
         <SidebarContent
           name={displayStudent.name}
           yog={displayStudent.yog}
+          avatar={displayStudent.avatar}
           journey={journey}
           active={page}
           onNavigate={navigate}
@@ -212,6 +213,7 @@ export default function Dashboard() {
             <SidebarContent
               name={displayStudent.name}
               yog={displayStudent.yog}
+              avatar={displayStudent.avatar}
               journey={journey}
               active={page}
               onNavigate={(k) => { navigate(k); setMobileOpen(false); }}

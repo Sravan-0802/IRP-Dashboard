@@ -3,11 +3,14 @@ import { db } from "@workspace/db";
 import {
   supportConversationsTable,
   supportMessagesTable,
-  academyUserBasicDetailsTable,
 } from "@workspace/db";
 import { eq, desc, asc, inArray } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { checkApiKey } from "../lib/apiKey";
+import {
+  getAcademyUserBasicDetails,
+  resolveAcademyUserDisplayName,
+} from "../lib/academyUserProfile";
 
 const router = Router();
 
@@ -89,17 +92,13 @@ router.post("/support/message", async (req, res) => {
     const isNewConversation = !conv;
 
     if (!conv) {
-      const [basic] = await db
-        .select({ userName: academyUserBasicDetailsTable.userName })
-        .from(academyUserBasicDetailsTable)
-        .where(eq(academyUserBasicDetailsTable.userId, userId))
-        .limit(1);
+      const basic = await getAcademyUserBasicDetails(userId);
 
       [conv] = await db
         .insert(supportConversationsTable)
         .values({
           academyUserId: userId,
-          userName: basic?.userName ?? null,
+          userName: resolveAcademyUserDisplayName(basic),
           status: "open",
         })
         .returning();

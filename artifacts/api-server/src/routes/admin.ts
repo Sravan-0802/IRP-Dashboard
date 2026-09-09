@@ -26,6 +26,7 @@ import {
   parseGenAiTrainingPopupBody,
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
+import { resolveAcademyUserDisplayName } from "../lib/academyUserProfile";
 
 const router = Router();
 
@@ -65,11 +66,16 @@ router.post("/admin/students/fe-project-done", async (req, res) => {
           .select({
             userId: academyUserBasicDetailsTable.userId,
             userName: academyUserBasicDetailsTable.userName,
+            firstName: academyUserBasicDetailsTable.firstName,
+            lastName: academyUserBasicDetailsTable.lastName,
+            nameOnCertificate: academyUserBasicDetailsTable.nameOnCertificate,
           })
           .from(academyUserBasicDetailsTable)
           .where(inArray(academyUserBasicDetailsTable.userId, targets))
       : [];
-    const nameMap = new Map(basicRows.map((r) => [r.userId, r.userName]));
+    const nameMap = new Map(
+      basicRows.map((r) => [r.userId, resolveAcademyUserDisplayName(r)] as const),
+    );
 
     const updated: string[] = [];
     for (const userId of targets) {
@@ -140,11 +146,16 @@ router.post("/admin/students/ai-mock-cleared", async (req, res) => {
           .select({
             userId: academyUserBasicDetailsTable.userId,
             userName: academyUserBasicDetailsTable.userName,
+            firstName: academyUserBasicDetailsTable.firstName,
+            lastName: academyUserBasicDetailsTable.lastName,
+            nameOnCertificate: academyUserBasicDetailsTable.nameOnCertificate,
           })
           .from(academyUserBasicDetailsTable)
           .where(inArray(academyUserBasicDetailsTable.userId, targets))
       : [];
-    const nameMap = new Map(basicRows.map((r) => [r.userId, r.userName]));
+    const nameMap = new Map(
+      basicRows.map((r) => [r.userId, resolveAcademyUserDisplayName(r)] as const),
+    );
 
     const updated: string[] = [];
     for (const userId of targets) {

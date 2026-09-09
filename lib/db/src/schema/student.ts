@@ -221,10 +221,28 @@ export const dashboardAnalyticsEventsTable = pgTable("dashboard_analytics_events
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Mirror of BigQuery `academy_users_basic_details_for_irp_portal`
+/**
+ * Mirror of BigQuery `academy_users_basic_details_for_pocs` — the single source
+ * of truth for student identity (name on certificate, YOG, profile picture) and
+ * for the payment gate (`payment_status`). `user_name` is a derived display
+ * name kept for older callers.
+ */
 export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details", {
   userId: text("user_id").primaryKey(),
   userName: text("user_name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  nameOnCertificate: text("name_on_certificate"),
+  yog: integer("yog"),
+  /** Learning Portal Onboarding Access Given Date. */
+  lpoad: timestamp("lpoad", { withTimezone: true }),
+  /** PAID | UNPAID | … — used with irp_eligible_status for the access gate. */
+  paymentStatus: text("payment_status"),
+  /** NBFC | FLEX | ONE_TIME | … */
+  paymentPlan: text("payment_plan"),
+  /** Must be ELIGIBLE (with a paid payment_status) for dashboard access. */
+  irpEligibleStatus: text("irp_eligible_status"),
+  profilePicUrl: text("profile_pic_url"),
   syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

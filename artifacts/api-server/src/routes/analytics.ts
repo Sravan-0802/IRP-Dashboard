@@ -1,8 +1,13 @@
 import { Router } from "express";
-import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable, l1CycleRegistrationsTable, unpaidUsersTable } from "@workspace/db";
+import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashboardFeedbackTable, contactUsMessagesTable, l1CycleRegistrationsTable } from "@workspace/db";
 import { sql, count, countDistinct, inArray, min, max, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { rowToL1RegistrationResponse } from "../lib/l1Registration";
+import {
+  ensureAcademyUserBasicDetailsColumns,
+  isPaidAcademyUser,
+  resolveAcademyUserDisplayName,
+} from "../lib/academyUserProfile";
 
 const router = Router();
 
@@ -106,24 +111,29 @@ router.get("/analytics/dashboard", async (req, res) => {
       );
 
     const userIds = [...new Set(perUserRows.map((r) => r.academyUserId))];
-    const nameRows = userIds.length
+    // Names and payment status both come from the BigQuery POCs mirror.
+    if (userIds.length) await ensureAcademyUserBasicDetailsColumns();
+    const basicRows = userIds.length
       ? await db
           .select({
             userId: academyUserBasicDetailsTable.userId,
             userName: academyUserBasicDetailsTable.userName,
+            firstName: academyUserBasicDetailsTable.firstName,
+            lastName: academyUserBasicDetailsTable.lastName,
+            nameOnCertificate: academyUserBasicDetailsTable.nameOnCertificate,
+            paymentStatus: academyUserBasicDetailsTable.paymentStatus,
+            irpEligibleStatus: academyUserBasicDetailsTable.irpEligibleStatus,
           })
           .from(academyUserBasicDetailsTable)
           .where(inArray(academyUserBasicDetailsTable.userId, userIds))
       : [];
-    const nameMap = new Map(nameRows.map((r) => [r.userId, r.userName]));
-
-    const unpaidRows = userIds.length
-      ? await db
-          .select({ academyUserId: unpaidUsersTable.academyUserId })
-          .from(unpaidUsersTable)
-          .where(inArray(unpaidUsersTable.academyUserId, userIds))
-      : [];
-    const unpaidSet = new Set(unpaidRows.map((r) => r.academyUserId));
+    const nameMap = new Map(
+      basicRows.map((r) => [r.userId, resolveAcademyUserDisplayName(r)] as const),
+    );
+    // Same rule as the student payment gate; absent rows fall back to paid.
+    const paidMap = new Map(
+      basicRows.map((r) => [r.userId, isPaidAcademyUser(r)] as const),
+    );
 
     const toIso = (v: unknown): string | null =>
       v ? new Date(v as string | Date).toISOString() : null;
@@ -165,7 +175,7 @@ router.get("/analytics/dashboard", async (req, res) => {
         userName: u.userName,
         totalEvents: u.totalEvents,
         logins: u.counts["dashboard_visit"] ?? 0,
-        paid: !unpaidSet.has(u.academyUserId),
+        paid: paidMap.get(u.academyUserId) ?? true,
         firstSeen: u.firstSeen,
         lastSeen: u.lastSeen,
         metrics: TRACKED_EVENTS.map((eventType) => ({
