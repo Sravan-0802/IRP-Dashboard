@@ -472,8 +472,9 @@ async function getAssessmentResultsResponse(userId: string) {
 
   // MAIN-only stage results:
   // 1) Prefer written MAIN detail sits (portal + z_* MAIN sync).
-  // 2) Round-wise QUALIFIED is fallback only when no MAIN details exist.
-  // 3) Never surface round-wise NOT QUALIFIED alone — it often mirrors MOCK.
+  // 2) Round-wise QUALIFIED remains an L1 Hustler fallback only.
+  // 3) FE clearance requires a real MAIN detail row. Round-wise FE fields can
+  //    contain stale/synthetic QUALIFIED values even when no FE attempt exists.
   const roundAssessments = assessmentsFromRoundWise(summary);
   const detailMain = detailAssessments.filter(
     (a) => a.hasWrittenAssessment && isMainAssessmentApiRow(a),
@@ -487,10 +488,6 @@ async function getAssessmentResultsResponse(userId: string) {
   const roundHustler = roundAssessments.filter(
     (a) => a.organisationAssessmentId === ROUND_WISE_HUSTLER_ORG_ID,
   );
-  const roundFe = roundAssessments.filter(
-    (a) => a.organisationAssessmentId === ROUND_WISE_FE_ORG_ID,
-  );
-
   if (detailL1.length > 0) {
     out.push(...detailL1);
   } else if (isQualifiedStatus(summary.hustlerAssessmentStatus)) {
@@ -499,8 +496,6 @@ async function getAssessmentResultsResponse(userId: string) {
 
   if (detailFeMain.length > 0) {
     out.push(...detailFeMain);
-  } else if (isQualifiedStatus(summary.feProjectStatus)) {
-    out.push(...roundFe);
   }
 
   return { assessments: out };

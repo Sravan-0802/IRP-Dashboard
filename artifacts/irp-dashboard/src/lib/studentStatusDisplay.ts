@@ -1,7 +1,6 @@
 import type { AssessmentResult } from "@workspace/api-client-react";
 import {
   assessmentOverallPct,
-  feResultLabel,
   getAssessmentStatusTag,
   hasClearedAssessment,
   hasClearedFeSit,
@@ -47,12 +46,8 @@ export function formatFeProjectStatus(
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
 ): string {
   if (!assessment) return "Not attempted";
-  const fromTag = normalizeQualificationStatus(getAssessmentStatusTag(assessment));
-  if (fromTag === "Qualified" || fromTag === "Cleared") return "Cleared";
-  if (fromTag === "Not qualified" || fromTag === "Not cleared") return "Not cleared";
-  const label = feResultLabel(assessment, minScore);
-  if (label === "Cleared") return "Cleared";
-  if (label === "Not cleared") return "Not cleared";
+  // Keep the result pill consistent with stage progression: when a numeric FE
+  // score exists, the universal score threshold wins over stale status text.
   return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
 }
 

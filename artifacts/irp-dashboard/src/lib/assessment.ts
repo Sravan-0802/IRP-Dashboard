@@ -268,18 +268,27 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
-/** True when a single FE assessment sit clears (table status or score ≥ threshold). */
+/** True when a single real FE assessment sit clears at the configured score threshold. */
 export function hasClearedFeSit(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
 ): boolean {
   if (!feAssessmentWasWritten(assessment)) return false;
+
+  // A real numeric FE score is authoritative. Synced status fields can lag or
+  // contradict the universal ≥18/20 rule (for example 19/20 + NOT QUALIFIED).
+  if (assessment.overallMax > 0) {
+    return assessment.overallScore >= minScore;
+  }
+
+  // Status is only a fallback for legacy detail rows that genuinely have no
+  // numeric score/max data.
   const status = (assessment.assessmentStatus ?? "").trim();
   if (status) {
     if (/not\s*qualified/i.test(status)) return false;
     if (/qualified/i.test(status)) return true;
   }
-  return assessment.overallScore >= minScore;
+  return false;
 }
 
 /**
@@ -302,9 +311,7 @@ export function hasClearedFeProject(
 export function feResultLabel(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
-): "Cleared" | "Not cleared" | string {
-  const status = getAssessmentStatusTag(assessment);
-  if (status) return status;
+): "Cleared" | "Not cleared" {
   return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
 }
 
