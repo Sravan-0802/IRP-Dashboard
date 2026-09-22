@@ -62,7 +62,6 @@ const LEVELS: Level[] = [
     ],
     post: [
       "FE project · 12 hours",
-      "AI mock interview (NxtMock) · 1 hour",
       "Human mock interview · 1 hour",
     ],
     outcome: "Clear L1 to unlock Level 2",
