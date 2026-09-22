@@ -1,0 +1,137 @@
+Update the L1 Online Assessment pattern based on the revised assessment requirements below.
+
+IMPORTANT:
+- Do not change the overall assessment flow.
+- Only update the L1 Online Assessment configuration.
+- Existing functionality, APIs, database structure, UI, timers, submission logic, scoring, and reporting should continue to work unless a change is explicitly required below.
+- Before making changes, inspect the existing assessment configuration/code and identify where the MCQ and Coding question pools are configured.
+
+## Revised L1 Online Assessment
+
+The assessment has two sections:
+
+1. MCQ Section
+2. Coding Section
+
+### 1. MCQ Section
+
+Time Limit:
+- 30 minutes
+
+Topics:
+- HTML and CSS
+- JavaScript
+- React
+
+Question distribution:
+- HTML and CSS: 10 questions
+- JavaScript: 10 questions
+- React: 10 questions
+- Total: 30 questions
+
+Difficulty:
+- Easy
+
+Question type:
+- MCQ / Theory
+
+Question pools/tags:
+- HTML and CSS:
+  - Use the existing COURSE_Build_IN_LAP / relevant HTML & CSS course question pool.
+- JavaScript:
+  - Use the relevant JavaScript course question pool.
+- React:
+  - Use the existing COURSE_Instruction_to_React question pool.
+
+Make sure the system selects the required number of questions from the configured pools.
+
+### 2. Coding Section
+
+Time Limit:
+- 90 minutes
+
+Topic:
+- JavaScript Coding
+
+Difficulty:
+- Easy
+
+Sub-topic:
+- JS Coding
+
+Question source:
+- Grit UI Main coding pool
+
+Configuration:
+- Question Library: My Questions
+- Topic: JS Coding
+- Difficulty: Easy
+- Sub Topic: JS Coding
+- Exclusive Tags: GRIT_UI_MAIN
+- Coding Pool: CODING_POOL
+
+The coding section should use the revised JavaScript coding pools shown in the new configuration.
+
+The available pools shown in the revised configuration are:
+- Pool 34
+- Pool 28
+- Pool 30
+- Pool 39
+
+The system should select one coding question per configured pool/row according to the assessment configuration.
+
+## Old vs New Change
+
+OLD:
+- MCQ: HTML, CSS, React
+- Coding: Python Coding
+
+NEW:
+- MCQ: HTML, CSS, React, JavaScript
+- Coding: JavaScript Coding
+
+The key change is:
+- Add JavaScript to the MCQ section.
+- Replace Python Coding with JavaScript Coding.
+- MCQ remains 30 minutes.
+- Coding remains 90 minutes.
+- MCQ total = 30 questions.
+- Coding questions should come from the GRIT_UI_MAIN JavaScript coding pool.
+
+## Acceptance Criteria
+
+1. L1 assessment displays two sections:
+   - MCQ – 30 minutes
+   - Coding – 90 minutes
+
+2. MCQ contains exactly:
+   - 10 HTML & CSS questions
+   - 10 JavaScript questions
+   - 10 React questions
+
+3. MCQ total = 30 questions.
+
+4. Python Coding should no longer be used in the L1 assessment.
+
+5. Coding section should use JavaScript Coding questions.
+
+6. Coding questions must come from the configured GRIT_UI_MAIN / CODING_POOL source.
+
+7. Existing assessment timer, navigation, submission, scoring, result calculation, and reporting should continue working.
+
+8. Verify that the revised configuration is correctly reflected in:
+   - Student assessment UI
+   - Question selection logic
+   - Backend/API
+   - Database/configuration
+   - Admin/assessment configuration if applicable
+   - Assessment results/reporting
+
+9. Do not modify unrelated assessments or assessment configurations.
+
+10. After implementation, test the complete L1 assessment flow end-to-end and provide:
+   - Files changed
+   - Configuration changes
+   - API/database changes, if any
+   - Test results
+   - Any blockers or assumptions

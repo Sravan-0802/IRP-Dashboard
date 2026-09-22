@@ -2,17 +2,22 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
   Award,
+  Braces,
   Blocks,
   BookOpenCheck,
+  Check,
   Building2,
   CalendarCheck,
   CheckCircle2,
   Code2,
   Crown,
+  FileQuestion,
+  Gauge,
   Layers,
   Rocket,
   Sparkles,
   Target,
+  Timer,
   TrendingUp,
   UserRound,
   Zap,
@@ -52,8 +57,8 @@ const LEVELS: Level[] = [
     accentText: "#6941c6",
     summary: "Your entry point — foundational frontend and programming.",
     assessment: [
-      "Problem Solving (Python / C++) · 90 min · 4 questions",
-      "Frontend MCQ — HTML, CSS, JS, React · 30 min",
+      "L1 Online Assessment · MCQ + coding · 120 min",
+      "MCQ — HTML & CSS, JavaScript, React · 30 questions",
     ],
     post: [
       "FE project · 12 hours",
@@ -139,6 +144,43 @@ const CHECKLIST: { icon: LucideIcon; title: string; detail: string }[] = [
     detail: "Keep LinkedIn, GitHub, LeetCode and CodeChef updated and active.",
   },
 ];
+
+const L1_ASSESSMENT_SECTIONS = [
+  {
+    id: "mcq",
+    label: "Section 1",
+    title: "MCQ / Theory",
+    icon: FileQuestion,
+    accent: "#6941c6",
+    accentSoft: "#f9f5ff",
+    timing: "30 minutes",
+    summary: "Easy-level frontend fundamentals across three equal topic blocks.",
+    facts: [
+      "30 questions total",
+      "10 HTML & CSS questions",
+      "10 JavaScript questions",
+      "10 React questions",
+    ],
+    pool: "Course pools: COURSE_Build_IN_LAP / relevant HTML & CSS, the JavaScript course pool, and COURSE_Instruction_to_React.",
+  },
+  {
+    id: "coding",
+    label: "Section 2",
+    title: "JavaScript Coding",
+    icon: Braces,
+    accent: "#039855",
+    accentSoft: "#ecfdf3",
+    timing: "90 minutes",
+    summary: "Easy-level JavaScript problems from the Grit UI Main coding source.",
+    facts: [
+      "Topic: JS Coding",
+      "Sub-topic: JS Coding",
+      "Question Library: My Questions",
+      "One question per configured pool row",
+    ],
+    pool: "GRIT_UI_MAIN · CODING_POOL · Pools 34, 28, 30 and 39",
+  },
+] as const;
 
 const FAQ = [
   {
@@ -336,6 +378,91 @@ export function AboutIrp() {
               </IrpCard>
             );
           })}
+        </div>
+      </section>
+
+      <section>
+        <SectionHeading
+          eyebrow="L1 online assessment"
+          title="Know the pattern before you sit."
+          description="Two focused sections test frontend fundamentals and practical JavaScript problem-solving."
+        />
+
+        <div className="grid gap-4 lg:grid-cols-5">
+          {L1_ASSESSMENT_SECTIONS.map((section) => {
+            const Icon = section.icon;
+            return (
+              <IrpCard
+                key={section.id}
+                className="relative overflow-hidden p-5 sm:p-6 lg:col-span-2"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: section.accentSoft, color: section.accent }}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
+                    style={{ backgroundColor: section.accentSoft, color: section.accent }}
+                  >
+                    <Timer className="h-3.5 w-3.5" />
+                    {section.timing}
+                  </div>
+                </div>
+
+                <p
+                  className="mt-5 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                  style={{ color: section.accent }}
+                >
+                  {section.label}
+                </p>
+                <h3 className="mt-1 font-display text-xl font-bold tracking-tight text-[#101828]">
+                  {section.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#667085]">{section.summary}</p>
+
+                <ul className="mt-5 space-y-2.5">
+                  {section.facts.map((fact) => (
+                    <li key={fact} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-[#344054]">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: section.accent }} />
+                      <span>{fact}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-5 rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-3.5 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#98a2b3]">
+                    Question source
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#475467]">{section.pool}</p>
+                </div>
+              </IrpCard>
+            );
+          })}
+
+          <IrpCard className="border-[#fedf89] bg-[#fffcf5] p-5 sm:p-6 lg:col-span-1">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fffaeb] text-[#dc6803]">
+              <Gauge className="h-5 w-5" />
+            </div>
+            <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#b54708]">
+              What changed
+            </p>
+            <h3 className="mt-1 font-display text-lg font-bold tracking-tight text-[#101828]">
+              Frontend-first
+            </h3>
+            <div className="mt-4 space-y-3 text-[13px] leading-relaxed">
+              <div>
+                <p className="font-semibold text-[#98a2b3]">Previously</p>
+                <p className="mt-0.5 text-[#667085]">Python coding and no dedicated JavaScript MCQ block.</p>
+              </div>
+              <div className="h-px bg-[#f2d49b]" />
+              <div>
+                <p className="font-semibold text-[#b54708]">Now</p>
+                <p className="mt-0.5 text-[#475467]">JavaScript joins the MCQs, and coding is JavaScript-only.</p>
+              </div>
+            </div>
+          </IrpCard>
         </div>
       </section>
 
