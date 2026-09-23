@@ -58,6 +58,27 @@ app.use(cors({
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
+// Return a useful client error when a proxy or caller sends a truncated JSON
+// body. Without this, Express emits an HTML error page that callers often
+// surface as an unrelated "Internal Server Error".
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  const parseError = err as { status?: unknown; type?: unknown };
+  const isInvalidJson =
+    parseError.type === "entity.parse.failed" ||
+    (err instanceof SyntaxError && parseError.status === 400);
+
+  if (!isInvalidJson) {
+    next(err);
+    return;
+  }
+
+  req.log.warn({ err }, "Invalid JSON request body");
+  res.status(400).json({
+    message: "Invalid JSON request body",
+    hint: "Send a complete JSON object with a content-type of application/json.",
+  });
+});
+
 app.use("/api", router);
 
 export default app;
