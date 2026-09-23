@@ -1,5 +1,4 @@
 import { Router } from "express";
-import crypto from "crypto";
 import {
   db,
   studentsTable,
@@ -10,7 +9,6 @@ import {
   unpaidUsersTable,
   blockedUsersTable,
   dashboardAnalyticsEventsTable,
-  formsAuthTokensTable,
 } from "@workspace/db";
 import { inArray, eq, and, sql } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
@@ -26,6 +24,7 @@ import {
   parseGenAiTrainingPopupBody,
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
+import { createAuthToken } from "../lib/authTokens";
 
 const router = Router();
 
@@ -836,14 +835,10 @@ router.post("/admin/preview-link", async (req, res) => {
       // Best-effort; insert may still succeed if sequence is already correct.
     }
 
-    const authToken = crypto.randomBytes(16).toString("hex");
-    const expiresAt = new Date(Date.now() + PREVIEW_TOKEN_TTL_MINUTES * 60 * 1000);
-    await db.insert(formsAuthTokensTable).values({
-      token: authToken,
-      userId: academyUserId,
-      expiresAt,
-      used: 0,
-    });
+    const { authToken, expiresAt } = await createAuthToken(
+      academyUserId,
+      PREVIEW_TOKEN_TTL_MINUTES * 60 * 1000,
+    );
 
     const originHeader = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
     const origin = (

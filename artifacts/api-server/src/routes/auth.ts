@@ -1,8 +1,8 @@
 import { Router } from "express";
-import crypto from "crypto";
-import { db, formsAuthTokensTable, academyUserBasicDetailsTable } from "@workspace/db";
+import { db, academyUserBasicDetailsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
+import { createAuthToken } from "../lib/authTokens";
 
 const router = Router();
 
@@ -59,15 +59,7 @@ router.post("/auth/generate-auth-code", async (req, res) => {
       });
     }
 
-    const authToken = crypto.randomBytes(16).toString("hex");
-    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-
-    await db.insert(formsAuthTokensTable).values({
-      token: authToken,
-      userId,
-      expiresAt,
-      used: 0,
-    });
+    const { authToken, expiresAt } = await createAuthToken(userId, TOKEN_TTL_MS);
 
     res.json({
       auth_token: authToken,
@@ -95,15 +87,7 @@ router.post("/auth/generate-auth-code-with-redirect", async (req, res) => {
       });
     }
 
-    const authToken = crypto.randomBytes(16).toString("hex");
-    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-
-    await db.insert(formsAuthTokensTable).values({
-      token: authToken,
-      userId,
-      expiresAt,
-      used: 0,
-    });
+    const { authToken, expiresAt } = await createAuthToken(userId, TOKEN_TTL_MS);
 
     const redirect_url = buildRedirectUrl(authToken);
 

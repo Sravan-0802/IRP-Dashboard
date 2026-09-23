@@ -1,5 +1,6 @@
 - [BigQuery VPC blocker](bigquery-vpc-blocker.md) — IRP BigQuery access from Replit is hard-blocked by org VPC Service Controls (403); data is synced into Postgres instead.
 - [API server dev rebuild gotcha](api-server-dev-rebuild.md) — adding routes/schema needs a workflow restart (bundles only at startup) AND a db push, else 404 then 500.
+- [PostgreSQL pool restart handling](postgres-pool-restart.md) — managed DB restarts can terminate idle clients; keep pool errors handled and retry transient token inserts.
 - [IRP journey state semantics](irp-journey-state-semantics.md) — a level is "cleared" when journeyState contains `_POST_`; getPhase() alone is ambiguous for post-reattempt states.
 - [Hero live date-gating](hero-live-date-gating.md) — assessment "live" UI must be gated on isAssessmentLive() (date), not journey phase alone; no "window closes" before exam day.
 - [Publish schema diff is dev→prod](publish-schema-diff-dev-to-prod.md) — prod "relation does not exist" can mean dev DB also lacks it; push to dev first, then re-publish (never DDL on prod).
