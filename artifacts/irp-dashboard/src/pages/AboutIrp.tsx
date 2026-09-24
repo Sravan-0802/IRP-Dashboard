@@ -160,7 +160,6 @@ const L1_ASSESSMENT_SECTIONS = [
       "10 JavaScript questions",
       "10 React questions",
     ],
-    pool: "Course pools: COURSE_Build_IN_LAP / relevant HTML & CSS, the JavaScript course pool, and COURSE_Instruction_to_React.",
   },
   {
     id: "coding",
@@ -177,7 +176,6 @@ const L1_ASSESSMENT_SECTIONS = [
       "Question Library: My Questions",
       "One question per configured pool row",
     ],
-    pool: "GRIT_UI_MAIN · CODING_POOL · Pools 34, 28, 30 and 39",
   },
 ] as const;
 
@@ -430,12 +428,6 @@ export function AboutIrp() {
                   ))}
                 </ul>
 
-                <div className="mt-5 rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-3.5 py-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#98a2b3]">
-                    Question source
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#475467]">{section.pool}</p>
-                </div>
               </IrpCard>
             );
           })}
