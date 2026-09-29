@@ -1,10 +1,17 @@
 import {
   db,
   studentsTable,
-  academyUserBasicDetailsTable,
   academyUserAssessmentDetailsTable,
 } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import {
+  getAcademyUserBasicDetails,
+  resolveAcademyUserDisplayName,
+  sanitizeProfilePicUrl,
+} from "./academyUserProfile";
+
+/** Used only when the POCs mirror has no YOG for the user yet. */
+const DEFAULT_YOG = 2028;
 
 /**
  * Each SSO user is mapped to exactly one `students` row, keyed by a synthetic
@@ -39,12 +46,13 @@ export async function getStudentForUser(userId: string) {
  * start onboarded on the standard L1 path so students land directly on their
  * own dashboard.
  */
-async function insertStudent(userId: string, name: string) {
+async function insertStudent(userId: string, name: string, yog: number, avatar: string) {
   const [created] = await db
     .insert(studentsTable)
     .values({
       name,
-      yog: 2028,
+      yog,
+      avatar,
       email: emailForUser(userId),
       journeyState: "L1_PREP",
       hasCompletedOnboarding: 1,
@@ -65,15 +73,14 @@ export async function getOrCreateStudentForUser(userId: string) {
   const existing = await getStudentForUser(userId);
   if (existing) return existing;
 
-  const [basic] = await db
-    .select()
-    .from(academyUserBasicDetailsTable)
-    .where(eq(academyUserBasicDetailsTable.userId, userId))
-    .limit(1);
-  const name = basic?.userName ?? "Student";
+  // Seed identity from the BigQuery POCs mirror (name on certificate, YOG, pic).
+  const basic = await getAcademyUserBasicDetails(userId);
+  const name = resolveAcademyUserDisplayName(basic) ?? "Student";
+  const yog = basic?.yog ?? DEFAULT_YOG;
+  const avatar = sanitizeProfilePicUrl(basic?.profilePicUrl);
 
   try {
-    const created = await insertStudent(userId, name);
+    const created = await insertStudent(userId, name, yog, avatar);
     if (created) return created;
   } catch (err) {
     // A stale serial sequence (e.g. legacy rows inserted with explicit ids)
@@ -85,7 +92,7 @@ export async function getOrCreateStudentForUser(userId: string) {
     ].join(" ");
     if (!fullText.includes("students_pkey")) throw err;
     await realignStudentIdSequence();
-    const created = await insertStudent(userId, name);
+    const created = await insertStudent(userId, name, yog, avatar);
     if (created) return created;
   }
 

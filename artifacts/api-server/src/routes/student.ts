@@ -15,9 +15,9 @@ import {
   dashboardAnalyticsEventsTable,
   l1CycleRegistrationsTable,
   l1ExamAccessTable,
-  unpaidUsersTable,
   registrationBatchesTable,
   registrationBatchUsersTable,
+  type AcademyUserBasicDetails,
 } from "@workspace/db";
 import { and, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -27,6 +27,14 @@ import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
 import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
+import {
+  getAcademyUserBasicDetails,
+  getAcademyUserPaymentAccess,
+  isLikelyDisplayName,
+  resolveAcademyUserDisplayName,
+  resolveProfilePicUrl,
+  sanitizeProfilePicUrl,
+} from "../lib/academyUserProfile";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
 import { getGenAiTrainingPopup } from "../lib/genAiTrainingPopup";
@@ -49,15 +57,6 @@ import { isMainAssessmentFields } from "../lib/mainOnly";
 
 const router = Router();
 
-/** BigQuery sometimes stores encrypted tokens in user_name — not suitable for display. */
-function isLikelyDisplayName(value: string | null | undefined): value is string {
-  if (!value?.trim()) return false;
-  const v = value.trim();
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) return false;
-  if (v.length > 24 && /^[A-Za-z0-9+/=]+$/.test(v) && !/\s/.test(v)) return false;
-  return true;
-}
-
 function studentBelongsToAcademyUser(
   studentEmail: string | null | undefined,
   academyUserId: string,
@@ -67,13 +66,14 @@ function studentBelongsToAcademyUser(
 }
 
 function resolveStudentName(
-  academyUserName: string | null | undefined,
+  academyUser: AcademyUserBasicDetails | null,
   studentName: string | null | undefined,
   academyUserId: string,
   studentEmail?: string | null,
 ): string {
-  // Always resolve the name per-user from the synced academy data first.
-  if (isLikelyDisplayName(academyUserName)) return academyUserName;
+  // name_on_certificate from the POCs mirror is the canonical display name.
+  const academyName = resolveAcademyUserDisplayName(academyUser);
+  if (academyName) return academyName;
   if (studentBelongsToAcademyUser(studentEmail, academyUserId) && isLikelyDisplayName(studentName)) {
     return studentName;
   }
@@ -81,12 +81,7 @@ function resolveStudentName(
 }
 
 async function getAcademyUserById(userId: string) {
-  const [user] = await db
-    .select()
-    .from(academyUserBasicDetailsTable)
-    .where(eq(academyUserBasicDetailsTable.userId, userId))
-    .limit(1);
-  return user ?? null;
+  return getAcademyUserBasicDetails(userId);
 }
 
 async function getStudentProfile(userId: string) {
@@ -98,13 +93,14 @@ async function getStudentProfile(userId: string) {
   const s = await getStudentForUser(userId);
   const academyUser = await getAcademyUserById(userId);
 
+  // Identity comes from the POCs mirror; the `students` row is only a fallback.
   return {
     id: s?.id ?? 0,
-    name: resolveStudentName(academyUser?.userName, s?.name, userId, s?.email),
-    yog: s?.yog ?? 2028,
+    name: resolveStudentName(academyUser, s?.name, userId, s?.email),
+    yog: academyUser?.yog ?? s?.yog ?? 2028,
     level: s?.level ?? "Level 1 • The Hustler",
     email: s?.email ?? `${userId}@academy.local`,
-    avatar: s?.avatar ?? "",
+    avatar: (await resolveProfilePicUrl(userId)) || sanitizeProfilePicUrl(s?.avatar) || "",
     registrationStatus: s?.registrationStatus ?? "registered",
     currentLevel: s?.currentLevel ?? 1,
   };
@@ -524,6 +520,34 @@ router.get("/student", async (req, res) => {
   }
 });
 
+/** Same-origin photo bytes so the badge canvas can include the portrait. */
+router.get("/student/profile-photo", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).end();
+      return;
+    }
+    const url = await resolveProfilePicUrl(userId);
+    if (!url) {
+      res.status(404).end();
+      return;
+    }
+    const upstream = await fetch(url);
+    if (!upstream.ok) {
+      res.status(502).end();
+      return;
+    }
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(bytes);
+  } catch (err) {
+    req.log.error({ err }, "Failed to load profile photo");
+    res.status(500).end();
+  }
+});
+
 router.get("/student/progress", async (req, res) => {
   try {
     const userId = await resolveAcademyUserId(req);
@@ -680,17 +704,11 @@ router.post("/student/contact", async (req, res) => {
     }
 
     const student = await getStudentForUser(userId);
-    const [basic] = await db
-      .select({ userName: academyUserBasicDetailsTable.userName })
-      .from(academyUserBasicDetailsTable)
-      .where(eq(academyUserBasicDetailsTable.userId, userId))
-      .limit(1);
+    const basic = await getAcademyUserBasicDetails(userId);
 
     const displayName = isLikelyDisplayName(student?.name)
       ? student!.name
-      : isLikelyDisplayName(basic?.userName)
-        ? basic!.userName!
-        : null;
+      : resolveAcademyUserDisplayName(basic);
 
     const [row] = await db
       .insert(contactUsMessagesTable)
@@ -910,12 +928,8 @@ router.post("/student/l1-registration", async (req, res) => {
 
       const batchCycle = 1000 + batchId;
       const batchStudent = await getOrCreateStudentForUser(userId);
-      const [batchBasic] = await db
-        .select({ userName: academyUserBasicDetailsTable.userName })
-        .from(academyUserBasicDetailsTable)
-        .where(eq(academyUserBasicDetailsTable.userId, userId))
-        .limit(1);
-      const batchDisplayName = resolveStudentName(batchBasic?.userName, batchStudent?.name, userId, batchStudent?.email);
+      const batchBasic = await getAcademyUserBasicDetails(userId);
+      const batchDisplayName = resolveStudentName(batchBasic, batchStudent?.name, userId, batchStudent?.email);
 
       const batchNow2 = new Date();
       const batchValues = {
@@ -1022,18 +1036,9 @@ router.post("/student/l1-registration", async (req, res) => {
     const slotLabel = isYes ? slotLabelFor(slotId!) : null;
 
     const student = await getOrCreateStudentForUser(userId);
-    const [basic] = await db
-      .select({ userName: academyUserBasicDetailsTable.userName })
-      .from(academyUserBasicDetailsTable)
-      .where(eq(academyUserBasicDetailsTable.userId, userId))
-      .limit(1);
+    const basic = await getAcademyUserBasicDetails(userId);
 
-    const displayName = resolveStudentName(
-      basic?.userName,
-      student?.name,
-      userId,
-      student?.email,
-    );
+    const displayName = resolveStudentName(basic, student?.name, userId, student?.email);
 
     const now = new Date();
     const values = {
@@ -1238,8 +1243,8 @@ router.get("/student/nxtmock-interview", async (req, res) => {
   }
 });
 
-// GET /api/student/payment-status — whether the current user has completed
-// payment. Unpaid users are gated behind a "complete your payment" prompt.
+// GET /api/student/payment-status — whether the current user may access the
+// paid dashboard. Requires paid payment_status AND irp_eligible_status=ELIGIBLE.
 router.get("/student/payment-status", async (req, res) => {
   try {
     const userId = await resolveAcademyUserId(req);
@@ -1248,13 +1253,13 @@ router.get("/student/payment-status", async (req, res) => {
       return;
     }
 
-    const [row] = await db
-      .select({ academyUserId: unpaidUsersTable.academyUserId })
-      .from(unpaidUsersTable)
-      .where(eq(unpaidUsersTable.academyUserId, userId))
-      .limit(1);
-
-    res.json({ paid: !row });
+    const access = await getAcademyUserPaymentAccess(userId);
+    res.json({
+      paid: access.paid,
+      paymentStatus: access.paymentStatus,
+      paymentPlan: access.paymentPlan,
+      irpEligibleStatus: access.irpEligibleStatus,
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to get payment status");
     res.status(500).json({ error: "Internal server error" });

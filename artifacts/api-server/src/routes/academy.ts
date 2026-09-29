@@ -6,17 +6,31 @@ import {
   academyUserCourseProgressTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import {
+  ensureAcademyUserBasicDetailsColumns,
+  isPaidAcademyUser,
+  resolveAcademyUserDisplayName,
+  sanitizeProfilePicUrl,
+} from "../lib/academyUserProfile";
 
 const router = Router();
 
 // GET /api/academy/users — list synced users (basic details)
 router.get("/academy/users", async (req, res) => {
   try {
+    await ensureAcademyUserBasicDetailsColumns();
     const users = await db.select().from(academyUserBasicDetailsTable);
     res.json(
       users.map((u) => ({
         userId: u.userId,
-        userName: u.userName,
+        userName: resolveAcademyUserDisplayName(u),
+        nameOnCertificate: u.nameOnCertificate,
+        yog: u.yog,
+        paymentStatus: u.paymentStatus,
+        paymentPlan: u.paymentPlan,
+        irpEligibleStatus: u.irpEligibleStatus,
+        profilePicUrl: sanitizeProfilePicUrl(u.profilePicUrl) || null,
+        paid: isPaidAcademyUser(u),
         syncedAt: u.syncedAt.toISOString(),
       }))
     );

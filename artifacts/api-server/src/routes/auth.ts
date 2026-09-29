@@ -3,6 +3,12 @@ import { db, academyUserBasicDetailsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
 import { createAuthToken } from "../lib/authTokens";
+import {
+  getAcademyUserBasicDetails,
+  normalizePaymentStatusValue,
+  resolveAcademyUserDisplayName,
+  sanitizeProfilePicUrl,
+} from "../lib/academyUserProfile";
 
 const router = Router();
 
@@ -112,13 +118,15 @@ router.get("/auth/me", async (req, res) => {
       return void res.status(401).json({ message: "Unauthorized" });
     }
 
-    const [user] = await db
-      .select()
-      .from(academyUserBasicDetailsTable)
-      .where(eq(academyUserBasicDetailsTable.userId, userId))
-      .limit(1);
+    const user = await getAcademyUserBasicDetails(userId);
 
-    res.json({ userId, userName: user?.userName ?? null });
+    res.json({
+      userId,
+      userName: resolveAcademyUserDisplayName(user),
+      yog: user?.yog ?? null,
+      profilePicUrl: sanitizeProfilePicUrl(user?.profilePicUrl) || null,
+      paymentStatus: normalizePaymentStatusValue(user?.paymentStatus),
+    });
   } catch (err) {
     req.log.error({ err }, "auth/me error");
     res.status(500).json({ message: "Server error" });

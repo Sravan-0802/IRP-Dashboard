@@ -164,7 +164,7 @@ export function parseGenAiTrainingPopupBody(
     patch.enabled = raw.enabled;
   }
 
-  const stringFields: Array<keyof GenAiTrainingPopupUpdate> = [
+  const stringFields: Array<Exclude<keyof GenAiTrainingPopupUpdate, "enabled">> = [
     "version",
     "title",
     "body",

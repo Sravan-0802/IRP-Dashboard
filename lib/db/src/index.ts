@@ -16,8 +16,9 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // restart) from becoming an unhandled EventEmitter error and taking down the
 // API process. Individual queries still surface their own errors to callers.
 pool.on("error", (error) => {
+  const pgError = error as Error & { code?: string };
   console.error("[db] PostgreSQL pool client error", {
-    code: error.code,
+    code: pgError.code,
     message: error.message,
   });
 });

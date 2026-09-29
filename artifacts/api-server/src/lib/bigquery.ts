@@ -45,7 +45,13 @@ export function getBigQueryClient(): BigQuery {
   return cachedClient;
 }
 
-const BASIC_DETAILS_TABLE = "academy_users_basic_details_for_irp_portal";
+/**
+ * Canonical basic-details table: identity + payment status for every academy
+ * user. This is the only reference for the paid / unpaid dashboard split.
+ */
+const BASIC_DETAILS_POCS_TABLE = "academy_users_basic_details_for_pocs";
+/** Legacy table — `user_id` / `user_name` only, no payment status. */
+const BASIC_DETAILS_LEGACY_TABLE = "academy_users_basic_details_for_irp_portal";
 const COURSE_PROGRESS_TABLE = "academy_users_course_progress_data_for_irp_portal";
 /** Physical copy in the portal dataset (preferred — same pattern as basic details / progress). */
 const ASSESSMENT_PHYSICAL_TABLE = "academy_users_irp_main_assessment_details_for_irp_portal";
@@ -119,7 +125,8 @@ async function resolveDataset(bq: BigQuery): Promise<string> {
     const [tables] = await ds.getTables();
     const ids = tables.map((t) => t.id);
     if (
-      ids.includes(BASIC_DETAILS_TABLE) ||
+      ids.includes(BASIC_DETAILS_POCS_TABLE) ||
+      ids.includes(BASIC_DETAILS_LEGACY_TABLE) ||
       ids.includes(COURSE_PROGRESS_TABLE) ||
       ids.includes(ASSESSMENT_PHYSICAL_TABLE) ||
       ids.includes(ASSESSMENT_VIEW_TABLE) ||
@@ -139,7 +146,17 @@ async function resolveDataset(bq: BigQuery): Promise<string> {
 
 export interface BasicDetailRow {
   user_id: string | null;
-  user_name: string | null;
+  /** Only present on the legacy table; derived from the name fields otherwise. */
+  user_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  name_on_certificate?: string | null;
+  yog?: number | null;
+  lpoad?: string | Date | { value: string } | null;
+  payment_status?: string | null;
+  payment_plan?: string | null;
+  irp_eligible_status?: string | null;
+  profile_pic_url?: string | null;
 }
 
 export interface CourseProgressRow {
@@ -234,13 +251,74 @@ async function resolveNxtmockTable(bq: BigQuery, dataset: string): Promise<strin
   );
 }
 
+const BASIC_DETAILS_POCS_SELECT = `SELECT
+      user_id, first_name, last_name, name_on_certificate, yog, lpoad,
+      payment_status, payment_plan, irp_eligible_status, profile_pic_url`;
+
+function basicDetailsTableCandidates(): string[] {
+  const configured = process.env["BQ_BASIC_DETAILS_TABLE"]?.trim();
+  const candidates = [configured, BASIC_DETAILS_POCS_TABLE, BASIC_DETAILS_LEGACY_TABLE].filter(
+    (v): v is string => Boolean(v),
+  );
+  return [...new Set(candidates)];
+}
+
+/**
+ * Reads identity + payment status for every academy user. Prefers the POCs
+ * table; only drops to the legacy table (name only, no payment status) when the
+ * service account cannot query the POCs one.
+ */
+/** One student's profile photo from the POCs table. Null when missing or BigQuery is unreachable. */
+export async function fetchProfilePicUrl(userId: string): Promise<string | null> {
+  if (!isBigQueryConfigured() || !userId.trim()) return null;
+  const projectId = process.env["project_id"];
+  const dataset = process.env["BQ_DATASET"]?.trim() || "academy_student_success_pocs";
+  try {
+    const bq = getBigQueryClient();
+    const [rows] = await bq.query({
+      query: `SELECT profile_pic_url
+              FROM \`${projectId}.${dataset}.${BASIC_DETAILS_POCS_TABLE}\`
+              WHERE user_id = @id
+              LIMIT 1`,
+      params: { id: userId },
+    });
+    const url = (rows[0] as { profile_pic_url?: string | null } | undefined)?.profile_pic_url;
+    return typeof url === "string" && url.trim() ? url.trim() : null;
+  } catch (err) {
+    logger.warn({ err, userId }, "Could not load profile picture from BigQuery");
+    return null;
+  }
+}
+
 export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   const bq = getBigQueryClient();
   const dataset = await resolveDataset(bq);
   const projectId = process.env["project_id"];
-  const query = `SELECT user_id, user_name FROM \`${projectId}.${dataset}.${BASIC_DETAILS_TABLE}\``;
-  const [rows] = await bq.query({ query });
-  return rows as BasicDetailRow[];
+  let lastError: Error | null = null;
+
+  for (const table of basicDetailsTableCandidates()) {
+    const select =
+      table === BASIC_DETAILS_LEGACY_TABLE ? "SELECT user_id, user_name" : BASIC_DETAILS_POCS_SELECT;
+    try {
+      const [rows] = await bq.query({
+        query: `${select} FROM \`${projectId}.${dataset}.${table}\``,
+      });
+      logger.info(
+        { table, dataset, rowCount: rows.length },
+        "Fetched academy user basic details",
+      );
+      return rows as BasicDetailRow[];
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      logger.warn({ table, dataset, err: lastError.message }, "Basic details table not queryable");
+    }
+  }
+
+  throw new Error(
+    `No queryable basic details table found in ${dataset}. ` +
+      `Set BQ_BASIC_DETAILS_TABLE or grant read access on ${BASIC_DETAILS_POCS_TABLE}. ` +
+      `Last error: ${lastError?.message ?? "unknown"}`,
+  );
 }
 
 export async function fetchCourseProgress(): Promise<CourseProgressRow[]> {

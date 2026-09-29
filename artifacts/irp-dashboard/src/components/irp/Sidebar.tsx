@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail, Info } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
 export function SidebarContent({
   name,
   yog,
+  avatar,
   journey,
   active,
   onNavigate,
@@ -28,6 +30,8 @@ export function SidebarContent({
 }: {
   name: string;
   yog: number;
+  /** `profile_pic_url` from the academy basic details table; may be empty. */
+  avatar?: string;
   journey: Journey;
   active: PageKey;
   onNavigate: (key: PageKey) => void;
@@ -35,6 +39,8 @@ export function SidebarContent({
   onOpenContact: () => void;
 }) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const showAvatar = Boolean(avatar?.trim()) && !avatarFailed;
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="flex items-center gap-2.5 border-b border-[#eaecf0] px-5 py-5">
@@ -49,9 +55,19 @@ export function SidebarContent({
 
       <div className="border-b border-[#eaecf0] px-4 py-4">
         <div className="flex items-center gap-3 rounded-lg border border-[#eaecf0] bg-[#f9fafb] p-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-xs font-semibold text-white">
-            {initials}
-          </div>
+          {showAvatar ? (
+            <img
+              src={avatar}
+              alt={name}
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarFailed(true)}
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-xs font-semibold text-white">
+              {initials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-[#101828]">{name}</p>
             <p className="text-[11px] font-medium text-[#667085]">YOG {yog}</p>
