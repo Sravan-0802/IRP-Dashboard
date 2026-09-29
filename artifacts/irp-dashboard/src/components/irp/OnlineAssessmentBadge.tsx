@@ -59,21 +59,21 @@ const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
     dialogTitle: "Online Assessment IRP Clear Card",
     dialogBody: "You qualified in the IRP online assessment. Download this IRP Clear Card to save or share it.",
     fileSlug: "online",
-    template: "irp-poster-online.jpg",
+    template: "irp-poster-online.jpg?v=3",
   },
   fe: {
     id: "fe",
     dialogTitle: "FE Project IRP Clear Card",
     dialogBody: "You cleared the FE Project. Download this IRP Clear Card to save or share it.",
     fileSlug: "fe",
-    template: "irp-poster-fe.jpg",
+    template: "irp-poster-fe.jpg?v=3",
   },
   panel: {
     id: "panel",
     dialogTitle: "Panel Interview IRP Clear Card",
     dialogBody: "You cleared the panel interview. Download this IRP Clear Card to save or share it.",
     fileSlug: "panel",
-    template: "irp-poster-panel.jpg",
+    template: "irp-poster-panel.jpg?v=3",
   },
 };
 
@@ -170,16 +170,35 @@ function fitFont(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
   return font;
 }
 
+/** Copy a clean row from the same poster over the online artwork's sample name and year. */
+function coverOnlinePlaceholders(ctx: CanvasRenderingContext2D, template: CanvasImageSource) {
+  const stamp = (x: number, y: number, w: number, h: number, srcY: number) => {
+    ctx.drawImage(template, x, srcY, w, 1, x, y, w, h);
+  };
+  stamp(610, 778, 150, 39, 776);
+  stamp(755, 742, 176, 76, 744);
+  stamp(610, 866, 310, 31, 862);
+  stamp(700, 906, 241, 55, 908);
+  // The orange "282 PX" note sits on the badge edge. Replace it with the badge color beside it.
+  ctx.drawImage(template, 928, 475, 1, 265, 932, 475, 34, 265);
+}
+
 function drawPoster(
   ctx: CanvasRenderingContext2D,
   student: OnlineBadgeStudent,
   template: HTMLImageElement | null,
   photo: CanvasImageSource | null,
+  themeId: BadgeThemeId,
 ) {
   ctx.clearRect(0, 0, POSTER, POSTER);
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, POSTER, POSTER);
-  if (template) ctx.drawImage(template, 0, 0, POSTER, POSTER);
+  ctx.imageSmoothingEnabled = false;
+  if (template) {
+    ctx.drawImage(template, 0, 0, POSTER, POSTER);
+    if (themeId === "online") coverOnlinePlaceholders(ctx, template);
+  }
+  ctx.imageSmoothingEnabled = true;
 
   if (photo) {
     const sw = photo instanceof HTMLImageElement ? photo.naturalWidth : photo.width;
@@ -231,7 +250,7 @@ async function paintPoster(
     loadImage(asset(theme.template)),
     loadProfilePhoto(student.photoUrl),
   ]);
-  drawPoster(ctx, student, template, photo);
+  drawPoster(ctx, student, template, photo, theme.id);
 }
 
 export async function downloadOnlineAssessmentBadge(
