@@ -243,6 +243,9 @@ export default function Dashboard() {
                 progress={progressProps}
                 assessments={displayAssessments}
                 userId={userId}
+                studentName={displayStudent.name}
+                studentPhotoUrl={displayStudent.avatar?.trim() ? displayStudent.avatar.trim() : null}
+                studentYog={displayStudent.yog}
                 onSwitchToStandard={openSwitchToStandard}
                 onOpenAssessmentCalendar={() => navigate("slot")}
               />

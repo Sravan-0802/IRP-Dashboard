@@ -268,6 +268,28 @@ function basicDetailsTableCandidates(): string[] {
  * table; only drops to the legacy table (name only, no payment status) when the
  * service account cannot query the POCs one.
  */
+/** One student's profile photo from the POCs table. Null when missing or BigQuery is unreachable. */
+export async function fetchProfilePicUrl(userId: string): Promise<string | null> {
+  if (!isBigQueryConfigured() || !userId.trim()) return null;
+  const projectId = process.env["project_id"];
+  const dataset = process.env["BQ_DATASET"]?.trim() || "academy_student_success_pocs";
+  try {
+    const bq = getBigQueryClient();
+    const [rows] = await bq.query({
+      query: `SELECT profile_pic_url
+              FROM \`${projectId}.${dataset}.${BASIC_DETAILS_POCS_TABLE}\`
+              WHERE user_id = @id
+              LIMIT 1`,
+      params: { id: userId },
+    });
+    const url = (rows[0] as { profile_pic_url?: string | null } | undefined)?.profile_pic_url;
+    return typeof url === "string" && url.trim() ? url.trim() : null;
+  } catch (err) {
+    logger.warn({ err, userId }, "Could not load profile picture from BigQuery");
+    return null;
+  }
+}
+
 export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   const bq = getBigQueryClient();
   const dataset = await resolveDataset(bq);

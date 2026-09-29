@@ -32,6 +32,7 @@ import {
   getAcademyUserPaymentAccess,
   isLikelyDisplayName,
   resolveAcademyUserDisplayName,
+  resolveProfilePicUrl,
   sanitizeProfilePicUrl,
 } from "../lib/academyUserProfile";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
@@ -99,7 +100,7 @@ async function getStudentProfile(userId: string) {
     yog: academyUser?.yog ?? s?.yog ?? 2028,
     level: s?.level ?? "Level 1 • The Hustler",
     email: s?.email ?? `${userId}@academy.local`,
-    avatar: sanitizeProfilePicUrl(academyUser?.profilePicUrl) || s?.avatar || "",
+    avatar: (await resolveProfilePicUrl(userId)) || sanitizeProfilePicUrl(s?.avatar) || "",
     registrationStatus: s?.registrationStatus ?? "registered",
     currentLevel: s?.currentLevel ?? 1,
   };
@@ -521,6 +522,34 @@ router.get("/student", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to get student");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/** Same-origin photo bytes so the badge canvas can include the portrait. */
+router.get("/student/profile-photo", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).end();
+      return;
+    }
+    const url = await resolveProfilePicUrl(userId);
+    if (!url) {
+      res.status(404).end();
+      return;
+    }
+    const upstream = await fetch(url);
+    if (!upstream.ok) {
+      res.status(502).end();
+      return;
+    }
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(bytes);
+  } catch (err) {
+    req.log.error({ err }, "Failed to load profile photo");
+    res.status(500).end();
   }
 });
 

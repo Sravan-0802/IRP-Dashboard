@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="420" viewBox="0 0 240 420">
+  <defs>
+    <linearGradient id="strap" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00a3ac"/>
+      <stop offset="0.45" stop-color="#5ef3f6"/>
+      <stop offset="1" stop-color="#008890"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.3" stop-color="#b0b6be"/>
+      <stop offset="0.55" stop-color="#f5f6f8"/>
+      <stop offset="1" stop-color="#5c626a"/>
+    </linearGradient>
+  </defs>
+  <rect x="78" y="0" width="84" height="150" rx="4" fill="url(#strap)"/>
+  <rect x="92" y="0" width="14" height="150" fill="rgba(255,255,255,0.22)"/>
+  <g transform="translate(120 74) rotate(-90)">
+    <text text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">IRP</text>
+  </g>
+  <circle cx="120" cy="128" r="8.5" fill="#f5f7fb"/>
+  <circle cx="120" cy="128" r="3.2" fill="#1b1d22"/>
+  <path d="M62 146 H178 L120 228 Z" fill="none" stroke="url(#metal)" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="120" cy="226" r="7" fill="#eef1f4" stroke="#8b9199" stroke-width="2"/>
+  <path d="M120 234
+           V300
+           C120 352 48 364 40 318
+           C34 282 68 270 96 292"
+        fill="none" stroke="url(#metal)" stroke-width="15" stroke-linecap="round"/>
+  <path d="M114 286 H148" fill="none" stroke="#f4f5f7" stroke-width="7" stroke-linecap="round"/>
+</svg>

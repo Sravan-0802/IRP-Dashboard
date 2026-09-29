@@ -16,6 +16,7 @@
 import { db, academyUserBasicDetailsTable, pool, type AcademyUserBasicDetails } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { fetchProfilePicUrl } from "./bigquery";
 
 /**
  * Values actually present in `payment_status` (measured over 45,195 rows):
@@ -145,6 +146,27 @@ export async function ensureAcademyUserBasicDetailsColumns(): Promise<void> {
   await ensureColumnsPromise;
 }
 
+/**
+ * Profile photo for the dashboard. Uses the mirrored `profile_pic_url`, and
+ * fills it from BigQuery when the mirror row has not been synced yet.
+ */
+export async function resolveProfilePicUrl(userId: string): Promise<string> {
+  const row = await getAcademyUserBasicDetails(userId);
+  const stored = sanitizeProfilePicUrl(row?.profilePicUrl);
+  if (stored) return stored;
+
+  const fetched = sanitizeProfilePicUrl(await fetchProfilePicUrl(userId));
+  if (!fetched) return "";
+
+  if (row) {
+    await db
+      .update(academyUserBasicDetailsTable)
+      .set({ profilePicUrl: fetched })
+      .where(eq(academyUserBasicDetailsTable.userId, userId));
+  }
+  return fetched;
+}
+
 /** Returns this user's mirrored POCs row, or null when they are not in it yet. */
 export async function getAcademyUserBasicDetails(
   userId: string,
@@ -188,9 +210,16 @@ export async function getAcademyUserPaymentAccess(
 
   const paymentStatus = normalizePaymentStatusValue(row.paymentStatus);
   const irpEligibleStatus = normalizeIrpEligibleStatus(row.irpEligibleStatus);
+  // Local sample viewing only. Never set this in production: the POCs mirror
+  // can be missing eligibility, which would otherwise lock the preview.
+  const devPreview =
+    process.env.NODE_ENV !== "production" &&
+    process.env.DEV_FORCE_DASHBOARD_ACCESS === "true";
 
   return {
-    paid: isPaidPaymentStatus(paymentStatus) && isIrpEligibleStatus(irpEligibleStatus),
+    paid:
+      devPreview ||
+      (isPaidPaymentStatus(paymentStatus) && isIrpEligibleStatus(irpEligibleStatus)),
     paymentStatus,
     paymentPlan: row.paymentPlan ?? null,
     irpEligibleStatus,

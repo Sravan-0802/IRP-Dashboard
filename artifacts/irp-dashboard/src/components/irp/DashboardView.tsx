@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
-import { getLevel, getPhase, LEVEL_META } from "@/lib/journey";
+import { getLevel, getPhase } from "@/lib/journey";
 import {
   clearedL1ViaC2,
   getAssessmentStepStatus,
@@ -40,6 +40,8 @@ import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { ContactUs } from "./ContactUs";
 import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
+import { formatYearOfJoin } from "./OnlineAssessmentBadge";
+import { IrpClearCards } from "./IrpClearCards";
 
 function journeySteps(
   journey: Journey,
@@ -195,6 +197,9 @@ export function DashboardView({
   progress,
   assessments,
   userId,
+  studentName,
+  studentPhotoUrl,
+  studentYog,
   onSwitchToStandard,
   onOpenAssessmentCalendar,
 }: {
@@ -203,6 +208,9 @@ export function DashboardView({
   days: number;
   examDateLabel: string;
   userId: string;
+  studentName: string;
+  studentPhotoUrl: string | null;
+  studentYog: number | null;
   progress: {
     overallPct: number;
     mcqPct: number;
@@ -264,6 +272,7 @@ export function DashboardView({
   );
   const hasOnlineScores = hasWrittenAssessment(assessments, level);
   const showResultsProcessingBanner = hasOnlineScores && onlineResultsLocked;
+  const steps = journeySteps(journey, assessments, settings, feProjectMinScore, userId);
 
   return (
     <div className="space-y-6">
@@ -310,18 +319,26 @@ export function DashboardView({
         userId={userId}
       />
 
-      <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
-        {level === 1 && !journey.isWildcard && (
-          <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted2 md:text-left">
-            {LEVEL_META[1].name} · {LEVEL_META[1].tag}
-          </p>
-        )}
-        <JourneyBar
-          steps={journeySteps(journey, assessments, settings, feProjectMinScore, userId)}
-          compact={level === 1 && !journey.isWildcard}
-          onAssessmentCalendarClick={onOpenAssessmentCalendar}
+      {level === 1 && !journey.isWildcard ? (
+        <IrpClearCards
+          steps={steps}
+          feMinScore={feProjectMinScore ?? 18}
+          student={{
+            name: studentName,
+            photoUrl: studentPhotoUrl,
+            levelLabel: "L1 Hustler",
+            statusLabel: "Cleared",
+            yearOfJoin: formatYearOfJoin(studentYog),
+          }}
         />
-      </IrpCard>
+      ) : (
+        <IrpCard className="px-3 py-4 sm:px-5 sm:py-5 md:px-6 md:py-5">
+          <JourneyBar
+            steps={steps}
+            onAssessmentCalendarClick={onOpenAssessmentCalendar}
+          />
+        </IrpCard>
+      )}
 
       {level === 1 && !journey.isWildcard ? (
         <FeProjectNotClearedNotice
