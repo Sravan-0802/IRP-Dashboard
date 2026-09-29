@@ -551,7 +551,13 @@ router.get("/student/profile-photo", async (req, res) => {
       res.status(404).end();
       return;
     }
-    const upstream = await fetch(url);
+    const upstream = await fetch(url, {
+      redirect: "follow",
+      headers: {
+        accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "user-agent": "Mozilla/5.0 (compatible; IRPDashboard/1.0)",
+      },
+    });
     if (!upstream.ok) {
       res.status(502).end();
       return;

@@ -109,39 +109,72 @@ function todayStamp(date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-function loadImage(url: string): Promise<HTMLImageElement | null> {
+function loadImage(url: string, crossOrigin = false): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve(img);
+    if (crossOrigin) img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.onload = () => resolve(img.naturalWidth > 0 ? img : null);
     img.onerror = () => resolve(null);
     img.src = url;
   });
 }
 
-async function loadProfilePhoto(): Promise<HTMLImageElement | null> {
+function imageMime(bytes: Uint8Array): string | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return "image/png";
+  }
+  if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57 && bytes[9] === 0x45) {
+    return "image/webp";
+  }
+  return null;
+}
+
+async function bitmapFromResponse(response: Response): Promise<ImageBitmap | null> {
+  if (!response.ok) return null;
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const declared = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
+  const mime = declared.startsWith("image/") ? declared : imageMime(bytes);
+  if (!mime) return null;
   try {
-    const token = getAuthToken();
-    const response = await fetch("/api/student/profile-photo", {
-      headers: token ? { authorization: `Bearer ${token}` } : {},
-    });
-    if (!response.ok) return null;
-    let blob = await response.blob();
-    if (!blob.type.startsWith("image/")) {
-      const bytes = new Uint8Array(await blob.arrayBuffer());
-      const type =
-        bytes[0] === 0xff && bytes[1] === 0xd8
-          ? "image/jpeg"
-          : bytes[0] === 0x89 && bytes[1] === 0x50
-            ? "image/png"
-            : "image/jpeg";
-      blob = new Blob([bytes], { type });
-    }
-    const url = URL.createObjectURL(blob);
-    const img = await loadImage(url);
-    URL.revokeObjectURL(url);
-    return img;
+    return await createImageBitmap(new Blob([bytes], { type: mime }));
   } catch {
     return null;
+  }
+}
+
+/** Same-origin bytes first, then the CDN portrait. Either one can be drawn and downloaded. */
+async function loadProfilePhoto(photoUrl: string | null): Promise<CanvasImageSource | null> {
+  try {
+    const token = getAuthToken();
+    const proxied = await bitmapFromResponse(
+      await fetch("/api/student/profile-photo", {
+        cache: "no-store",
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+      }),
+    );
+    if (proxied) return proxied;
+  } catch {
+    // The API photo can fail in production; the portrait URL is the fallback.
+  }
+
+  if (!photoUrl) return null;
+  try {
+    const remote = await bitmapFromResponse(
+      await fetch(photoUrl, { mode: "cors", referrerPolicy: "no-referrer", cache: "no-store" }),
+    );
+    if (remote) return remote;
+  } catch {
+    // Some photo hosts block a readable CORS response.
+  }
+
+  const displayed = await loadImage(photoUrl);
+  if (!displayed) return null;
+  try {
+    return await createImageBitmap(displayed);
+  } catch {
+    return displayed;
   }
 }
 
@@ -200,7 +233,7 @@ function drawPoster(
   logo: HTMLImageElement | null,
   wave: HTMLImageElement | null,
   lanyard: HTMLImageElement | null,
-  photo: HTMLImageElement | null,
+  photo: CanvasImageSource | null,
 ) {
   ctx.clearRect(0, 0, POSTER, POSTER);
   ctx.fillStyle = "#ffffff";
@@ -264,13 +297,21 @@ function drawPoster(
   ctx.fill();
   ctx.restore();
 
+  if (lanyard) {
+    const lw = 210;
+    const lh = 430;
+    ctx.drawImage(lanyard, BADGE_X + BADGE_W / 2 - lw / 2, 56, lw, lh);
+  }
+
   ctx.save();
   roundRect(ctx, PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H, 8);
   ctx.clip();
   ctx.fillStyle = theme.photoWell;
   ctx.fillRect(PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H);
   if (photo) {
-    const ir = photo.width / photo.height;
+    const sw = photo instanceof HTMLImageElement ? photo.naturalWidth : photo.width;
+    const sh = photo instanceof HTMLImageElement ? photo.naturalHeight : photo.height;
+    const ir = sw / sh;
     const tr = PHOTO_W / PHOTO_H;
     let dw = PHOTO_W;
     let dh = PHOTO_H;
@@ -281,7 +322,7 @@ function drawPoster(
       dx = PHOTO_X - (dw - PHOTO_W) / 2;
     } else {
       dh = PHOTO_W / ir;
-      dy = PHOTO_Y;
+      dy = PHOTO_Y - (dh - PHOTO_H) * 0.12;
     }
     ctx.drawImage(photo, dx, dy, dw, dh);
   } else {
@@ -329,12 +370,6 @@ function drawPoster(
       y += 28;
     }
   }
-
-  if (lanyard) {
-    const lw = 210;
-    const lh = 430;
-    ctx.drawImage(lanyard, BADGE_X + BADGE_W / 2 - lw / 2, 56, lw, lh);
-  }
 }
 
 async function paintPoster(
@@ -351,7 +386,7 @@ async function paintPoster(
     loadImage(asset("nxtwave-academy-logo.png")),
     loadImage(asset("irp-wave.png")),
     loadImage(asset(theme.lanyard)),
-    loadProfilePhoto(),
+    loadProfilePhoto(student.photoUrl),
   ]);
   drawPoster(ctx, student, theme, logo, wave, lanyard, photo);
 }
