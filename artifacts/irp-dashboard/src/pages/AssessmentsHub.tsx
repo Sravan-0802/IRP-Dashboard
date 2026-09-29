@@ -24,6 +24,7 @@ import {
 import {
   L1_JULY12_REGISTRATION_CLOSE_DATE_LABEL,
   L1_JULY12_REGISTRATION_OPEN_DATE_LABEL,
+  L1_JULY12_RESULTS_UNLOCK_DATE,
   isL1July12RegistrationOpen,
   hasL1July12RegistrationStarted,
   isL1July12MockLinkOpen,
@@ -357,7 +358,12 @@ export function AssessmentsHub({
   const [registerOpen, setRegisterOpen] = useState(false);
   const { registration, submit, isSubmitted, submitting } = useL1Registration();
   const { examAccess } = useL1ExamAccess();
-  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
+  const { registered: legacyJuly12Registered, registrationUnlocked: legacyRegistrationUnlocked } = useL1July12Cohort();
+  // The fixed July cohort is historical; current registration and links come from
+  // admin-uploaded batches and access grants, not its embedded UID list.
+  const legacyJuly12Active = new Date() < L1_JULY12_RESULTS_UNLOCK_DATE;
+  const july12Registered = legacyJuly12Active && legacyJuly12Registered;
+  const registrationUnlocked = legacyJuly12Active && legacyRegistrationUnlocked;
   const { allowed: july26Allowed } = useL1July26Allowlist();
   const { batch: registrationBatch } = useRegistrationBatch();
   const { findGrant } = useStudentAccess();

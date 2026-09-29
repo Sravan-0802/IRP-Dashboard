@@ -12,4 +12,4 @@
 - [Previewing gated views](preview-gated-views.md) — can't switch the ACADEMY_USER_ID secret; to screenshot a per-user gate, temporarily move the row in/out of the gating table for the current preview user.
 - [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures often come from committed `<<<<<<<` markers; grep artifacts/ for markers after any merge, before publish.
 - [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.
-- [IRP batch vs. legacy cohort](irp-batch-vs-legacy-cohort.md) — current batch membership must override stale fixed-cycle banners; registration and exam access are separate checks.
+- [IRP batch vs. legacy cohort](irp-batch-vs-legacy-cohort.md) — admin-uploaded rosters govern current registration; fixed July lists must not assert current status.

@@ -30,13 +30,6 @@ import { FeMockCallout } from "./FeMockCallout";
 import { FeProjectCallout } from "./FeProjectCallout";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
-import { L1AssessmentBanner } from "./L1AssessmentBanner";
-import { L1July12RegisteredBanner } from "./L1July12RegisteredBanner";
-import { useL1Registration } from "@/lib/useL1Registration";
-import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
-import { useL1July26Allowlist } from "@/lib/useL1July26Allowlist";
-import { useRegistrationBatch } from "@/lib/useRegistrationBatch";
-import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { ContactUs } from "./ContactUs";
@@ -230,11 +223,6 @@ export function DashboardView({
 }) {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
-  const { registration } = useL1Registration();
-  const { registered: july12Registered, registrationUnlocked } = useL1July12Cohort();
-  const { allowed: july26Allowed } = useL1July26Allowlist();
-  const { batch: activeRegistrationBatch, loading: registrationBatchLoading } = useRegistrationBatch();
-  const registrationBatchHasPriority = registrationBatchLoading || Boolean(activeRegistrationBatch);
   const { settings } = useVisibilitySettings();
   const { minScore: feProjectMinScore } = useFeProjectConfig();
   const { findGrant } = useStudentAccess();
@@ -288,18 +276,7 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) && july12Registered && !registrationBatchHasPriority && !isInL1July25MockAllowlist(userId) ? (
-        <L1July12RegisteredBanner />
-      ) : level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) && july26Allowed && !registrationBatchHasPriority ? (
-        <L1AssessmentBanner
-          assessments={assessments}
-          registration={registration}
-          registrationUnlocked={registrationUnlocked}
-          onRegisterClick={onOpenAssessmentCalendar}
-          userId={userId}
-        />
-      ) : null}
-
+      {/* Current registration status comes from admin-uploaded batch membership and responses. */}
       {level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) ? (
         <RegistrationBatchCallout />
       ) : null}

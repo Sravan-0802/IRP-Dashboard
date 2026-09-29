@@ -135,7 +135,7 @@ export function RegistrationBatchCallout() {
                       }}
                     >
                       <CheckCircle2 className="h-2.5 w-2.5" />
-                      Registered
+                      Response recorded
                     </span>
                   ) : (
                     <span
