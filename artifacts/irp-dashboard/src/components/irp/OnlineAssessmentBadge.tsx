@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, IdCard } from "lucide-react";
+import { getAuthToken } from "@/lib/authToken";
 import {
   Dialog,
   DialogContent,
@@ -119,9 +120,22 @@ function loadImage(url: string): Promise<HTMLImageElement | null> {
 
 async function loadProfilePhoto(): Promise<HTMLImageElement | null> {
   try {
-    const response = await fetch(asset("api/student/profile-photo"));
+    const token = getAuthToken();
+    const response = await fetch("/api/student/profile-photo", {
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
     if (!response.ok) return null;
-    const blob = await response.blob();
+    let blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const type =
+        bytes[0] === 0xff && bytes[1] === 0xd8
+          ? "image/jpeg"
+          : bytes[0] === 0x89 && bytes[1] === 0x50
+            ? "image/png"
+            : "image/jpeg";
+      blob = new Blob([bytes], { type });
+    }
     const url = URL.createObjectURL(blob);
     const img = await loadImage(url);
     URL.revokeObjectURL(url);

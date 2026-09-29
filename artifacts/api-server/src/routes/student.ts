@@ -520,6 +520,22 @@ router.get("/student", async (req, res) => {
   }
 });
 
+/** CDN photos often arrive as application/octet-stream; the canvas needs a real image type. */
+function imageContentType(bytes: Buffer, upstreamType: string | null): string {
+  const declared = upstreamType?.split(";")[0]?.trim().toLowerCase() ?? "";
+  if (declared.startsWith("image/")) return declared;
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return "image/png";
+  }
+  if (bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP") {
+    return "image/webp";
+  }
+  return "image/jpeg";
+}
+
 /** Same-origin photo bytes so the badge canvas can include the portrait. */
 router.get("/student/profile-photo", async (req, res) => {
   try {
@@ -528,7 +544,9 @@ router.get("/student/profile-photo", async (req, res) => {
       res.status(401).end();
       return;
     }
-    const url = await resolveProfilePicUrl(userId);
+    const student = await getStudentForUser(userId);
+    const url =
+      (await resolveProfilePicUrl(userId)) || sanitizeProfilePicUrl(student?.avatar);
     if (!url) {
       res.status(404).end();
       return;
@@ -539,7 +557,7 @@ router.get("/student/profile-photo", async (req, res) => {
       return;
     }
     const bytes = Buffer.from(await upstream.arrayBuffer());
-    res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Content-Type", imageContentType(bytes, upstream.headers.get("content-type")));
     res.setHeader("Cache-Control", "private, max-age=300");
     res.send(bytes);
   } catch (err) {
