@@ -11,19 +11,15 @@ import {
 
 const POSTER = 1024;
 
-const BADGE_X = 584;
-const BADGE_Y = 356;
-const BADGE_W = 389;
-const PHOTO_W = 317;
-const PHOTO_H = 282;
-const PHOTO_X = BADGE_X + (BADGE_W - PHOTO_W) / 2;
-const PHOTO_Y = BADGE_Y + 108;
-
-const BAR_X = 76;
-const BAR_W = 332;
-const BAR_H = 78;
-const BAR_1_Y = 418;
-const BAR_2_Y = 514;
+// Measured from the uploaded 1024 posters. The photo sits inside the designed frame.
+const PHOTO_X = 618;
+const PHOTO_Y = 472;
+const PHOTO_W = 299;
+const PHOTO_H = 266;
+const NAME_X = 620;
+const NAME_Y = 812;
+const YEAR_Y = 894;
+const TEXT_MAX = 292;
 
 /**
  * College year shown under YEAR OF JOIN.
@@ -51,49 +47,33 @@ export type BadgeThemeId = "online" | "fe" | "panel";
 
 type BadgeTheme = {
   id: BadgeThemeId;
-  title: [string, string];
   dialogTitle: string;
   dialogBody: string;
   fileSlug: string;
-  badgeTop: string;
-  badgeBottom: string;
-  photoWell: string;
-  lanyard: string;
+  template: string;
 };
 
 const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
   online: {
     id: "online",
-    title: ["IRP Online", "Assessment"],
     dialogTitle: "Online Assessment IRP Clear Card",
     dialogBody: "You qualified in the IRP online assessment. Download this IRP Clear Card to save or share it.",
     fileSlug: "online",
-    badgeTop: "#0420d8",
-    badgeBottom: "#04045c",
-    photoWell: "rgba(8, 24, 120, 0.55)",
-    lanyard: "irp-lanyard.svg?v=3",
+    template: "irp-poster-online.jpg",
   },
   fe: {
     id: "fe",
-    title: ["FE", "Project"],
     dialogTitle: "FE Project IRP Clear Card",
     dialogBody: "You cleared the FE Project. Download this IRP Clear Card to save or share it.",
     fileSlug: "fe",
-    badgeTop: "#14c214",
-    badgeBottom: "#067006",
-    photoWell: "rgba(6, 110, 6, 0.55)",
-    lanyard: "irp-lanyard-fe.svg",
+    template: "irp-poster-fe.jpg",
   },
   panel: {
     id: "panel",
-    title: ["Panel", "Interview"],
     dialogTitle: "Panel Interview IRP Clear Card",
     dialogBody: "You cleared the panel interview. Download this IRP Clear Card to save or share it.",
     fileSlug: "panel",
-    badgeTop: "#12c8d4",
-    badgeBottom: "#063848",
-    photoWell: "rgba(6, 70, 82, 0.55)",
-    lanyard: "irp-lanyard-panel.svg",
+    template: "irp-poster-panel.jpg",
   },
 };
 
@@ -178,139 +158,36 @@ async function loadProfilePhoto(photoUrl: string | null): Promise<CanvasImageSou
   }
 }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
-  const radius = Math.max(0, Math.min(r, w / 2, h / 2));
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
-  ctx.closePath();
-}
-
-function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [""];
-  const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (ctx.measureText(next).width <= maxWidth) {
-      line = next;
-      continue;
-    }
-    if (line) lines.push(line);
-    line = word;
+function fitFont(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  let size = 26;
+  let font = `900 ${size}px Inter, sans-serif`;
+  ctx.font = font;
+  while (size > 14 && ctx.measureText(text).width > maxWidth) {
+    size -= 1;
+    font = `900 ${size}px Inter, sans-serif`;
+    ctx.font = font;
   }
-  if (line) lines.push(line);
-  return lines;
-}
-
-function drawEmptyPhoto(ctx: CanvasRenderingContext2D) {
-  ctx.strokeStyle = "rgba(255,255,255,0.28)";
-  ctx.lineWidth = 34;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(PHOTO_X + 46, PHOTO_Y + 40);
-  ctx.lineTo(PHOTO_X + PHOTO_W - 46, PHOTO_Y + PHOTO_H - 40);
-  ctx.moveTo(PHOTO_X + PHOTO_W - 46, PHOTO_Y + 40);
-  ctx.lineTo(PHOTO_X + 46, PHOTO_Y + PHOTO_H - 40);
-  ctx.stroke();
+  return font;
 }
 
 function drawPoster(
   ctx: CanvasRenderingContext2D,
   student: OnlineBadgeStudent,
-  theme: BadgeTheme,
-  logo: HTMLImageElement | null,
-  wave: HTMLImageElement | null,
-  lanyard: HTMLImageElement | null,
+  template: HTMLImageElement | null,
   photo: CanvasImageSource | null,
 ) {
   ctx.clearRect(0, 0, POSTER, POSTER);
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, POSTER, POSTER);
+  if (template) ctx.drawImage(template, 0, 0, POSTER, POSTER);
 
-  ctx.save();
-  ctx.strokeStyle = "rgba(180, 186, 196, 0.45)";
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= POSTER; i += 32) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i, POSTER);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, i);
-    ctx.lineTo(POSTER, i);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  if (wave) ctx.drawImage(wave, 0, POSTER - wave.height, wave.width, wave.height);
-  if (logo) ctx.drawImage(logo, 74, 62, 210, 104);
-
-  ctx.fillStyle = "#16181d";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.font = "800 68px Inter, sans-serif";
-  ctx.fillText(theme.title[0], BAR_X, 228);
-  ctx.fillText(theme.title[1], BAR_X, 300);
-
-  const drawBar = (y: number, label: string) => {
-    ctx.fillStyle = "#0014b1";
-    roundRect(ctx, BAR_X, y, BAR_W, BAR_H, 3);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "600 30px Inter, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(label, BAR_X + 22, y + BAR_H / 2 + 1);
-  };
-  drawBar(BAR_1_Y, student.levelLabel || "L1 Hustler");
-  drawBar(BAR_2_Y, student.statusLabel || "Cleared");
-
-  const name = (student.name || "Student").toUpperCase();
-  ctx.font = "900 26px Inter, sans-serif";
-  const nameLines = wrapLines(ctx, name, PHOTO_W);
-  const year = student.yearOfJoin;
-  const textTop = PHOTO_Y + PHOTO_H + 22;
-  const nameBlock = 16 + 8 + nameLines.length * 30;
-  const yearBlock = year ? 18 + 16 + 8 + 30 : 0;
-  const badgeH = textTop - BADGE_Y + nameBlock + yearBlock + 28;
-
-  ctx.save();
-  ctx.shadowColor = "rgba(8, 20, 80, 0.28)";
-  ctx.shadowBlur = 28;
-  ctx.shadowOffsetY = 16;
-  const badgeGradient = ctx.createLinearGradient(0, BADGE_Y, 0, BADGE_Y + badgeH);
-  badgeGradient.addColorStop(0, theme.badgeTop);
-  badgeGradient.addColorStop(1, theme.badgeBottom);
-  roundRect(ctx, BADGE_X, BADGE_Y, BADGE_W, badgeH, 30);
-  ctx.fillStyle = badgeGradient;
-  ctx.fill();
-  ctx.restore();
-
-  if (lanyard) {
-    const lw = 210;
-    const lh = 430;
-    ctx.drawImage(lanyard, BADGE_X + BADGE_W / 2 - lw / 2, 56, lw, lh);
-  }
-
-  ctx.save();
-  roundRect(ctx, PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H, 8);
-  ctx.clip();
-  ctx.fillStyle = theme.photoWell;
-  ctx.fillRect(PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H);
   if (photo) {
     const sw = photo instanceof HTMLImageElement ? photo.naturalWidth : photo.width;
     const sh = photo instanceof HTMLImageElement ? photo.naturalHeight : photo.height;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H);
+    ctx.clip();
     const ir = sw / sh;
     const tr = PHOTO_W / PHOTO_H;
     let dw = PHOTO_W;
@@ -325,50 +202,19 @@ function drawPoster(
       dy = PHOTO_Y - (dh - PHOTO_H) * 0.12;
     }
     ctx.drawImage(photo, dx, dy, dw, dh);
-  } else {
-    drawEmptyPhoto(ctx);
+    ctx.restore();
   }
-  ctx.restore();
-  ctx.save();
-  roundRect(ctx, PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H, 8);
-  ctx.strokeStyle = "rgba(255,255,255,0.72)";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.restore();
 
-  let y = textTop;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.font = "700 13px Inter, sans-serif";
-  ctx.fillText("NAME", PHOTO_X, y);
-  y += 20;
+  const name = (student.name || "Student").toUpperCase();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "900 26px Inter, sans-serif";
-  for (const line of nameLines) {
-    ctx.fillText(line, PHOTO_X, y);
-    y += 30;
-  }
-  if (year) {
-    y += 12;
-    ctx.strokeStyle = "rgba(255,255,255,0.85)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(PHOTO_X, y);
-    ctx.lineTo(PHOTO_X + PHOTO_W, y);
-    ctx.stroke();
-    y += 16;
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
-    ctx.font = "700 13px Inter, sans-serif";
-    ctx.fillText("YEAR OF JOIN", PHOTO_X, y);
-    y += 20;
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 22px Inter, sans-serif";
-    const yearLines = wrapLines(ctx, year, PHOTO_W);
-    for (const line of yearLines) {
-      ctx.fillText(line, PHOTO_X, y);
-      y += 28;
-    }
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = fitFont(ctx, name, TEXT_MAX);
+  ctx.fillText(name, NAME_X, NAME_Y);
+
+  if (student.yearOfJoin) {
+    ctx.font = fitFont(ctx, student.yearOfJoin, TEXT_MAX);
+    ctx.fillText(student.yearOfJoin, NAME_X, YEAR_Y);
   }
 }
 
@@ -378,17 +224,14 @@ async function paintPoster(
   theme: BadgeTheme,
 ) {
   await Promise.race([
-    document.fonts.load("800 68px Inter"),
     document.fonts.load("900 26px Inter"),
     new Promise((resolve) => setTimeout(resolve, 1500)),
   ]);
-  const [logo, wave, lanyard, photo] = await Promise.all([
-    loadImage(asset("nxtwave-academy-logo.png")),
-    loadImage(asset("irp-wave.png")),
-    loadImage(asset(theme.lanyard)),
+  const [template, photo] = await Promise.all([
+    loadImage(asset(theme.template)),
     loadProfilePhoto(student.photoUrl),
   ]);
-  drawPoster(ctx, student, theme, logo, wave, lanyard, photo);
+  drawPoster(ctx, student, template, photo);
 }
 
 export async function downloadOnlineAssessmentBadge(
