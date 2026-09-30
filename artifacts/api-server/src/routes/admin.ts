@@ -25,7 +25,11 @@ import {
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
 import { createAuthToken } from "../lib/authTokens";
-import { resolveAcademyUserDisplayName } from "../lib/academyUserProfile";
+import {
+  MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+  MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+  resolveAcademyUserDisplayName,
+} from "../lib/academyUserProfile";
 
 const router = Router();
 
@@ -444,10 +448,9 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
   }
 });
 
-// POST /api/admin/dashboard-access/grant — unlock dashboard for academy users:
-// 1) remove payment lock (unpaid_users)
-// 2) seed basic + placeholder assessment rows if missing, so
-//    userHasAssessmentData() passes ("You're not in our data yet" goes away).
+// POST /api/admin/dashboard-access/grant — explicitly grant dashboard access
+// without modifying the synced payment/eligibility mirror. The sentinel row
+// also makes userHasAssessmentData() pass for manually enrolled students.
 // Body: { academyUserIds: string[] }
 router.post("/admin/dashboard-access/grant", async (req, res) => {
   try {
@@ -467,59 +470,60 @@ router.post("/admin/dashboard-access/grant", async (req, res) => {
 
     const now = new Date();
     const CHUNK = 500;
-    const ACCESS_SENTINEL = "manual-access-grant";
-    const unlockedIds: string[] = [];
     let enrolledBasic = 0;
     let enrolledAssessment = 0;
 
     for (let i = 0; i < academyUserIds.length; i += CHUNK) {
       const chunk = academyUserIds.slice(i, i + CHUNK);
 
-      const removed = await db
-        .delete(unpaidUsersTable)
-        .where(inArray(unpaidUsersTable.academyUserId, chunk))
-        .returning({ academyUserId: unpaidUsersTable.academyUserId });
-      unlockedIds.push(...removed.map((r) => r.academyUserId));
+      const result = await db.transaction(async (tx) => {
+        await tx
+          .delete(unpaidUsersTable)
+          .where(inArray(unpaidUsersTable.academyUserId, chunk));
 
-      const basicRows = await db
-        .insert(academyUserBasicDetailsTable)
-        .values(chunk.map((userId) => ({ userId, syncedAt: now })))
-        .onConflictDoNothing({ target: academyUserBasicDetailsTable.userId })
-        .returning({ userId: academyUserBasicDetailsTable.userId });
-      enrolledBasic += basicRows.length;
+        await tx
+          .delete(academyUserAssessmentDetailsTable)
+          .where(
+            and(
+              inArray(academyUserAssessmentDetailsTable.userId, chunk),
+              eq(
+                academyUserAssessmentDetailsTable.organisationAssessmentId,
+                MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+              ),
+            ),
+          );
 
-      const assessmentRows = await db
-        .insert(academyUserAssessmentDetailsTable)
-        .values(
-          chunk.map((userId) => ({
-            userId,
-            organisationAssessmentId: ACCESS_SENTINEL,
-            syncedAt: now,
-          })),
-        )
-        .onConflictDoNothing()
-        .returning({ id: academyUserAssessmentDetailsTable.id });
-      enrolledAssessment += assessmentRows.length;
+        const basicRows = await tx
+          .insert(academyUserBasicDetailsTable)
+          .values(chunk.map((userId) => ({ userId, syncedAt: now })))
+          .onConflictDoNothing({ target: academyUserBasicDetailsTable.userId })
+          .returning({ userId: academyUserBasicDetailsTable.userId });
+
+        const assessmentRows = await tx
+          .insert(academyUserAssessmentDetailsTable)
+          .values(
+            chunk.map((userId) => ({
+              userId,
+              organisationAssessmentId: MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+              syncedAt: now,
+            })),
+          )
+          .onConflictDoNothing()
+          .returning({ id: academyUserAssessmentDetailsTable.id });
+
+        return { basicRows, assessmentRows };
+      });
+
+      enrolledBasic += result.basicRows.length;
+      enrolledAssessment += result.assessmentRows.length;
     }
-
-    const unlockedSet = new Set(unlockedIds);
-    const alreadyPaid = academyUserIds.filter((id) => !unlockedSet.has(id));
-
-    const [{ unpaidTotal } = { unpaidTotal: 0 }] = await db
-      .select({ unpaidTotal: sql<number>`count(*)::int` })
-      .from(unpaidUsersTable);
 
     res.json({
       ok: true,
       requested: academyUserIds.length,
-      unlocked: unlockedIds.length,
-      alreadyHadAccess: alreadyPaid.length,
-      alreadyPaid: alreadyPaid.length,
+      manualAccessGranted: academyUserIds.length,
       enrolledBasic,
       enrolledAssessment,
-      unlockedIds,
-      alreadyHadAccessIds: alreadyPaid,
-      unpaidTotal,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to grant dashboard access");
@@ -527,7 +531,8 @@ router.post("/admin/dashboard-access/grant", async (req, res) => {
   }
 });
 
-// POST /api/admin/dashboard-access/revoke — bulk mark users Unpaid (payment gate).
+// POST /api/admin/dashboard-access/revoke — revoke manual dashboard access and
+// explicitly deny dashboard entry, regardless of the synced payment status.
 // Body: { academyUserIds: string[] }
 router.post("/admin/dashboard-access/revoke", async (req, res) => {
   try {
@@ -549,14 +554,41 @@ router.post("/admin/dashboard-access/revoke", async (req, res) => {
     const CHUNK = 500;
     let locked = 0;
     for (let i = 0; i < academyUserIds.length; i += CHUNK) {
-      const chunk = academyUserIds
-        .slice(i, i + CHUNK)
-        .map((academyUserId) => ({ academyUserId, createdAt: now }));
-      const rows = await db
-        .insert(unpaidUsersTable)
-        .values(chunk)
-        .onConflictDoNothing({ target: unpaidUsersTable.academyUserId })
-        .returning({ academyUserId: unpaidUsersTable.academyUserId });
+      const academyUserIdChunk = academyUserIds.slice(i, i + CHUNK);
+      const rows = await db.transaction(async (tx) => {
+        await tx
+          .delete(academyUserAssessmentDetailsTable)
+          .where(
+            and(
+              inArray(academyUserAssessmentDetailsTable.userId, academyUserIdChunk),
+              eq(
+                academyUserAssessmentDetailsTable.organisationAssessmentId,
+                MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+              ),
+            ),
+          );
+
+        await tx
+          .insert(academyUserAssessmentDetailsTable)
+          .values(
+            academyUserIdChunk.map((userId) => ({
+              userId,
+              organisationAssessmentId: MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+              syncedAt: now,
+            })),
+          )
+          .onConflictDoNothing();
+
+        const unpaidRows = academyUserIdChunk.map((academyUserId) => ({
+          academyUserId,
+          createdAt: now,
+        }));
+        return tx
+          .insert(unpaidUsersTable)
+          .values(unpaidRows)
+          .onConflictDoNothing({ target: unpaidUsersTable.academyUserId })
+          .returning({ academyUserId: unpaidUsersTable.academyUserId });
+      });
       locked += rows.length;
     }
 

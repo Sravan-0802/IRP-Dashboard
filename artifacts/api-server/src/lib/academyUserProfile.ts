@@ -10,13 +10,24 @@
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
  *
- * This table is the only reference for the paid vs unpaid dashboard split.
- * Do not read the legacy `unpaid_users` table for that decision.
+ * The mirror is the source of truth for ordinary payment eligibility. Explicit
+ * admin dashboard grants/revocations are stored separately as sentinel rows in
+ * academy_user_assessment_details and take precedence without mutating this mirror.
+ * Do not use the legacy `unpaid_users` table to infer payment eligibility.
  */
-import { db, academyUserBasicDetailsTable, pool, type AcademyUserBasicDetails } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  db,
+  academyUserAssessmentDetailsTable,
+  academyUserBasicDetailsTable,
+  pool,
+  type AcademyUserBasicDetails,
+} from "@workspace/db";
+import { and, eq, inArray } from "drizzle-orm";
 import { logger } from "./logger";
 import { fetchProfilePicUrl } from "./bigquery";
+
+export const MANUAL_DASHBOARD_ACCESS_GRANT_ID = "manual-access-grant";
+export const MANUAL_DASHBOARD_ACCESS_REVOKE_ID = "manual-access-revoke";
 
 /**
  * Values actually present in `payment_status` (measured over 45,195 rows):
@@ -201,15 +212,47 @@ export type AcademyUserPaymentAccess = {
 export async function getAcademyUserPaymentAccess(
   userId: string,
 ): Promise<AcademyUserPaymentAccess> {
-  const row = await getAcademyUserBasicDetails(userId);
+  const [row, manualOverrideRows] = await Promise.all([
+    getAcademyUserBasicDetails(userId),
+    db
+      .select({
+        organisationAssessmentId: academyUserAssessmentDetailsTable.organisationAssessmentId,
+      })
+      .from(academyUserAssessmentDetailsTable)
+      .where(
+        and(
+          eq(academyUserAssessmentDetailsTable.userId, userId),
+          inArray(academyUserAssessmentDetailsTable.organisationAssessmentId, [
+            MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+            MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+          ]),
+        ),
+      ),
+  ]);
+
+  const hasManualGrant = manualOverrideRows.some(
+    (override) => override.organisationAssessmentId === MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+  );
+  const hasManualRevoke = manualOverrideRows.some(
+    (override) => override.organisationAssessmentId === MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+  );
+  const paymentStatus = row ? normalizePaymentStatusValue(row.paymentStatus) : null;
+  const irpEligibleStatus = row ? normalizeIrpEligibleStatus(row.irpEligibleStatus) : null;
+  const paymentPlan = row?.paymentPlan ?? null;
+
+  // Deny wins if both sentinels exist due to older or interrupted operations.
+  if (hasManualRevoke) {
+    return { paid: false, paymentStatus, paymentPlan, irpEligibleStatus };
+  }
+  if (hasManualGrant) {
+    return { paid: true, paymentStatus, paymentPlan, irpEligibleStatus };
+  }
 
   if (!row) {
     logger.warn({ userId }, "No academy_user_basic_details row; defaulting payment gate to paid");
     return { paid: true, paymentStatus: null, paymentPlan: null, irpEligibleStatus: null };
   }
 
-  const paymentStatus = normalizePaymentStatusValue(row.paymentStatus);
-  const irpEligibleStatus = normalizeIrpEligibleStatus(row.irpEligibleStatus);
   // Local sample viewing only. Never set this in production: the POCs mirror
   // can be missing eligibility, which would otherwise lock the preview.
   const devPreview =
@@ -221,7 +264,7 @@ export async function getAcademyUserPaymentAccess(
       devPreview ||
       (isPaidPaymentStatus(paymentStatus) && isIrpEligibleStatus(irpEligibleStatus)),
     paymentStatus,
-    paymentPlan: row.paymentPlan ?? null,
+    paymentPlan,
     irpEligibleStatus,
   };
 }

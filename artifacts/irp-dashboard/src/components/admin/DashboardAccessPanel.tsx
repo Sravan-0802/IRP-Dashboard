@@ -14,11 +14,9 @@ type DashboardAccessSummary = {
 
 type GrantResult = {
   requested: number;
-  unlocked: number;
-  alreadyHadAccess: number;
+  manualAccessGranted: number;
   enrolledBasic?: number;
   enrolledAssessment?: number;
-  unpaidTotal: number;
 };
 
 type RevokeResult = {
@@ -151,11 +149,9 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
       }
       setGrantResult({
         requested: Number((body as GrantResult).requested ?? 0),
-        unlocked: Number((body as GrantResult).unlocked ?? 0),
-        alreadyHadAccess: Number((body as GrantResult).alreadyHadAccess ?? 0),
+        manualAccessGranted: Number((body as GrantResult).manualAccessGranted ?? 0),
         enrolledBasic: Number((body as GrantResult).enrolledBasic ?? 0),
         enrolledAssessment: Number((body as GrantResult).enrolledAssessment ?? 0),
-        unpaidTotal: Number((body as GrantResult).unpaidTotal ?? 0),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not grant dashboard access");
@@ -354,10 +350,9 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 Grant dashboard access
               </h2>
               <p className="mt-1 max-w-xl text-sm text-[#6e6a8a]">
-                Paste Academy User IDs for new students. This marks them Paid and
-                enrolls them in the dashboard if they are missing IRP assessment
-                data (fixes &quot;You&apos;re not in our data yet&quot;). Stage
-                assessment links still use Access Loader.
+                Grant a manual dashboard-access override and enroll students who
+                are missing dashboard records. This does not change source
+                payment or eligibility data. Assessment links still use Access Loader.
               </p>
             </div>
           </div>
@@ -397,17 +392,17 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
 
         {grantResult ? (
           <div className="mt-3 rounded-xl border border-[rgba(12,166,120,0.25)] bg-[#e8faf4] px-4 py-3 text-sm text-[#0d1117]">
-            <p className="font-bold text-[#099268]">Dashboard access granted</p>
+            <p className="font-bold text-[#099268]">Manual dashboard access granted</p>
             <p className="mt-1 text-[#6e6a8a]">
-              Requested <span className="font-semibold text-[#0d1117]">{grantResult.requested}</span>
-              {" · "}Payment unlocked{" "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.unlocked}</span>
-              {" · "}Already paid{" "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.alreadyHadAccess}</span>
-              {" · "}Enrolled (new){" "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.enrolledAssessment ?? 0}</span>
-              {" · "}Still unpaid overall{" "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.unpaidTotal}</span>
+              Granted for{" "}
+              <span className="font-semibold text-[#0d1117]">{grantResult.manualAccessGranted}</span>
+              {" of "}
+              <span className="font-semibold text-[#0d1117]">{grantResult.requested}</span>
+              {" requested"}
+              {" · "}New dashboard records{" "}
+              <span className="font-semibold text-[#0d1117]">
+                {(grantResult.enrolledBasic ?? 0) + (grantResult.enrolledAssessment ?? 0)}
+              </span>
             </p>
           </div>
         ) : null}
