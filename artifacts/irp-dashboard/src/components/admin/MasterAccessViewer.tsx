@@ -47,6 +47,7 @@ type PreviewSlot = {
   linkKind: string;
   url: string;
   batchName: string | null;
+  startsAt: string | null;
   expiresAt: string | null;
 };
 
@@ -376,7 +377,8 @@ export function MasterAccessViewer({
               Student preview
             </h3>
             <p className="mb-4 text-xs text-[#6e6a8a]">
-              Purple cards = active Access Loader grants. Gray cards = fallback/hardcoded links
+              Purple cards = active or upcoming Access Loader grants. Upcoming Start buttons stay disabled.
+              Gray cards = fallback/hardcoded links
               (allowlist or journey-gated). Journey gates (cleared L1 / FE / etc.) still apply on
               the live dashboard.
             </p>
@@ -395,11 +397,12 @@ export function MasterAccessViewer({
                       {slot.batchName || "Access grant"}
                     </p>
                     <p className="mt-1 text-xs text-muted2">
+                      {slot.startsAt ? `Opens ${formatWhen(slot.startsAt)} · ` : ""}
                       {slot.expiresAt
                         ? `Expires ${formatWhen(slot.expiresAt)}`
                         : "No expiry"}
                     </p>
-                    <a
+                    {slot.url ? <a
                       href={slot.url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -407,7 +410,13 @@ export function MasterAccessViewer({
                     >
                       <ExternalLink className="h-4 w-4" />
                       Open grant link
-                    </a>
+                    </a> : <button
+                      type="button"
+                      disabled
+                      className="mt-4 cursor-not-allowed rounded-xl bg-brand/10 px-4 py-2.5 text-sm font-bold text-muted2"
+                    >
+                      Start Assessment — upcoming
+                    </button>}
                   </div>
                 ))}
               </div>

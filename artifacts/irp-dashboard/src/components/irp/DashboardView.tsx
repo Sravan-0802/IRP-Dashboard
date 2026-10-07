@@ -23,6 +23,7 @@ import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { Hero } from "./Hero";
+import { ScheduledAccessCallouts } from "./ScheduledAccessCallouts";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
@@ -298,6 +299,8 @@ export function DashboardView({
         feProjectMinScore={feProjectMinScore}
         userId={userId}
       />
+
+      <ScheduledAccessCallouts />
 
       {level === 1 && !journey.isWildcard ? (
         <IrpClearCards

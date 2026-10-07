@@ -574,7 +574,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                 />
                 <p className="mt-1 text-[11px] text-[#6e6a8a]">
                   {startsLocal
-                    ? `Grant hidden until ${fmtDt(previewStartsIso)}`
+                    ? `Upcoming card visible now; Start disabled until ${fmtDt(previewStartsIso)}`
                     : "Leave empty — active immediately"}
                 </p>
               </label>

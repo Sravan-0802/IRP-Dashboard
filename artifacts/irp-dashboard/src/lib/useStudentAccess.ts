@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { getAuthToken } from "@/lib/authToken";
 import type { L1AccessStage } from "@/lib/l1StageAccessMatrix";
 
@@ -64,8 +65,10 @@ export function findAccessGrant(
   linkKind?: AccessLinkKind,
 ): StudentAccessGrant | undefined {
   if (!grants?.length) return undefined;
-  // API already returns only live grants; keep helpers for client-side window checks.
-  const forStage = grants.filter((g) => g.stage === stage);
+  // Scheduled grants carry metadata but no URL; existing CTA consumers stay live-only.
+  const forStage = grants.filter(
+    (g) => g.stage === stage && isAccessGrantLive(g) && Boolean(g.url?.trim()),
+  );
   if (forStage.length === 0) return undefined;
   if (!linkKind) return forStage[0];
   return (
@@ -75,16 +78,39 @@ export function findAccessGrant(
 }
 
 export function useStudentAccess() {
+  const [clock, setClock] = useState(() => Date.now());
   const query = useQuery({
     queryKey: STUDENT_ACCESS_KEY,
     queryFn: fetchStudentAccess,
-    staleTime: 60_000,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
+  const refetch = query.refetch;
+  // Refresh at the exact opening/expiry boundary, including while a preview stays open.
+  useEffect(() => {
+    const now = Date.now();
+    const boundaries = (query.data?.grants ?? [])
+      .flatMap((g) => [g.startsAt, g.expiresAt])
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new Date(value).getTime())
+      .filter((value) => Number.isFinite(value) && value > now);
+    if (!boundaries.length) return;
+    const timer = setTimeout(() => {
+      setClock(Date.now());
+      void refetch();
+    }, Math.min(Math.min(...boundaries) - now + 50, 2_147_483_647));
+    return () => clearTimeout(timer);
+  }, [query.data, refetch, clock]);
+
+  const grants = (query.data?.grants ?? []).filter(
+    (g) => !isAssessmentWindowEnded(g.expiresAt),
+  );
   return {
-    grants: query.data?.grants ?? [],
+    grants,
     loading: query.isLoading,
     findGrant: (stage: AccessStage, linkKind?: AccessLinkKind) =>
-      findAccessGrant(query.data?.grants, stage, linkKind),
+      findAccessGrant(grants, stage, linkKind),
   };
 }

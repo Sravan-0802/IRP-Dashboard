@@ -1,4 +1,4 @@
-import { and, count, eq, or, isNull, gt, lte } from "drizzle-orm";
+import { and, count, eq, or, isNull, gt } from "drizzle-orm";
 import {
   db,
   accessBatchesTable,
@@ -296,7 +296,7 @@ export async function deleteAccessBatch(id: number): Promise<boolean> {
   return deleted.length > 0;
 }
 
-/** Enabled + not-yet-expired + already-started grants for a single academy user (student-facing). */
+/** Enabled, unexpired grants. Scheduled grants expose metadata, never their URL. */
 export async function getStudentAccessGrants(
   academyUserId: string,
 ): Promise<StudentAccessGrant[]> {
@@ -323,8 +323,6 @@ export async function getStudentAccessGrants(
         eq(accessBatchesTable.enabled, 1),
         // not yet expired
         or(isNull(accessBatchesTable.expiresAt), gt(accessBatchesTable.expiresAt, now)),
-        // already started (startsAt null = immediate)
-        or(isNull(accessBatchesTable.startsAt), lte(accessBatchesTable.startsAt, now)),
       ),
     );
 
@@ -335,7 +333,7 @@ export async function getStudentAccessGrants(
       name: r.name,
       stage: r.stage as AccessStage,
       linkKind: r.linkKind as AccessLinkKind,
-      url: r.url,
+      url: isGrantScheduled(r.startsAt, now) ? "" : r.url,
       startsAt: r.startsAt ? r.startsAt.toISOString() : null,
       expiresAt: r.expiresAt ? r.expiresAt.toISOString() : null,
     }));
@@ -384,7 +382,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
         enabled,
         expired,
         scheduled,
-        studentVisible: enabled && !expired && !scheduled,
+        studentVisible: enabled && !expired,
       };
     });
 
@@ -394,7 +392,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
       stage: g.stage,
       stageLabel: L1_ACCESS_STAGE_LABELS[g.stage],
       linkKind: g.linkKind,
-      url: g.url,
+      url: g.scheduled ? "" : g.url,
       batchName: g.name,
       startsAt: g.startsAt,
       expiresAt: g.expiresAt,

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
@@ -444,6 +445,8 @@ export function AssessmentsHub({
               : `Your ${meta.name} assessments — attempt the mock first, then register for the Hustler assessment.`}
         </p>
       </div>
+
+      <ScheduledAccessCallouts />
 
       {level === 1 && (hasOnlineMockGrant || onJuly25MockAllowlist) ? (
         <L1July25MockCallout userId={userId} />
