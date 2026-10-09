@@ -1,4 +1,4 @@
-/** Universal FE Project clearance threshold — any FE sit with overallScore ≥ this clears. */
+/** Legacy configuration default; FE qualification now follows assessment-number rules. */
 export const FE_PROJECT_CLEAR_MIN_SCORE = 18;
 
 /** Normalize org assessment ids so hyphenated / compact forms match. */
@@ -9,7 +9,7 @@ export function normalizeOrgAssessmentId(id: string | null | undefined): string 
 /** 5 August 2026 FE Project Main (A4). */
 export const FE_AUG5_ORG_ASSESSMENT_ID = "c62633e2059845b68a9829245af43bf4";
 export const FE_AUG5_ASSESSMENT_TAG = "ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A4";
-/** @deprecated Use FE_PROJECT_CLEAR_MIN_SCORE — all FE sits clear at ≥18/20. */
+/** @deprecated Legacy score default; not the FE qualification rule. */
 export const FE_AUG5_CLEAR_MIN_SCORE = FE_PROJECT_CLEAR_MIN_SCORE;
 export const FE_AUG5_EXAM_DATE_LABEL = "5th August 2026";
 
@@ -33,20 +33,20 @@ export const FE_PROJECT_REATTEMPT_BODY =
 /** Eyebrow + copy for the FE Project "not cleared" notice shown on the dashboard. */
 export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
 
-export const FE_PROJECT_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
+export const FE_PROJECT_NOT_CLEARED_TITLE = "Qualify in FE Project to unlock the Human Interview";
 
 export const FE_PROJECT_NOT_CLEARED_BODY =
-  "You attempted the FE Project but haven't cleared it yet. You need at least 18/20 on any FE Project sit to advance. A new re-attempt link will appear when the team releases it.";
+  "You attempted the FE Project but haven't qualified yet. A1 requires at least 70%, A2 exactly 100%, and other assessments at least 90%. A new re-attempt link will appear when the team releases it.";
 
-export const FE_PROJECT_C2_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
+export const FE_PROJECT_C2_NOT_CLEARED_TITLE = FE_PROJECT_NOT_CLEARED_TITLE;
 
 export const FE_PROJECT_C2_NOT_CLEARED_BODY =
-  "You attempted FE Project but haven't cleared it yet. You need at least 18/20 to advance to the Human Interview.";
+  FE_PROJECT_NOT_CLEARED_BODY;
 
-export const FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE = "Score 18/20 to unlock the Human Interview";
+export const FE_PROJECT_MAIN_II_NOT_CLEARED_TITLE = FE_PROJECT_NOT_CLEARED_TITLE;
 
 export const FE_PROJECT_MAIN_II_NOT_CLEARED_BODY =
-  "You attempted FE Project Main II but haven't cleared it yet. You need at least 18/20 to advance to the Human Interview.";
+  FE_PROJECT_NOT_CLEARED_BODY;
 
 /** FE Project Main — available 17th July 12:00 PM to 19th July 11:00 PM IST (allowlist only). */
 export const FE_PROJECT_MOCK_ORG_ASSESSMENT_ID = "98c2d7a223a3438f973a6d7e6f7c5b4b";
@@ -61,10 +61,10 @@ export const FE_PROJECT_RESULTS_TITLE = "FE Project Results";
 export const FE_PROJECT_CLEARED_TITLE = "You cleared the FE Project";
 
 export const FE_PROJECT_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";
+  "You met the qualifying score for your FE assessment. Continue with your Human Interview.";
 
 export const FE_PROJECT_C2_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";
+  FE_PROJECT_CLEARED_BODY;
 
 export const FE_PROJECT_MAIN_II_CLEARED_BODY =
-  "You scored 18/20 or above on FE Project. Continue with your Human Interview.";
+  FE_PROJECT_CLEARED_BODY;

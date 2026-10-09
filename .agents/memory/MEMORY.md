@@ -14,3 +14,4 @@
 - [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures often come from committed `<<<<<<<` markers; grep artifacts/ for markers after any merge, before publish.
 - [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.
 - [IRP batch vs. legacy cohort](irp-batch-vs-legacy-cohort.md) — admin-uploaded rosters govern current registration; fixed July lists must not assert current status.
+- [FE qualification policy](fe-qualification-policy.md) — A1 ≥70%, A2 exactly 100%, others ≥90%; user start time distinguishes not qualified from not attempted.

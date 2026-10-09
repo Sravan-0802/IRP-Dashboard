@@ -500,9 +500,16 @@ export async function fetchZFeProjectAttempts(): Promise<ZFeProjectAttemptRow[]>
       assessment_start_datetime, user_assessment_start_datetime,
       assessment_actual_score, user_assessment_score, user_assessment_score_percentage,
       react_js_coding_section_attempt_status, react_js_coding_section_score,
-      react_js_coding_section_score_percentage, assessment_status, attempt_number
+      react_js_coding_section_score_percentage,
+      CASE
+        WHEN assessment_number = 'A1' AND user_assessment_score_percentage >= 70 THEN 'QUALIFIED'
+        WHEN assessment_number = 'A2' AND user_assessment_score_percentage = 100 THEN 'QUALIFIED'
+        WHEN assessment_number NOT IN ('A1', 'A2') AND user_assessment_score_percentage >= 90 THEN 'QUALIFIED'
+        WHEN user_assessment_start_datetime IS NOT NULL THEN 'NOT QUALIFIED'
+        ELSE 'NOT ATTEMPTED'
+      END AS assessment_status, attempt_number
     FROM \`${fq}\`
-    WHERE ${zAttemptFilterSql("assessment_status")}`;
+    WHERE UPPER(COALESCE(assessment_type, '')) = 'MAIN'`;
   const [rows] = await bq.query({ query });
   logger.info({ table: Z_FE_PROJECT_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched z_* FE attempts");
   return rows as ZFeProjectAttemptRow[];

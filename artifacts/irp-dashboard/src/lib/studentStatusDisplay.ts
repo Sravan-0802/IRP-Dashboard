@@ -4,6 +4,7 @@ import {
   getAssessmentStatusTag,
   hasClearedAssessment,
   hasClearedFeSit,
+  feResultLabel,
   isAssessmentSitCleared,
   ASSESSMENT_CLEAR_THRESHOLD,
 } from "@/lib/assessment";
@@ -46,9 +47,7 @@ export function formatFeProjectStatus(
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
 ): string {
   if (!assessment) return "Not attempted";
-  // Keep the result pill consistent with stage progression: when a numeric FE
-  // score exists, the universal score threshold wins over stale status text.
-  return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
+  return feResultLabel(assessment, minScore);
 }
 
 export function formatNxtmockStatus(interview: NxtmockInterview | null | undefined): string {
@@ -70,8 +69,8 @@ export function feProjectStatusTone(
   minScore?: number | null,
 ): "green" | "amber" | "grey" {
   const label = formatFeProjectStatus(assessment, minScore ?? FE_PROJECT_CLEAR_MIN_SCORE);
-  if (label === "Cleared") return "green";
-  if (label === "Not cleared") return "amber";
+  if (label === "Qualified") return "green";
+  if (label === "Not qualified") return "amber";
   return "grey";
 }
 

@@ -26,6 +26,7 @@ import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnloc
 import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
 import { getStudentAccessGrants } from "../lib/accessBatches";
+import { getFeAssessmentStatus } from "../lib/feQualification";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import {
   getAcademyUserBasicDetails,
@@ -291,7 +292,7 @@ function mapDetailAssessmentRow(
     a.assessmentTitle,
   );
 
-  return {
+  const result: AssessmentApiRow = {
     organisationAssessmentId: a.organisationAssessmentId,
     assessmentTitle: a.assessmentTitle ?? "Assessment",
     assessmentTag: a.assessmentTag ?? cycle ?? undefined,
@@ -322,6 +323,15 @@ function mapDetailAssessmentRow(
     assessmentStatus: a.assessmentStatus ?? undefined,
     levelNumber: parseAssessmentLevel(a.level),
   };
+  if (isFeAssessmentApiRow(result)) {
+    result.assessmentStatus = getFeAssessmentStatus(
+      cycle,
+      overallMax > 0 ? (overallScore / overallMax) * 100 : null,
+      a.userAssessmentStartDatetime,
+    );
+    result.hasWrittenAssessment = result.assessmentStatus !== "NOT ATTEMPTED";
+  }
+  return result;
 }
 
 /**
@@ -478,7 +488,7 @@ async function getAssessmentResultsResponse(userId: string) {
   const detailL1 = detailMain.filter(
     (a) => !isFeAssessmentApiRow(a) && isValidL1OnlineDetailRow(a),
   );
-  const detailFeMain = detailMain.filter((a) => isFeAssessmentApiRow(a));
+  const detailFeMain = detailAssessments.filter((a) => isFeAssessmentApiRow(a));
 
   const out: AssessmentApiRow[] = [];
   const roundHustler = roundAssessments.filter(

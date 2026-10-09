@@ -133,8 +133,7 @@ function assessmentMotivation(
       return "You qualified in L1 and cleared the FE Project. Continue with your Human Interview when it opens. 💪";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments)) {
-      const required = `${feProjectMinScore ?? 18}/20`;
-      return `You qualified in the L1 online assessment but haven't cleared FE Project yet — score ${required} to unlock the Human Interview. 💪`;
+      return "You qualified in the L1 online assessment but haven't cleared FE Project yet — meet your assessment's qualifying score to unlock the Human Interview. 💪";
     }
     return "You qualified in the L1 online assessment. Complete your FE Project to move forward. 💪";
   }

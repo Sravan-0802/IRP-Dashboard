@@ -87,10 +87,10 @@ function headerCopy(steps: JourneyStep[], required: number): string {
     return "Qualify in the Level 1 online assessment to start collecting your IRP Clear Cards.";
   }
   if (fe === "failed") {
-    return `You have qualified in the online assessment. Your FE project score is available on the dashboard. A re-attempt link will appear when released. Score ≥ ${required}/20 to continue.`;
+    return "You have qualified in the online assessment. Your FE project score is available on the dashboard. A re-attempt link will appear when released. Meet your assessment's qualifying score to continue.";
   }
   if (fe !== "done") {
-    return `You have qualified in the online assessment. Score ${required}/20 or above on the FE Project to continue.`;
+    return "You have qualified in the online assessment. Qualify in the FE Project to continue: A1 requires at least 70%, A2 exactly 100%, and other assessments at least 90%.";
   }
   if (human !== "done") {
     return "You cleared the FE Project. Complete the Human Interview to keep collecting your IRP Clear Cards.";

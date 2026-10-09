@@ -207,7 +207,7 @@ export function isFeProjectAug5A4Assessment(a: AssessmentResult): boolean {
 
 /**
  * Featured FE Project row for the dashboard: latest attempt by start date
- * (then score). Clearance uses {@link hasClearedFeProject} (any sit ≥ threshold).
+ * (then score). Clearance uses the assessment-number-specific qualification rule.
  */
 export function pickFeProjectAssessment(
   assessments: AssessmentResult[],
@@ -268,32 +268,45 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
-/** True when a single real FE assessment sit clears at the configured score threshold. */
+/** Required percentage for the FE assessment number; missing numbers do not qualify. */
+export function feRequiredPercentage(assessment: AssessmentResult): number | null {
+  const number = getAssessmentCycleTag(assessment);
+  if (number == null) return null;
+  if (number === "A1") return 70;
+  if (number === "A2") return 100;
+  return 90;
+}
+
+/** FE status returned by the API uses the assessment-number-specific CASE. */
+export function feQualificationStatus(
+  assessment: AssessmentResult,
+): "QUALIFIED" | "NOT QUALIFIED" | "NOT ATTEMPTED" {
+  const status = assessment.assessmentStatus?.trim().toUpperCase();
+  if (status === "QUALIFIED" || status === "NOT QUALIFIED" || status === "NOT ATTEMPTED") {
+    return status;
+  }
+  const required = feRequiredPercentage(assessment);
+  const percentage = assessment.overallMax > 0
+    ? assessment.overallScore / assessment.overallMax * 100
+    : null;
+  if (required != null && percentage != null &&
+      (required === 100 ? percentage === 100 : percentage >= required)) {
+    return "QUALIFIED";
+  }
+  return feAssessmentWasWritten(assessment) ? "NOT QUALIFIED" : "NOT ATTEMPTED";
+}
+
+/** A1 ≥70%, A2 exactly 100%, all other numbered FE assessments ≥90%. */
 export function hasClearedFeSit(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
 ): boolean {
-  if (!feAssessmentWasWritten(assessment)) return false;
-
-  // A real numeric FE score is authoritative. Synced status fields can lag or
-  // contradict the universal ≥18/20 rule (for example 19/20 + NOT QUALIFIED).
-  if (assessment.overallMax > 0) {
-    return assessment.overallScore >= minScore;
-  }
-
-  // Status is only a fallback for legacy detail rows that genuinely have no
-  // numeric score/max data.
-  const status = (assessment.assessmentStatus ?? "").trim();
-  if (status) {
-    if (/not\s*qualified/i.test(status)) return false;
-    if (/qualified/i.test(status)) return true;
-  }
-  return false;
+  // Retain the argument for existing callers; it no longer overrides the CASE.
+  return feQualificationStatus(assessment) === "QUALIFIED";
 }
 
 /**
- * FE Project clears from round-wise status/score when present, else any detail sit ≥ minScore.
- * Clearance is not limited to the latest detail sit — an earlier ≥ threshold clears the stage.
+ * Any qualifying MAIN FE attempt clears the stage, not only the latest attempt.
  */
 export function hasClearedFeProject(
   assessments: AssessmentResult[],
@@ -311,8 +324,10 @@ export function hasClearedFeProject(
 export function feResultLabel(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,
-): "Cleared" | "Not cleared" {
-  return hasClearedFeSit(assessment, minScore) ? "Cleared" : "Not cleared";
+): "Qualified" | "Not qualified" | "Not attempted" {
+  const status = feQualificationStatus(assessment);
+  return status === "QUALIFIED" ? "Qualified" :
+    status === "NOT QUALIFIED" ? "Not qualified" : "Not attempted";
 }
 
 export function feResultTone(
