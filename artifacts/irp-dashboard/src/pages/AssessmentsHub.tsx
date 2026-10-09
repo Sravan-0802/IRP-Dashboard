@@ -40,6 +40,7 @@ import { useL1July12Cohort } from "@/lib/useL1July12Cohort";
 import { trackDashboardEvent, DASHBOARD_ANALYTICS_EVENTS } from "@/lib/analytics";
 import { isL1Aug3MainLinkLive } from "@/lib/irpDates";
 import { FeMockCallout } from "@/components/irp/FeMockCallout";
+import { FeProjectCallout } from "@/components/irp/FeProjectCallout";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
@@ -437,7 +438,7 @@ export function AssessmentsHub({
             : level === 1 && showOnlineGrantCards
             ? "Your L1 mock and/or main assessment links are below when granted or scheduled."
             : level === 1 && isCycle1Cleared(assessments)
-            ? "You cleared the online assessment. Your FE Project and next steps are shown on your dashboard."
+            ? "You cleared the online assessment. Your FE Project links appear below when released; results and next steps are on your dashboard."
             : level === 1 && july12Registered
             ? L1_JULY12_REGISTERED_HUB_NOTE
             : level === 1
@@ -461,6 +462,14 @@ export function AssessmentsHub({
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />
       )}
+
+      {level === 1 && journey && !journey.isWildcard ? (
+        <FeProjectCallout
+          journey={journey}
+          assessments={assessments}
+          userId={userId}
+        />
+      ) : null}
 
       {assessmentsForLevel.length === 0 ? (
         showOnlineGrantCards || level === 1 ? null : (

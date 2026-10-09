@@ -16,3 +16,11 @@ Show upcoming assessment cards with disabled Start buttons before the saved open
 **Why:** The user explicitly selected “Show upcoming cards with disabled Start buttons” after scheduled mock/main uploads were invisible in student preview.
 
 **How to apply:** Uploaded roster membership can make the upcoming schedule visible; actual assessment access must still wait for the configured opening time.
+
+## FE links on both student pages
+
+Show the released FE assessment links in the Assessments Hub as well as on the Dashboard.
+
+**Why:** The user requested that FE links visible on the Dashboard also appear in the Assessments Hub.
+
+**How to apply:** Keep the same uploaded-roster, live-window, and qualification checks on both pages. Do not direct students back to the Dashboard as a substitute for showing an available FE link in the Hub.
