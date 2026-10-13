@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail, Info, Sparkles, BookOpen } from "lucide-react";
+import { Calendar, ClipboardList, FileText, Info, LayoutGrid, Mail, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -12,12 +12,30 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
 
 export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "guidelines" | "about";
 
-const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
-  { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { key: "genai", icon: Sparkles, label: "GenAI Program" },
-  { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
-  { key: "slot", icon: CalendarClock, label: "Assessment Calendar" },
-  { key: "guidelines", icon: BookOpen, label: "Guideline Docs" },
+const SECTIONS: {
+  title: string;
+  items: { key: PageKey; icon: typeof LayoutGrid; label: string; badge?: string }[];
+}[] = [
+  {
+    title: "Your tracks",
+    items: [
+      { key: "dashboard", icon: LayoutGrid, label: "IRP MERN Track" },
+      { key: "genai", icon: Sparkles, label: "GenAI Track", badge: "NEW" },
+    ],
+  },
+  {
+    title: "Assessments",
+    items: [
+      { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
+      { key: "slot", icon: Calendar, label: "Assessment Calendar" },
+    ],
+  },
+  {
+    title: "Resource Hub",
+    items: [
+      { key: "guidelines", icon: FileText, label: "Guideline Docs" },
+    ],
+  },
 ];
 
 export function SidebarContent({
@@ -90,22 +108,34 @@ export function SidebarContent({
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-3">
-        {NAV.map(({ key, icon: Icon, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onNavigate(key)}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
-              active === key
-                ? "bg-[#f9f5ff] text-[#6941c6]"
-                : "text-[#667085] hover:bg-[#f9fafb] hover:text-[#344054]",
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-          </button>
+      <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-3">
+        {SECTIONS.map((section) => (
+          <div key={section.title} className="mb-3">
+            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#98a2b3]">{section.title}</p>
+            <div className="flex flex-col gap-0.5">
+              {section.items.map(({ key, icon: Icon, label, badge }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onNavigate(key)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
+                    active === key
+                      ? "bg-[#f4f3ff] text-[#6941c6]"
+                      : "text-[#667085] hover:bg-[#f9fafb] hover:text-[#344054]",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+                  {badge ? (
+                    <span className="rounded-full bg-[#6941c6] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white">
+                      {badge}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
         <button
           type="button"
