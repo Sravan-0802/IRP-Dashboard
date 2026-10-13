@@ -439,6 +439,13 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
           WHERE irp_status = 'ELIGIBLE'
             AND (payment_status IS NULL OR payment_status NOT IN ('UNPAID', 'PARTIALLY_PAID'))
         )::int AS paid_dashboard_users,
+        -- Unpaid rows are all NOT_ELIGIBLE in this mirror, so eligible+unpaid is empty.
+        -- Yet-to-pay is the eligible group that has not paid in full. The access gate
+        -- still lets them in (NBFC / instalments).
+        COUNT(*) FILTER (
+          WHERE irp_status = 'ELIGIBLE'
+            AND payment_status = 'YET_TO_PAY'
+        )::int AS eligible_yet_to_pay,
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
             AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
@@ -456,6 +463,7 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
       eligibleUsers: numberValue(row.eligible_users),
       unpaidUsersTotal: numberValue(row.unpaid_users_total),
       paidDashboardUsers: numberValue(row.paid_dashboard_users),
+      eligibleYetToPay: numberValue(row.eligible_yet_to_pay),
       unpaidEligibleUsers: numberValue(row.unpaid_eligible_users),
       syncStatus: row.sync_status ?? null,
       lastSyncedAt: row.last_synced_at ?? null,

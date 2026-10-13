@@ -7,6 +7,7 @@ type DashboardAccessSummary = {
   eligibleUsers: number;
   unpaidUsersTotal: number;
   paidDashboardUsers: number;
+  eligibleYetToPay?: number;
   unpaidEligibleUsers: number;
   syncStatus: string | null;
   lastSyncedAt: string | null;
@@ -267,22 +268,23 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Dashboard access
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and paid</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible, and payment is not unpaid</p>
               </div>
               <div className="rounded-xl border border-[rgba(245,159,0,0.22)] bg-[#fff9e9] p-4">
                 <CreditCard className="h-4 w-4 text-[#e67700]" />
                 <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
-                  {summary.unpaidEligibleUsers.toLocaleString("en-IN")}
+                  {summary.unpaidUsersTotal.toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
-                  Unpaid eligible users
+                  Unpaid students
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and unpaid</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Payment status is unpaid. None are IRP eligible</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6e6a8a]">
               <span>
-                Unpaid or partially paid: <strong className="text-[#0d1117]">{summary.unpaidUsersTotal.toLocaleString("en-IN")}</strong>
+                Eligible and yet to pay: <strong className="text-[#0d1117]">{(summary.eligibleYetToPay ?? 0).toLocaleString("en-IN")}</strong>
+                <span className="text-[#98a2b3]"> · still have access</span>
               </span>
               <span>
                 Sync status: <strong className="capitalize text-[#0d1117]">{summary.syncStatus ?? "Not recorded"}</strong>
