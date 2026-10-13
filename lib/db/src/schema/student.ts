@@ -524,6 +524,15 @@ export const genAiTrainingPopupTable = pgTable("genai_training_popup", {
 export type GenAiTrainingPopup = typeof genAiTrainingPopupTable.$inferSelect;
 export type InsertGenAiTrainingPopup = typeof genAiTrainingPopupTable.$inferInsert;
 
+/** Singleton JSON document for the GenAI Program page and Assessment Calendar (row id = 1). */
+export const programBoardTable = pgTable("program_board", {
+  id: integer("id").primaryKey().default(1),
+  payload: text("payload").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ProgramBoardRow = typeof programBoardTable.$inferSelect;
+
 export type RegistrationBatch = typeof registrationBatchesTable.$inferSelect;
 export type InsertRegistrationBatch = typeof registrationBatchesTable.$inferInsert;
 export type RegistrationBatchUser = typeof registrationBatchUsersTable.$inferSelect;

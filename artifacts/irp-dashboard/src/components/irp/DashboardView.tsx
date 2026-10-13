@@ -128,14 +128,15 @@ function assessmentMotivation(
     }
     if (hasClearedFeProject(assessments, feProjectMinScore)) {
       if (visibility.humanInterviewResults || journey.journeyState === "L1_HUMAN_INTERVIEW") {
-        return "You cleared the FE Project. Prepare for your Human Interview — the next step in your IRP journey. 💪";
+        return "You cleared the FE Project. Prepare for your Human Interview — the next step in your IRP journey.";
       }
-      return "You qualified in L1 and cleared the FE Project. Continue with your Human Interview when it opens. 💪";
+      return "You qualified in L1 and cleared the FE Project. Continue with your Human Interview when it opens.";
     }
     if (visibility.feProjectResults && hasAttemptedFeProject(assessments)) {
-      return "You qualified in the L1 online assessment but haven't cleared FE Project yet — meet your assessment's qualifying score to unlock the Human Interview. 💪";
+      const required = `${feProjectMinScore ?? 18}/20`;
+      return `You qualified in the L1 online assessment but haven't cleared FE Project yet — score ${required} to unlock the Human Interview.`;
     }
-    return "You qualified in the L1 online assessment. Complete your FE Project to move forward. 💪";
+    return "You qualified in the L1 online assessment. Complete your FE Project to move forward.";
   }
 
   if (level === 1 && isCycle2Candidate(assessments, userId)) {
@@ -144,35 +145,35 @@ function assessmentMotivation(
     }
     if (assessmentStatus === "attempted_not_cleared") {
       if (hasAttemptedL1Cycle2(assessments)) {
-        return "You attempted the L1 online assessment but didn't qualify yet. Register for the next assessment when it opens. 🔥";
+        return "You attempted the L1 online assessment but didn't qualify yet. Register for the next assessment when it opens.";
       }
-      return "Keep preparing for the L1 online assessment. Register via the Assessment Calendar when registration opens. 🔥";
+      return "Keep preparing for the L1 online assessment. Register via the Assessment Calendar when registration opens.";
     }
     if (days > 0) {
-      return `${days} ${days === 1 ? "day" : "days"} until the next assessment window. Keep preparing. 🔥`;
+      return `${days} ${days === 1 ? "day" : "days"} until the next assessment window. Keep preparing.`;
     }
     return "Register for the L1 online assessment when registration opens on your dashboard. 🔥";
   }
 
   switch (phase) {
     case "EXAM_OPEN":
-      return "It's go time. Give it everything — this is your moment. 🔥";
+      return "It's go time. Give it everything — this is your moment.";
     case "POST_ASSESSMENT":
       return assessmentStatus === "done"
-        ? "Assessment cleared. Finish your tasks and keep the momentum rolling. 💪"
+        ? "Assessment cleared. Finish your tasks and keep the momentum rolling."
         : assessmentStatus === "attempted_not_cleared"
-          ? "You attempted the assessment but didn't clear yet. Review your results and keep pushing. 💪"
-          : "Assessment attempted. Review your results and keep building for the next round. 💪";
+          ? "You attempted the assessment but didn't clear yet. Review your results and keep pushing."
+          : "Assessment attempted. Review your results and keep building for the next round.";
     case "PLACED":
-      return "You did it. Take it in — you've earned this. 🎉";
+      return "You did it. Take it in — you've earned this.";
     case "REATTEMPT_WAITING":
     case "REATTEMPT_ACTIVE":
-      return "One setback doesn't define you. Round 2 is where comebacks happen. 💥";
+      return "One setback doesn't define you. Round 2 is where comebacks happen.";
     case "WILDCARD":
-      return "You're on the fast track. Big risk, bigger reward — let's go. ⚡";
+      return "You're on the fast track. Big risk, bigger reward — let's go.";
     default:
       return days > 0
-        ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${points.toLocaleString()} pts — keep stacking. 🔥`
+        ? `${days} ${days === 1 ? "day" : "days"} until you level up. You've banked ${points.toLocaleString()} pts — keep stacking.`
         : "";
   }
 }
@@ -267,9 +268,9 @@ export function DashboardView({
 
   return (
     <div className="space-y-6">
-      <div className="animate-pop-in">
-        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
-          Welcome back, {firstName}! <span className="inline-block animate-float-soft">👋</span>
+      <div>
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink sm:text-[28px]">
+          Welcome back, {firstName}
         </h1>
         {motivation ? (
           <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>

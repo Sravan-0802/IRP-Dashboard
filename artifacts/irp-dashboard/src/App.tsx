@@ -107,10 +107,16 @@ function Router() {
       <Route path="/analytics">
         <Analytics />
       </Route>
+      <Route path="/genai-program">
+        <Home />
+      </Route>
       <Route path="/assessments-hub">
         <Home />
       </Route>
       <Route path="/assessment-calendar">
+        <Home />
+      </Route>
+      <Route path="/guideline-docs">
         <Home />
       </Route>
       <Route path="/about">

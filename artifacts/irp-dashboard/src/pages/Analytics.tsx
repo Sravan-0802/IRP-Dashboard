@@ -5,6 +5,7 @@ import { MasterAccessViewer } from "@/components/admin/MasterAccessViewer";
 import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/components/admin/RegistrationBatchesPanel";
 import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
 import { GenAiTrainingPopupPanel } from "@/components/admin/GenAiTrainingPopupPanel";
+import { ProgramBoardPanel } from "@/components/admin/ProgramBoardPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -88,6 +89,7 @@ type AnalyticsTab =
   | "support"
   | "visibility"
   | "genai_popup"
+  | "program_board"
   | "dashboard_access"
   | "access"
   | "access_viewer"
@@ -218,6 +220,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "support",
       "visibility",
       "genai_popup",
+      "program_board",
       "dashboard_access",
       "access",
       "access_viewer",
@@ -596,6 +599,7 @@ export default function AnalyticsPage() {
       return apiKey
         ? [
             { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
+            { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
@@ -612,7 +616,10 @@ export default function AnalyticsPage() {
       { id: "support" as const, label: "Help & Support", count: data.contactMessageCount },
       { id: "visibility" as const, label: "Visibility", count: visibilityPendingCount || undefined },
       ...(apiKey
-        ? [{ id: "genai_popup" as const, label: "GenAI pop-up", count: undefined }]
+        ? [
+            { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
+            { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
+          ]
         : []),
       ...(apiKey
         ? [
@@ -1828,6 +1835,10 @@ export default function AnalyticsPage() {
 
             {activeTab === "genai_popup" && apiKey ? (
               <GenAiTrainingPopupPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "program_board" && apiKey ? (
+              <ProgramBoardPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "access" && apiKey ? (

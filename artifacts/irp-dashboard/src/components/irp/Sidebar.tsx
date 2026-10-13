@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail, Info } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CalendarClock, Zap, Mail, Info, Sparkles, BookOpen } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -10,12 +10,14 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "assessments" | "slot" | "about";
+export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "guidelines" | "about";
 
 const NAV: { key: PageKey; icon: typeof LayoutDashboard; label: string }[] = [
   { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { key: "genai", icon: Sparkles, label: "GenAI Program" },
   { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
   { key: "slot", icon: CalendarClock, label: "Assessment Calendar" },
+  { key: "guidelines", icon: BookOpen, label: "Guideline Docs" },
 ];
 
 export function SidebarContent({
@@ -78,10 +80,11 @@ export function SidebarContent({
             <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" /> Wildcard · Direct L3</span>
           </div>
         ) : (
-          <div
-            className="mt-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
-            style={{ backgroundColor: LEVEL_COLOR[getLevel(journey.journeyState)] }}
-          >
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#f4f3ff] px-2.5 py-1 text-[11px] font-semibold text-[#6941c6]">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: LEVEL_COLOR[getLevel(journey.journeyState)] }}
+            />
             {levelLabel(journey.journeyState)}
           </div>
         )}

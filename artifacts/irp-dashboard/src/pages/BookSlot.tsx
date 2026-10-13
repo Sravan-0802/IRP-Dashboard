@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Calendar, Clock, Trophy, CheckCircle2, CalendarCheck } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard } from "@/components/irp/ui";
-import { ComingSoonPanel } from "@/components/irp/ComingSoonPanel";
 import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
+import { AssessmentCalendarBoard } from "./AssessmentCalendarBoard";
 import {
   L1_JULY26_HUSTLER_CALENDAR,
   L1_JULY26_HUSTLER_SLOTS,
@@ -11,8 +11,7 @@ import {
   syncL1HustlerSlotFromRegistration,
   type L1RegistrationRecord,
 } from "@/lib/l1AssessmentSchedule";
-import { hasSuccessfulSlotRegistration } from "@/lib/l1AssessmentSchedule";
-import { L1_JULY26_EXAM_DATE_LABEL, isL1July26RegistrationOpen } from "@/lib/irpDates";
+import { isL1July26RegistrationOpen } from "@/lib/irpDates";
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
 import { useL1Registration } from "@/lib/useL1Registration";
@@ -235,8 +234,6 @@ export function BookSlot({
   assessments?: AssessmentResult[];
   userId?: string;
 }) {
-  const { registration } = useL1Registration();
-  const slotBooked = hasSuccessfulSlotRegistration(registration);
   const cleared = isCycle1Cleared(assessments, userId);
   const isCandidate = isCycle2Candidate(assessments, userId);
   const registrationOpen =
@@ -246,36 +243,8 @@ export function BookSlot({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessment Calendar</h1>
-        <p className="mt-1 text-sm text-muted2">
-          {slotBooked
-            ? `Your slot for the assessment on ${L1_JULY26_EXAM_DATE_LABEL} (6:00 PM – 8:00 PM IST) is confirmed.`
-            : showCalendar && registrationOpen
-              ? `Choose your slot for the assessment on ${L1_JULY26_EXAM_DATE_LABEL} (6:00 PM – 8:00 PM IST), then complete registration.`
-              : cleared
-                ? "You cleared the L1 assessment and are on the post-assessment track."
-                : "Slot registration will appear here when it opens."}
-        </p>
-      </div>
-
-      {slotBooked ? (
-        <ComingSoonPanel
-          title="Assessment calendar"
-          description="Slot booking confirmation is hidden for now. Use the IRP 2.0 L1 Mock Assessment card on your Dashboard or Assessments Hub to start the mock."
-        />
-      ) : showCalendar ? (
-        <AssessmentCalendarContent />
-      ) : (
-        <ComingSoonPanel
-          title={cleared ? "You're on the post-assessment track" : "Assessment calendar — coming soon"}
-          description={
-            cleared
-              ? "You cleared the L1 assessment. Continue with the next steps from the dashboard or Assessments Hub."
-              : "Registration is not open for you yet. Check back for updates."
-          }
-        />
-      )}
+      <AssessmentCalendarBoard />
+      {showCalendar ? <AssessmentCalendarContent /> : null}
     </div>
   );
 }

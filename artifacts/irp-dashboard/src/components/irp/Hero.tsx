@@ -34,17 +34,11 @@ import { useStudentAccess } from "@/lib/useStudentAccess";
 import { CountdownRing } from "./CountdownRing";
 import { Pill } from "./ui";
 
-const LEVEL_EMOJI: Record<1 | 2 | 3, string> = { 1: "💪", 2: "🤖", 3: "⚡" };
-
 const LEVEL_HEADING_CLASS =
   "mb-2 font-display text-xl font-extrabold text-ink sm:text-2xl";
 
-function LevelHeading({ name, level }: { name: string; level: 1 | 2 | 3 }) {
-  return (
-    <p className={LEVEL_HEADING_CLASS}>
-      {name} {LEVEL_EMOJI[level]}
-    </p>
-  );
+function LevelHeading({ name }: { name: string; level?: 1 | 2 | 3 }) {
+  return <p className={LEVEL_HEADING_CLASS}>{name}</p>;
 }
 
 function PulsingDot({ color }: { color: string }) {
@@ -660,10 +654,12 @@ export function Hero({
       />
       <div className="relative flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full items-center gap-4 sm:gap-5 lg:w-auto">
-          <div className="select-none shrink-0 text-[3.25rem] leading-none drop-shadow-sm animate-float-soft">🚀</div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[#6941c6] shadow-sm">
+            <CalendarClock className="h-7 w-7" />
+          </div>
           <div className="min-w-0 text-left">
             <div className="genz-badge mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand">
-              <PulsingDot color="#a855f7" /> Your next mission
+              <PulsingDot color="#a855f7" /> Next assessment
             </div>
             <LevelHeading name={meta.name} level={level} />
             <h2 className="shimmer-text font-display text-[1.65rem] font-extrabold leading-tight sm:text-[1.85rem]">

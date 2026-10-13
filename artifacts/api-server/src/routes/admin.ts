@@ -24,6 +24,7 @@ import {
   parseGenAiTrainingPopupBody,
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
+import { getProgramBoard, parseProgramBoardBody, updateProgramBoard } from "../lib/programBoard";
 import { createAuthToken } from "../lib/authTokens";
 import {
   MANUAL_DASHBOARD_ACCESS_GRANT_ID,
@@ -403,31 +404,48 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
     }
 
     const result = await db.execute(sql`
-      WITH eligible AS (
-        SELECT DISTINCT user_id
-        FROM academy_user_assessment_details
+      WITH people AS (
+        SELECT
+          UPPER(REGEXP_REPLACE(BTRIM(COALESCE(payment_status, '')), '[[:space:]-]+', '_', 'g')) AS payment_raw,
+          UPPER(REGEXP_REPLACE(BTRIM(COALESCE(irp_eligible_status, '')), '[[:space:]-]+', '_', 'g')) AS irp_raw
+        FROM academy_user_basic_details
         WHERE user_id IS NOT NULL
           AND BTRIM(user_id) <> ''
+      ),
+      norm AS (
+        SELECT
+          CASE
+            WHEN payment_raw IN ('NOT_PAID', 'PAYMENT_UNPAID') THEN 'UNPAID'
+            WHEN payment_raw IN ('PAYMENT_PAID', 'FULLY_PAID') THEN 'PAID'
+            WHEN payment_raw IN ('PARTIAL', 'PARTIAL_PAID') THEN 'PARTIALLY_PAID'
+            WHEN payment_raw = '' THEN NULL
+            ELSE payment_raw
+          END AS payment_status,
+          NULLIF(irp_raw, '') AS irp_status
+        FROM people
       ),
       sync AS (
         SELECT status, last_synced_at
         FROM bigquery_sync_status
-        WHERE table_name = 'academy_user_assessment_details'
+        WHERE table_name IN ('academy_user_basic_details', 'academy_user_assessment_details')
+        ORDER BY last_synced_at DESC NULLS LAST
         LIMIT 1
       )
       SELECT
         (SELECT COUNT(*)::int FROM academy_user_assessment_details) AS assessment_rows,
-        (SELECT COUNT(*)::int FROM eligible) AS eligible_users,
-        (SELECT COUNT(*)::int FROM unpaid_users) AS unpaid_users_total,
-        COUNT(*) FILTER (WHERE unpaid_users.academy_user_id IS NULL)::int
-          AS paid_dashboard_users,
-        COUNT(*) FILTER (WHERE unpaid_users.academy_user_id IS NOT NULL)::int
-          AS unpaid_eligible_users,
+        COUNT(*) FILTER (WHERE irp_status = 'ELIGIBLE')::int AS eligible_users,
+        COUNT(*) FILTER (WHERE payment_status IN ('UNPAID', 'PARTIALLY_PAID'))::int AS unpaid_users_total,
+        COUNT(*) FILTER (
+          WHERE irp_status = 'ELIGIBLE'
+            AND (payment_status IS NULL OR payment_status NOT IN ('UNPAID', 'PARTIALLY_PAID'))
+        )::int AS paid_dashboard_users,
+        COUNT(*) FILTER (
+          WHERE irp_status = 'ELIGIBLE'
+            AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+        )::int AS unpaid_eligible_users,
         (SELECT status FROM sync) AS sync_status,
         (SELECT last_synced_at FROM sync) AS last_synced_at
-      FROM eligible
-      LEFT JOIN unpaid_users
-        ON unpaid_users.academy_user_id = eligible.user_id
+      FROM norm
     `);
 
     const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
@@ -828,6 +846,39 @@ const L1_MOCK_CLICK_EVENT_TYPES = [
   "l1_july25_mock_start_click",
   "mock_assessment_link_click",
 ] as const;
+
+// GET /api/admin/program-board — GenAI Program page and Assessment Calendar content
+router.get("/admin/program-board", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json(await getProgramBoard());
+  } catch (err) {
+    req.log.error({ err }, "Failed to get program board");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/program-board — save GenAI Program and Assessment Calendar content
+router.put("/admin/program-board", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const parsed = parseProgramBoardBody(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
+      return;
+    }
+    res.json(await updateProgramBoard(parsed.board));
+  } catch (err) {
+    req.log.error({ err }, "Failed to update program board");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /api/admin/analytics/reset-l1-mock-clicks — zero the L1 Mock Start
 // people-clicked counter (admin API key required). Deletes prior click rows.

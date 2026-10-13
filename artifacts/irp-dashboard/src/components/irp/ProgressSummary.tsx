@@ -28,12 +28,12 @@ export function ProgressSummary({
 }) {
   function momentumLabel(pct: number) {
     return pct >= 75
-      ? "🔥 On fire"
+      ? "On track"
       : pct >= 50
-        ? "⚡ In the zone"
+        ? "In progress"
         : pct >= 25
-          ? "📈 Building momentum"
-          : "🚀 Just getting started";
+          ? "Building momentum"
+          : "Getting started";
   }
 
   const momentum = momentumLabel(overallPct);

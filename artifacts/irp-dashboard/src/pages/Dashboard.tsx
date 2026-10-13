@@ -26,6 +26,8 @@ import { DashboardView } from "@/components/irp/DashboardView";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import { AboutIrp } from "./AboutIrp";
+import { GenAiProgram } from "./GenAiProgram";
+import { GuidelineDocs } from "./GuidelineDocs";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { usePaymentStatus } from "@/lib/usePaymentStatus";
 import { useAcademyUserId } from "@/lib/useAcademyUserId";
@@ -250,6 +252,9 @@ export default function Dashboard() {
                 onOpenAssessmentCalendar={() => navigate("slot")}
               />
             )}
+            {page === "genai" && (
+              <GenAiProgram />
+            )}
             {page === "assessments" && (
               <AssessmentsHub
                 level={getLevel(journey.journeyState)}
@@ -259,6 +264,13 @@ export default function Dashboard() {
               />
             )}
             {page === "slot" && <BookSlot assessments={displayAssessments} userId={userId} />}
+            {page === "guidelines" && (
+              <GuidelineDocs
+                journey={journey}
+                assessments={displayAssessments}
+                userId={userId}
+              />
+            )}
             {page === "about" && <AboutIrp />}
           </div>
         </main>

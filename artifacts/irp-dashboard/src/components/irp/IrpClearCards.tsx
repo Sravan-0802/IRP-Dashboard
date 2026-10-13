@@ -145,7 +145,7 @@ export function IrpClearCards({
           Level 1
         </span>
         <h2 className="mt-2 font-display text-xl font-extrabold tracking-tight text-[#111827] sm:text-2xl">
-          Complete all stages to unlock Level 2 <span aria-hidden>💪</span>
+          Complete all stages to unlock Level 2
         </h2>
         <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-[#667085]">
           {headerCopy(steps, feMinScore)}

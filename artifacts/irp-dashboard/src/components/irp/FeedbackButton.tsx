@@ -15,18 +15,14 @@ export function FeedbackButton({
       <button
         type="button"
         onClick={onClick}
-        aria-label="We value your feedback"
+        aria-label="Feedback"
+        title="Feedback"
         className={cn(
-          "group/fb fixed right-0 top-1/2 z-[90] flex -translate-y-1/2 translate-x-[calc(100%-2.75rem)] items-center gap-2 overflow-hidden rounded-l-full bg-[#f97316] py-3 pl-3 pr-2.5 text-[10px] font-bold text-white shadow-[0_4px_20px_rgba(249,115,22,0.45)] transition-[transform,background-color,box-shadow] duration-300 ease-out hover:translate-x-0 hover:bg-[#ea580c] hover:shadow-[0_6px_24px_rgba(249,115,22,0.5)] focus:outline-none focus-visible:translate-x-0 focus-visible:ring-2 focus-visible:ring-[#f97316]/60 sm:pr-2 sm:text-[11px]",
+          "flex h-11 w-11 items-center justify-center rounded-full border border-[#eaecf0] bg-white text-[#344054] shadow-sm transition-colors hover:bg-[#f9fafb] hover:text-[#6941c6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
           className,
         )}
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/90">
-          <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.25} />
-        </span>
-        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-300 ease-out group-hover/fb:max-w-[4.5rem] group-hover/fb:opacity-100 group-focus-visible/fb:max-w-[4.5rem] group-focus-visible/fb:opacity-100 sm:group-hover/fb:max-w-[5.5rem]">
-          We value your feedback
-        </span>
+        <MessageCircle className="h-5 w-5" />
       </button>
     );
   }
@@ -36,14 +32,12 @@ export function FeedbackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-full bg-[#f97316] px-3 py-2.5 text-[11px] font-bold leading-tight text-white shadow-sm transition-colors hover:bg-[#ea580c] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f97316]/50",
+        "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#667085] transition-colors hover:bg-[#f9fafb] hover:text-[#344054] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
         className,
       )}
     >
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/90">
-        <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.25} />
-      </span>
-      We value your feedback
+      <MessageCircle className="h-4 w-4 shrink-0" />
+      Feedback
     </button>
   );
 }

@@ -153,6 +153,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
         enrolledBasic: Number((body as GrantResult).enrolledBasic ?? 0),
         enrolledAssessment: Number((body as GrantResult).enrolledAssessment ?? 0),
       });
+      void loadSummary();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not grant dashboard access");
     } finally {
@@ -192,6 +193,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
         alreadyUnpaid: Number((body as RevokeResult).alreadyUnpaid ?? 0),
         unpaidTotal: Number((body as RevokeResult).unpaidTotal ?? 0),
       });
+      void loadSummary();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not revoke dashboard access");
     } finally {
@@ -210,7 +212,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 Dashboard access summary
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-[#6e6a8a]">
-                Live counts from the BigQuery assessment-data mirror and the payment gate.
+                Live counts from payment status and IRP eligibility. Refresh after a sync.
               </p>
             </div>
           </div>
@@ -245,7 +247,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Eligible users
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Distinct IDs with assessment data</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">IRP status is ELIGIBLE</p>
               </div>
               <div className="rounded-xl border border-[rgba(59,91,219,0.15)] bg-[#f3f6ff] p-4">
                 <Database className="h-4 w-4 text-[#3b5bdb]" />
@@ -265,7 +267,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Dashboard access
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and not in the unpaid list</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and paid</p>
               </div>
               <div className="rounded-xl border border-[rgba(245,159,0,0.22)] bg-[#fff9e9] p-4">
                 <CreditCard className="h-4 w-4 text-[#e67700]" />
@@ -275,12 +277,12 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Unpaid eligible users
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">See the payment-required screen</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible and unpaid</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6e6a8a]">
               <span>
-                Unpaid list total: <strong className="text-[#0d1117]">{summary.unpaidUsersTotal.toLocaleString("en-IN")}</strong>
+                Unpaid or partially paid: <strong className="text-[#0d1117]">{summary.unpaidUsersTotal.toLocaleString("en-IN")}</strong>
               </span>
               <span>
                 Sync status: <strong className="capitalize text-[#0d1117]">{summary.syncStatus ?? "Not recorded"}</strong>
