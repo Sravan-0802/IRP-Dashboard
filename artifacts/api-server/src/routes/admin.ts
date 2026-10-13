@@ -406,6 +406,8 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
     const result = await db.execute(sql`
       WITH people AS (
         SELECT
+          user_id,
+          yog,
           UPPER(REGEXP_REPLACE(BTRIM(COALESCE(payment_status, '')), '[[:space:]-]+', '_', 'g')) AS payment_raw,
           UPPER(REGEXP_REPLACE(BTRIM(COALESCE(irp_eligible_status, '')), '[[:space:]-]+', '_', 'g')) AS irp_raw
         FROM academy_user_basic_details
@@ -414,6 +416,8 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
       ),
       norm AS (
         SELECT
+          user_id,
+          yog,
           CASE
             WHEN payment_raw IN ('NOT_PAID', 'PAYMENT_UNPAID') THEN 'UNPAID'
             WHEN payment_raw IN ('PAYMENT_PAID', 'FULLY_PAID') THEN 'PAID'
@@ -423,6 +427,14 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
           END AS payment_status,
           NULLIF(irp_raw, '') AS irp_status
         FROM people
+      ),
+      grants AS (
+        SELECT
+          user_id,
+          bool_or(organisation_assessment_id = 'manual-access-grant') AS granted
+        FROM academy_user_assessment_details
+        WHERE organisation_assessment_id = 'manual-access-grant'
+        GROUP BY user_id
       ),
       sync AS (
         SELECT status, last_synced_at
@@ -448,11 +460,24 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
         )::int AS eligible_yet_to_pay,
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
+            AND yog IN (2028, 2029, 2030)
+        )::int AS yog_cohort_eligible,
+        COUNT(*) FILTER (WHERE irp_status = 'ELIGIBLE' AND yog = 2028)::int AS eligible_2028,
+        COUNT(*) FILTER (WHERE irp_status = 'ELIGIBLE' AND yog = 2029)::int AS eligible_2029,
+        COUNT(*) FILTER (WHERE irp_status = 'ELIGIBLE' AND yog = 2030)::int AS eligible_2030,
+        COUNT(*) FILTER (
+          WHERE irp_status = 'ELIGIBLE'
+            AND yog IN (2028, 2029, 2030)
+            AND grants.granted IS TRUE
+        )::int AS yog_cohort_access,
+        COUNT(*) FILTER (
+          WHERE irp_status = 'ELIGIBLE'
             AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
         )::int AS unpaid_eligible_users,
         (SELECT status FROM sync) AS sync_status,
         (SELECT last_synced_at FROM sync) AS last_synced_at
       FROM norm
+      LEFT JOIN grants ON grants.user_id = norm.user_id
     `);
 
     const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
@@ -464,6 +489,11 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
       unpaidUsersTotal: numberValue(row.unpaid_users_total),
       paidDashboardUsers: numberValue(row.paid_dashboard_users),
       eligibleYetToPay: numberValue(row.eligible_yet_to_pay),
+      yogCohortEligible: numberValue(row.yog_cohort_eligible),
+      eligible2028: numberValue(row.eligible_2028),
+      eligible2029: numberValue(row.eligible_2029),
+      eligible2030: numberValue(row.eligible_2030),
+      yogCohortAccess: numberValue(row.yog_cohort_access),
       unpaidEligibleUsers: numberValue(row.unpaid_eligible_users),
       syncStatus: row.sync_status ?? null,
       lastSyncedAt: row.last_synced_at ?? null,

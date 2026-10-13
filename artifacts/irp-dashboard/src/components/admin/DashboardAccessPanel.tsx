@@ -8,6 +8,11 @@ type DashboardAccessSummary = {
   unpaidUsersTotal: number;
   paidDashboardUsers: number;
   eligibleYetToPay?: number;
+  yogCohortEligible?: number;
+  eligible2028?: number;
+  eligible2029?: number;
+  eligible2030?: number;
+  yogCohortAccess?: number;
   unpaidEligibleUsers: number;
   syncStatus: string | null;
   lastSyncedAt: string | null;
@@ -263,12 +268,12 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
               <div className="rounded-xl border border-[rgba(12,166,120,0.2)] bg-[#effbf6] p-4">
                 <ShieldCheck className="h-4 w-4 text-[#0ca678]" />
                 <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
-                  {summary.paidDashboardUsers.toLocaleString("en-IN")}
+                  {(summary.yogCohortAccess ?? summary.paidDashboardUsers).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Dashboard access
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Eligible, and payment is not unpaid</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">IRP eligible, YOG 2028, 2029 and 2030</p>
               </div>
               <div className="rounded-xl border border-[rgba(245,159,0,0.22)] bg-[#fff9e9] p-4">
                 <CreditCard className="h-4 w-4 text-[#e67700]" />
@@ -283,6 +288,12 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6e6a8a]">
               <span>
+                2028 IRP eligible: <strong className="text-[#0d1117]">{(summary.eligible2028 ?? 0).toLocaleString("en-IN")}</strong>
+                {" · "}
+                2029: <strong className="text-[#0d1117]">{(summary.eligible2029 ?? 0).toLocaleString("en-IN")}</strong>
+                {" · "}
+                2030: <strong className="text-[#0d1117]">{(summary.eligible2030 ?? 0).toLocaleString("en-IN")}</strong>
+                {" · "}
                 Eligible and yet to pay: <strong className="text-[#0d1117]">{(summary.eligibleYetToPay ?? 0).toLocaleString("en-IN")}</strong>
                 <span className="text-[#98a2b3]"> · still have access</span>
               </span>
