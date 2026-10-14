@@ -43,7 +43,7 @@ const STAGES: StageCopy[] = [
     points: [
       "Problem statement and deliverables",
       "Submission format and deadline",
-      "Scoring rubric (18/20 to qualify)",
+      "Scoring rubric",
       "Common mistakes and plagiarism policy",
     ],
     url: FE_GUIDELINES_URL,

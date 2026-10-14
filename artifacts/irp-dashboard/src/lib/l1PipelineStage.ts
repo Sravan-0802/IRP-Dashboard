@@ -52,7 +52,7 @@ export function l1StageHeroContent(stage: L1PipelineStage): L1StageHeroContent {
       return {
         eyebrow: "FE Project · In progress",
         title: "Complete your FE Project",
-        body: "You qualified in the L1 online assessment. Score ≥18/20 on the FE Project to unlock the Human Interview.",
+        body: "You qualified in the L1 online assessment. Complete the FE Project to unlock the Human Interview.",
         statusBadge: "L1 · Qualified",
         dotColor: "#0ca678",
         eyebrowClass: "border-[rgba(12,166,120,0.3)] text-teal",
@@ -63,7 +63,7 @@ export function l1StageHeroContent(stage: L1PipelineStage): L1StageHeroContent {
       return {
         eyebrow: "FE Project · Not cleared",
         title: "FE Project not cleared yet",
-        body: "You qualified in the L1 online assessment. Your FE score is on the dashboard — a re-attempt link will appear when released. Score ≥18/20 to continue.",
+        body: "You qualified in the L1 online assessment. Your FE score is on the dashboard — a re-attempt link will appear when released.",
         statusBadge: "FE · Not cleared",
         dotColor: "#f59f00",
         eyebrowClass: "border-[rgba(245,159,0,0.35)] text-[#e67700]",

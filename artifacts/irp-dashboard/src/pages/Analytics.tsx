@@ -6,6 +6,7 @@ import { RegistrationBatchesPanel, RegistrationResponsesPanel } from "@/componen
 import { DashboardAccessPanel } from "@/components/admin/DashboardAccessPanel";
 import { GenAiTrainingPopupPanel } from "@/components/admin/GenAiTrainingPopupPanel";
 import { ProgramBoardPanel } from "@/components/admin/ProgramBoardPanel";
+import { FeQualificationPanel } from "@/components/admin/FeQualificationPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -90,6 +91,7 @@ type AnalyticsTab =
   | "visibility"
   | "genai_popup"
   | "program_board"
+  | "fe_rules"
   | "dashboard_access"
   | "access"
   | "access_viewer"
@@ -221,6 +223,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "visibility",
       "genai_popup",
       "program_board",
+      "fe_rules",
       "dashboard_access",
       "access",
       "access_viewer",
@@ -600,6 +603,7 @@ export default function AnalyticsPage() {
         ? [
             { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
+            { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
@@ -619,6 +623,7 @@ export default function AnalyticsPage() {
         ? [
             { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
+            { id: "fe_rules" as const, label: "FE scores", count: undefined },
           ]
         : []),
       ...(apiKey
@@ -1839,6 +1844,10 @@ export default function AnalyticsPage() {
 
             {activeTab === "program_board" && apiKey ? (
               <ProgramBoardPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "fe_rules" && apiKey ? (
+              <FeQualificationPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "access" && apiKey ? (

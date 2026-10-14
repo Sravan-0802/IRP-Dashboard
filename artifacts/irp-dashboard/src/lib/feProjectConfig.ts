@@ -36,7 +36,7 @@ export const FE_PROJECT_NOT_CLEARED_EYEBROW = "FE Project · Not cleared yet";
 export const FE_PROJECT_NOT_CLEARED_TITLE = "Qualify in FE Project to unlock the Human Interview";
 
 export const FE_PROJECT_NOT_CLEARED_BODY =
-  "You attempted the FE Project but haven't qualified yet. A1 requires at least 70%, A2 exactly 100%, and other assessments at least 90%. A new re-attempt link will appear when the team releases it.";
+  "You attempted the FE Project but haven't qualified yet. A new re-attempt link will appear when the team releases it.";
 
 export const FE_PROJECT_C2_NOT_CLEARED_TITLE = FE_PROJECT_NOT_CLEARED_TITLE;
 

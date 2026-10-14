@@ -25,6 +25,11 @@ import {
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
 import { getProgramBoard, parseProgramBoardBody, updateProgramBoard } from "../lib/programBoard";
+import {
+  getFeQualificationRules,
+  parseFeQualificationRules,
+  updateFeQualificationRules,
+} from "../lib/feQualificationRules";
 import { createAuthToken } from "../lib/authTokens";
 import {
   MANUAL_DASHBOARD_ACCESS_GRANT_ID,
@@ -914,6 +919,40 @@ router.put("/admin/program-board", async (req, res) => {
     res.json(await updateProgramBoard(parsed.board));
   } catch (err) {
     req.log.error({ err }, "Failed to update program board");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/fe-qualification-rules — FE tag thresholds (admin only)
+router.get("/admin/fe-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json({ rules: await getFeQualificationRules() });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get FE qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/fe-qualification-rules — replace FE tag thresholds
+router.put("/admin/fe-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const body = req.body as { rules?: unknown };
+    const rules = parseFeQualificationRules(body?.rules);
+    if (!rules) {
+      res.status(400).json({ error: "Add at least one rule with a tag, assessment numbers, and a percentage from 0 to 100." });
+      return;
+    }
+    res.json({ rules: await updateFeQualificationRules(rules) });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update FE qualification rules");
     res.status(500).json({ error: "Internal server error" });
   }
 });

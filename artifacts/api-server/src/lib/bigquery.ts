@@ -503,8 +503,11 @@ export async function fetchZFeProjectAttempts(): Promise<ZFeProjectAttemptRow[]>
       react_js_coding_section_score_percentage,
       CASE
         WHEN assessment_number = 'A1' AND user_assessment_score_percentage >= 70 THEN 'QUALIFIED'
-        WHEN assessment_number = 'A2' AND user_assessment_score_percentage = 100 THEN 'QUALIFIED'
-        WHEN assessment_number NOT IN ('A1', 'A2') AND user_assessment_score_percentage >= 90 THEN 'QUALIFIED'
+        WHEN assessment_number = 'A2' AND user_assessment_score_percentage >= 100 THEN 'QUALIFIED'
+        WHEN SAFE_CAST(REGEXP_EXTRACT(assessment_number, r'(\\d+)$') AS INT64) BETWEEN 3 AND 6
+          AND user_assessment_score_percentage >= 90 THEN 'QUALIFIED'
+        WHEN SAFE_CAST(REGEXP_EXTRACT(assessment_number, r'(\\d+)$') AS INT64) >= 7
+          AND user_assessment_score_percentage >= 75 THEN 'QUALIFIED'
         WHEN user_assessment_start_datetime IS NOT NULL THEN 'NOT QUALIFIED'
         ELSE 'NOT ATTEMPTED'
       END AS assessment_status, attempt_number

@@ -4,7 +4,6 @@ import type { Journey } from "@/lib/journey";
 import { isCycle1Cleared } from "@/lib/l1StudentTrack";
 import {
   assessmentOverallPct,
-  feRequiredPercentage,
   feResultTone,
   hasAttemptedFeProject,
   hasClearedFeProject,
@@ -51,7 +50,6 @@ export function FeProjectNotClearedNotice({
   const pct = fe ? assessmentOverallPct(fe) : 0;
   const score = fe?.overallScore ?? 0;
   const max = fe?.overallMax ?? 20;
-  const requiredPct = fe ? feRequiredPercentage(fe) : null;
   const previousSits = listAttemptedFeProjectAssessments(assessments);
 
   return (
@@ -78,9 +76,6 @@ export function FeProjectNotClearedNotice({
             <Pill tone="amber">
               Latest · {score}/{max} ({pct}%)
             </Pill>
-            {requiredPct != null ? <Pill tone="green">
-              Required · {requiredPct}%{requiredPct === 100 ? " (exactly)" : " or above"}
-            </Pill> : null}
           </div>
 
           {previousSits.length > 0 ? (

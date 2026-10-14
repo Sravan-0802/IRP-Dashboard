@@ -268,13 +268,25 @@ export function hasRegisteredFeProjectNotAttempted(assessments: AssessmentResult
   return fe != null && !feAssessmentWasWritten(fe);
 }
 
-/** Required percentage for the FE assessment number; missing numbers do not qualify. */
+function feAssessmentIndex(assessment: AssessmentResult): number | null {
+  const sources = [assessment.cycle, assessment.assessmentTag, assessment.assessmentTitle];
+  for (const value of sources) {
+    const match = value?.toUpperCase().match(/(?:^|[_\s-])A(\d+)\b/);
+    if (!match) continue;
+    const n = Number(match[1]);
+    if (Number.isInteger(n)) return n;
+  }
+  return null;
+}
+
+/** Fallback percentage when the API has not stamped a status yet. */
 export function feRequiredPercentage(assessment: AssessmentResult): number | null {
-  const number = getAssessmentCycleTag(assessment);
-  if (number == null) return null;
-  if (number === "A1") return 70;
-  if (number === "A2") return 100;
-  return 90;
+  const n = feAssessmentIndex(assessment);
+  if (n === 1) return 70;
+  if (n === 2) return 100;
+  if (n != null && n >= 3 && n <= 6) return 90;
+  if (n != null && n >= 7) return 75;
+  return null;
 }
 
 /** FE status returned by the API uses the assessment-number-specific CASE. */
@@ -289,14 +301,13 @@ export function feQualificationStatus(
   const percentage = assessment.overallMax > 0
     ? assessment.overallScore / assessment.overallMax * 100
     : null;
-  if (required != null && percentage != null &&
-      (required === 100 ? percentage === 100 : percentage >= required)) {
+  if (required != null && percentage != null && percentage >= required) {
     return "QUALIFIED";
   }
   return feAssessmentWasWritten(assessment) ? "NOT QUALIFIED" : "NOT ATTEMPTED";
 }
 
-/** A1 ≥70%, A2 exactly 100%, all other numbered FE assessments ≥90%. */
+/** Uses the status computed from the saved FE tag rules. */
 export function hasClearedFeSit(
   assessment: AssessmentResult,
   minScore: number = FE_PROJECT_CLEAR_MIN_SCORE,

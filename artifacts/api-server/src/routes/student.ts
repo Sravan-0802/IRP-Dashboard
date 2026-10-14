@@ -24,7 +24,7 @@ import { resolveAcademyUserId } from "../lib/auth";
 import { isInL1July12Cohort } from "../lib/l1July12Cohort";
 import { isInL1July12RegistrationUnlock } from "../lib/l1July12RegistrationUnlock";
 import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
-import { FE_PROJECT_REDUCED_MIN_SCORE } from "../lib/feProjectReducedThreshold";
+import { getFeQualificationRules } from "../lib/feQualificationRules";
 import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getFeAssessmentStatus } from "../lib/feQualification";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
@@ -325,11 +325,14 @@ function mapDetailAssessmentRow(
     levelNumber: parseAssessmentLevel(a.level),
   };
   if (isFeAssessmentApiRow(result)) {
-    result.assessmentStatus = getFeAssessmentStatus(
-      cycle,
-      overallMax > 0 ? (overallScore / overallMax) * 100 : null,
-      a.userAssessmentStartDatetime,
-    );
+    const percentage = overallMax > 0 ? (overallScore / overallMax) * 100 : null;
+    if (percentage != null) {
+      result.assessmentStatus = getFeAssessmentStatus(
+        [cycle, a.assessmentTag, a.assessmentTitle],
+        percentage,
+        a.userAssessmentStartDatetime,
+      );
+    }
     result.hasWrittenAssessment = result.assessmentStatus !== "NOT ATTEMPTED";
   }
   return result;
@@ -433,7 +436,13 @@ function assessmentsFromRoundWise(
         : undefined,
       hasWrittenAssessment: true,
       attemptNumber: summary.feProjectAttemptNumber ?? undefined,
-      assessmentStatus: feStatus ?? undefined,
+      assessmentStatus: (summary.feProjectScorePercentage ?? overallFromPct?.pct) == null
+        ? feStatus ?? undefined
+        : getFeAssessmentStatus(
+            num,
+            summary.feProjectScorePercentage ?? overallFromPct?.pct ?? null,
+            summary.feProjectAttemptDate ?? (feWritten ? new Date() : null),
+          ),
       levelNumber: 1,
     });
   }
@@ -449,6 +458,7 @@ function isValidL1OnlineDetailRow(a: AssessmentApiRow): boolean {
 
 async function getAssessmentResultsResponse(userId: string) {
   if (!(await userHasAssessmentData(userId))) return null;
+  await getFeQualificationRules();
 
   let summary: typeof irpL1RoundWiseSummaryTable.$inferSelect | undefined;
   try {
@@ -1195,8 +1205,8 @@ router.get("/student/l1-july26-allowlist", async (req, res) => {
   }
 });
 
-// GET /api/student/fe-project-config — FE Project clearing threshold for this user.
-// All FE sits clear at ≥18/20.
+// GET /api/student/fe-project-config — kept so older clients do not 404.
+// Qualifying scores are not returned to students.
 router.get("/student/fe-project-config", async (req, res) => {
   try {
     const userId = await resolveAcademyUserId(req);
@@ -1204,7 +1214,7 @@ router.get("/student/fe-project-config", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    res.json({ minScore: FE_PROJECT_REDUCED_MIN_SCORE });
+    res.json({});
   } catch (err) {
     req.log.error({ err }, "Failed to get fe project config");
     res.status(500).json({ error: "Internal server error" });
