@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ChevronRight, ExternalLink } from "lucide-react";
+import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { useProgramBoard } from "@/lib/useProgramBoard";
 import type { GenAiAssessment } from "@/lib/programBoard";
 
@@ -78,6 +79,7 @@ export function GenAiProgram() {
         </p>
       </div>
 
+      <RegistrationBatchCallout />
       <GenAiJourney assessments={g.assessments} />
       <GenAiAssessments
         assessments={g.assessments}

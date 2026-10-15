@@ -277,9 +277,7 @@ export function DashboardView({
       </div>
 
       {/* Current registration status comes from admin-uploaded batch membership and responses. */}
-      {level === 1 && !journey.isWildcard && !isCycle1Cleared(assessments, userId) ? (
-        <RegistrationBatchCallout />
-      ) : null}
+      {level === 1 && !journey.isWildcard ? <RegistrationBatchCallout /> : null}
 
       {showResultsProcessingBanner ? (
         <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
