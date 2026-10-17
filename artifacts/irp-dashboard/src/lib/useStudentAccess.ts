@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getAuthToken } from "@/lib/authToken";
-import type { L1AccessStage } from "@/lib/l1StageAccessMatrix";
+import type { AccessStage } from "@/lib/accessStages";
 
-export type AccessStage = L1AccessStage;
+export type { AccessStage };
 export type AccessLinkKind = "mock" | "main" | "default";
 
 export type StudentAccessGrant = {

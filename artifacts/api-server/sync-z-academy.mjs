@@ -91,7 +91,7 @@ const attemptFilter = (col) =>
   `UPPER(COALESCE(assessment_type, '')) = 'MAIN'
     AND (${col} IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 const nxtmockFilter =
-  `UPPER(COALESCE(interview_program, '')) = 'MAIN'
+  `UPPER(COALESCE(NULLIF(TRIM(interview_type), ''), interview_program, '')) = 'MAIN'
     AND (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
 
 async function recordStatus(tableName, status, rowCount, durationMs, error) {
@@ -295,7 +295,7 @@ async function syncNxtmock() {
     query: `SELECT
       user_id, interview_id, interview_attempt_id, interview_tag,
       interview_attempt_start_datetime, avg_user_interview_rating, user_interview_overall_rating,
-      interview_program, interview_level, interview_name, interview_number,
+      interview_program, interview_type, interview_level, interview_name, interview_number,
       interview_status, attempt_number, section_wise_rating_json
     FROM ${fq("z_academy_irp_2_0_l1_nxtmock_user_attempt_details")}
     WHERE ${nxtmockFilter}`,
@@ -313,7 +313,7 @@ async function syncNxtmock() {
       String(r.user_id),
       interviewId,
       toStr(r.interview_tag) ?? toStr(r.interview_name),
-      toStr(r.interview_program),
+      toStr(r.interview_type) ?? toStr(r.interview_program),
       toStr(r.interview_level),
       toStr(r.interview_number),
       skills.selfIntro,

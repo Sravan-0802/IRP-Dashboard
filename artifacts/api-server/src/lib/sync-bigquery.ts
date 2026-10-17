@@ -26,6 +26,12 @@ import {
 } from "./bigquery";
 import { isMainAssessmentFields } from "./mainOnly";
 import {
+  GENAI_ASSESSMENT_DETAILS_KEY,
+  GENAI_NXTMOCK_DETAILS_KEY,
+  syncGenaiAssessmentAttempts,
+  syncGenaiNxtmockAttempts,
+} from "./genaiResults";
+import {
   ensureAcademyUserBasicDetailsColumns,
   normalizePaymentStatusValue,
 } from "./academyUserProfile";
@@ -517,7 +523,7 @@ function mapZNxtmock(r: ZNxtmockAttemptRow) {
     userId: String(r.user_id),
     interviewId,
     interviewTitle: toStr(r.interview_tag) ?? toStr(r.interview_name),
-    examType: toStr(r.interview_program),
+    examType: toStr(r.interview_type) ?? toStr(r.interview_program),
     level: toStr(r.interview_level),
     cycle: toStr(r.interview_number),
     selfIntroRating: skills.selfIntroRating,
@@ -823,6 +829,34 @@ export async function runBigQuerySync(): Promise<SyncResult> {
         return Math.max(portal, zCount);
       }),
       await runOne(ROUND_WISE_SUMMARY_KEY, syncZRoundWiseSummary),
+      await runOne(GENAI_ASSESSMENT_DETAILS_KEY, syncGenaiAssessmentAttempts),
+      await runOne(GENAI_NXTMOCK_DETAILS_KEY, syncGenaiNxtmockAttempts),
+    ];
+    return { ok: results.every((r) => r.status === "success"), results };
+  } finally {
+    syncInProgress = false;
+  }
+}
+
+/** GenAI tables only, so admins can pull fresh results right after an assessment. */
+export async function runGenaiBigQuerySync(): Promise<SyncResult> {
+  if (!isBigQueryConfigured()) {
+    return {
+      ok: false,
+      results: [{ table: "genai", status: "error", rowCount: 0, error: "BigQuery not configured" }],
+    };
+  }
+  if (syncInProgress) {
+    return {
+      ok: false,
+      results: [{ table: "genai", status: "error", rowCount: 0, error: "Sync already in progress" }],
+    };
+  }
+  syncInProgress = true;
+  try {
+    const results = [
+      await runOne(GENAI_ASSESSMENT_DETAILS_KEY, syncGenaiAssessmentAttempts),
+      await runOne(GENAI_NXTMOCK_DETAILS_KEY, syncGenaiNxtmockAttempts),
     ];
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {

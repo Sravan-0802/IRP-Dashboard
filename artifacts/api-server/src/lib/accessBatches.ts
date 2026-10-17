@@ -11,25 +11,34 @@ import {
   type L1AccessStage,
 } from "./l1StageAccessMatrix";
 
-/** @deprecated Prefer L1_ACCESS_STAGES — same values, kept for existing imports. */
-export const ACCESS_STAGES = L1_ACCESS_STAGES;
+/** GenAI Track grants. Separate from the MERN L1 pipeline stages. */
+export const GENAI_ACCESS_STAGES = ["genai_assessment", "genai_ai_interview"] as const;
+export type GenaiAccessStage = (typeof GENAI_ACCESS_STAGES)[number];
 
-export type AccessStage = L1AccessStage;
+export const ACCESS_STAGES = [...L1_ACCESS_STAGES, ...GENAI_ACCESS_STAGES] as const;
+
+export type AccessStage = L1AccessStage | GenaiAccessStage;
+
+export const ACCESS_STAGE_LABELS: Record<AccessStage, string> = {
+  ...L1_ACCESS_STAGE_LABELS,
+  genai_assessment: "GenAI Assessment",
+  genai_ai_interview: "GenAI AI Interview",
+};
 
 export const ACCESS_LINK_KINDS = ["mock", "main", "default"] as const;
 export type AccessLinkKind = (typeof ACCESS_LINK_KINDS)[number];
 
 export function isAccessStage(v: string): v is AccessStage {
-  return isL1AccessStage(v);
+  return isL1AccessStage(v) || (GENAI_ACCESS_STAGES as readonly string[]).includes(v);
 }
 
 export function isAccessLinkKind(v: string): v is AccessLinkKind {
   return (ACCESS_LINK_KINDS as readonly string[]).includes(v);
 }
 
-/** Online + FE require mock|main; AI/Human use default (or optional mock|main). */
+/** Online, FE and GenAI assessment require mock|main; interviews use default (or optional mock|main). */
 export function normalizeLinkKind(stage: AccessStage, linkKind: string): AccessLinkKind | null {
-  if (stage === "online_assessment" || stage === "fe_project") {
+  if (stage === "online_assessment" || stage === "fe_project" || stage === "genai_assessment") {
     if (linkKind === "mock" || linkKind === "main") return linkKind;
     return null;
   }
@@ -390,7 +399,7 @@ export async function getAccessPreviewForUser(academyUserId: string): Promise<{
     .filter((g) => g.studentVisible)
     .map((g) => ({
       stage: g.stage,
-      stageLabel: L1_ACCESS_STAGE_LABELS[g.stage],
+      stageLabel: ACCESS_STAGE_LABELS[g.stage],
       linkKind: g.linkKind,
       url: g.scheduled ? "" : g.url,
       batchName: g.name,

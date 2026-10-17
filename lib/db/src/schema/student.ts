@@ -533,6 +533,69 @@ export const programBoardTable = pgTable("program_board", {
 
 export type ProgramBoardRow = typeof programBoardTable.$inferSelect;
 
+/**
+ * Mirror of BigQuery `z_academy_genai_irp_2_0_assessment_user_attempt_details`, MAIN sits only.
+ * BigQuery has one row per section; this keeps one row per user and assessment.
+ */
+export const academyUserGenaiAssessmentDetailsTable = pgTable(
+  "academy_user_genai_assessment_details",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    organisationAssessmentId: text("organisation_assessment_id").notNull(),
+    assessmentTag: text("assessment_tag"),
+    assessmentTitle: text("assessment_title"),
+    assessmentType: text("assessment_type"),
+    assessmentNumber: text("assessment_number"),
+    assessmentStartDatetime: timestamp("assessment_start_datetime", { withTimezone: true }),
+    userAssessmentStartDatetime: timestamp("user_assessment_start_datetime", { withTimezone: true }),
+    mcqScore: real("mcq_score"),
+    mcqMax: real("mcq_max"),
+    codingScore: real("coding_score"),
+    codingMax: real("coding_max"),
+    totalScore: real("total_score"),
+    totalMax: real("total_max"),
+    attempted: integer("attempted").notNull().default(0),
+    attemptNumber: integer("attempt_number"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userAssessmentUnique: unique("academy_user_genai_assessment_unique").on(
+      t.userId,
+      t.organisationAssessmentId,
+    ),
+  }),
+);
+
+/**
+ * Mirror of BigQuery `z_academy_genai_irp_2_0_nxtmock_user_attempt_details`, MAIN interviews only.
+ * BigQuery has one row per rated section; `section_ratings` is a JSON object of section → rating.
+ */
+export const academyUserGenaiNxtmockDetailsTable = pgTable(
+  "academy_user_genai_nxtmock_details",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    interviewId: text("interview_id").notNull(),
+    interviewTag: text("interview_tag"),
+    interviewType: text("interview_type"),
+    interviewNumber: text("interview_number"),
+    attemptStartDatetime: timestamp("attempt_start_datetime", { withTimezone: true }),
+    attemptStatus: text("attempt_status"),
+    averageRating: real("average_rating"),
+    overallRating: real("overall_rating"),
+    sectionRatings: text("section_ratings"),
+    attemptNumber: integer("attempt_number"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userInterviewUnique: unique("academy_user_genai_nxtmock_unique").on(t.userId, t.interviewId),
+  }),
+);
+
+export type AcademyUserGenaiAssessmentDetails = typeof academyUserGenaiAssessmentDetailsTable.$inferSelect;
+export type AcademyUserGenaiNxtmockDetails = typeof academyUserGenaiNxtmockDetailsTable.$inferSelect;
+
 export type RegistrationBatch = typeof registrationBatchesTable.$inferSelect;
 export type InsertRegistrationBatch = typeof registrationBatchesTable.$inferInsert;
 export type RegistrationBatchUser = typeof registrationBatchUsersTable.$inferSelect;

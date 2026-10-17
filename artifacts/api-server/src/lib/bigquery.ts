@@ -365,6 +365,8 @@ export const Z_FE_PROJECT_ATTEMPT_TABLE =
   "z_academy_irp_2_0_l1_fe_project_user_attempt_details";
 export const Z_NXTMOCK_ATTEMPT_TABLE = "z_academy_irp_2_0_l1_nxtmock_user_attempt_details";
 export const Z_ROUND_WISE_SUMMARY_TABLE = "z_academy_irp_2_0_l1_user_round_wise_summary";
+export const Z_GENAI_ASSESSMENT_ATTEMPT_TABLE = "z_academy_genai_irp_2_0_assessment_user_attempt_details";
+export const Z_GENAI_NXTMOCK_ATTEMPT_TABLE = "z_academy_genai_irp_2_0_nxtmock_user_attempt_details";
 
 export interface ZHustlerAttemptRow {
   user_id: string | null;
@@ -419,7 +421,10 @@ export interface ZNxtmockAttemptRow {
   interview_attempt_start_datetime: string | Date | { value: string } | null;
   avg_user_interview_rating: number | null;
   user_interview_overall_rating: number | null;
+  /** Program label. Now `ACADEMY-IRP-2.0`; older rows used `MAIN` or `MOCK`. */
   interview_program: string | null;
+  /** MAIN or MOCK. Older rows left this empty and stored that value on interview_program. */
+  interview_type: string | null;
   interview_level: string | null;
   interview_name: string | null;
   interview_number: string | null;
@@ -522,14 +527,15 @@ export async function fetchZNxtmockAttempts(): Promise<ZNxtmockAttemptRow[]> {
   const bq = getBigQueryClient();
   const { projectId, dataset } = await resolveDatasetId(bq);
   const fq = `${projectId}.${dataset}.${Z_NXTMOCK_ATTEMPT_TABLE}`;
-  // MAIN interviews only (interview_program); exclude MOCK practice sits.
+  // MAIN interviews only. interview_type is MAIN/MOCK; interview_program is ACADEMY-IRP-2.0.
+  // Older rows still store MAIN/MOCK on interview_program.
   const query = `SELECT
       user_id, interview_id, interview_attempt_id, interview_tag,
       interview_attempt_start_datetime, avg_user_interview_rating, user_interview_overall_rating,
-      interview_program, interview_level, interview_name, interview_number,
+      interview_program, interview_type, interview_level, interview_name, interview_number,
       interview_status, attempt_number, section_wise_rating_json
     FROM \`${fq}\`
-    WHERE UPPER(COALESCE(interview_program, '')) = 'MAIN'
+    WHERE UPPER(COALESCE(NULLIF(TRIM(interview_type), ''), interview_program, '')) = 'MAIN'
       AND (interview_status IN ('QUALIFIED', 'NOT QUALIFIED') OR attempt_number IS NOT NULL)`;
   const [rows] = await bq.query({ query });
   logger.info({ table: Z_NXTMOCK_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched z_* nxtmock MAIN attempts");
@@ -558,4 +564,114 @@ export async function fetchZRoundWiseSummary(): Promise<ZRoundWiseSummaryRow[]> 
   const [rows] = await bq.query({ query });
   logger.info({ table: Z_ROUND_WISE_SUMMARY_TABLE, rowCount: rows.length }, "Fetched z_* round-wise summary");
   return rows as ZRoundWiseSummaryRow[];
+}
+
+/** DATETIME columns are IST wall-clock values, returned as `YYYY-MM-DDTHH:MM:SS`. */
+export interface ZGenaiAssessmentRow {
+  user_id: string | null;
+  organisation_assessment_id: string | null;
+  assessment_specific_tag: string | null;
+  assessment_title: string | null;
+  assessment_type: string | null;
+  assessment_number: string | null;
+  assessment_start_datetime: string | null;
+  user_assessment_start_datetime: string | null;
+  mcq_score: number | null;
+  mcq_max: number | null;
+  coding_score: number | null;
+  coding_max: number | null;
+  total_score: number | null;
+  total_max: number | null;
+  attempted: boolean | null;
+  attempt_number: number | null;
+}
+
+export interface ZGenaiNxtmockRow {
+  user_id: string | null;
+  interview_id: string | null;
+  interview_tag: string | null;
+  interview_type: string | null;
+  interview_number: string | null;
+  attempt_start_datetime: string | null;
+  attempt_status: string | null;
+  average_rating: number | null;
+  overall_rating: number | null;
+  /** JSON array of { entity, rating }. */
+  section_ratings: string | null;
+  attempt_number: number | null;
+}
+
+/** One row per user and MAIN GenAI assessment, with the MCQ and coding sections side by side. */
+export async function fetchZGenaiAssessmentAttempts(): Promise<ZGenaiAssessmentRow[]> {
+  const bq = getBigQueryClient();
+  const { projectId, dataset } = await resolveDatasetId(bq);
+  const fq = `${projectId}.${dataset}.${Z_GENAI_ASSESSMENT_ATTEMPT_TABLE}`;
+  const query = `SELECT
+      user_id,
+      organisation_assessment_id,
+      ANY_VALUE(assessment_specific_tag) AS assessment_specific_tag,
+      ANY_VALUE(assessment_title) AS assessment_title,
+      ANY_VALUE(assessment_type) AS assessment_type,
+      ANY_VALUE(assessment_number) AS assessment_number,
+      FORMAT_DATETIME('%Y-%m-%dT%H:%M:%S', MIN(assessment_start_datetime)) AS assessment_start_datetime,
+      FORMAT_DATETIME('%Y-%m-%dT%H:%M:%S', MIN(user_assessment_start_datetime)) AS user_assessment_start_datetime,
+      MAX(IF(REGEXP_CONTAINS(UPPER(section_title), r'MCQ'), user_section_score, NULL)) AS mcq_score,
+      MAX(IF(REGEXP_CONTAINS(UPPER(section_title), r'MCQ'), section_actual_score, NULL)) AS mcq_max,
+      MAX(IF(REGEXP_CONTAINS(UPPER(section_title), r'CODING'), user_section_score, NULL)) AS coding_score,
+      MAX(IF(REGEXP_CONTAINS(UPPER(section_title), r'CODING'), section_actual_score, NULL)) AS coding_max,
+      MAX(user_assessment_score) AS total_score,
+      MAX(assessment_actual_score) AS total_max,
+      LOGICAL_OR(UPPER(COALESCE(section_attempt_status, '')) = 'ATTEMPTED') AS attempted,
+      MAX(attempt_number) AS attempt_number
+    FROM \`${fq}\`
+    WHERE user_id IS NOT NULL
+      AND organisation_assessment_id IS NOT NULL
+      AND UPPER(COALESCE(assessment_type, '')) = 'MAIN'
+    GROUP BY user_id, organisation_assessment_id`;
+  const [rows] = await bq.query({ query });
+  logger.info({ table: Z_GENAI_ASSESSMENT_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched GenAI assessment attempts");
+  return rows as ZGenaiAssessmentRow[];
+}
+
+/** Latest MAIN GenAI NxtMock attempt per user and interview, with section ratings as JSON. */
+export async function fetchZGenaiNxtmockAttempts(): Promise<ZGenaiNxtmockRow[]> {
+  const bq = getBigQueryClient();
+  const { projectId, dataset } = await resolveDatasetId(bq);
+  const fq = `${projectId}.${dataset}.${Z_GENAI_NXTMOCK_ATTEMPT_TABLE}`;
+  const query = `WITH per_attempt AS (
+      SELECT
+        user_id,
+        interview_id,
+        interview_attempt_id,
+        ANY_VALUE(interview_tag) AS interview_tag,
+        ANY_VALUE(interview_type) AS interview_type,
+        ANY_VALUE(interview_number) AS interview_number,
+        MAX(interview_attempt_start_datetime) AS attempt_start,
+        ANY_VALUE(interview_attempt_status) AS attempt_status,
+        MAX(avg_user_interview_rating) AS average_rating,
+        MAX(user_interview_overall_rating) AS overall_rating,
+        TO_JSON_STRING(ARRAY_AGG(
+          IF(assess_entity IS NULL, NULL, STRUCT(assess_entity AS entity, rating AS rating))
+          IGNORE NULLS
+        )) AS section_ratings,
+        MAX(attempt_number) AS attempt_number
+      FROM \`${fq}\`
+      WHERE user_id IS NOT NULL
+        AND interview_id IS NOT NULL
+        AND UPPER(COALESCE(interview_type, '')) = 'MAIN'
+      GROUP BY user_id, interview_id, interview_attempt_id
+    )
+    SELECT
+      user_id, interview_id, interview_tag, interview_type, interview_number,
+      FORMAT_DATETIME('%Y-%m-%dT%H:%M:%S', attempt_start) AS attempt_start_datetime,
+      attempt_status, average_rating, overall_rating, section_ratings, attempt_number
+    FROM per_attempt
+    WHERE TRUE
+    QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY user_id, interview_id
+      ORDER BY attempt_number DESC NULLS LAST, attempt_start DESC NULLS LAST
+    ) = 1`;
+  const [rows] = await bq.query({ query });
+  logger.info({ table: Z_GENAI_NXTMOCK_ATTEMPT_TABLE, rowCount: rows.length }, "Fetched GenAI NxtMock attempts");
+  return rows as ZGenaiNxtmockRow[];
 }

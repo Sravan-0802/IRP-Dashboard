@@ -16,18 +16,18 @@ import {
 } from "lucide-react";
 import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
 import { useCountdown } from "@/lib/useCountdown";
+import { L1_ACCESS_STAGES } from "@/lib/l1StageAccessMatrix";
 import {
-  L1_ACCESS_STAGES,
-  L1_ACCESS_STAGE_LABELS,
-  type L1AccessStage,
-} from "@/lib/l1StageAccessMatrix";
+  ACCESS_STAGE_LABELS,
+  GENAI_ACCESS_STAGES,
+  accessStageLabel,
+  type AccessStage,
+} from "@/lib/accessStages";
 
-const ACCESS_STAGES = L1_ACCESS_STAGES.map((value) => ({
-  value,
-  label: L1_ACCESS_STAGE_LABELS[value],
-}));
-
-type AccessStage = L1AccessStage;
+const STAGE_GROUPS: { label: string; stages: readonly AccessStage[] }[] = [
+  { label: "IRP MERN Track", stages: L1_ACCESS_STAGES },
+  { label: "GenAI Track", stages: GENAI_ACCESS_STAGES },
+];
 
 type AccessBatchSummary = {
   id: number;
@@ -55,12 +55,14 @@ function stageNeedsMockMain(stage: AccessStage): boolean {
     stage === "online_assessment" ||
     stage === "fe_project" ||
     stage === "ai_mock" ||
-    stage === "human_interview"
+    stage === "human_interview" ||
+    stage === "genai_assessment" ||
+    stage === "genai_ai_interview"
   );
 }
 
 function stageLabel(stage: string): string {
-  return L1_ACCESS_STAGE_LABELS[stage as L1AccessStage] ?? stage;
+  return accessStageLabel(stage);
 }
 
 function truncateUrl(url: string, max = 48): string {
@@ -470,10 +472,14 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                 onChange={(e) => setStage(e.target.value as AccessStage)}
                 className="w-full max-w-sm rounded-xl border border-slate-200 px-3 py-2 text-sm"
               >
-                {ACCESS_STAGES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
+                {STAGE_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.stages.map((value) => (
+                      <option key={value} value={value}>
+                        {ACCESS_STAGE_LABELS[value]}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>

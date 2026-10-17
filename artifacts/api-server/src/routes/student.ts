@@ -39,6 +39,7 @@ import {
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
 import { getGenAiTrainingPopup } from "../lib/genAiTrainingPopup";
+import { getGenaiResultsForUser } from "../lib/genaiResults";
 import { getProgramBoard } from "../lib/programBoard";
 import {
   canRegisterForL1July12,
@@ -1299,6 +1300,21 @@ router.get("/student/nxtmock-interview", async (req, res) => {
     res.json({ interview });
   } catch (err) {
     req.log.error({ err }, "Failed to get NxtMock interview");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/student/genai-results — GenAI Track assessment and NxtMock results (MAIN only).
+router.get("/student/genai-results", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json(await getGenaiResultsForUser(userId));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get GenAI results");
     res.status(500).json({ error: "Internal server error" });
   }
 });

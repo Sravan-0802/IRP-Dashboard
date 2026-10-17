@@ -30,6 +30,13 @@ import {
   parseFeQualificationRules,
   updateFeQualificationRules,
 } from "../lib/feQualificationRules";
+import {
+  getGenaiQualificationRules,
+  parseGenaiQualificationRules,
+  updateGenaiQualificationRules,
+} from "../lib/genaiQualificationRules";
+import { getGenaiAssessmentSummary } from "../lib/genaiResults";
+import { runGenaiBigQuerySync } from "../lib/sync-bigquery";
 import { createAuthToken } from "../lib/authTokens";
 import {
   MANUAL_DASHBOARD_ACCESS_GRANT_ID,
@@ -953,6 +960,60 @@ router.put("/admin/fe-qualification-rules", async (req, res) => {
     res.json({ rules: await updateFeQualificationRules(rules) });
   } catch (err) {
     req.log.error({ err }, "Failed to update FE qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/genai-qualification-rules — GenAI MCQ/coding cutoffs plus per-tag counts
+router.get("/admin/genai-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const [rules, summary] = await Promise.all([
+      getGenaiQualificationRules(),
+      getGenaiAssessmentSummary(),
+    ]);
+    res.json({ rules, summary });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get GenAI qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/genai-qualification-rules — replace GenAI MCQ/coding cutoffs
+router.put("/admin/genai-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const body = req.body as { rules?: unknown };
+    const rules = parseGenaiQualificationRules(body?.rules);
+    if (!rules) {
+      res.status(400).json({ error: "Add at least one rule with a tag, assessment numbers, and MCQ and coding minimums." });
+      return;
+    }
+    await updateGenaiQualificationRules(rules);
+    res.json({ rules, summary: await getGenaiAssessmentSummary() });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update GenAI qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/genai-results/sync — pull GenAI assessment and NxtMock results from BigQuery now
+router.post("/admin/genai-results/sync", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const result = await runGenaiBigQuerySync();
+    res.status(result.ok ? 200 : 502).json({ ...result, summary: await getGenaiAssessmentSummary() });
+  } catch (err) {
+    req.log.error({ err }, "Failed to sync GenAI results");
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -1,5 +1,5 @@
 import { CalendarClock, Clock3 } from "lucide-react";
-import { L1_ACCESS_STAGE_LABELS } from "@/lib/l1StageAccessMatrix";
+import { accessStageLabel, isGenaiAccessStage } from "@/lib/accessStages";
 import { useCountdown } from "@/lib/useCountdown";
 import { isAccessGrantLive, useStudentAccess, type StudentAccessGrant } from "@/lib/useStudentAccess";
 
@@ -17,7 +17,7 @@ function formatOpeningTime(value: string): string {
 function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
   const { timeLeft, isExpired: hasStarted } = useCountdown(grant.startsAt);
   const kind = grant.linkKind === "default" ? "" : ` · ${grant.linkKind === "mock" ? "Mock" : "Main"}`;
-  const title = `${L1_ACCESS_STAGE_LABELS[grant.stage]}${kind}`;
+  const title = `${accessStageLabel(grant.stage)}${kind}`;
   return (
     <section className="rounded-xl border border-[rgba(103,65,217,0.2)] bg-[linear-gradient(120deg,#f3f0ff_0%,#eef2ff_100%)] p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -52,10 +52,13 @@ function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
 }
 
 /** Uploaded roster membership makes the upcoming schedule visible; live CTA gates stay unchanged. */
-export function ScheduledAccessCallouts() {
+export function ScheduledAccessCallouts({ track = "mern" }: { track?: "mern" | "genai" }) {
   const { grants } = useStudentAccess();
   const scheduled = grants.filter(
-    (g) => g.startsAt && (!isAccessGrantLive(g) || !g.url?.trim()),
+    (g) =>
+      g.startsAt &&
+      (!isAccessGrantLive(g) || !g.url?.trim()) &&
+      isGenaiAccessStage(g.stage) === (track === "genai"),
   );
   if (!scheduled.length) return null;
   return (

@@ -4,6 +4,7 @@ import {
   L1_ACCESS_STAGE_LABELS,
   type L1AccessStage,
 } from "@/lib/l1StageAccessMatrix";
+import { accessStageLabel, type AccessStage } from "@/lib/accessStages";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
 import { isInFeMockAllowlist } from "@/lib/feMockAllowlist";
 import {
@@ -30,7 +31,7 @@ import {
 type PreviewGrant = {
   batchId: number;
   name: string | null;
-  stage: L1AccessStage;
+  stage: AccessStage;
   linkKind: string;
   url: string;
   startsAt: string | null;
@@ -42,7 +43,7 @@ type PreviewGrant = {
 };
 
 type PreviewSlot = {
-  stage: L1AccessStage;
+  stage: AccessStage;
   stageLabel: string;
   linkKind: string;
   url: string;
@@ -349,7 +350,7 @@ export function MasterAccessViewer({
                           {g.name || `#${g.batchId}`}
                         </td>
                         <td className="px-2 py-2">
-                          {L1_ACCESS_STAGE_LABELS[g.stage] ?? g.stage}
+                          {accessStageLabel(g.stage)}
                         </td>
                         <td className="px-2 py-2 capitalize">{g.linkKind}</td>
                         <td className="px-2 py-2 text-xs">{formatWhen(g.expiresAt)}</td>
