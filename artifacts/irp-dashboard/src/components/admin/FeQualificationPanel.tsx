@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { TagSummaryTable, type TagSummary } from "./TagSummaryTable";
 
 type FeRule = {
   id: string;
@@ -15,6 +16,7 @@ function newId(): string {
 
 export function FeQualificationPanel({ apiKey }: { apiKey: string }) {
   const [rules, setRules] = useState<FeRule[]>([]);
+  const [summary, setSummary] = useState<TagSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -31,6 +33,8 @@ export function FeQualificationPanel({ apiKey }: { apiKey: string }) {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((body as { error?: string }).error ?? "Could not load FE rules");
       setRules(Array.isArray((body as { rules?: FeRule[] }).rules) ? (body as { rules: FeRule[] }).rules : []);
+      const loaded = (body as { summary?: TagSummary[] }).summary;
+      setSummary(Array.isArray(loaded) ? loaded : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load FE rules");
     } finally {
@@ -68,6 +72,8 @@ export function FeQualificationPanel({ apiKey }: { apiKey: string }) {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((body as { error?: string }).error ?? "Could not save FE rules");
       setRules(Array.isArray((body as { rules?: FeRule[] }).rules) ? (body as { rules: FeRule[] }).rules : rules);
+      const saved = (body as { summary?: TagSummary[] }).summary;
+      if (Array.isArray(saved)) setSummary(saved);
       setMessage("Saved. FE results use these rules. Students do not see them.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save FE rules");
@@ -194,6 +200,12 @@ export function FeQualificationPanel({ apiKey }: { apiKey: string }) {
           </div>
         </div>
       )}
+
+      <TagSummaryTable
+        summary={summary}
+        note="MAIN FE assessments only, counted as distinct students with the rules above. Updates every day at the BigQuery sync."
+        emptyText="No FE results synced yet."
+      />
     </section>
   );
 }

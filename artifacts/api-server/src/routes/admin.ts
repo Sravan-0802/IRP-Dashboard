@@ -36,6 +36,7 @@ import {
   updateGenaiQualificationRules,
 } from "../lib/genaiQualificationRules";
 import { getGenaiAssessmentSummary } from "../lib/genaiResults";
+import { getFeAssessmentSummary } from "../lib/feSummary";
 import { runGenaiBigQuerySync } from "../lib/sync-bigquery";
 import { createAuthToken } from "../lib/authTokens";
 import {
@@ -937,7 +938,8 @@ router.get("/admin/fe-qualification-rules", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    res.json({ rules: await getFeQualificationRules() });
+    const rules = await getFeQualificationRules();
+    res.json({ rules, summary: await getFeAssessmentSummary() });
   } catch (err) {
     req.log.error({ err }, "Failed to get FE qualification rules");
     res.status(500).json({ error: "Internal server error" });
@@ -957,7 +959,8 @@ router.put("/admin/fe-qualification-rules", async (req, res) => {
       res.status(400).json({ error: "Add at least one rule with a tag, assessment numbers, and a percentage from 0 to 100." });
       return;
     }
-    res.json({ rules: await updateFeQualificationRules(rules) });
+    await updateFeQualificationRules(rules);
+    res.json({ rules, summary: await getFeAssessmentSummary() });
   } catch (err) {
     req.log.error({ err }, "Failed to update FE qualification rules");
     res.status(500).json({ error: "Internal server error" });
