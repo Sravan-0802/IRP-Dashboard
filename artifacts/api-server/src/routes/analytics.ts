@@ -3,6 +3,7 @@ import { db, dashboardAnalyticsEventsTable, academyUserBasicDetailsTable, dashbo
 import { sql, count, countDistinct, inArray, min, max, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { rowToL1RegistrationResponse } from "../lib/l1Registration";
+import { getCapacityMetrics } from "../lib/capacityMetrics";
 import {
   ensureAcademyUserBasicDetailsColumns,
   isPaidAcademyUser,
@@ -295,6 +296,20 @@ router.get("/analytics/dashboard", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load dashboard analytics");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/analytics/capacity — DAU/MAU, storage and estimated load (admin API key required)
+router.get("/analytics/capacity", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.json(await getCapacityMetrics());
+  } catch (err) {
+    req.log.error({ err }, "Failed to load capacity metrics");
     res.status(500).json({ error: "Internal server error" });
   }
 });

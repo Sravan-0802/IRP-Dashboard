@@ -8,6 +8,7 @@ import { GenAiTrainingPopupPanel } from "@/components/admin/GenAiTrainingPopupPa
 import { ProgramBoardPanel } from "@/components/admin/ProgramBoardPanel";
 import { FeQualificationPanel } from "@/components/admin/FeQualificationPanel";
 import { GenaiQualificationPanel } from "@/components/admin/GenaiQualificationPanel";
+import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -883,6 +884,8 @@ export default function AnalyticsPage() {
               ))}
             </div>
             )}
+
+            {activeTab === "overview" && apiKey ? <CapacityMetricsPanel apiKey={apiKey} /> : null}
 
             {activeTab === "visitors" && data && (
             <div className="irp-card p-5">
