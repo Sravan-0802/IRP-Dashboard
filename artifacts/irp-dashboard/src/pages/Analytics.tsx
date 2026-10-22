@@ -9,6 +9,7 @@ import { ProgramBoardPanel } from "@/components/admin/ProgramBoardPanel";
 import { FeQualificationPanel } from "@/components/admin/FeQualificationPanel";
 import { GenaiQualificationPanel } from "@/components/admin/GenaiQualificationPanel";
 import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
+import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -95,6 +96,7 @@ type AnalyticsTab =
   | "program_board"
   | "fe_rules"
   | "genai_rules"
+  | "auth_logs"
   | "dashboard_access"
   | "access"
   | "access_viewer"
@@ -228,6 +230,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "program_board",
       "fe_rules",
       "genai_rules",
+      "auth_logs",
       "dashboard_access",
       "access",
       "access_viewer",
@@ -609,6 +612,7 @@ export default function AnalyticsPage() {
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
+            { id: "auth_logs" as const, label: "Login logs", count: undefined },
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
@@ -630,6 +634,7 @@ export default function AnalyticsPage() {
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
+            { id: "auth_logs" as const, label: "Login logs", count: undefined },
           ]
         : []),
       ...(apiKey
@@ -1861,6 +1866,8 @@ export default function AnalyticsPage() {
             {activeTab === "genai_rules" && apiKey ? (
               <GenaiQualificationPanel apiKey={apiKey} />
             ) : null}
+
+            {activeTab === "auth_logs" && apiKey ? <AuthCodeLogsPanel apiKey={apiKey} /> : null}
 
             {activeTab === "access" && apiKey ? (
               <AccessGrantsPanel apiKey={apiKey} />

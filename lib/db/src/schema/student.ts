@@ -87,6 +87,30 @@ export const formsAuthTokensTable = pgTable("forms_auth_tokens", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * One row per call to the auth-code endpoints (forms SSO → dashboard login).
+ * Never stores the token or API key; `token_id` points at forms_auth_tokens when one was issued.
+ */
+export const authCodeLogsTable = pgTable("auth_code_logs", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  endpoint: text("endpoint").notNull(),
+  /** issued | missing_user | unauthorized | invalid_json | error */
+  outcome: text("outcome").notNull(),
+  statusCode: integer("status_code").notNull(),
+  userId: text("user_id"),
+  /** 1 when user_id exists in academy_user_basic_details, 0 when not, null when no user was sent. */
+  userKnown: integer("user_known"),
+  tokenId: integer("token_id"),
+  /** Comma-separated JSON body field names (values are not stored). */
+  bodyKeys: text("body_keys"),
+  callerIp: text("caller_ip"),
+  userAgent: text("user_agent"),
+  requestId: text("request_id"),
+  durationMs: integer("duration_ms"),
+  error: text("error"),
+});
+
 export const assessmentSlotsTable = pgTable("assessment_slots", {
   id: serial("id").primaryKey(),
   level: integer("level").notNull().default(1),

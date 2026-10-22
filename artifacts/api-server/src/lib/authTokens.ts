@@ -49,20 +49,23 @@ function waitBeforeRetry(attempt: number): Promise<void> {
 export async function createAuthToken(
   userId: string,
   ttlMs: number,
-): Promise<{ authToken: string; expiresAt: Date }> {
+): Promise<{ authToken: string; expiresAt: Date; tokenId: number | null }> {
   for (let attempt = 0; attempt < MAX_INSERT_ATTEMPTS; attempt += 1) {
     const authToken = crypto.randomBytes(16).toString("hex");
     const expiresAt = new Date(Date.now() + ttlMs);
 
     try {
-      await db.insert(formsAuthTokensTable).values({
-        token: authToken,
-        userId,
-        expiresAt,
-        used: 0,
-      });
+      const [row] = await db
+        .insert(formsAuthTokensTable)
+        .values({
+          token: authToken,
+          userId,
+          expiresAt,
+          used: 0,
+        })
+        .returning({ id: formsAuthTokensTable.id });
 
-      return { authToken, expiresAt };
+      return { authToken, expiresAt, tokenId: row?.id ?? null };
     } catch (error) {
       if (!isTransientDatabaseError(error) || attempt === MAX_INSERT_ATTEMPTS - 1) {
         throw error;

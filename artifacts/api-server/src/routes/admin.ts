@@ -37,6 +37,7 @@ import {
 } from "../lib/genaiQualificationRules";
 import { getGenaiAssessmentSummary } from "../lib/genaiResults";
 import { getFeAssessmentSummary } from "../lib/feSummary";
+import { listAuthCodeLogs } from "../lib/authCodeLog";
 import { runGenaiBigQuerySync } from "../lib/sync-bigquery";
 import { createAuthToken } from "../lib/authTokens";
 import {
@@ -963,6 +964,27 @@ router.put("/admin/fe-qualification-rules", async (req, res) => {
     res.json({ rules, summary: await getFeAssessmentSummary() });
   } catch (err) {
     req.log.error({ err }, "Failed to update FE qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/auth-code-logs — login token requests from the forms SSO (?outcome=&userId=&limit=)
+router.get("/admin/auth-code-logs", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const q = req.query as Record<string, unknown>;
+    res.json(
+      await listAuthCodeLogs({
+        outcome: typeof q.outcome === "string" ? q.outcome : null,
+        userId: typeof q.userId === "string" ? q.userId : null,
+        limit: typeof q.limit === "string" ? Number(q.limit) || undefined : undefined,
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list auth code logs");
     res.status(500).json({ error: "Internal server error" });
   }
 });

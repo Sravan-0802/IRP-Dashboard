@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import { randomUUID } from "node:crypto";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { logAuthCodeEvent } from "./lib/authCodeLog";
 
 const app: Express = express();
 
@@ -77,6 +78,15 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     message: "Invalid JSON request body",
     hint: "Send a complete JSON object with a content-type of application/json.",
   });
+  const authCodeEndpoint = /^\/api\/auth\/(generate-auth-code(?:-with-redirect)?)\/?$/.exec(req.path)?.[1];
+  if (authCodeEndpoint) {
+    logAuthCodeEvent(req, {
+      endpoint: authCodeEndpoint,
+      outcome: "invalid_json",
+      statusCode: 400,
+      startedAt: Date.now(),
+    });
+  }
 });
 
 app.use("/api", router);

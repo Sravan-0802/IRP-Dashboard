@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
+import { logAuthCodeEvent } from "../lib/authCodeLog";
 import { db, academyUserBasicDetailsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
@@ -50,64 +51,52 @@ function checkApiKey(req: { headers: Record<string, string | string[] | undefine
   return apiKey === secret;
 }
 
-// POST /api/auth/generate-auth-code
-router.post("/auth/generate-auth-code", async (req, res) => {
-  try {
-    if (!checkApiKey(req as never)) {
-      return void res.status(401).json({ message: "Unauthorized" });
-    }
+function authCodeHandler(endpoint: string, withRedirect: boolean): RequestHandler {
+  return async (req, res) => {
+    const startedAt = Date.now();
+    let userId: string | null = null;
+    try {
+      if (!checkApiKey(req as never)) {
+        res.status(401).json({ message: "Unauthorized" });
+        logAuthCodeEvent(req, { endpoint, outcome: "unauthorized", statusCode: 401, startedAt });
+        return;
+      }
 
-    const userId = resolveUserIdFromBody(req.body as Record<string, unknown>);
-    if (!userId) {
-      return void res.status(400).json({
-        message: "user_id or phone is required",
-        hint: "Send JSON with user_id, userId, or phone / mobile / phone_number",
+      userId = resolveUserIdFromBody((req.body ?? {}) as Record<string, unknown>);
+      if (!userId) {
+        res.status(400).json({
+          message: "user_id or phone is required",
+          hint: "Send JSON with user_id, userId, or phone / mobile / phone_number",
+        });
+        logAuthCodeEvent(req, { endpoint, outcome: "missing_user", statusCode: 400, startedAt });
+        return;
+      }
+
+      const { authToken, expiresAt, tokenId } = await createAuthToken(userId, TOKEN_TTL_MS);
+
+      res.json({
+        auth_token: authToken,
+        expires_at: expiresAt.toISOString(),
+        user_id: userId,
+        ...(withRedirect ? { redirect_url: buildRedirectUrl(authToken) } : {}),
       });
+      logAuthCodeEvent(req, { endpoint, outcome: "issued", statusCode: 200, startedAt, userId, tokenId });
+    } catch (err) {
+      req.log.error({ err }, `${endpoint} error`);
+      res.status(500).json({ message: "Server error" });
+      logAuthCodeEvent(req, { endpoint, outcome: "error", statusCode: 500, startedAt, userId, error: err });
     }
+  };
+}
 
-    const { authToken, expiresAt } = await createAuthToken(userId, TOKEN_TTL_MS);
-
-    res.json({
-      auth_token: authToken,
-      expires_at: expiresAt.toISOString(),
-      user_id: userId,
-    });
-  } catch (err) {
-    req.log.error({ err }, "generate-auth-code error");
-    res.status(500).json({ message: "Server error" });
-  }
-});
+// POST /api/auth/generate-auth-code
+router.post("/auth/generate-auth-code", authCodeHandler("generate-auth-code", false));
 
 // POST /api/auth/generate-auth-code-with-redirect
-router.post("/auth/generate-auth-code-with-redirect", async (req, res) => {
-  try {
-    if (!checkApiKey(req as never)) {
-      return void res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const userId = resolveUserIdFromBody(req.body as Record<string, unknown>);
-    if (!userId) {
-      return void res.status(400).json({
-        message: "user_id or phone is required",
-        hint: "Send JSON with user_id, userId, or phone / mobile / phone_number",
-      });
-    }
-
-    const { authToken, expiresAt } = await createAuthToken(userId, TOKEN_TTL_MS);
-
-    const redirect_url = buildRedirectUrl(authToken);
-
-    res.json({
-      auth_token: authToken,
-      expires_at: expiresAt.toISOString(),
-      user_id: userId,
-      redirect_url,
-    });
-  } catch (err) {
-    req.log.error({ err }, "generate-auth-code-with-redirect error");
-    res.status(500).json({ message: "Server error" });
-  }
-});
+router.post(
+  "/auth/generate-auth-code-with-redirect",
+  authCodeHandler("generate-auth-code-with-redirect", true),
+);
 
 // GET /api/auth/me — verify the current SSO token and return the resolved user.
 // Used by the dashboard right after the SSO redirect to confirm the session.
