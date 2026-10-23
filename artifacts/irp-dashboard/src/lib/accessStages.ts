@@ -5,7 +5,11 @@ import {
 } from "@/lib/l1StageAccessMatrix";
 
 /** GenAI Track grant stages. Mirrors API `GENAI_ACCESS_STAGES`; separate from the MERN L1 pipeline. */
-export const GENAI_ACCESS_STAGES = ["genai_assessment", "genai_ai_interview"] as const;
+export const GENAI_ACCESS_STAGES = [
+  "genai_assessment",
+  "genai_ai_interview",
+  "genai_project",
+] as const;
 export type GenaiAccessStage = (typeof GENAI_ACCESS_STAGES)[number];
 
 export const ACCESS_STAGES = [...L1_ACCESS_STAGES, ...GENAI_ACCESS_STAGES] as const;
@@ -15,6 +19,7 @@ export const ACCESS_STAGE_LABELS: Record<AccessStage, string> = {
   ...L1_ACCESS_STAGE_LABELS,
   genai_assessment: "GenAI Assessment",
   genai_ai_interview: "GenAI AI Interview",
+  genai_project: "GenAI Project",
 };
 
 export function isGenaiAccessStage(stage: string): stage is GenaiAccessStage {

@@ -136,7 +136,8 @@ router.post("/admin/access-batches", async (req, res) => {
     const linkKind = normalizeLinkKind(stageRaw, linkKindRaw || "default");
     if (!linkKind) {
       res.status(400).json({
-        error: "linkKind must be mock or main for online_assessment, fe_project and genai_assessment",
+        error:
+          "linkKind must be mock or main for assessment stages, default for genai_project, or a supported value for other stages",
       });
       return;
     }

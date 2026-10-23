@@ -12,7 +12,11 @@ import {
 } from "./l1StageAccessMatrix";
 
 /** GenAI Track grants. Separate from the MERN L1 pipeline stages. */
-export const GENAI_ACCESS_STAGES = ["genai_assessment", "genai_ai_interview"] as const;
+export const GENAI_ACCESS_STAGES = [
+  "genai_assessment",
+  "genai_ai_interview",
+  "genai_project",
+] as const;
 export type GenaiAccessStage = (typeof GENAI_ACCESS_STAGES)[number];
 
 export const ACCESS_STAGES = [...L1_ACCESS_STAGES, ...GENAI_ACCESS_STAGES] as const;
@@ -23,6 +27,7 @@ export const ACCESS_STAGE_LABELS: Record<AccessStage, string> = {
   ...L1_ACCESS_STAGE_LABELS,
   genai_assessment: "GenAI Assessment",
   genai_ai_interview: "GenAI AI Interview",
+  genai_project: "GenAI Project",
 };
 
 export const ACCESS_LINK_KINDS = ["mock", "main", "default"] as const;
@@ -36,8 +41,11 @@ export function isAccessLinkKind(v: string): v is AccessLinkKind {
   return (ACCESS_LINK_KINDS as readonly string[]).includes(v);
 }
 
-/** Online, FE and GenAI assessment require mock|main; interviews use default (or optional mock|main). */
+/** Assessment stages use mock|main, GenAI project uses default, and interview stages support default or mock|main. */
 export function normalizeLinkKind(stage: AccessStage, linkKind: string): AccessLinkKind | null {
+  if (stage === "genai_project") {
+    return linkKind === "default" ? "default" : null;
+  }
   if (stage === "online_assessment" || stage === "fe_project" || stage === "genai_assessment") {
     if (linkKind === "mock" || linkKind === "main") return linkKind;
     return null;

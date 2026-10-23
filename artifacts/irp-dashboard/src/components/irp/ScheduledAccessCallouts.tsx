@@ -16,6 +16,7 @@ function formatOpeningTime(value: string): string {
 
 function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
   const { timeLeft, isExpired: hasStarted } = useCountdown(grant.startsAt);
+  const isProjectLink = grant.stage === "genai_project";
   const kind = grant.linkKind === "default" ? "" : ` · ${grant.linkKind === "mock" ? "Mock" : "Main"}`;
   const title = `${accessStageLabel(grant.stage)}${kind}`;
   return (
@@ -25,7 +26,7 @@ function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
           <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-brand" />
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand">
-              Upcoming assessment
+              {isProjectLink ? "Upcoming project link" : "Upcoming assessment"}
             </p>
             <h3 className="font-display text-base font-extrabold text-ink">{title}</h3>
             {grant.name ? <p className="mt-0.5 text-sm text-muted2">{grant.name}</p> : null}
@@ -34,7 +35,11 @@ function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
             </p>
             <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand">
               <Clock3 className="h-3 w-3" />
-              {hasStarted ? "Opening assessment — checking access…" : `Starts in ${timeLeft}`}
+              {hasStarted
+                ? isProjectLink
+                  ? "Opening project link — checking access…"
+                  : "Opening assessment — checking access…"
+                : `Starts in ${timeLeft}`}
             </p>
           </div>
         </div>
@@ -44,7 +49,11 @@ function ScheduledAccessCard({ grant }: { grant: StudentAccessGrant }) {
           className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-xl bg-brand/10 px-5 py-2.5 text-sm font-bold text-muted2"
           aria-label={`${title}: unavailable until the opening time`}
         >
-          {grant.linkKind === "mock" ? "Start Mock" : "Start Assessment"}
+          {isProjectLink
+            ? "Open Kaggle Project"
+            : grant.linkKind === "mock"
+              ? "Start Mock"
+              : "Start Assessment"}
         </button>
       </div>
     </section>

@@ -308,6 +308,8 @@ function GenAiAssessments({
   tab: "assessments" | "project";
   onTab: (tab: "assessments" | "project") => void;
 }) {
+  const { findGrant } = useStudentAccess();
+  const projectGrant = findGrant("genai_project", "default");
   const openItems = assessments.filter((item) => item.status === "open");
   const completed = assessments.filter((item) => item.status === "completed");
   const openCount = openItems.length;
@@ -401,7 +403,32 @@ function GenAiAssessments({
       ) : (
         <div className="mt-4 rounded-xl bg-[#f9fafb] px-4 py-4">
           <p className="text-sm font-semibold text-[#101828]">GenAI project</p>
-          <p className="mt-1 text-sm text-[#667085]">Submission opens after the last assessment.</p>
+          {projectGrant ? (
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-[#667085]">
+                  Your project link is available.
+                  {projectGrant.name ? ` ${projectGrant.name}` : ""}
+                </p>
+                {projectGrant.expiresAt ? (
+                  <p className="mt-1 text-xs text-[#667085]">
+                    Link available until {formatIstDateTime(projectGrant.expiresAt)}
+                  </p>
+                ) : null}
+              </div>
+              <a
+                href={projectGrant.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2 text-sm font-bold text-white hover:bg-[#1849a9]"
+              >
+                Open Kaggle Project
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-[#667085]">Submission opens after the last assessment.</p>
+          )}
         </div>
       )}
     </section>
@@ -495,7 +522,11 @@ function GenaiScoreRow({ item }: { item: GenaiAssessmentResult }) {
 function GenAiAccessLinks() {
   const { grants } = useStudentAccess();
   const live = grants.filter(
-    (g) => isGenaiAccessStage(g.stage) && isAccessGrantLive(g) && Boolean(g.url?.trim()),
+    (g) =>
+      isGenaiAccessStage(g.stage) &&
+      g.stage !== "genai_project" &&
+      isAccessGrantLive(g) &&
+      Boolean(g.url?.trim()),
   );
   if (live.length === 0) return null;
   return (
