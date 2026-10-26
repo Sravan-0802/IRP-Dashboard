@@ -37,6 +37,12 @@ import {
 } from "../lib/genaiQualificationRules";
 import { getGenaiAssessmentSummary } from "../lib/genaiResults";
 import { getFeAssessmentSummary } from "../lib/feSummary";
+import {
+  getL1QualificationRules,
+  parseL1QualificationRules,
+  updateL1QualificationRules,
+} from "../lib/l1QualificationRules";
+import { getL1AssessmentSummary } from "../lib/l1Summary";
 import { listAuthCodeLogs } from "../lib/authCodeLog";
 import { runGenaiBigQuerySync } from "../lib/sync-bigquery";
 import { createAuthToken } from "../lib/authTokens";
@@ -964,6 +970,42 @@ router.put("/admin/fe-qualification-rules", async (req, res) => {
     res.json({ rules, summary: await getFeAssessmentSummary() });
   } catch (err) {
     req.log.error({ err }, "Failed to update FE qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/l1-qualification-rules — L1 (Hustler) assessment thresholds (admin only)
+router.get("/admin/l1-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const rules = await getL1QualificationRules();
+    res.json({ rules, summary: await getL1AssessmentSummary() });
+  } catch (err) {
+    req.log.error({ err }, "Failed to get L1 qualification rules");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/admin/l1-qualification-rules — replace L1 (Hustler) assessment thresholds
+router.put("/admin/l1-qualification-rules", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const body = req.body as { rules?: unknown };
+    const rules = parseL1QualificationRules(body?.rules);
+    if (!rules) {
+      res.status(400).json({ error: "Add at least one rule with a tag, assessment numbers, and a percentage from 0 to 100." });
+      return;
+    }
+    await updateL1QualificationRules(rules);
+    res.json({ rules, summary: await getL1AssessmentSummary() });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update L1 qualification rules");
     res.status(500).json({ error: "Internal server error" });
   }
 });

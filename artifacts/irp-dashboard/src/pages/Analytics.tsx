@@ -8,6 +8,7 @@ import { GenAiTrainingPopupPanel } from "@/components/admin/GenAiTrainingPopupPa
 import { ProgramBoardPanel } from "@/components/admin/ProgramBoardPanel";
 import { FeQualificationPanel } from "@/components/admin/FeQualificationPanel";
 import { GenaiQualificationPanel } from "@/components/admin/GenaiQualificationPanel";
+import { L1QualificationPanel } from "@/components/admin/L1QualificationPanel";
 import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
 import { HumanInterviewSyncPanel } from "@/components/admin/HumanInterviewSyncPanel";
@@ -97,6 +98,7 @@ type AnalyticsTab =
   | "program_board"
   | "fe_rules"
   | "genai_rules"
+  | "l1_rules"
   | "auth_logs"
   | "dashboard_access"
   | "access"
@@ -231,6 +233,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "program_board",
       "fe_rules",
       "genai_rules",
+      "l1_rules",
       "auth_logs",
       "dashboard_access",
       "access",
@@ -613,6 +616,7 @@ export default function AnalyticsPage() {
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
+            { id: "l1_rules" as const, label: "L1 scores", count: undefined },
             { id: "auth_logs" as const, label: "Login logs", count: undefined },
             { id: "dashboard_access" as const, label: "Dashboard access", count: undefined },
             { id: "access" as const, label: "Access Loader", count: undefined },
@@ -635,6 +639,7 @@ export default function AnalyticsPage() {
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
+            { id: "l1_rules" as const, label: "L1 scores", count: undefined },
             { id: "auth_logs" as const, label: "Login logs", count: undefined },
           ]
         : []),
@@ -1865,6 +1870,10 @@ export default function AnalyticsPage() {
 
             {activeTab === "genai_rules" && apiKey ? (
               <GenaiQualificationPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "l1_rules" && apiKey ? (
+              <L1QualificationPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "auth_logs" && apiKey ? <AuthCodeLogsPanel apiKey={apiKey} /> : null}
