@@ -42,7 +42,9 @@ function StatusChip({ status }: { status: string }) {
 }
 
 const PARTS: Array<[keyof HumanInterviewAttempt, string]> = [
-  ["part1Avg", "Part 1"], ["part2Avg", "Part 2"], ["part3Avg", "Part 3"],
+  ["part1Avg", "Part 1: Take-Home Assignment Drill-Down"],
+  ["part2Avg", "Part 2: Frontend Conceptual Discussion"],
+  ["part3Avg", "Part 3: React Live Coding"],
   ["communicationRating", "Communication"], ["finalScore", "Final"],
 ];
 
