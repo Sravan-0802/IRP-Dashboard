@@ -227,7 +227,7 @@ export function DashboardView({
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
   const { settings } = useVisibilitySettings();
-  const { data: humanResults } = useHumanInterviewResults(userId, level === 1 && !journey.isWildcard);
+  const { data: humanResults } = useHumanInterviewResults(userId);
   const { minScore: feProjectMinScore } = useFeProjectConfig();
   const { findGrant } = useStudentAccess();
   const humanInterviewGrantUrl =
@@ -389,7 +389,7 @@ export function DashboardView({
         </div>
       ) : null}
 
-      {level === 1 && !journey.isWildcard ? <HumanInterviewResults userId={userId} /> : null}
+      <HumanInterviewResults userId={userId} />
 
       {hasOnlineScores && !onlineResultsLocked ? (
         <AssessmentResults

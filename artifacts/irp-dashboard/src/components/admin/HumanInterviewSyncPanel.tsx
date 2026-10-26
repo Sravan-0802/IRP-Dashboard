@@ -62,7 +62,7 @@ export function HumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; 
             <h2 className="font-display text-lg font-extrabold text-[#0d1117]">Human Interview results</h2>
           </div>
           <p className="mt-1 text-sm text-[#6e6a8a]">
-            Fetch all IRP L1 interview attempts from Academy Nexus. Fetching does not release results to students.
+            Fetch all IRP L1 interview attempts from Academy Nexus whenever new results are available. Released results appear on student dashboards after their next refresh; fetching does not change release settings.
           </p>
         </div>
         <button
@@ -73,7 +73,7 @@ export function HumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; 
           data-testid="button-fetch-hi-results"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {busy ? "Fetching..." : "Fetch interview results"}
+          {busy ? "Fetching..." : "Fetch latest results"}
         </button>
       </div>
 
