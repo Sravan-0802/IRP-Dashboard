@@ -114,9 +114,9 @@ export function HumanInterviewResults({ userId }: { userId: string }) {
         )}
       </div>
 
-      <p className="mt-5 text-xs font-semibold text-muted2">All attempts, newest first ({data.attempts.length})</p>
+      <p className="mt-5 text-xs font-semibold text-muted2">Last 3 attempts, newest first ({data.attempts.length} total)</p>
       <ul className="mt-2 space-y-2.5">
-        {data.attempts.map((a, i) => {
+        {data.attempts.slice(0, 3).map((a, i) => {
           const marked = isLatest(a);
           const done = normStatus(a.clearanceStatus) !== "pending";
           return (
