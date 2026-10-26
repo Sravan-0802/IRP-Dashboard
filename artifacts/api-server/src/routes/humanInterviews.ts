@@ -7,7 +7,7 @@ import {
 import { checkApiKey } from "../lib/apiKey";
 import { resolveAcademyUserId } from "../lib/auth";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
-import { getHumanInterviewsForUser, getHumanInterviewSyncStatus, syncHumanInterviews, isNexusConfigured } from "../lib/humanInterviews";
+import { getHumanInterviewsForUser, getHumanInterviewSyncStatus, syncHumanInterviews, isNexusConfigured, getHumanInterviewStats } from "../lib/humanInterviews";
 
 const router = Router();
 
@@ -53,6 +53,23 @@ router.post("/admin/human-interviews/sync", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Human interview sync failed; previous results retained");
     res.status(502).json({ error: "Interview fetch failed. Previous results have been kept. Please retry shortly." });
+  }
+});
+
+router.get("/admin/human-interviews/stats", async (req, res): Promise<void> => {
+  if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    res.setHeader("Cache-Control", "private, no-store");
+    const stats = await getHumanInterviewStats();
+    res.json({
+      cleared: stats.cleared,
+      notCleared: stats.notCleared,
+      neverCompleted: stats.neverCompleted,
+      totalStudents: stats.totalStudents,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to read human interview stats");
+    res.status(500).json({ error: "Could not load interview stats" });
   }
 });
 

@@ -75,3 +75,29 @@ export async function getHumanInterviewsForUser(candidateId: string) {
   const publicRows: InterviewAttempt[] = rows.map(({ candidateId: _uid, syncedAt: _syncedAt, interviewStartsAt: _start, ...attempt }) => attempt);
   return { ...summarizeInterviews(publicRows), syncedAt: status[0]?.syncedAt?.toISOString() ?? null };
 }
+
+export async function getHumanInterviewStats() {
+  const result = await db.select({
+    clearanceStatus: humanInterviewResultsTable.clearanceStatus,
+    count: countDistinct(humanInterviewResultsTable.candidateId),
+  }).from(humanInterviewResultsTable).groupBy(humanInterviewResultsTable.clearanceStatus);
+
+  const stats = {
+    cleared: 0,
+    notCleared: 0,
+    neverCompleted: 0,
+    totalStudents: 0,
+  };
+
+  for (const row of result) {
+    const status = row.clearanceStatus?.trim().toLowerCase() || "";
+    const count = Number(row.count) || 0;
+    stats.totalStudents += count;
+
+    if (status === "cleared") stats.cleared = count;
+    else if (status === "not cleared") stats.notCleared = count;
+    else stats.neverCompleted += count;
+  }
+
+  return stats;
+}

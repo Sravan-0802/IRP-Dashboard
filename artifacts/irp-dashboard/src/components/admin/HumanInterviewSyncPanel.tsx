@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mic, RefreshCw } from "lucide-react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Loader2, Mic, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import {
   useGetHumanInterviewSyncStatus,
   getGetHumanInterviewSyncStatusQueryKey,
@@ -33,6 +33,20 @@ export function HumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; 
     },
     request: headers,
   });
+  const stats = useQuery({
+    queryKey: ["hi-stats", apiKey],
+    queryFn: async (): Promise<{ cleared: number; notCleared: number; neverCompleted: number; totalStudents: number }> => {
+      const res = await fetch("/api/admin/human-interviews/stats", {
+        headers: { "x-api-key": apiKey },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!apiKey,
+    staleTime: 30_000,
+    refetchInterval: 5_000,
+    retry: false,
+  });
   const sync = useSyncHumanInterviewResults({
     request: headers,
     mutation: {
@@ -41,6 +55,7 @@ export function HumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; 
         qc.setQueryData([...getGetHumanInterviewSyncStatusQueryKey(), apiKey], res);
         void qc.invalidateQueries({ queryKey: getGetHumanInterviewSyncStatusQueryKey() });
         void qc.invalidateQueries({ queryKey: getGetHumanInterviewResultsQueryKey() });
+        void qc.invalidateQueries({ queryKey: ["hi-stats", apiKey] });
         setMessage(
           `Fetched ${res.interviewCount.toLocaleString()} interviews for ${res.studentCount.toLocaleString()} students at ${fmt(res.syncedAt)}. Existing release settings are unchanged.`,
         );
@@ -78,16 +93,18 @@ export function HumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; 
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="status-hi-sync">
-        {status.isLoading ? (
-          [0, 1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-[#f2f4f7]" />)
+        {status.isLoading || stats.isLoading ? (
+          [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-[#f2f4f7]" />)
         ) : (
           [
             ["Source", s ? (s.configured ? "Configured" : "Not configured") : "—"],
             ["Last fetched", s ? fmt(s.syncedAt) : "—"],
             ["Interviews", s ? s.interviewCount.toLocaleString() : "—"],
             ["Students", s ? s.studentCount.toLocaleString() : "—"],
+            ["Cleared", stats.data ? stats.data.cleared.toLocaleString() : "—"],
+            ["Not Cleared", stats.data ? stats.data.notCleared.toLocaleString() : "—"],
           ].map(([k, v]) => (
-            <div key={k} className="rounded-xl border border-[rgba(103,65,217,0.1)] bg-[#faf9ff] px-3 py-2">
+            <div key={k} className={`rounded-xl border px-3 py-2 ${k === "Cleared" ? "border-[#abefc6] bg-[#ecfdf3]" : k === "Not Cleared" ? "border-[#fecdca] bg-[#fef3f2]" : "border-[rgba(103,65,217,0.1)] bg-[#faf9ff]"}`}>
               <p className="text-[11px] font-semibold text-[#6e6a8a]">{k}</p>
               <p className="text-sm font-bold text-[#0d1117]">{v}</p>
             </div>
