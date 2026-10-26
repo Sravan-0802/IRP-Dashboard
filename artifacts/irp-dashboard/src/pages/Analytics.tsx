@@ -10,6 +10,7 @@ import { FeQualificationPanel } from "@/components/admin/FeQualificationPanel";
 import { GenaiQualificationPanel } from "@/components/admin/GenaiQualificationPanel";
 import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
+import { HumanInterviewSyncPanel } from "@/components/admin/HumanInterviewSyncPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -1484,6 +1485,7 @@ export default function AnalyticsPage() {
 
             {activeTab === "visibility" && (
             <div className="space-y-4">
+            <HumanInterviewSyncPanel apiKey={apiKey} onSynced={() => void loadVisibility(apiKey)} />
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -1681,9 +1683,7 @@ export default function AnalyticsPage() {
                             </div>
                             <p className="mt-1 text-xs text-[#6e6a8a]">{stage.description}</p>
                             <p className="mt-2 text-sm text-[#0d1117]">
-                              {stage.key === "human_interview_results" ? (
-                                <>Not tied to a BigQuery table — release when the Human Interview stage is ready.</>
-                              ) : synced ? (
+                              {synced ? (
                                 <>
                                   Latest sync: <strong>{formatDate(stage.sync.lastSyncedAt)}</strong>
                                   {stage.sync.rowCount != null

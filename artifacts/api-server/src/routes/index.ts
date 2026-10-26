@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import accessBatchesRouter from "./accessBatches";
 import registrationBatchesRouter from "./registrationBatches";
 import supportRouter from "./support";
+import humanInterviewsRouter from "./humanInterviews";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(adminRouter);
 router.use(accessBatchesRouter);
 router.use(registrationBatchesRouter);
 router.use(supportRouter);
+router.use(humanInterviewsRouter);
 
 export default router;

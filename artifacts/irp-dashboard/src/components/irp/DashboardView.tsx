@@ -37,6 +37,9 @@ import { ContactUs } from "./ContactUs";
 import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 import { formatYearOfJoin } from "./OnlineAssessmentBadge";
 import { IrpClearCards } from "./IrpClearCards";
+import { HumanInterviewResults } from "./HumanInterviewResults";
+import { useHumanInterviewResults } from "@/lib/useHumanInterviewResults";
+import { withHumanInterviewClearance } from "@/lib/humanInterviewClearance";
 
 function journeySteps(
   journey: Journey,
@@ -224,6 +227,7 @@ export function DashboardView({
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
   const { settings } = useVisibilitySettings();
+  const { data: humanResults } = useHumanInterviewResults(userId, level === 1 && !journey.isWildcard);
   const { minScore: feProjectMinScore } = useFeProjectConfig();
   const { findGrant } = useStudentAccess();
   const humanInterviewGrantUrl =
@@ -263,7 +267,10 @@ export function DashboardView({
   );
   const hasOnlineScores = hasWrittenAssessment(assessments, level);
   const showResultsProcessingBanner = hasOnlineScores && onlineResultsLocked;
-  const steps = journeySteps(journey, assessments, settings, feProjectMinScore, userId);
+  const baseSteps = journeySteps(journey, assessments, settings, feProjectMinScore, userId);
+  const steps = level === 1 && !journey.isWildcard
+    ? withHumanInterviewClearance(baseSteps, humanResults)
+    : baseSteps;
 
   return (
     <div className="space-y-6">
@@ -381,6 +388,8 @@ export function DashboardView({
           </span>
         </div>
       ) : null}
+
+      {level === 1 && !journey.isWildcard ? <HumanInterviewResults userId={userId} /> : null}
 
       {hasOnlineScores && !onlineResultsLocked ? (
         <AssessmentResults

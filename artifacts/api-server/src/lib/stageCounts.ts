@@ -175,21 +175,23 @@ async function aiMockCounts(): Promise<StageCounts> {
 
 async function humanInterviewCounts(): Promise<StageCounts> {
   const result = await db.execute(sql`
-    SELECT
-      COUNT(*) FILTER (WHERE journey_state = 'L1_HUMAN_INTERVIEW')::int AS in_stage,
-      COUNT(*) FILTER (WHERE journey_state = 'L1_HUMAN_INTERVIEW')::int AS attempted,
-      0::int AS cleared,
-      COUNT(*) FILTER (WHERE journey_state = 'L1_HUMAN_INTERVIEW')::int AS not_cleared
-    FROM students
+    WITH scored AS (
+      SELECT DISTINCT ON (candidate_id) candidate_id, clearance_status
+      FROM human_interview_results
+      WHERE final_score IS NOT NULL AND clearance_status IN ('Cleared', 'Not Cleared')
+      ORDER BY candidate_id, interview_starts_at DESC NULLS LAST, interview_id ASC
+    )
+    SELECT COUNT(*)::int AS attempted,
+      COUNT(*) FILTER (WHERE clearance_status = 'Cleared')::int AS cleared,
+      COUNT(*) FILTER (WHERE clearance_status = 'Not Cleared')::int AS not_cleared
+    FROM scored
   `);
   const row = firstRow(result as { rows?: CountRow[] } | CountRow[]);
-  const inStage = n(row.in_stage);
   return {
-    scope: "Human Interview (journey state)",
-    attempted: inStage,
-    cleared: 0,
-    notCleared: inStage,
-    inStage,
+    scope: "Human Interview (latest scored attempt, Academy Nexus)",
+    attempted: n(row.attempted),
+    cleared: n(row.cleared),
+    notCleared: n(row.not_cleared),
   };
 }
 

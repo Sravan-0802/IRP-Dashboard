@@ -69,7 +69,7 @@ const STAGE_SYNC_TABLE: Record<VisibilityKey, string | null> = {
   online_l1_results: "academy_user_assessment_details",
   fe_project_results: "academy_user_assessment_details",
   ai_mock_results: "academy_user_nxtmock_details",
-  human_interview_results: null,
+  human_interview_results: "human_interview_results",
   course_progress: "academy_user_course_progress",
 };
 
@@ -103,7 +103,7 @@ const STAGE_META: Record<
     camelKey: "humanInterviewResults",
     label: "Human Interview stage",
     description:
-      "Students currently in Human Interview journey state. Release when you want them to see that next step.",
+      "Academy Nexus interview scores and clearance from each student's latest scored attempt. Fetch results, then release or schedule.",
   },
   course_progress: {
     camelKey: "courseProgress",
@@ -153,7 +153,6 @@ export function toResponse(
     const counts = countsByKey[key] ?? null;
     const hasSyncedData =
       Boolean(sync.lastSyncedAt) ||
-      key === "human_interview_results" ||
       (counts != null && counts.attempted > 0);
     return {
       key,

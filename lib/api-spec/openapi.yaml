@@ -15,6 +15,64 @@ tags:
   - name: analytics
     description: Dashboard usage analytics
 paths:
+  /student/human-interviews:
+    get:
+      operationId: getHumanInterviewResults
+      tags: [student]
+      summary: All IRP L1 human interview attempts and latest scored result
+      responses:
+        "200":
+          description: Results for the authenticated Academy UID, respecting release settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanInterviewResults"
+        "401":
+          description: Authentication required
+  /admin/human-interviews/status:
+    get:
+      operationId: getHumanInterviewSyncStatus
+      tags: [analytics]
+      summary: Academy Nexus sync configuration and last successful refresh
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanInterviewSyncStatus"
+        "401":
+          description: Admin key required
+  /admin/human-interviews/sync:
+    post:
+      operationId: syncHumanInterviewResults
+      tags: [analytics]
+      summary: Fetch all Academy Nexus IRP L1 interview result pages
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All pages persisted atomically
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanInterviewSyncStatus"
+        "401":
+          description: Admin key required
+        "502":
+          description: Upstream fetch failed; previous results retained
+        "503":
+          description: Academy Nexus key is not configured
   /healthz:
     get:
       operationId: healthCheck
@@ -245,6 +303,58 @@ components:
       name: x-api-key
 
   schemas:
+    HumanInterviewAttempt:
+      type: object
+      required: [interviewId, interviewDate, interviewStartTime, part1Avg, part2Avg, part3Avg, communicationRating, finalScore, clearanceStatus]
+      properties:
+        interviewId:
+          type: string
+        interviewDate:
+          type: string
+        interviewStartTime:
+          type: string
+        part1Avg:
+          type: [number, "null"]
+        part2Avg:
+          type: [number, "null"]
+        part3Avg:
+          type: [number, "null"]
+        communicationRating:
+          type: [number, "null"]
+        finalScore:
+          type: [number, "null"]
+        clearanceStatus:
+          type: string
+    HumanInterviewResults:
+      type: object
+      required: [attempts, latestResult, syncedAt, released]
+      properties:
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/HumanInterviewAttempt"
+        latestResult:
+          anyOf:
+            - $ref: "#/components/schemas/HumanInterviewAttempt"
+            - type: "null"
+        syncedAt:
+          type: [string, "null"]
+        released:
+          type: boolean
+    HumanInterviewSyncStatus:
+      type: object
+      required: [configured, running, syncedAt, interviewCount, studentCount]
+      properties:
+        configured:
+          type: boolean
+        running:
+          type: boolean
+        syncedAt:
+          type: [string, "null"]
+        interviewCount:
+          type: integer
+        studentCount:
+          type: integer
     HealthStatus:
       type: object
       properties:
