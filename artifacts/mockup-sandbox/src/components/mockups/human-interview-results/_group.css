@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap");
+
+@theme inline {
+  --color-ink: #101828;
+  --color-ink2: #344054;
+  --color-muted2: #667085;
+  --color-dim: #98a2b3;
+  --color-surface: #f9fafb;
+  --color-l1: #6941c6;
+  --color-l1-bg: #f9f5ff;
+  --font-sans: var(--app-font-sans);
+  --font-display: var(--app-font-display);
+  --font-mono: var(--app-font-mono);
+}
+
+/* Scoped copy of the dashboard's theme values for this extracted component. */
+:root {
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --background: 0 0% 96.1%;
+  --foreground: 220 43% 11%;
+  --border: 220 14% 93%;
+  --input: 220 14% 93%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 43% 11%;
+  --primary: 258 63% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 220 43% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 258 100% 97%;
+  --accent-foreground: 258 63% 52%;
+  --destructive: 4 86% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 258 63% 52%;
+  --app-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --app-font-display: "Inter", system-ui, -apple-system, sans-serif;
+  --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --radius: 0.75rem;
+}
+
+.irp-card {
+  background: #fff;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.section-label {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+}
+.genz-badge {
+  background: #f9fafb;
+  border: 1px solid #eaecf0;
+}
+.genz-chip-cyan {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+.genz-chip-pink {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+}
