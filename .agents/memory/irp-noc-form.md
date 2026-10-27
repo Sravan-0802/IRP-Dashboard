@@ -7,4 +7,4 @@ Every IRP student, whichever track they are on, must submit the No Objection Cer
 
 **Why:** The user provided this as a required dashboard notice.
 
-**How to apply:** Keep the NOC form accessible to all IRP students, independent of journey level or track.
+**How to apply:** Keep the NOC form accessible to all IRP students, independent of journey level or track. Keep it on its own dashboard page with a sidebar entry, not embedded in the main dashboard.

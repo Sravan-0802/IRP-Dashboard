@@ -23,6 +23,7 @@ import { SettingsSheet } from "@/components/irp/SettingsSheet";
 import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { DashboardView } from "@/components/irp/DashboardView";
+import { NocFormCard } from "@/components/irp/NocFormCard";
 import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import { AboutIrp } from "./AboutIrp";
@@ -251,6 +252,11 @@ export default function Dashboard() {
                 onSwitchToStandard={openSwitchToStandard}
                 onOpenAssessmentCalendar={() => navigate("slot")}
               />
+            )}
+            {page === "noc" && (
+              <div className="mx-auto max-w-5xl">
+                <NocFormCard />
+              </div>
             )}
             {page === "genai" && (
               <GenAiProgram />

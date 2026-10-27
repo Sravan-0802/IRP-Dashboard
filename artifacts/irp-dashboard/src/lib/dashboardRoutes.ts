@@ -7,6 +7,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   assessments: "/assessments-hub",
   slot: "/assessment-calendar",
   guidelines: "/guideline-docs",
+  noc: "/noc-form",
   about: "/about",
 };
 
@@ -17,6 +18,7 @@ export function pathToPage(path: string): PageKey {
   if (clean === PAGE_PATHS.assessments) return "assessments";
   if (clean === PAGE_PATHS.slot) return "slot";
   if (clean === PAGE_PATHS.guidelines) return "guidelines";
+  if (clean === PAGE_PATHS.noc) return "noc";
   if (clean === PAGE_PATHS.about) return "about";
   return "dashboard";
 }
