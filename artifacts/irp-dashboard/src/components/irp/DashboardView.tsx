@@ -40,6 +40,7 @@ import { IrpClearCards } from "./IrpClearCards";
 import { HumanInterviewResults } from "./HumanInterviewResults";
 import { useHumanInterviewResults } from "@/lib/useHumanInterviewResults";
 import { withHumanInterviewClearance } from "@/lib/humanInterviewClearance";
+import { NocFormCard } from "./NocFormCard";
 
 function journeySteps(
   journey: Journey,
@@ -282,6 +283,8 @@ export function DashboardView({
           <p className="mt-1.5 text-sm font-medium text-muted2">{motivation}</p>
         ) : null}
       </div>
+
+      <NocFormCard />
 
       {/* Current registration status comes from admin-uploaded batch membership and responses. */}
       {level === 1 && !journey.isWildcard ? <RegistrationBatchCallout /> : null}

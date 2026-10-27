@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Calendar, ClipboardList, FileText, Info, LayoutGrid, Mail, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, Info, LayoutGrid, Mail, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
+import { NOC_FORM_URL } from "@/lib/nocForm";
 const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   1: "#6941c6",
   2: "#dc6803",
@@ -109,6 +110,20 @@ export function SidebarContent({
       </div>
 
       <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-3">
+        <a
+          href={NOC_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 flex items-center gap-3 rounded-xl bg-[#b4232c] px-3 py-3 text-white shadow-sm transition-colors hover:bg-[#98202a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b4232c]/40 focus-visible:ring-offset-2"
+          data-testid="link-sidebar-noc-form"
+        >
+          <ClipboardCheck className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">NOC Form</span>
+            <span className="block text-[11px] font-medium text-white/85">Mandatory · Open form to check status</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+        </a>
         {SECTIONS.map((section) => (
           <div key={section.title} className="mb-3">
             <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#98a2b3]">{section.title}</p>

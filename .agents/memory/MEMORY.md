@@ -16,3 +16,4 @@
 - [IRP batch vs. legacy cohort](irp-batch-vs-legacy-cohort.md) — admin-uploaded rosters govern current registration; fixed July lists must not assert current status.
 - [FE qualification policy](fe-qualification-policy.md) — A1 ≥70%, A2 exactly 100%, others ≥90%; user start time distinguishes not qualified from not attempted.
 - [Human interview results policy](human-interview-results-policy.md) — show every attempt; latest completed scored attempt governs clearance, not best-ever score.
+- [IRP NOC form requirement](irp-noc-form.md) — every IRP student, across tracks, must submit the internship NOC before profile progression.
