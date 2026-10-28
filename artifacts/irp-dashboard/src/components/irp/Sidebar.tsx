@@ -109,20 +109,6 @@ export function SidebarContent({
       </div>
 
       <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-3">
-        <button
-          type="button"
-          onClick={() => onNavigate("noc")}
-          aria-current={active === "noc" ? "page" : undefined}
-          className="mb-3 flex items-center gap-3 rounded-xl bg-[#b4232c] px-3 py-3 text-left text-white shadow-sm transition-colors hover:bg-[#98202a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b4232c]/40 focus-visible:ring-offset-2"
-          data-testid="button-sidebar-noc-form"
-        >
-          <ClipboardCheck className="h-5 w-5 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">NOC Form</span>
-            <span className="block text-[11px] font-medium text-white/85">Mandatory · Complete the form</span>
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-        </button>
         {SECTIONS.map((section) => (
           <div key={section.title} className="mb-3">
             <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#98a2b3]">{section.title}</p>
@@ -167,6 +153,20 @@ export function SidebarContent({
       </nav>
 
       <div className="space-y-2 border-t border-[#eaecf0] px-3 py-3">
+        <button
+          type="button"
+          onClick={() => onNavigate("noc")}
+          aria-current={active === "noc" ? "page" : undefined}
+          className="flex w-full items-center gap-3 rounded-xl bg-[#b4232c] px-3 py-3 text-left text-white shadow-sm transition-colors hover:bg-[#98202a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b4232c]/40 focus-visible:ring-offset-2"
+          data-testid="button-sidebar-noc-form"
+        >
+          <ClipboardCheck className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">NOC Form</span>
+            <span className="block text-[11px] font-medium text-white/85">Mandatory · Complete the form</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+        </button>
         <button
           type="button"
           onClick={onOpenContact}
