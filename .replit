@@ -40,5 +40,5 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-ANALYTICS_ADMIN_KEY = "irp_9dd9f74e0b0a9a1085b0d1964c6389d8d996"
+ANALYTICS_ADMIN_KEY = "irpdashboard@123"
 ACADEMY_USER_ID = "7fffb7e7-8f41-4413-9518-8e7eb09c2edd"
