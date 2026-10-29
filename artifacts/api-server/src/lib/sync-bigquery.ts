@@ -35,6 +35,7 @@ import {
   ensureAcademyUserBasicDetailsColumns,
   normalizePaymentStatusValue,
 } from "./academyUserProfile";
+import { getL1AssessmentSummary } from "./l1Summary";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
@@ -832,6 +833,14 @@ export async function runBigQuerySync(): Promise<SyncResult> {
       await runOne(GENAI_ASSESSMENT_DETAILS_KEY, syncGenaiAssessmentAttempts),
       await runOne(GENAI_NXTMOCK_DETAILS_KEY, syncGenaiNxtmockAttempts),
     ];
+    try {
+      // Recalculate from the latest Postgres mirror after every sync attempt.
+      // If a BigQuery source is temporarily unavailable, the existing mirror
+      // can still be kept consistent with the saved qualification rules.
+      await getL1AssessmentSummary();
+    } catch (err) {
+      logger.error({ err }, "Failed to refresh app-owned L1 assessment statuses after BigQuery sync");
+    }
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {
     syncInProgress = false;

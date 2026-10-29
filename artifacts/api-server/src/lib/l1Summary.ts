@@ -1,7 +1,7 @@
-import { db, academyUserAssessmentDetailsTable } from "@workspace/db";
-import { notInArray } from "drizzle-orm";
+import { db, academyUserAssessmentDetailsTable, irpL1AssessmentStatusesTable } from "@workspace/db";
+import { notInArray, sql } from "drizzle-orm";
 import { MANUAL_DASHBOARD_ACCESS_GRANT_ID, MANUAL_DASHBOARD_ACCESS_REVOKE_ID } from "./academyUserProfile";
-import { feAssessmentIndex, getFeAssessmentStatus } from "./feQualification";
+import { feAssessmentIndex, getFeAssessmentStatus, requiredFePercentage } from "./feQualification";
 import { getL1QualificationRules } from "./l1QualificationRules";
 import { isMockAssessmentFields } from "./mainOnly";
 
@@ -27,9 +27,11 @@ export async function getL1AssessmentSummary(): Promise<L1TagSummary[]> {
   const rows = await db
     .select({
       userId: academyUserAssessmentDetailsTable.userId,
+      organisationAssessmentId: academyUserAssessmentDetailsTable.organisationAssessmentId,
       assessmentTag: academyUserAssessmentDetailsTable.assessmentTag,
       assessmentTitle: academyUserAssessmentDetailsTable.assessmentTitle,
       cycle: academyUserAssessmentDetailsTable.cycle,
+      attemptNumber: academyUserAssessmentDetailsTable.attemptNumber,
       userAssessmentStartDatetime: academyUserAssessmentDetailsTable.userAssessmentStartDatetime,
       mcqUserSectionScore: academyUserAssessmentDetailsTable.mcqUserSectionScore,
       mcqSectionMaxScore: academyUserAssessmentDetailsTable.mcqSectionMaxScore,
@@ -53,6 +55,7 @@ export async function getL1AssessmentSummary(): Promise<L1TagSummary[]> {
     string,
     { tag: string; order: number; total: Set<string>; attempted: Set<string>; qualified: Set<string> }
   >();
+  const statusRows: Array<typeof irpL1AssessmentStatusesTable.$inferInsert> = [];
   for (const r of rows) {
     if (!isL1Row(r.assessmentTag, r.assessmentTitle)) continue;
     if (isMockAssessmentFields({ tag: r.assessmentTag, title: r.assessmentTitle })) continue;
@@ -74,15 +77,69 @@ export async function getL1AssessmentSummary(): Promise<L1TagSummary[]> {
     const max =
       r.assessmentTotalScore ??
       ((r.mcqSectionMaxScore ?? 0) + (r.codingSectionMaxScore ?? 0) + (r.feSectionMaxScore ?? 0) || 0);
+    const scorePercentage = max > 0 ? (score / max) * 100 : null;
+    const requiredPercentage = requiredFePercentage(identifiers, rules);
+    const rawAssessmentStatus = (r.assessmentStatus ?? "").trim().toUpperCase();
     const status =
-      max > 0
-        ? getFeAssessmentStatus(identifiers, (score / max) * 100, r.userAssessmentStartDatetime, rules)
-        : (r.assessmentStatus ?? "").trim().toUpperCase();
+      scorePercentage != null
+        ? getFeAssessmentStatus(identifiers, scorePercentage, r.userAssessmentStartDatetime, rules)
+        : rawAssessmentStatus || "NOT ATTEMPTED";
+    const statusSource =
+      scorePercentage != null ? "qualification_rules" : rawAssessmentStatus ? "bigquery" : "inferred";
+
+    if (r.organisationAssessmentId.trim()) {
+      statusRows.push({
+        userId: r.userId,
+        organisationAssessmentId: r.organisationAssessmentId,
+        assessmentTag: r.assessmentTag,
+        assessmentTitle: r.assessmentTitle,
+        cycle: r.cycle,
+        assessmentNumber: n,
+        attemptNumber: r.attemptNumber,
+        score,
+        maxScore: max > 0 ? max : null,
+        scorePercentage,
+        assessmentStatus: status,
+        statusSource,
+        rawAssessmentStatus: rawAssessmentStatus || null,
+        requiredPercentage,
+        calculatedAt: new Date(),
+      });
+    }
 
     bucket.total.add(r.userId);
     if (status === "QUALIFIED" || status === "NOT QUALIFIED") bucket.attempted.add(r.userId);
     if (status === "QUALIFIED") bucket.qualified.add(r.userId);
     buckets.set(tag, bucket);
+  }
+
+  for (let i = 0; i < statusRows.length; i += 300) {
+    const batch = statusRows.slice(i, i + 300);
+    await db
+      .insert(irpL1AssessmentStatusesTable)
+      .values(batch)
+      .onConflictDoUpdate({
+        target: [
+          irpL1AssessmentStatusesTable.userId,
+          irpL1AssessmentStatusesTable.organisationAssessmentId,
+        ],
+        set: {
+          assessmentTag: sql`excluded.assessment_tag`,
+          assessmentTitle: sql`excluded.assessment_title`,
+          cycle: sql`excluded.cycle`,
+          assessmentNumber: sql`excluded.assessment_number`,
+          attemptNumber: sql`excluded.attempt_number`,
+          score: sql`excluded.score`,
+          maxScore: sql`excluded.max_score`,
+          scorePercentage: sql`excluded.score_percentage`,
+          assessmentStatus: sql`excluded.assessment_status`,
+          statusSource: sql`excluded.status_source`,
+          rawAssessmentStatus: sql`excluded.raw_assessment_status`,
+          requiredPercentage: sql`excluded.required_percentage`,
+          calculatedAt: sql`excluded.calculated_at`,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   return [...buckets.values()]
