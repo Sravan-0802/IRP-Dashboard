@@ -17,3 +17,4 @@
 - [FE qualification policy](fe-qualification-policy.md) — A1 ≥70%, A2 exactly 100%, others ≥90%; user start time distinguishes not qualified from not attempted.
 - [Human interview results policy](human-interview-results-policy.md) — show every attempt; latest completed scored attempt governs clearance, not best-ever score.
 - [IRP NOC form requirement](irp-noc-form.md) — every IRP student, across tracks, must submit the internship NOC before profile progression.
+- [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.

@@ -2,6 +2,7 @@ import "./load-env";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startBigQuerySyncScheduler } from "./lib/sync-bigquery";
+import { refreshAssessmentQualificationStatuses } from "./lib/assessmentQualificationStatuses";
 
 const rawPort = process.env["PORT"];
 
@@ -24,5 +25,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  void refreshAssessmentQualificationStatuses()
+    .then(() => logger.info("Assessment qualification statuses refreshed"))
+    .catch((err) => logger.error({ err }, "Assessment qualification status refresh failed"));
   startBigQuerySyncScheduler();
 });

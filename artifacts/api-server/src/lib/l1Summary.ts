@@ -4,6 +4,7 @@ import { MANUAL_DASHBOARD_ACCESS_GRANT_ID, MANUAL_DASHBOARD_ACCESS_REVOKE_ID } f
 import { feAssessmentIndex, getFeAssessmentStatus, requiredFePercentage } from "./feQualification";
 import { getL1QualificationRules } from "./l1QualificationRules";
 import { isMockAssessmentFields } from "./mainOnly";
+import { refreshAssessmentQualificationStatuses } from "./assessmentQualificationStatuses";
 
 export type L1TagSummary = { tag: string; total: number; attempted: number; qualified: number };
 
@@ -23,6 +24,7 @@ function isL1Row(tag: string | null, title: string | null): boolean {
  * for the assessment number, same as the FE summary.
  */
 export async function getL1AssessmentSummary(): Promise<L1TagSummary[]> {
+  await refreshAssessmentQualificationStatuses();
   const rules = await getL1QualificationRules();
   const rows = await db
     .select({

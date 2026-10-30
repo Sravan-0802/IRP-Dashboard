@@ -4,6 +4,7 @@ import { MANUAL_DASHBOARD_ACCESS_GRANT_ID, MANUAL_DASHBOARD_ACCESS_REVOKE_ID } f
 import { feAssessmentIndex, getFeAssessmentStatus } from "./feQualification";
 import { getFeQualificationRules } from "./feQualificationRules";
 import { isMockAssessmentFields } from "./mainOnly";
+import { refreshAssessmentQualificationStatuses } from "./assessmentQualificationStatuses";
 
 export type FeTagSummary = { tag: string; total: number; attempted: number; qualified: number };
 
@@ -29,6 +30,7 @@ function isFeRow(level: string | null, tag: string | null, title: string | null)
  * z_* rows store only `A7`, portal rows the full tag; both group under the assessment number.
  */
 export async function getFeAssessmentSummary(): Promise<FeTagSummary[]> {
+  await refreshAssessmentQualificationStatuses();
   const rules = await getFeQualificationRules();
   const rows = await db
     .select({
