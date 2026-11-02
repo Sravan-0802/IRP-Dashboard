@@ -3,6 +3,7 @@ import {
   getListGenaiProjectSubmissionsQueryKey,
   useListGenaiProjectSubmissions,
 } from "@workspace/api-client-react";
+import { buildSubmissionsCsv, type LoomSubmissionRow } from "./genaiLoomSubmissionsCsv";
 
 function formatUpdatedAt(value: string): string {
   const date = new Date(value);
@@ -11,33 +12,8 @@ function formatUpdatedAt(value: string): string {
     : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-type LoomSubmissionRow = {
-  academyUserId: string;
-  studentName: string;
-  projectTitle: string;
-  updatedAt: string;
-  loomUrl: string;
-};
-
-function csvCell(value: unknown): string {
-  let text = String(value ?? "");
-  // Prevent values from being interpreted as spreadsheet formulas.
-  if (/^[\u0000-\u0020]*[=+\-@]/.test(text)) text = `'${text}`;
-  return `"${text.replaceAll('"', '""')}"`;
-}
-
 function downloadSubmissionsCsv(records: readonly LoomSubmissionRow[]) {
-  const rows = [
-    ["Student name", "Academy user ID", "Project", "Last updated (ISO)", "Loom URL"],
-    ...records.map((record) => [
-      record.studentName,
-      record.academyUserId,
-      record.projectTitle,
-      record.updatedAt,
-      record.loomUrl,
-    ]),
-  ];
-  const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+  const csv = buildSubmissionsCsv(records);
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const anchor = document.createElement("a");
   anchor.href = url;
