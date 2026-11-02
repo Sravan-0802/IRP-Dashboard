@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { Check, ChevronRight, ExternalLink, Video } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { ChevronRight, ExternalLink, Video } from "lucide-react";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
 import { useProgramBoard } from "@/lib/useProgramBoard";
@@ -87,8 +87,17 @@ export function GenAiProgram() {
   const g = useProgramBoard().genai;
   const results = useGenaiResults();
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const [now, setNow] = useState(() => new Date());
-  const [trackTab, setTrackTab] = useState<"assessments" | "project">("assessments");
+  const trackTab = new URLSearchParams(search).get("tab") === "project" ? "project" : "assessments";
+
+  function setTrackTab(tab: "assessments" | "project") {
+    const params = new URLSearchParams(search);
+    if (tab === "project") params.set("tab", "project");
+    else params.delete("tab");
+    const query = params.toString();
+    setLocation(`/genai-program${query ? `?${query}` : ""}`, { replace: true });
+  }
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -329,7 +338,7 @@ function GenAiAssessments({
   tab: "assessments" | "project";
   onTab: (tab: "assessments" | "project") => void;
 }) {
-  const { findGrant } = useStudentAccess();
+  const { findGrant, loading: accessLoading } = useStudentAccess();
   const projectGrant = findGrant("genai_project", "default");
   const openItems = assessments.filter((item) => item.status === "open");
   const completed = assessments.filter((item) => item.status === "completed");
@@ -360,6 +369,7 @@ function GenAiAssessments({
       <div className="mt-4 inline-flex rounded-lg bg-[#f2f4f7] p-1">
         <button
           type="button"
+          data-testid="tab-genai-assessments"
           onClick={() => onTab("assessments")}
           className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold ${
             tab === "assessments" ? "bg-white text-[#101828] shadow-sm" : "text-[#667085]"
@@ -374,6 +384,7 @@ function GenAiAssessments({
         </button>
         <button
           type="button"
+          data-testid="tab-genai-project"
           onClick={() => onTab("project")}
           className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
             tab === "project" ? "bg-white text-[#101828] shadow-sm" : "text-[#667085]"
@@ -437,17 +448,15 @@ function GenAiAssessments({
           </div>
         </div>
       ) : (
-        <div className="mt-4 space-y-5">
-          {projectGrant ? (
-            <>
+        <div className="mt-6 space-y-6" data-testid="section-genai-projects">
               <div className="grid gap-3 sm:grid-cols-3">
                 <ProjectSummaryCard value={String(GENAI_PROJECTS.length)} label="projects available" />
                 <ProjectSummaryCard value="Any 2" label="to complete and submit" />
                 <ProjectSummaryCard value="1 Loom" label="video walkthrough for one of your 2" />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eaecf0] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#eaecf0] pt-5">
                 <h3 className="font-display text-base font-extrabold text-[#101828]">Choose your projects</h3>
-                <p className="text-sm font-medium text-[#667085]" data-testid="text-project-selection-count">
+                <p aria-live="polite" className="text-sm font-medium text-[#667085]" data-testid="text-project-selection-count">
                   {selectedProjects.length === 0
                     ? "Choose any 2"
                     : selectedProjects.length === 1
@@ -460,9 +469,9 @@ function GenAiAssessments({
                   <article
                     key={project.title}
                     data-testid={`card-genai-project-${index + 1}`}
-                    className={`flex h-full flex-col rounded-xl border p-4 transition-colors ${
+                    className={`flex h-full flex-col rounded-2xl border p-5 transition-colors ${
                       selectedProjects.includes(project.title)
-                        ? "border-[#6941c6] bg-[#fcfaff] ring-1 ring-[#6941c6]"
+                        ? "border-[#7c3aed] bg-white ring-1 ring-[#7c3aed]"
                         : "border-[#eaecf0] bg-white"
                     }`}
                   >
@@ -477,31 +486,48 @@ function GenAiAssessments({
                         >
                           {loomProject === project.title ? <><Video className="h-3 w-3" /> Selected · Video</> : "Selected"}
                         </span>
-                      ) : (
-                        <span className="rounded-full bg-[#f4f3ff] px-2 py-0.5 text-[10px] font-bold text-[#6941c6]">
-                          RAG challenge
-                        </span>
-                      )}
+                      ) : null}
                     </div>
                     <h4 className="mt-3 font-display text-base font-extrabold leading-snug text-[#101828]">
                       {project.title}
                     </h4>
                     <p className="mt-2 flex-1 text-sm leading-6 text-[#475467]">{project.description}</p>
+                    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
                     <button
                       type="button"
                       data-testid={`button-toggle-genai-project-${index + 1}`}
+                      aria-label={`${selectedProjects.includes(project.title) ? "Remove" : "Choose"} ${project.title}`}
                       aria-pressed={selectedProjects.includes(project.title)}
                       disabled={!selectedProjects.includes(project.title) && selectedProjects.length >= 2}
                       onClick={() => toggleProject(project.title)}
-                      className={`mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         selectedProjects.includes(project.title)
-                          ? "border-[#d6bbfb] bg-white text-[#6941c6] hover:bg-[#f9f5ff]"
-                          : "border-[#d0d5dd] bg-white text-[#344054] hover:border-[#6941c6] hover:text-[#6941c6]"
+                          ? "border-[#d0d5dd] bg-white text-[#344054] hover:bg-[#f9fafb]"
+                          : "border-[#6d28d9] bg-[#6d28d9] text-white hover:bg-[#5b21b6]"
                       }`}
                     >
-                      {selectedProjects.includes(project.title) ? <Check className="h-4 w-4" /> : null}
-                      {selectedProjects.includes(project.title) ? "Selected" : "Select project"}
+                      {selectedProjects.includes(project.title) ? "Remove" : "Choose this project"}
                     </button>
+                    {projectGrant ? (
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`link-kaggle-genai-project-${index + 1}`}
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc] hover:underline"
+                      >
+                        View brief
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <span
+                        data-testid={`status-kaggle-locked-${index + 1}`}
+                        className="text-xs font-medium text-[#667085]"
+                      >
+                        {accessLoading ? "Checking access…" : "Kaggle access locked"}
+                      </span>
+                    )}
+                    </div>
                     {selectedProjects.includes(project.title) && loomProject !== project.title ? (
                       <button
                         type="button"
@@ -513,32 +539,20 @@ function GenAiAssessments({
                         Use for Loom walkthrough
                       </button>
                     ) : null}
-                    <a
-                      href={project.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid={`link-kaggle-genai-project-${index + 1}`}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1849a9]"
-                    >
-                      Open Kaggle challenge
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
                   </article>
                 ))}
               </div>
               <p className="text-xs leading-5 text-[#667085]">
                 Complete any 2 projects and submit a Loom video walkthrough for one of them.
-                {projectGrant.expiresAt
+                {projectGrant?.expiresAt
                   ? ` Project access is available until ${formatIstDateTime(projectGrant.expiresAt)}.`
                   : ""}
               </p>
-            </>
-          ) : (
-            <div className="rounded-xl bg-[#f9fafb] px-4 py-4">
-              <p className="text-sm font-semibold text-[#101828]">GenAI project submission</p>
-              <p className="mt-1 text-sm text-[#667085]">Submission opens after the last assessment.</p>
-            </div>
-          )}
+              {!projectGrant && !accessLoading ? (
+                <p data-testid="text-project-access-notice" className="rounded-lg bg-[#f9fafb] px-4 py-3 text-sm text-[#667085]">
+                  You can explore and choose your projects now. Kaggle challenge links unlock when project access is granted.
+                </p>
+              ) : null}
         </div>
       )}
     </section>
@@ -547,8 +561,8 @@ function GenAiAssessments({
 
 function ProjectSummaryCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-4 py-3.5">
-      <p className="font-display text-xl font-extrabold text-[#6941c6]">{value}</p>
+    <div className="rounded-2xl border border-[#eaecf0] bg-[#fafafa] px-4 py-4">
+      <p className="font-display text-[28px] font-extrabold leading-tight text-[#6d28d9]">{value}</p>
       <p className="mt-0.5 text-xs leading-5 text-[#475467]">{label}</p>
     </div>
   );

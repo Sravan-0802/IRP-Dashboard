@@ -18,3 +18,4 @@
 - [Human interview results policy](human-interview-results-policy.md) — show every attempt; latest completed scored attempt governs clearance, not best-ever score.
 - [IRP NOC form requirement](irp-noc-form.md) — every IRP student, across tracks, must submit the internship NOC before profile progression.
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
+- [GenAI project reference](genai-project-reference.md) — use the user's RAG challenge content; the supplied screenshot is a layout reference, not the project catalogue.
