@@ -1,4 +1,4 @@
-import { ExternalLink, RefreshCw, Video } from "lucide-react";
+import { Download, ExternalLink, RefreshCw, Video } from "lucide-react";
 import {
   getListGenaiProjectSubmissionsQueryKey,
   useListGenaiProjectSubmissions,
@@ -9,6 +9,43 @@ function formatUpdatedAt(value: string): string {
   return Number.isNaN(date.getTime())
     ? "—"
     : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+type LoomSubmissionRow = {
+  academyUserId: string;
+  studentName: string;
+  projectTitle: string;
+  updatedAt: string;
+  loomUrl: string;
+};
+
+function csvCell(value: unknown): string {
+  let text = String(value ?? "");
+  // Prevent values from being interpreted as spreadsheet formulas.
+  if (/^[\u0000-\u0020]*[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function downloadSubmissionsCsv(records: readonly LoomSubmissionRow[]) {
+  const rows = [
+    ["Student name", "Academy user ID", "Project", "Last updated (ISO)", "Loom URL"],
+    ...records.map((record) => [
+      record.studentName,
+      record.academyUserId,
+      record.projectTitle,
+      record.updatedAt,
+      record.loomUrl,
+    ]),
+  ];
+  const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `genai-loom-submissions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function GenaiLoomSubmissionsPanel({ apiKey }: { apiKey: string }) {
@@ -24,7 +61,7 @@ export function GenaiLoomSubmissionsPanel({ apiKey }: { apiKey: string }) {
     request: { headers: { "x-api-key": apiKey.trim() } },
   });
 
-  const records = submissions.data?.submissions ?? [];
+  const records: LoomSubmissionRow[] = submissions.data?.submissions ?? [];
 
   return (
     <section className="irp-card p-5" data-testid="panel-genai-loom-submissions">
@@ -46,16 +83,28 @@ export function GenaiLoomSubmissionsPanel({ apiKey }: { apiKey: string }) {
             Student submissions, ordered by most recently updated.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void submissions.refetch()}
-          disabled={submissions.isFetching}
-          className="inline-flex items-center gap-2 rounded-xl border border-[rgba(59,91,219,0.18)] bg-white px-4 py-2 text-sm font-bold text-[#3b5bdb] hover:bg-[#eef2ff] disabled:opacity-50"
-          data-testid="button-refresh-genai-loom-submissions"
-        >
-          <RefreshCw className={`h-4 w-4 ${submissions.isFetching ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => downloadSubmissionsCsv(records)}
+            disabled={submissions.isFetching || submissions.isError}
+            className="inline-flex items-center gap-2 rounded-xl border border-[rgba(59,91,219,0.18)] bg-white px-4 py-2 text-sm font-bold text-[#3b5bdb] hover:bg-[#eef2ff] disabled:opacity-50"
+            data-testid="button-download-genai-loom-submissions"
+          >
+            <Download className="h-4 w-4" />
+            Download CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => void submissions.refetch()}
+            disabled={submissions.isFetching}
+            className="inline-flex items-center gap-2 rounded-xl border border-[rgba(59,91,219,0.18)] bg-white px-4 py-2 text-sm font-bold text-[#3b5bdb] hover:bg-[#eef2ff] disabled:opacity-50"
+            data-testid="button-refresh-genai-loom-submissions"
+          >
+            <RefreshCw className={`h-4 w-4 ${submissions.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {submissions.isLoading ? (
