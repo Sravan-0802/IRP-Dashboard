@@ -134,6 +134,8 @@ export function GenAiProgram() {
       <GenAiAssessments
         assessments={g.assessments}
         results={results.assessments}
+          resultsError={results.error}
+          onRetryResults={results.retry}
         tab={trackTab}
         onTab={setTrackTab}
       />
@@ -338,11 +340,15 @@ function GenAiJourney({
 function GenAiAssessments({
   assessments,
   results,
+  resultsError,
+  onRetryResults,
   tab,
   onTab,
 }: {
   assessments: GenAiAssessment[];
   results: GenaiAssessmentResult[];
+  resultsError: string | null;
+  onRetryResults: () => void;
   tab: "assessments" | "project";
   onTab: (tab: "assessments" | "project") => void;
 }) {
@@ -440,6 +446,23 @@ function GenAiAssessments({
           ) : null}
           <div>
             <h3 className="text-sm font-semibold text-[#101828]">Your scores</h3>
+            {resultsError ? (
+              <div
+                className="mt-3 rounded-xl border border-[#fecdca] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+                role="alert"
+                data-testid="error-genai-results"
+              >
+                <p>{resultsError}</p>
+                <button
+                  type="button"
+                  className="mt-2 font-bold underline"
+                  onClick={onRetryResults}
+                  data-testid="button-retry-genai-results"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null}
             {scored.length > 0 ? (
               <ul className="mt-2 divide-y divide-[#f2f4f7] border-t border-[#f2f4f7]">
                 {scored.map((item) => (

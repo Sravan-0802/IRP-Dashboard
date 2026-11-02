@@ -40,13 +40,20 @@ export type GenaiResults = {
 };
 
 const EMPTY: GenaiResults = { assessments: [], interviews: [] };
+const AUTH_REQUIRED_MESSAGE =
+  "Your session could not be verified. Refresh the page and sign in again.";
+const RESULTS_LOAD_ERROR_MESSAGE =
+  "GenAI assessment results could not be loaded. Please try again.";
 
 async function fetchGenaiResults(): Promise<GenaiResults> {
   const token = getAuthToken();
   const res = await fetch("/api/student/genai-results", {
     headers: token ? { authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
   });
-  if (!res.ok) throw new Error("Could not load GenAI results");
+  if (!res.ok) {
+    throw new Error(res.status === 401 ? AUTH_REQUIRED_MESSAGE : RESULTS_LOAD_ERROR_MESSAGE);
+  }
   const body = (await res.json()) as Partial<GenaiResults>;
   return {
     assessments: Array.isArray(body.assessments) ? body.assessments : [],
@@ -54,12 +61,31 @@ async function fetchGenaiResults(): Promise<GenaiResults> {
   };
 }
 
-export function useGenaiResults(): GenaiResults & { loading: boolean } {
+export function useGenaiResults(): GenaiResults & {
+  loading: boolean;
+  error: string | null;
+  retry: () => void;
+} {
   const query = useQuery({
     queryKey: ["student", "genai-results"],
     queryFn: fetchGenaiResults,
     staleTime: 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     retry: 1,
   });
-  return { ...(query.data ?? EMPTY), loading: query.isLoading };
+  const error = query.isError
+    ? query.error instanceof Error &&
+      (query.error.message === AUTH_REQUIRED_MESSAGE || query.error.message === RESULTS_LOAD_ERROR_MESSAGE)
+      ? query.error.message
+      : RESULTS_LOAD_ERROR_MESSAGE
+    : null;
+  return {
+    ...(query.data ?? EMPTY),
+    loading: query.isLoading,
+    error,
+    retry: () => {
+      void query.refetch();
+    },
+  };
 }
