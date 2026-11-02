@@ -17,6 +17,7 @@ export type GenaiProjectSubmissionRepository = {
     userId: string,
     projectTitle: string,
     loomUrl: string,
+    selectedProjects: string[],
   ): Promise<GenaiProjectSubmission>;
 };
 
@@ -85,11 +86,21 @@ export function createGenaiProjectSubmissionRouter({
 
       const parsed = SaveGenaiProjectSubmissionBody.safeParse(req.body);
       if (!parsed.success) {
-        res.status(400).json({ error: "Enter a project and Loom walkthrough link." });
+        res.status(400).json({ error: "Select exactly 2 projects and enter a Loom walkthrough link." });
         return;
       }
 
       const projectTitle = parsed.data.projectTitle.trim();
+      const selectedProjects = parsed.data.selectedProjects.map((title) => title.trim());
+      if (
+        selectedProjects.length !== 2 ||
+        new Set(selectedProjects).size !== 2 ||
+        selectedProjects.some((title) => !GENAI_PROJECT_TITLES.has(title)) ||
+        !selectedProjects.includes(projectTitle)
+      ) {
+        res.status(400).json({ error: "Select 2 different available projects and choose one of them for your walkthrough." });
+        return;
+      }
       const loomUrl = parsed.data.loomUrl.trim();
       if (!GENAI_PROJECT_TITLES.has(projectTitle)) {
         res.status(400).json({ error: "Choose one of the available GenAI projects." });
@@ -102,7 +113,7 @@ export function createGenaiProjectSubmissionRouter({
         return;
       }
 
-      const row = await repository.saveForUser(userId, projectTitle, loomUrl);
+      const row = await repository.saveForUser(userId, projectTitle, loomUrl, selectedProjects);
       const response = SaveGenaiProjectSubmissionResponse.parse({
         submission: {
           projectTitle: row.projectTitle,

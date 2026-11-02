@@ -360,7 +360,7 @@ function GenAiAssessments({
     selectedProjects.length > 0
       ? (loomProject && selectedProjects.includes(loomProject) ? loomProject : selectedProjects[0])
       : null;
-  const submissionProject = selectedLoomProject ?? loomSubmission?.projectTitle ?? null;
+  const submissionProject = selectedLoomProject;
 
   function toggleProject(title: string) {
     if (!choicesReady) return;
@@ -565,13 +565,10 @@ function GenAiAssessments({
       <div className="mt-6">
         <GenaiLoomSubmissionForm
           projectTitle={submissionProject}
-          availableProjects={selectedProjects.length >= 2 ? selectedProjects : GENAI_PROJECTS.map((p) => p.title)}
+          availableProjects={selectedProjects}
           onProjectChange={(title) => {
             if (!choicesReady) return;
-            if (!selectedProjects.includes(title)) {
-              if (selectedProjects.length >= 2) return;
-              setSelectedProjects([...selectedProjects, title]);
-            }
+            if (selectedProjects.length !== 2 || !selectedProjects.includes(title)) return;
             setLoomProject(title);
             saveLoom.reset();
           }}
@@ -582,7 +579,7 @@ function GenAiAssessments({
           saving={saveLoom.isPending}
           saveError={saveLoom.error instanceof Error ? saveLoom.error.message : null}
           savedSubmission={saveLoom.data?.submission ?? null}
-          onSave={(input) => saveLoom.mutate(input)}
+          onSave={(input) => saveLoom.mutate({ ...input, selectedProjects })}
           onResetSaveState={() => saveLoom.reset()}
         />
       </div>

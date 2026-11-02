@@ -7,6 +7,11 @@
  */
 
 export interface GenaiProjectSubmissionInput {
+  /**
+     * @minItems 2
+     * @maxItems 2
+     */
+  selectedProjects: string[];
   /** @minLength 1 */
   projectTitle: string;
   /** @minLength 1 */

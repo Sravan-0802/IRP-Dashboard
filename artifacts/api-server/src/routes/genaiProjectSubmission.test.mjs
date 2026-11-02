@@ -12,34 +12,6 @@ const compiled = await build({
   format: "cjs",
   write: false,
   external: ["express"],
-  plugins: [
-    {
-      name: "api-zod-test-schema",
-      setup(build) {
-        build.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({
-          path: "api-zod-test-schema",
-          namespace: "test-fixture",
-        }));
-        build.onLoad({ filter: /.*/, namespace: "test-fixture" }, () => ({
-          loader: "js",
-          contents: `
-            const response = { parse: value => value };
-            export const GetGenaiProjectSubmissionResponse = response;
-            export const SaveGenaiProjectSubmissionResponse = response;
-            export const SaveGenaiProjectSubmissionBody = {
-              safeParse(value) {
-                if (value && typeof value.projectTitle === "string" && value.projectTitle.length > 0
-                  && typeof value.loomUrl === "string" && value.loomUrl.length > 0) {
-                  return { success: true, data: value };
-                }
-                return { success: false };
-              }
-            };
-          `,
-        }));
-      },
-    },
-  ],
 });
 const routeModule = { exports: {} };
 new Function("require", "module", "exports", compiled.outputFiles[0].text)(
@@ -58,12 +30,13 @@ const repository = {
   async findForUser(userId) {
     return records.get(userId) ?? null;
   },
-  async saveForUser(userId, projectTitle, loomUrl) {
-    saveCalls.push({ userId, projectTitle, loomUrl });
+  async saveForUser(userId, projectTitle, loomUrl, selectedProjects) {
+    saveCalls.push({ userId, projectTitle, loomUrl, selectedProjects });
     if (failSave) throw new Error("database unavailable");
     const record = {
       projectTitle,
       loomUrl,
+      selectedProjects,
       updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, clock++)),
     };
     records.set(userId, record);
@@ -98,6 +71,10 @@ const student = (id) => ({ "x-test-student": id });
 const body = (loomUrl, projectTitle = "Intelligent RAG Challenge", extra = {}) => ({
   projectTitle,
   loomUrl,
+  selectedProjects: [
+    projectTitle,
+    projectTitle === "Agentic RAG Challenge" ? "Intelligent RAG Challenge" : "Agentic RAG Challenge",
+  ],
   ...extra,
 });
 
@@ -220,4 +197,32 @@ test("reports database failures without returning a success response", async () 
   });
   assert.equal(response.status, 500);
   assert.match((await response.json()).error, /Could not save your Loom link/);
+});
+
+test("rejects missing, incomplete, duplicate, unknown, or mismatched project pairs", async () => {
+  const A = "Intelligent RAG Challenge";
+  const B = "Agentic RAG Challenge";
+  const C = "Building & Optimizing RAG Challenge";
+  for (const selectedProjects of [undefined, [], [A], [A, A], [A, B, C], [A, "unknown"], [B, C]]) {
+    const response = await fetch(base, {
+      method: "PUT",
+      headers: { ...student("student-a"), "content-type": "application/json" },
+      body: JSON.stringify(body("https://www.loom.com/share/video", A, { selectedProjects })),
+    });
+    assert.equal(response.status, 400, JSON.stringify(selectedProjects));
+  }
+  assert.equal(saveCalls.length, 0);
+});
+
+test("accepts either member of the chosen pair and persists the pair", async () => {
+  const selectedProjects = ["Intelligent RAG Challenge", "Agentic RAG Challenge"];
+  for (const projectTitle of selectedProjects) {
+    const response = await fetch(base, {
+      method: "PUT",
+      headers: { ...student("student-a"), "content-type": "application/json" },
+      body: JSON.stringify(body("https://www.loom.com/share/video", projectTitle, { selectedProjects })),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(records.get("student-a").selectedProjects, selectedProjects);
+  }
 });

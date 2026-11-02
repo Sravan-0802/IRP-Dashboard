@@ -1318,13 +1318,13 @@ router.use(
           .limit(1);
         return row ?? null;
       },
-      async saveForUser(userId, projectTitle, loomUrl) {
+      async saveForUser(userId, projectTitle, loomUrl, selectedProjects) {
         const [row] = await db
           .insert(genaiProjectSubmissionsTable)
-          .values({ userId, projectTitle, loomUrl })
+          .values({ userId, projectTitle, loomUrl, selectedProjects })
           .onConflictDoUpdate({
             target: genaiProjectSubmissionsTable.userId,
-            set: { projectTitle, loomUrl, updatedAt: new Date() },
+            set: { projectTitle, loomUrl, selectedProjects, updatedAt: new Date() },
           })
           .returning();
         if (!row) throw new Error("GenAI project submission was not returned after save");

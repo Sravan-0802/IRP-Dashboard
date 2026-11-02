@@ -268,11 +268,15 @@ export const GetGenaiProjectSubmissionResponse = zod.object({
 /**
  * @summary Save or update the authenticated student's GenAI Loom walkthrough
  */
+export const saveGenaiProjectSubmissionBodySelectedProjectsMin = 2;
+export const saveGenaiProjectSubmissionBodySelectedProjectsMax = 2;
+
 
 
 
 
 export const SaveGenaiProjectSubmissionBody = zod.object({
+  "selectedProjects": zod.array(zod.string()).min(saveGenaiProjectSubmissionBodySelectedProjectsMin).max(saveGenaiProjectSubmissionBodySelectedProjectsMax),
   "projectTitle": zod.string().min(1),
   "loomUrl": zod.string().min(1)
 })

@@ -49,11 +49,17 @@ export function GenaiLoomSubmissionForm({
 }) {
   const [loomUrl, setLoomUrl] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const hasTwoProjects = availableProjects.length === 2;
+  const canSubmitProject = hasTwoProjects && projectTitle !== null && availableProjects.includes(projectTitle);
 
   useEffect(() => {
     setLoomUrl(submission?.loomUrl ?? "");
     setValidationError(null);
   }, [submission?.loomUrl]);
+
+  useEffect(() => {
+    setValidationError(null);
+  }, [projectTitle, hasTwoProjects]);
 
   const savedForCurrentDraft =
     Boolean(projectTitle) &&
@@ -62,9 +68,14 @@ export function GenaiLoomSubmissionForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading || saving) return;
     const value = loomUrl.trim();
-    if (!projectTitle) {
-      setValidationError("Select a project and choose it for your Loom walkthrough first.");
+    if (!hasTwoProjects) {
+      setValidationError("Select exactly 2 projects in Project Submission before submitting or updating your Loom walkthrough.");
+      return;
+    }
+    if (!projectTitle || !availableProjects.includes(projectTitle)) {
+      setValidationError("Choose one of your 2 selected projects for your Loom walkthrough.");
       return;
     }
     if (!isValidLoomUrl(value)) {
@@ -100,9 +111,14 @@ export function GenaiLoomSubmissionForm({
                   : "In progress"}
           </p>
           <p className="mt-1 text-sm text-[#475467]">
-            {projectTitle
+            {canSubmitProject
               ? `Submit a walkthrough for ${projectTitle}. You can update the link later.`
-              : "Choose your project below and submit your Loom walkthrough. Available to all students."}
+              : "Select exactly 2 projects in Project Submission before submitting or updating your Loom walkthrough."}
+          </p>
+          <p id="genai-loom-selection-help" className="mt-2 text-sm text-[#475467]" aria-live="polite">
+            {hasTwoProjects
+              ? "Choose one of your 2 selected projects below. To change your choices, remove a project in Project Submission and choose another."
+              : `${availableProjects.length} of 2 projects selected. Open Project Submission above and choose your projects first.`}
           </p>
           {submission ? (
             <p className="mt-2 text-xs font-medium text-[#475467]" data-testid="text-genai-loom-saved-project">
@@ -130,6 +146,8 @@ export function GenaiLoomSubmissionForm({
             id="genai-loom-project"
             data-testid="select-genai-loom-project"
             value={projectTitle ?? ""}
+            disabled={!hasTwoProjects || saving}
+            aria-describedby="genai-loom-selection-help"
             onChange={(event) => onProjectChange(event.target.value)}
             className="w-full rounded-lg border border-[#d0d5dd] bg-white px-3 py-2.5 text-sm text-[#101828]"
           >
@@ -183,7 +201,7 @@ export function GenaiLoomSubmissionForm({
           <button
             type="submit"
             data-testid="button-submit-genai-loom"
-            disabled={!projectTitle || loading || saving || !loomUrl.trim()}
+            disabled={!canSubmitProject || loading || saving || !loomUrl.trim()}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6941c6] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#53389e] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : submission ? "Update Loom link" : "Submit Loom link"}

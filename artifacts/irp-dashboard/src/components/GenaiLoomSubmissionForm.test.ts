@@ -13,7 +13,6 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof GenaiLoomSubm
       availableProjects: [
         "Intelligent RAG Challenge",
         "Agentic RAG Challenge",
-        "Building & Optimizing RAG Challenge",
       ],
       onProjectChange: vi.fn(),
       submission: null,
@@ -32,6 +31,17 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof GenaiLoomSubm
 }
 
 describe("GenAI Loom submission form", () => {
+  it("requires two selections even when the form is submitted directly", () => {
+    const onSave = renderForm({ availableProjects: ["Intelligent RAG Challenge"] });
+    fireEvent.change(screen.getByLabelText("Loom video URL"), {
+      target: { value: "https://www.loom.com/share/video-123" },
+    });
+    expect(screen.getByTestId("button-submit-genai-loom").hasAttribute("disabled")).toBe(true);
+    fireEvent.submit(screen.getByTestId("button-submit-genai-loom").closest("form")!);
+    expect(screen.getByRole("alert").textContent).toMatch(/Select exactly 2 projects/);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it("shows validation feedback and does not submit unrelated URLs", () => {
     const onSave = renderForm();
     fireEvent.change(screen.getByLabelText("Loom video URL"), {

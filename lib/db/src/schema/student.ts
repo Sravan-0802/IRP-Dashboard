@@ -627,6 +627,7 @@ export const genaiProjectSubmissionsTable = pgTable(
     id: serial("id").primaryKey(),
     userId: text("user_id").notNull(),
     projectTitle: text("project_title").notNull(),
+    selectedProjects: text("selected_projects").array().notNull().default([]),
     loomUrl: text("loom_url").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

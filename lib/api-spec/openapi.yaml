@@ -739,8 +739,15 @@ components:
 
     GenaiProjectSubmissionInput:
       type: object
-      required: [projectTitle, loomUrl]
+      required: [projectTitle, loomUrl, selectedProjects]
       properties:
+        selectedProjects:
+          type: array
+          minItems: 2
+          maxItems: 2
+          uniqueItems: true
+          items:
+            type: string
         projectTitle:
           type: string
           minLength: 1

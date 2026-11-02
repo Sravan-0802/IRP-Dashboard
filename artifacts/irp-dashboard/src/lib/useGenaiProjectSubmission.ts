@@ -4,7 +4,7 @@ import { trackEvent } from "@/lib/analytics";
 
 const SUBMISSION_KEY = ["student", "genai-project-submission"] as const;
 const SUBMISSION_URL = "/api/student/genai-project-submission";
-type GenaiProjectSubmissionInput = { projectTitle: string; loomUrl: string };
+type GenaiProjectSubmissionInput = { projectTitle: string; loomUrl: string; selectedProjects: string[] };
 type GenaiProjectSubmissionResponse = {
   submission: { projectTitle: string; loomUrl: string; updatedAt: string } | null;
 };
