@@ -8,6 +8,7 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test:project-links": "node --test src/pages/GenAiProgram.test.mjs",
+    "test:project-choices": "node --test src/lib/genaiProjectChoices.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

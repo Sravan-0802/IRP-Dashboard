@@ -8,6 +8,7 @@ import type { GenAiAssessment } from "@/lib/programBoard";
 import { accessStageLabel, isGenaiAccessStage } from "@/lib/accessStages";
 import { isAccessGrantLive, useStudentAccess } from "@/lib/useStudentAccess";
 import { useGenaiProjectSubmission } from "@/lib/useGenaiProjectSubmission";
+import { useGenaiProjectChoices } from "@/lib/useGenaiProjectChoices";
 import {
   useGenaiResults,
   type GenaiAssessmentResult,
@@ -38,6 +39,8 @@ const GENAI_PROJECTS = [
     url: "https://www.kaggle.com/t/3d4e632d65aa4cc888f463a555094618",
   },
 ] as const;
+
+const GENAI_PROJECT_TITLES = GENAI_PROJECTS.map((project) => project.title);
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -344,7 +347,8 @@ function GenAiAssessments({
   const openCount = openItems.length;
   const upcoming = results.filter((item) => item.status === "UPCOMING");
   const scored = results.filter((item) => item.status !== "UPCOMING");
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const { selectedProjects, setSelectedProjects, choicesReady, choicesError } =
+    useGenaiProjectChoices(GENAI_PROJECT_TITLES);
   const [loomProject, setLoomProject] = useState<string | null>(null);
   const { query: loomQuery, save: saveLoom } = useGenaiProjectSubmission(true);
   const loomSubmission = loomQuery.data?.submission ?? null;
@@ -355,6 +359,7 @@ function GenAiAssessments({
   const submissionProject = selectedLoomProject ?? loomSubmission?.projectTitle ?? null;
 
   function toggleProject(title: string) {
+    if (!choicesReady) return;
     saveLoom.reset();
     if (selectedProjects.includes(title)) {
       const next = selectedProjects.filter((project) => project !== title);
@@ -459,13 +464,17 @@ function GenAiAssessments({
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#eaecf0] pt-5">
                 <h3 className="font-display text-base font-extrabold text-[#101828]">Choose your projects</h3>
                 <p aria-live="polite" className="text-sm font-medium text-[#667085]" data-testid="text-project-selection-count">
-                  {selectedProjects.length === 0
+                  {!choicesReady
+                    ? "Loading saved choices…"
+                    : selectedProjects.length === 0
                     ? "Choose any 2"
                     : selectedProjects.length === 1
                       ? "1 more project to choose"
                       : "2 of 2 projects selected"}
                 </p>
               </div>
+              {choicesError ? <p role="alert" className="text-sm text-[#b42318]">{choicesError}</p> : null}
+              <p className="text-xs text-[#667085]">Your choices are saved in this browser for your account.</p>
               <div className="grid gap-3 md:grid-cols-3">
                 {GENAI_PROJECTS.map((project, index) => (
                   <article
@@ -500,7 +509,7 @@ function GenAiAssessments({
                       data-testid={`button-toggle-genai-project-${index + 1}`}
                       aria-label={`${selectedProjects.includes(project.title) ? "Remove" : "Choose"} ${project.title}`}
                       aria-pressed={selectedProjects.includes(project.title)}
-                      disabled={!selectedProjects.includes(project.title) && selectedProjects.length >= 2}
+                      disabled={!choicesReady || (!selectedProjects.includes(project.title) && selectedProjects.length >= 2)}
                       onClick={() => {
                         const alreadySelected = selectedProjects.includes(project.title);
                         toggleProject(project.title);
@@ -554,6 +563,7 @@ function GenAiAssessments({
           projectTitle={submissionProject}
           availableProjects={selectedProjects.length >= 2 ? selectedProjects : GENAI_PROJECTS.map((p) => p.title)}
           onProjectChange={(title) => {
+            if (!choicesReady) return;
             if (!selectedProjects.includes(title)) {
               if (selectedProjects.length >= 2) return;
               setSelectedProjects([...selectedProjects, title]);
