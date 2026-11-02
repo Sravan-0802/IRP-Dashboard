@@ -9,8 +9,9 @@ import {
   unpaidUsersTable,
   blockedUsersTable,
   dashboardAnalyticsEventsTable,
+  genaiProjectSubmissionsTable,
 } from "@workspace/db";
-import { inArray, eq, and, sql } from "drizzle-orm";
+import { inArray, eq, and, sql, desc } from "drizzle-orm";
 import { checkApiKey } from "../lib/apiKey";
 import { emailForUser } from "../lib/student";
 import {
@@ -49,10 +50,64 @@ import { createAuthToken } from "../lib/authTokens";
 import {
   resolveAcademyUserDisplayName,
 } from "../lib/academyUserProfile";
+import { ListGenaiProjectSubmissionsResponse } from "@workspace/api-zod";
 
 const router = Router();
 
 const PREVIEW_TOKEN_TTL_MINUTES = Number(process.env["FORMS_TOKEN_TTL_MINUTES"]) || 15;
+
+// GET /api/admin/genai-project-submissions — submitted Loom walkthroughs
+// (analytics admin key required).
+router.get("/admin/genai-project-submissions", async (req, res): Promise<void> => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const submissions = await db
+      .select({
+        academyUserId: genaiProjectSubmissionsTable.userId,
+        projectTitle: genaiProjectSubmissionsTable.projectTitle,
+        loomUrl: genaiProjectSubmissionsTable.loomUrl,
+        updatedAt: genaiProjectSubmissionsTable.updatedAt,
+      })
+      .from(genaiProjectSubmissionsTable)
+      .orderBy(desc(genaiProjectSubmissionsTable.updatedAt));
+    const userIds = [...new Set(submissions.map((submission) => submission.academyUserId))];
+    const basicDetails = userIds.length
+      ? await db
+          .select({
+            userId: academyUserBasicDetailsTable.userId,
+            userName: academyUserBasicDetailsTable.userName,
+            firstName: academyUserBasicDetailsTable.firstName,
+            lastName: academyUserBasicDetailsTable.lastName,
+            nameOnCertificate: academyUserBasicDetailsTable.nameOnCertificate,
+          })
+          .from(academyUserBasicDetailsTable)
+          .where(inArray(academyUserBasicDetailsTable.userId, userIds))
+      : [];
+    const names = new Map(
+      basicDetails.map((details) => [
+        details.userId,
+        resolveAcademyUserDisplayName(details),
+      ] as const),
+    );
+
+    res.json(
+      ListGenaiProjectSubmissionsResponse.parse({
+        submissions: submissions.map((submission) => ({
+          ...submission,
+          studentName: names.get(submission.academyUserId) ?? "Student",
+          updatedAt: submission.updatedAt.toISOString(),
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list GenAI Loom submissions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /api/admin/students/fe-project-done — mark a batch of academy users as
 // having cleared L1 and completed their FE Project (admin API key required).

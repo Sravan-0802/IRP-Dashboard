@@ -10,7 +10,7 @@
 - [Dev seeding flow](dev-seeding-flow.md) — to run locally: curl /api/auth/me to find ACADEMY_USER_ID, then seed academy_user_basic_details + academy_user_assessment_details for that UUID.
 - [Analytics admin-key auth](analytics-admin-key-auth.md) — `dev` key fails locally because TOKEN_SECRET is set; secret values are redacted, so test admin routes via SQL not curl.
 - [Previewing gated views](preview-gated-views.md) — can't switch the ACADEMY_USER_ID secret; to screenshot a per-user gate, temporarily move the row in/out of the gating table for the current preview user.
-- [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures often come from committed `<<<<<<<` markers; grep artifacts/ for markers after any merge, before publish.
+- [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures can come from committed conflict markers; grep artifacts/ after any merge, before publish.
 - [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.
 - [IRP batch vs. legacy cohort](irp-batch-vs-legacy-cohort.md) — admin-uploaded rosters govern current registration; fixed July lists must not assert current status.
 - [FE qualification policy](fe-qualification-policy.md) — A1 ≥70%, A2 exactly 100%, others ≥90%; user start time distinguishes not qualified from not attempted.
@@ -19,3 +19,4 @@
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
 - [GenAI projects and Loom](genai-project-reference.md) — supplied RAG catalogue, screenshot exceptions, and all-student Loom availability/status rules.
 - [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission; payment and manual overrides do not.
+- [OpenAPI response schema names](openapi-response-schema-names.md) — avoid component names that duplicate Orval's operation-generated response export.

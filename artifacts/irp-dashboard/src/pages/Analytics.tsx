@@ -13,6 +13,7 @@ import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
 import { HumanInterviewSyncPanel } from "@/components/admin/HumanInterviewSyncPanel";
 import { GenaiLoomProgressPanel } from "@/components/admin/GenaiLoomProgressPanel";
+import { GenaiLoomSubmissionsPanel } from "@/components/admin/GenaiLoomSubmissionsPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -106,7 +107,8 @@ type AnalyticsTab =
   | "access"
   | "access_viewer"
   | "reg_batches"
-  | "reg_responses";
+  | "reg_responses"
+  | "loom_submissions";
 
 type VisibilitySyncInfo = {
   tableName: string | null;
@@ -241,6 +243,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
       "dashboard_access",
       "access",
       "access_viewer",
+      "loom_submissions",
     ];
     if (tab && (allowed as string[]).includes(tab)) return tab as AnalyticsTab;
   } catch {
@@ -627,6 +630,7 @@ export default function AnalyticsPage() {
             { id: "access_viewer" as const, label: "Access Loader viewer", count: undefined },
             { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
+            { id: "loom_submissions" as const, label: "Loom reviews", count: undefined },
           ]
         : [];
     }
@@ -655,6 +659,7 @@ export default function AnalyticsPage() {
             { id: "access_viewer" as const, label: "Access viewer", count: undefined },
             { id: "reg_batches" as const, label: "Reg Batches", count: undefined },
             { id: "reg_responses" as const, label: "Reg Responses", count: undefined },
+            { id: "loom_submissions" as const, label: "Loom reviews", count: undefined },
           ]
         : []),
     ];
@@ -1900,6 +1905,10 @@ export default function AnalyticsPage() {
 
             {activeTab === "reg_responses" && apiKey ? (
               <RegistrationResponsesPanel apiKey={apiKey} />
+            ) : null}
+
+            {activeTab === "loom_submissions" && apiKey ? (
+              <GenaiLoomSubmissionsPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "overview" && data && (

@@ -203,6 +203,18 @@ export interface GenaiProjectSubmissionResponse {
   submission: GenaiProjectSubmission | null;
 }
 
+export interface AdminGenaiProjectSubmission {
+  academyUserId: string;
+  studentName: string;
+  projectTitle: string;
+  loomUrl: string;
+  updatedAt: string;
+}
+
+export interface AdminGenaiProjectSubmissionsList {
+  submissions: AdminGenaiProjectSubmission[];
+}
+
 export type DashboardAnalyticsEventRequestEventType = typeof DashboardAnalyticsEventRequestEventType[keyof typeof DashboardAnalyticsEventRequestEventType];
 
 

@@ -408,3 +408,18 @@ export const GetDashboardAnalyticsResponse = zod.object({
 })
 
 
+/**
+ * Returns submitted project walkthroughs for authorized IRP reviewers
+ * @summary List student GenAI Loom walkthrough submissions
+ */
+export const ListGenaiProjectSubmissionsResponse = zod.object({
+  "submissions": zod.array(zod.object({
+  "academyUserId": zod.string(),
+  "studentName": zod.string(),
+  "projectTitle": zod.string(),
+  "loomUrl": zod.string(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+

@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminGenaiProjectSubmission';
+export * from './adminGenaiProjectSubmissionsList';
 export * from './assessmentResult';
 export * from './contactMessageRequest';
 export * from './contactMessageResponse';

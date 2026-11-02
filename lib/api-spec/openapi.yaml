@@ -360,6 +360,24 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/genai-project-submissions:
+    get:
+      operationId: listGenaiProjectSubmissions
+      tags: [analytics]
+      summary: List student GenAI Loom walkthrough submissions
+      description: Returns submitted project walkthroughs for authorized IRP reviewers
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Loom walkthrough submissions, newest updates first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGenaiProjectSubmissionsList"
+        "401":
+          description: Unauthorized
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -750,6 +768,31 @@ components:
           anyOf:
             - $ref: "#/components/schemas/GenaiProjectSubmission"
             - type: "null"
+
+    AdminGenaiProjectSubmission:
+      type: object
+      required: [academyUserId, studentName, projectTitle, loomUrl, updatedAt]
+      properties:
+        academyUserId:
+          type: string
+        studentName:
+          type: string
+        projectTitle:
+          type: string
+        loomUrl:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminGenaiProjectSubmissionsList:
+      type: object
+      required: [submissions]
+      properties:
+        submissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminGenaiProjectSubmission"
 
     DashboardAnalyticsEventRequest:
       type: object

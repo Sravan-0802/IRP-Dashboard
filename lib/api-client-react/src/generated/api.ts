@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminGenaiProjectSubmissionsList,
   ContactMessageRequest,
   ContactMessageResponse,
   DashboardAnalyticsEventRequest,
@@ -1443,6 +1444,84 @@ export function useGetDashboardAnalytics<TData = Awaited<ReturnType<typeof getDa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardAnalyticsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListGenaiProjectSubmissionsUrl = () => {
+
+
+
+
+  return `/api/admin/genai-project-submissions`
+}
+
+/**
+ * Returns submitted project walkthroughs for authorized IRP reviewers
+ * @summary List student GenAI Loom walkthrough submissions
+ */
+export const listGenaiProjectSubmissions = async ( options?: RequestInit): Promise<AdminGenaiProjectSubmissionsList> => {
+
+  return customFetch<AdminGenaiProjectSubmissionsList>(getListGenaiProjectSubmissionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGenaiProjectSubmissionsQueryKey = () => {
+    return [
+    `/api/admin/genai-project-submissions`
+    ] as const;
+    }
+
+
+export const getListGenaiProjectSubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof listGenaiProjectSubmissions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGenaiProjectSubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGenaiProjectSubmissionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGenaiProjectSubmissions>>> = ({ signal }) => listGenaiProjectSubmissions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGenaiProjectSubmissions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGenaiProjectSubmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listGenaiProjectSubmissions>>>
+export type ListGenaiProjectSubmissionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List student GenAI Loom walkthrough submissions
+ */
+
+export function useListGenaiProjectSubmissions<TData = Awaited<ReturnType<typeof listGenaiProjectSubmissions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGenaiProjectSubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGenaiProjectSubmissionsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
