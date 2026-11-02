@@ -207,6 +207,35 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/genai-project-progress:
+    get:
+      operationId: getGenaiProjectProgress
+      tags: [admin]
+      summary: List all students and their Loom submission progress
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [all, submitted, in_progress], default: all }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: Student progress, including students without a submission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenaiProjectProgressResponse"
+        "401":
+          description: Unauthorized
+
   /student/genai-project-submission:
     get:
       operationId: getGenaiProjectSubmission
@@ -663,6 +692,32 @@ components:
           type: boolean
         id:
           type: integer
+
+    GenaiProjectProgressStudent:
+      type: object
+      required: [userId, name, status, projectTitle, loomUrl, updatedAt]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [submitted, in_progress] }
+        projectTitle: { type: [string, "null"] }
+        loomUrl: { type: [string, "null"] }
+        updatedAt: { type: [string, "null"], format: date-time }
+
+    GenaiProjectProgressResponse:
+      type: object
+      required: [allStudents, submitted, inProgress, total, page, pageSize, students]
+      properties:
+        allStudents: { type: integer }
+        submitted: { type: integer }
+        inProgress: { type: integer }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenaiProjectProgressStudent"
 
     GenaiProjectSubmissionInput:
       type: object

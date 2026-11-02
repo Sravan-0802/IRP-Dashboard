@@ -27,8 +27,10 @@ import type {
   DashboardAnalyticsSummary,
   DeleteL1Registration200,
   DeleteL1RegistrationParams,
+  GenaiProjectProgressResponse,
   GenaiProjectSubmissionInput,
   GenaiProjectSubmissionResponse,
+  GetGenaiProjectProgressParams,
   GetL1RegistrationParams,
   HealthStatus,
   HumanInterviewResults,
@@ -906,6 +908,90 @@ export const useLogDashboardAnalyticsEvent = <TError = ErrorType<void>,
       > => {
       return useMutation(getLogDashboardAnalyticsEventMutationOptions(options));
     }
+
+export const getGetGenaiProjectProgressUrl = (params?: GetGenaiProjectProgressParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/genai-project-progress?${stringifiedParams}` : `/api/admin/genai-project-progress`
+}
+
+/**
+ * @summary List all students and their Loom submission progress
+ */
+export const getGenaiProjectProgress = async (params?: GetGenaiProjectProgressParams, options?: RequestInit): Promise<GenaiProjectProgressResponse> => {
+
+  return customFetch<GenaiProjectProgressResponse>(getGetGenaiProjectProgressUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenaiProjectProgressQueryKey = (params?: GetGenaiProjectProgressParams,) => {
+    return [
+    `/api/admin/genai-project-progress`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGenaiProjectProgressQueryOptions = <TData = Awaited<ReturnType<typeof getGenaiProjectProgress>>, TError = ErrorType<void>>(params?: GetGenaiProjectProgressParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenaiProjectProgressQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenaiProjectProgress>>> = ({ signal }) => getGenaiProjectProgress(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenaiProjectProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getGenaiProjectProgress>>>
+export type GetGenaiProjectProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all students and their Loom submission progress
+ */
+
+export function useGetGenaiProjectProgress<TData = Awaited<ReturnType<typeof getGenaiProjectProgress>>, TError = ErrorType<void>>(
+ params?: GetGenaiProjectProgressParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenaiProjectProgressQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetGenaiProjectSubmissionUrl = () => {
 

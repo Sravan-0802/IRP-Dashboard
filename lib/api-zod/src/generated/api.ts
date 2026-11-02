@@ -218,6 +218,42 @@ export const LogDashboardAnalyticsEventResponse = zod.object({
 
 
 /**
+ * @summary List all students and their Loom submission progress
+ */
+export const getGenaiProjectProgressQueryStatusDefault = `all`;
+export const getGenaiProjectProgressQueryPageDefault = 1;
+
+
+
+export const GetGenaiProjectProgressQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['all', 'submitted', 'in_progress']).default(getGenaiProjectProgressQueryStatusDefault),
+  "page": zod.coerce.number().min(1).default(getGenaiProjectProgressQueryPageDefault)
+})
+
+export const GetGenaiProjectProgressHeader = zod.object({
+  "x-api-key": zod.string()
+})
+
+export const GetGenaiProjectProgressResponse = zod.object({
+  "allStudents": zod.number(),
+  "submitted": zod.number(),
+  "inProgress": zod.number(),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "students": zod.array(zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['submitted', 'in_progress']),
+  "projectTitle": zod.string().nullable(),
+  "loomUrl": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
  * @summary Get the authenticated student's GenAI Loom walkthrough submission
  */
 export const GetGenaiProjectSubmissionResponse = zod.object({

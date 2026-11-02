@@ -156,6 +156,8 @@ export interface BasicDetailRow {
   payment_status?: string | null;
   payment_plan?: string | null;
   irp_eligible_status?: string | null;
+  lp_status?: string | null;
+  product_status?: string | null;
   profile_pic_url?: string | null;
 }
 
@@ -253,7 +255,8 @@ async function resolveNxtmockTable(bq: BigQuery, dataset: string): Promise<strin
 
 const BASIC_DETAILS_POCS_SELECT = `SELECT
       user_id, first_name, last_name, name_on_certificate, yog, lpoad,
-      payment_status, payment_plan, irp_eligible_status, profile_pic_url`;
+      payment_status, payment_plan, irp_eligible_status, lp_status, product_status,
+      profile_pic_url`;
 
 function basicDetailsTableCandidates(): string[] {
   const configured = process.env["BQ_BASIC_DETAILS_TABLE"]?.trim();
@@ -299,6 +302,10 @@ export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   for (const table of basicDetailsTableCandidates()) {
     const select =
       table === BASIC_DETAILS_LEGACY_TABLE ? "SELECT user_id, user_name" : BASIC_DETAILS_POCS_SELECT;
+    if (table === BASIC_DETAILS_LEGACY_TABLE) {
+      lastError = new Error("Legacy basic-details table has no dashboard access status columns.");
+      continue;
+    }
     try {
       const [rows] = await bq.query({
         query: `${select} FROM \`${projectId}.${dataset}.${table}\``,

@@ -248,8 +248,9 @@ export const dashboardAnalyticsEventsTable = pgTable("dashboard_analytics_events
 /**
  * Mirror of BigQuery `academy_users_basic_details_for_pocs` — the single source
  * of truth for student identity (name on certificate, YOG, profile picture) and
- * for the payment gate (`payment_status`). `user_name` is a derived display
- * name kept for older callers.
+ * for dashboard access (`irp_eligible_status`, `lp_status`, and
+ * `product_status`). Payment fields are retained for reporting but are not part
+ * of the dashboard access decision.
  */
 export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details", {
   userId: text("user_id").primaryKey(),
@@ -260,12 +261,14 @@ export const academyUserBasicDetailsTable = pgTable("academy_user_basic_details"
   yog: integer("yog"),
   /** Learning Portal Onboarding Access Given Date. */
   lpoad: timestamp("lpoad", { withTimezone: true }),
-  /** PAID | UNPAID | … — used with irp_eligible_status for the access gate. */
+  /** Payment values are retained for reporting, not used by the dashboard gate. */
   paymentStatus: text("payment_status"),
   /** NBFC | FLEX | ONE_TIME | … */
   paymentPlan: text("payment_plan"),
-  /** Must be ELIGIBLE (with a paid payment_status) for dashboard access. */
+  /** Must be ELIGIBLE for dashboard access. */
   irpEligibleStatus: text("irp_eligible_status"),
+  lpStatus: text("lp_status"),
+  productStatus: text("product_status"),
   profilePicUrl: text("profile_pic_url"),
   syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
 });

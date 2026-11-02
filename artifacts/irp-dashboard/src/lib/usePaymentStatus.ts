@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
-import { fetchPaymentStatus } from "@/lib/paymentStatusApi";
+import { fetchDashboardAccess, type DashboardAccessStatus } from "@/lib/paymentStatusApi";
 
-export function usePaymentStatus() {
-  const [paid, setPaid] = useState(true);
+export function useDashboardAccess() {
+  const [access, setAccess] = useState<DashboardAccessStatus | null>(null);
+  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchPaymentStatus()
-      .then((p) => {
-        if (!cancelled) setPaid(p);
+    setError(false);
+    fetchDashboardAccess()
+      .then((result) => {
+        if (!cancelled) setAccess(result);
       })
       .catch(() => {
-        // Fail open: never lock out a paying student on a transient error.
-        if (!cancelled) setPaid(true);
+        if (!cancelled) setError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -24,5 +25,5 @@ export function usePaymentStatus() {
     };
   }, []);
 
-  return { paid, loading };
+  return { access, error, loading };
 }

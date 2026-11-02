@@ -3,9 +3,11 @@
  * `academy_users_basic_details_for_pocs` (mirrored into
  * `academy_user_basic_details`):
  *
- *   - access gate       → must be paid AND IRP-eligible (both required)
+ *   - access gate       → IRP-eligible with active LP and product statuses
  *   - payment           → `payment_status`
  *   - IRP eligibility   → `irp_eligible_status` (must be ELIGIBLE)
+ *   - LP status         → `lp_status` (must be ACTIVE)
+ *   - product status    → `product_status` (must be ACTIVE)
  *   - display name      → `name_on_certificate`
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
@@ -86,6 +88,24 @@ export function normalizeIrpEligibleStatus(raw: unknown): string | null {
   return cleaned || null;
 }
 
+export function normalizeAccessStatus(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const cleaned = String(raw).trim().toUpperCase().replace(/[\s-]+/g, "_");
+  return cleaned || null;
+}
+
+export function isDashboardStatusEligible(row: {
+  irpEligibleStatus?: string | null;
+  lpStatus?: string | null;
+  productStatus?: string | null;
+}): boolean {
+  return (
+    isIrpEligibleStatus(row.irpEligibleStatus) &&
+    normalizeAccessStatus(row.lpStatus) === "ACTIVE" &&
+    normalizeAccessStatus(row.productStatus) === "ACTIVE"
+  );
+}
+
 /** True when this `payment_status` passes the payment half of the access gate. */
 export function isPaidPaymentStatus(raw: unknown): boolean {
   const status = normalizePaymentStatusValue(raw);
@@ -99,8 +119,8 @@ export function isIrpEligibleStatus(raw: unknown): boolean {
 }
 
 /**
- * Access requires both: paid (not UNPAID/PARTIALLY_PAID) AND IRP-eligible.
- * Keep this and `getAcademyUserPaymentAccess` in agreement.
+ * Payment-only classification for reports. Do not use this helper for dashboard access;
+ * dashboard admission is based on IRP, LP, and product statuses below.
  */
 export function isPaidAcademyUser(row: {
   paymentStatus?: string | null;
@@ -191,27 +211,24 @@ export async function getAcademyUserBasicDetails(
   return row ?? null;
 }
 
-export type AcademyUserPaymentAccess = {
-  paid: boolean;
-  /** Canonical status, or null when the user has no row in the POCs mirror. */
+export type AcademyUserDashboardAccess = {
+  allowed: boolean;
   paymentStatus: string | null;
   paymentPlan: string | null;
   irpEligibleStatus: string | null;
+  lpStatus: string | null;
+  productStatus: string | null;
 };
 
 /**
- * Resolves dashboard access from the POCs mirror. Access is granted only when
- * both are true:
- *   1. payment — not `UNPAID` / `PARTIALLY_PAID`
- *   2. IRP     — `irp_eligible_status` is exactly `ELIGIBLE`
- *
- * A user with no mirror row is treated as allowed — that only happens when the
- * BigQuery sync has not reached them yet, and locking a paying eligible student
- * out of their dashboard is worse than the reverse.
+ * Resolves dashboard access from the POCs mirror. All three source statuses
+ * must match exactly after normalization. Payment status is not an access rule.
+ * A missing mirror row or status fails closed; explicit admin overrides remain
+ * separate and retain their existing precedence.
  */
-export async function getAcademyUserPaymentAccess(
+export async function getAcademyUserDashboardAccess(
   userId: string,
-): Promise<AcademyUserPaymentAccess> {
+): Promise<AcademyUserDashboardAccess> {
   const [row, manualOverrideRows] = await Promise.all([
     getAcademyUserBasicDetails(userId),
     db
@@ -239,33 +256,29 @@ export async function getAcademyUserPaymentAccess(
   const paymentStatus = row ? normalizePaymentStatusValue(row.paymentStatus) : null;
   const irpEligibleStatus = row ? normalizeIrpEligibleStatus(row.irpEligibleStatus) : null;
   const paymentPlan = row?.paymentPlan ?? null;
+  const lpStatus = row ? normalizeAccessStatus(row.lpStatus) : null;
+  const productStatus = row ? normalizeAccessStatus(row.productStatus) : null;
 
   // Deny wins if both sentinels exist due to older or interrupted operations.
   if (hasManualRevoke) {
-    return { paid: false, paymentStatus, paymentPlan, irpEligibleStatus };
+    return { allowed: false, paymentStatus, paymentPlan, irpEligibleStatus, lpStatus, productStatus };
   }
   if (hasManualGrant) {
-    return { paid: true, paymentStatus, paymentPlan, irpEligibleStatus };
+    return { allowed: true, paymentStatus, paymentPlan, irpEligibleStatus, lpStatus, productStatus };
   }
 
   if (!row) {
-    logger.warn({ userId }, "No academy_user_basic_details row; defaulting payment gate to paid");
-    return { paid: true, paymentStatus: null, paymentPlan: null, irpEligibleStatus: null };
+    logger.warn({ userId }, "No academy_user_basic_details row; denying dashboard access");
+    return { allowed: false, paymentStatus: null, paymentPlan: null, irpEligibleStatus: null, lpStatus: null, productStatus: null };
   }
 
-  // Local sample viewing only. Never set this in production: the POCs mirror
-  // can be missing eligibility, which would otherwise lock the preview.
-  const devPreview =
-    process.env.NODE_ENV !== "production" &&
-    process.env.DEV_FORCE_DASHBOARD_ACCESS === "true";
-
   return {
-    paid:
-      devPreview ||
-      (isPaidPaymentStatus(paymentStatus) && isIrpEligibleStatus(irpEligibleStatus)),
+    allowed: isDashboardStatusEligible({ irpEligibleStatus, lpStatus, productStatus }),
     paymentStatus,
     paymentPlan,
     irpEligibleStatus,
+    lpStatus,
+    productStatus,
   };
 }
 

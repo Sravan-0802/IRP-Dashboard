@@ -156,6 +156,36 @@ export interface ContactMessageResponse {
   id: number;
 }
 
+export type GenaiProjectProgressStudentStatus = typeof GenaiProjectProgressStudentStatus[keyof typeof GenaiProjectProgressStudentStatus];
+
+
+export const GenaiProjectProgressStudentStatus = {
+  submitted: 'submitted',
+  in_progress: 'in_progress',
+} as const;
+
+export interface GenaiProjectProgressStudent {
+  userId: string;
+  name: string;
+  status: GenaiProjectProgressStudentStatus;
+  /** @nullable */
+  projectTitle: string | null;
+  /** @nullable */
+  loomUrl: string | null;
+  /** @nullable */
+  updatedAt: string | null;
+}
+
+export interface GenaiProjectProgressResponse {
+  allStudents: number;
+  submitted: number;
+  inProgress: number;
+  total: number;
+  page: number;
+  pageSize: number;
+  students: GenaiProjectProgressStudent[];
+}
+
 export interface GenaiProjectSubmissionInput {
   /** @minLength 1 */
   projectTitle: string;
@@ -262,6 +292,24 @@ export interface DashboardAnalyticsSummary {
   l1Registrations: L1Registration[];
   l1RegistrationCount: number;
 }
+
+export type GetGenaiProjectProgressParams = {
+search?: string;
+status?: GetGenaiProjectProgressStatus;
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetGenaiProjectProgressStatus = typeof GetGenaiProjectProgressStatus[keyof typeof GetGenaiProjectProgressStatus];
+
+
+export const GetGenaiProjectProgressStatus = {
+  all: 'all',
+  submitted: 'submitted',
+  in_progress: 'in_progress',
+} as const;
 
 export type GetL1RegistrationParams = {
 cycle?: number;

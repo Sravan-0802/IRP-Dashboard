@@ -9,18 +9,22 @@ function authHeaders(): HeadersInit {
 }
 
 /**
- * Returns whether the current user has completed payment, sourced from
- * `payment_status` in the academy basic-details table. Fails open (treats the
- * user as paid) if the request errors, so a paying student is never blocked by
- * a transient failure.
+ * Returns the dashboard access decision derived from IRP, LP, and product
+ * statuses. Payment status is not used to decide access.
  */
-export async function fetchPaymentStatus(): Promise<boolean> {
+export type DashboardAccessStatus = {
+  allowed: boolean;
+  irpEligibleStatus: string | null;
+  lpStatus: string | null;
+  productStatus: string | null;
+};
+
+export async function fetchDashboardAccess(): Promise<DashboardAccessStatus> {
   const res = await fetch(`/api/student/payment-status`, {
     headers: authHeaders(),
   });
   if (!res.ok) {
     throw new Error("Could not load payment status");
   }
-  const data = (await res.json()) as { paid: boolean };
-  return data.paid !== false;
+  return (await res.json()) as DashboardAccessStatus;
 }

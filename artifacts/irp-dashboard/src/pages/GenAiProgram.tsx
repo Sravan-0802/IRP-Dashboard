@@ -549,18 +549,6 @@ function GenAiAssessments({
                   </article>
                 ))}
               </div>
-              <GenaiLoomSubmissionForm
-                projectTitle={submissionProject}
-                submission={loomSubmission}
-                loading={loomQuery.isLoading}
-                loadError={loomQuery.error instanceof Error ? loomQuery.error.message : null}
-                onRetry={() => void loomQuery.refetch()}
-                saving={saveLoom.isPending}
-                saveError={saveLoom.error instanceof Error ? saveLoom.error.message : null}
-                savedSubmission={saveLoom.data?.submission ?? null}
-                onSave={(input) => saveLoom.mutate(input)}
-                onResetSaveState={() => saveLoom.reset()}
-              />
               <p className="text-xs leading-5 text-[#667085]">
                 Complete any 2 projects and submit a Loom video walkthrough for one of them.
                 {projectGrant?.expiresAt
@@ -574,6 +562,29 @@ function GenAiAssessments({
               ) : null}
         </div>
       )}
+      <div className="mt-6">
+        <GenaiLoomSubmissionForm
+          projectTitle={submissionProject}
+          availableProjects={selectedProjects.length >= 2 ? selectedProjects : GENAI_PROJECTS.map((p) => p.title)}
+          onProjectChange={(title) => {
+            if (!selectedProjects.includes(title)) {
+              if (selectedProjects.length >= 2) return;
+              setSelectedProjects([...selectedProjects, title]);
+            }
+            setLoomProject(title);
+            saveLoom.reset();
+          }}
+          submission={loomSubmission}
+          loading={loomQuery.isLoading}
+          loadError={loomQuery.error instanceof Error ? loomQuery.error.message : null}
+          onRetry={() => void loomQuery.refetch()}
+          saving={saveLoom.isPending}
+          saveError={saveLoom.error instanceof Error ? saveLoom.error.message : null}
+          savedSubmission={saveLoom.data?.submission ?? null}
+          onSave={(input) => saveLoom.mutate(input)}
+          onResetSaveState={() => saveLoom.reset()}
+        />
+      </div>
     </section>
   );
 }
@@ -599,6 +610,8 @@ function isValidLoomUrl(value: string): boolean {
 
 function GenaiLoomSubmissionForm({
   projectTitle,
+  availableProjects,
+  onProjectChange,
   submission,
   loading,
   loadError,
@@ -610,6 +623,8 @@ function GenaiLoomSubmissionForm({
   onResetSaveState,
 }: {
   projectTitle: string | null;
+  availableProjects: string[];
+  onProjectChange: (title: string) => void;
   submission: LoomSubmissionRecord | null;
   loading: boolean;
   loadError: string | null;
@@ -660,10 +675,16 @@ function GenaiLoomSubmissionForm({
         </span>
         <div className="min-w-0 flex-1">
           <h4 className="font-display text-base font-extrabold text-[#101828]">Loom walkthrough</h4>
+          <p
+            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${submission || savedSubmission ? "bg-[#ecfdf3] text-[#067647]" : "bg-[#fff4e5] text-[#93370d]"}`}
+            data-testid="text-genai-loom-status"
+          >
+            {submission || savedSubmission ? "Submitted" : loading ? "Checking status…" : loadError ? "Status unavailable" : "In progress"}
+          </p>
           <p className="mt-1 text-sm text-[#475467]">
             {projectTitle
               ? `Submit a walkthrough for ${projectTitle}. You can update the link later.`
-              : "Select a project above and choose it for your Loom walkthrough."}
+              : "Choose your project below and submit your Loom walkthrough. Available to all students."}
           </p>
           {submission ? (
             <p className="mt-2 text-xs font-medium text-[#475467]" data-testid="text-genai-loom-saved-project">
@@ -683,6 +704,25 @@ function GenaiLoomSubmissionForm({
       ) : null}
 
       <form className="mt-4 space-y-3" noValidate onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="genai-loom-project" className="mb-1.5 block text-sm font-semibold text-[#344054]">
+            Project for your walkthrough
+          </label>
+          <select
+            id="genai-loom-project"
+            data-testid="select-genai-loom-project"
+            value={projectTitle ?? ""}
+            onChange={(event) => onProjectChange(event.target.value)}
+            className="w-full rounded-lg border border-[#d0d5dd] bg-white px-3 py-2.5 text-sm text-[#101828]"
+          >
+            <option value="" disabled>Choose a project</option>
+            {GENAI_PROJECTS.map((project) => (
+              <option key={project.title} value={project.title} disabled={!availableProjects.includes(project.title) && project.title !== projectTitle}>
+                {project.title}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label htmlFor="genai-loom-url" className="mb-1.5 block text-sm font-semibold text-[#344054]">
             Loom video URL
@@ -719,7 +759,7 @@ function GenaiLoomSubmissionForm({
         {savedForCurrentDraft ? (
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#067647]" role="status" aria-live="polite" data-testid="text-genai-loom-saved">
             <Check className="h-4 w-4" />
-            Loom link saved for this project.
+            Successfully submitted. Your Loom walkthrough has been saved.
           </p>
         ) : null}
 

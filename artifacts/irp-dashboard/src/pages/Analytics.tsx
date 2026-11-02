@@ -12,6 +12,7 @@ import { L1QualificationPanel } from "@/components/admin/L1QualificationPanel";
 import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
 import { HumanInterviewSyncPanel } from "@/components/admin/HumanInterviewSyncPanel";
+import { GenaiLoomProgressPanel } from "@/components/admin/GenaiLoomProgressPanel";
 
 type AnalyticsMetric = {
   eventType: string;
@@ -88,6 +89,7 @@ type AnalyticsSummary = {
 };
 
 type AnalyticsTab =
+  | "loom_progress"
   | "overview"
   | "visitors"
   | "registrations"
@@ -224,6 +226,7 @@ function captureTabFromUrl(): AnalyticsTab | null {
     const tab = new URL(window.location.href).searchParams.get("tab")?.trim();
     const allowed: AnalyticsTab[] = [
       "overview",
+      "loom_progress",
       "visitors",
       "registrations",
       "feedback",
@@ -614,6 +617,7 @@ export default function AnalyticsPage() {
         ? [
             { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
+            { id: "loom_progress" as const, label: "Loom progress", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
             { id: "l1_rules" as const, label: "L1 scores", count: undefined },
@@ -637,6 +641,7 @@ export default function AnalyticsPage() {
         ? [
             { id: "genai_popup" as const, label: "GenAI pop-up", count: undefined },
             { id: "program_board" as const, label: "GenAI & calendar", count: undefined },
+            { id: "loom_progress" as const, label: "Loom progress", count: undefined },
             { id: "fe_rules" as const, label: "FE scores", count: undefined },
             { id: "genai_rules" as const, label: "GenAI scores", count: undefined },
             { id: "l1_rules" as const, label: "L1 scores", count: undefined },
@@ -1854,6 +1859,9 @@ export default function AnalyticsPage() {
 
             {activeTab === "dashboard_access" && apiKey ? (
               <DashboardAccessPanel apiKey={apiKey} />
+            ) : null}
+            {activeTab === "loom_progress" && apiKey ? (
+              <GenaiLoomProgressPanel apiKey={apiKey} />
             ) : null}
 
             {activeTab === "genai_popup" && apiKey ? (

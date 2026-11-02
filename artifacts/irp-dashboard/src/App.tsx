@@ -12,7 +12,7 @@ import PaymentRequired from "./pages/PaymentRequired";
 import NotFound from "@/pages/not-found";
 import { redirectToLogin, shouldRequireSsoLogin } from "@/lib/authToken";
 import { useJourney, ApiError } from "@/lib/useJourney";
-import { usePaymentStatus } from "@/lib/usePaymentStatus";
+import { useDashboardAccess } from "@/lib/usePaymentStatus";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +27,7 @@ function isUnauthorized(error: unknown): boolean {
 }
 
 function Home() {
-  const { paid, loading: paymentLoading } = usePaymentStatus();
+  const { access, error: accessError, loading: accessLoading } = useDashboardAccess();
   const { data: journey, isLoading, isError: journeyError, error: journeyErr } = useJourney();
   const { error: studentError } = useGetStudent({
     query: { queryKey: getGetStudentQueryKey(), retry: false },
@@ -47,9 +47,8 @@ function Home() {
     );
   }
 
-  // Payment gate takes priority over everything else: unpaid users see a
-  // "complete your payment" prompt instead of the dashboard.
-  if (paymentLoading) {
+  // Verify the three dashboard access statuses before loading student content.
+  if (accessLoading) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
         <p className="text-sm font-semibold text-muted2">Loading…</p>
@@ -57,8 +56,22 @@ function Home() {
     );
   }
 
-  if (!paid) {
-    return <PaymentRequired />;
+  if (accessError) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+          <p className="font-display text-lg font-extrabold text-ink">Could not verify dashboard access</p>
+          <p className="mt-2 text-sm text-muted2">Refresh to retry checking your IRP eligibility, LP status, and product status.</p>
+          <button type="button" onClick={() => window.location.reload()} className="btn-pop mt-5 rounded-xl px-5 py-2.5 text-sm font-bold">
+            Refresh dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!access?.allowed) {
+    return <PaymentRequired statuses={access} />;
   }
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.

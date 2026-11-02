@@ -36,7 +36,7 @@ import { getFeAssessmentStatus } from "../lib/feQualification";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import {
   getAcademyUserBasicDetails,
-  getAcademyUserPaymentAccess,
+  getAcademyUserDashboardAccess,
   isLikelyDisplayName,
   resolveAcademyUserDisplayName,
   resolveProfilePicUrl,
@@ -1425,8 +1425,8 @@ router.get("/student/genai-results", async (req, res) => {
   }
 });
 
-// GET /api/student/payment-status — whether the current user may access the
-// paid dashboard. Requires paid payment_status AND irp_eligible_status=ELIGIBLE.
+// GET /api/student/payment-status — dashboard access based on IRP, LP, and
+// product statuses. Payment status is not part of this restriction.
 router.get("/student/payment-status", async (req, res) => {
   try {
     const userId = await resolveAcademyUserId(req);
@@ -1435,12 +1435,14 @@ router.get("/student/payment-status", async (req, res) => {
       return;
     }
 
-    const access = await getAcademyUserPaymentAccess(userId);
+    const access = await getAcademyUserDashboardAccess(userId);
     res.json({
-      paid: access.paid,
+      allowed: access.allowed,
       paymentStatus: access.paymentStatus,
       paymentPlan: access.paymentPlan,
       irpEligibleStatus: access.irpEligibleStatus,
+      lpStatus: access.lpStatus,
+      productStatus: access.productStatus,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get payment status");

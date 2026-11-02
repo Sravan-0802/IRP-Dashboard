@@ -20,3 +20,9 @@ GenAI-related assessments belong under GenAI Track, not the MERN assessment sect
 **Why:** The user explicitly requested this track placement when removing the summary tiles.
 
 **How to apply:** Keep GenAI assessment results and registration notices separate from MERN-facing assessment views.
+
+Make the Loom submission option available to all dashboard students, without requiring a project access grant. Keep challenge links independently grant-gated. Admin progress must include students who have not submitted, not only existing submissions.
+
+**Why:** The user asked to show the Loom option to all students and show successful submissions versus “inprogress” in admin.
+
+**How to apply:** Show “Submitted” only for a successfully persisted Loom link and “In progress” when no submission exists. This status does not imply a student has started working; no saved draft is required.
