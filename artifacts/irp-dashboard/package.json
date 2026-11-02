@@ -9,6 +9,7 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test:project-links": "node --test src/pages/GenAiProgram.test.mjs",
     "test:project-choices": "node --test src/lib/genaiProjectChoices.test.mjs",
+    "test:csv": "node --test src/lib/csv.test.mjs",
     "test:loom-submissions": "node --test src/components/admin/genaiLoomSubmissionsCsv.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.config.ts"

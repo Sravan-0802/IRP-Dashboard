@@ -5,6 +5,8 @@ import {
 } from "@workspace/api-client-react";
 import { buildSubmissionsCsv, type LoomSubmissionRow } from "./genaiLoomSubmissionsCsv";
 
+import { csvCell } from "../../lib/csv";
+
 function formatUpdatedAt(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
