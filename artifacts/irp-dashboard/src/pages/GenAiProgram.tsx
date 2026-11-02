@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Video } from "lucide-react";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
 import { useProgramBoard } from "@/lib/useProgramBoard";
@@ -336,6 +336,21 @@ function GenAiAssessments({
   const openCount = openItems.length;
   const upcoming = results.filter((item) => item.status === "UPCOMING");
   const scored = results.filter((item) => item.status !== "UPCOMING");
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [loomProject, setLoomProject] = useState<string | null>(null);
+
+  function toggleProject(title: string) {
+    if (selectedProjects.includes(title)) {
+      const next = selectedProjects.filter((project) => project !== title);
+      setSelectedProjects(next);
+      if (loomProject === title) setLoomProject(next[0] ?? null);
+      return;
+    }
+    if (selectedProjects.length >= 2) return;
+    setSelectedProjects([...selectedProjects, title]);
+    if (!loomProject) setLoomProject(title);
+  }
+
   return (
     <section className="rounded-2xl border border-[#eaecf0] bg-white p-5 sm:p-6">
       <h2 className="font-display text-lg font-extrabold text-[#101828]">Assessments</h2>
@@ -432,30 +447,77 @@ function GenAiAssessments({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eaecf0] pb-3">
                 <h3 className="font-display text-base font-extrabold text-[#101828]">Choose your projects</h3>
-                <p className="text-sm text-[#667085]">Choose any 2</p>
+                <p className="text-sm font-medium text-[#667085]" data-testid="text-project-selection-count">
+                  {selectedProjects.length === 0
+                    ? "Choose any 2"
+                    : selectedProjects.length === 1
+                      ? "1 more project to choose"
+                      : "2 of 2 projects selected"}
+                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 {GENAI_PROJECTS.map((project, index) => (
                   <article
                     key={project.title}
-                    className="flex h-full flex-col rounded-xl border border-[#eaecf0] bg-white p-4"
+                    data-testid={`card-genai-project-${index + 1}`}
+                    className={`flex h-full flex-col rounded-xl border p-4 transition-colors ${
+                      selectedProjects.includes(project.title)
+                        ? "border-[#6941c6] bg-[#fcfaff] ring-1 ring-[#6941c6]"
+                        : "border-[#eaecf0] bg-white"
+                    }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-bold tracking-wide text-[#667085]">
                         PROJECT {String(index + 1).padStart(2, "0")}
                       </span>
-                      <span className="rounded-full bg-[#f4f3ff] px-2 py-0.5 text-[10px] font-bold text-[#6941c6]">
-                        RAG challenge
-                      </span>
+                      {selectedProjects.includes(project.title) ? (
+                        <span
+                          data-testid={`status-genai-project-${index + 1}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-[#f4f3ff] px-2 py-0.5 text-[10px] font-bold text-[#6941c6]"
+                        >
+                          {loomProject === project.title ? <><Video className="h-3 w-3" /> Selected · Video</> : "Selected"}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-[#f4f3ff] px-2 py-0.5 text-[10px] font-bold text-[#6941c6]">
+                          RAG challenge
+                        </span>
+                      )}
                     </div>
                     <h4 className="mt-3 font-display text-base font-extrabold leading-snug text-[#101828]">
                       {project.title}
                     </h4>
                     <p className="mt-2 flex-1 text-sm leading-6 text-[#475467]">{project.description}</p>
+                    <button
+                      type="button"
+                      data-testid={`button-toggle-genai-project-${index + 1}`}
+                      aria-pressed={selectedProjects.includes(project.title)}
+                      disabled={!selectedProjects.includes(project.title) && selectedProjects.length >= 2}
+                      onClick={() => toggleProject(project.title)}
+                      className={`mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        selectedProjects.includes(project.title)
+                          ? "border-[#d6bbfb] bg-white text-[#6941c6] hover:bg-[#f9f5ff]"
+                          : "border-[#d0d5dd] bg-white text-[#344054] hover:border-[#6941c6] hover:text-[#6941c6]"
+                      }`}
+                    >
+                      {selectedProjects.includes(project.title) ? <Check className="h-4 w-4" /> : null}
+                      {selectedProjects.includes(project.title) ? "Selected" : "Select project"}
+                    </button>
+                    {selectedProjects.includes(project.title) && loomProject !== project.title ? (
+                      <button
+                        type="button"
+                        data-testid={`button-set-genai-loom-${index + 1}`}
+                        onClick={() => setLoomProject(project.title)}
+                        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#6941c6] hover:bg-[#f9f5ff]"
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                        Use for Loom walkthrough
+                      </button>
+                    ) : null}
                     <a
                       href={project.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      data-testid={`link-kaggle-genai-project-${index + 1}`}
                       className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1849a9]"
                     >
                       Open Kaggle challenge
