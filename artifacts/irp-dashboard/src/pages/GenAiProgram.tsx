@@ -119,7 +119,7 @@ export function GenAiProgram() {
         </p>
       </div>
 
-      <RegistrationBatchCallout />
+      <RegistrationBatchCallout track="genai" />
       <GenAiAccessLinks />
       <ScheduledAccessCallouts track="genai" />
       <GenAiJourney assessments={g.assessments} results={results.assessments} />
@@ -362,9 +362,9 @@ function GenAiAssessments({
 
   return (
     <section className="rounded-2xl border border-[#eaecf0] bg-white p-5 sm:p-6">
-      <h2 className="font-display text-lg font-extrabold text-[#101828]">Assessments</h2>
+      <h2 className="font-display text-lg font-extrabold text-[#101828]">GenAI Assessments</h2>
       <p className="mt-1 text-sm text-[#667085]">
-        Register, take each assessment and see your section-wise scores. Fixed dates for your batch.
+        Register for your GenAI assessments and see your section-wise scores. Fixed dates for your batch.
       </p>
       <div className="mt-4 inline-flex rounded-lg bg-[#f2f4f7] p-1">
         <button
@@ -449,11 +449,6 @@ function GenAiAssessments({
         </div>
       ) : (
         <div className="mt-6 space-y-6" data-testid="section-genai-projects">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <ProjectSummaryCard value={String(GENAI_PROJECTS.length)} label="projects available" />
-                <ProjectSummaryCard value="Any 2" label="to complete and submit" />
-                <ProjectSummaryCard value="1 Loom" label="video walkthrough for one of your 2" />
-              </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#eaecf0] pt-5">
                 <h3 className="font-display text-base font-extrabold text-[#101828]">Choose your projects</h3>
                 <p aria-live="polite" className="text-sm font-medium text-[#667085]" data-testid="text-project-selection-count">
@@ -556,15 +551,6 @@ function GenAiAssessments({
         </div>
       )}
     </section>
-  );
-}
-
-function ProjectSummaryCard({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-2xl border border-[#eaecf0] bg-[#fafafa] px-4 py-4">
-      <p className="font-display text-[28px] font-extrabold leading-tight text-[#6d28d9]">{value}</p>
-      <p className="mt-0.5 text-xs leading-5 text-[#475467]">{label}</p>
-    </div>
   );
 }
 

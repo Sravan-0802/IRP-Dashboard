@@ -8,3 +8,15 @@ Use the user's Intelligent RAG, Agentic RAG, and Building & Optimizing RAG chall
 **Why:** The user repeatedly requested the supplied RAG content in the reference chooser layout. The screenshot shows four generic projects, but the user supplied three actual challenges.
 
 **How to apply:** Keep the supplied challenge catalogue separate from screenshot sample content. Follow its “any 2” and “1 Loom walkthrough for one of your 2” guidance without inventing a fourth challenge.
+
+Do not restore the reference's three summary tiles (“projects available”, “Any 2”, “1 Loom”); keep the actual project cards.
+
+**Why:** The user subsequently asked to remove those three tiles.
+
+**How to apply:** Use the reference for chooser styling, but respect this later exception.
+
+GenAI-related assessments belong under GenAI Track, not the MERN assessment section.
+
+**Why:** The user explicitly requested this track placement when removing the summary tiles.
+
+**How to apply:** Keep GenAI assessment results and registration notices separate from MERN-facing assessment views.

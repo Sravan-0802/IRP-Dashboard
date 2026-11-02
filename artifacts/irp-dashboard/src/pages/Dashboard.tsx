@@ -36,6 +36,7 @@ import { PAYMENT_CONCERNS_FORM_URL } from "@/pages/PaymentRequired";
 import { GenAiTrainingPopup } from "@/components/irp/GenAiTrainingPopup";
 import { useGenAiTrainingPopup } from "@/lib/useGenAiTrainingPopup";
 import { useGenAiTrainingConfig } from "@/lib/useGenAiTrainingConfig";
+import { isGenaiAssessmentLabel } from "@/lib/registrationBatchDisplay";
 
 const EMPTY_ASSESSMENTS: AssessmentResult[] = [];
 
@@ -93,8 +94,12 @@ export default function Dashboard() {
   const displayProgress = progress ?? (progressError ? DEMO_PROGRESS : null);
   const displayAssessments = useMemo(
     () =>
-      assessmentsData?.assessments ??
-      (assessmentsError ? DEMO_ASSESSMENTS.assessments : EMPTY_ASSESSMENTS),
+      (assessmentsData?.assessments ??
+      (assessmentsError ? DEMO_ASSESSMENTS.assessments : EMPTY_ASSESSMENTS)).filter(
+        (assessment) => !isGenaiAssessmentLabel(
+          `${assessment.assessmentTitle} ${assessment.assessmentTag ?? ""}`,
+        ),
+      ),
     [assessmentsData?.assessments, assessmentsError],
   );
 

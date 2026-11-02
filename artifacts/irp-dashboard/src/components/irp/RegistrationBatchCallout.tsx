@@ -36,8 +36,8 @@ async function submitBatchRegistration(
   return record;
 }
 
-export function RegistrationBatchCallout() {
-  const { batch, hasResponded, loading, refetch } = useRegistrationBatch();
+export function RegistrationBatchCallout({ track = "mern" }: { track?: "mern" | "genai" }) {
+  const { batch, hasResponded, loading, refetch } = useRegistrationBatch(track);
   const [modalOpen, setModalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 

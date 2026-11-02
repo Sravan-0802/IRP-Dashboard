@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/authToken";
+import { registrationBatchMatchesTrack } from "@/lib/registrationBatchDisplay";
 
 export type ActiveRegistrationBatch = {
   id: number;
@@ -36,16 +37,18 @@ async function fetchRegistrationBatch(): Promise<RegistrationBatchState> {
   return res.json() as Promise<RegistrationBatchState>;
 }
 
-export function useRegistrationBatch() {
+export function useRegistrationBatch(track: "mern" | "genai" = "mern") {
   const query = useQuery({
     queryKey: REG_BATCH_KEY,
     queryFn: fetchRegistrationBatch,
     staleTime: 60_000,
     retry: 1,
   });
+  const candidate = query.data?.batch;
+  const batch = candidate && registrationBatchMatchesTrack(candidate, track) ? candidate : null;
   return {
-    batch: query.data?.batch ?? null,
-    hasResponded: query.data?.hasResponded ?? false,
+    batch,
+    hasResponded: Boolean(batch && query.data?.hasResponded),
     loading: query.isLoading,
     refetch: query.refetch,
   };

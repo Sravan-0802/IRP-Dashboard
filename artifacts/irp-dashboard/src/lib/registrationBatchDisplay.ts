@@ -1,3 +1,16 @@
+export function isGenaiAssessmentLabel(value: string): boolean {
+  return /(?:^|[^a-z0-9])(?:gen[\s_-]*ai|generative[\s_-]+ai)(?=$|[^a-z0-9])/i.test(value);
+}
+
+/** Legacy batches have no track field, so use their admin-entered assessment label/name. */
+export function registrationBatchMatchesTrack(
+  batch: { assessmentLabel: string; name: string | null },
+  track: "mern" | "genai",
+): boolean {
+  const isGenai = isGenaiAssessmentLabel(`${batch.assessmentLabel} ${batch.name ?? ""}`);
+  return isGenai === (track === "genai");
+}
+
 /** Strip typo/Excel artifacts from admin-entered assessment dates. */
 export function formatAssessmentDateLabel(value: string): string {
   return value.replace(/\^th/gi, "").replace(/\s+/g, " ").trim();
