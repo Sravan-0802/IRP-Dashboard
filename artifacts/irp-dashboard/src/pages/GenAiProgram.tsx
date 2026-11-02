@@ -339,8 +339,6 @@ function GenAiAssessments({
   tab: "assessments" | "project";
   onTab: (tab: "assessments" | "project") => void;
 }) {
-  const { findGrant, loading: accessLoading } = useStudentAccess();
-  const projectGrant = findGrant("genai_project", "default");
   const openItems = assessments.filter((item) => item.status === "open");
   const completed = assessments.filter((item) => item.status === "completed");
   const openCount = openItems.length;
@@ -503,7 +501,13 @@ function GenAiAssessments({
                       aria-label={`${selectedProjects.includes(project.title) ? "Remove" : "Choose"} ${project.title}`}
                       aria-pressed={selectedProjects.includes(project.title)}
                       disabled={!selectedProjects.includes(project.title) && selectedProjects.length >= 2}
-                      onClick={() => toggleProject(project.title)}
+                      onClick={() => {
+                        const alreadySelected = selectedProjects.includes(project.title);
+                        toggleProject(project.title);
+                        if (!alreadySelected) {
+                          window.open(project.url, "_blank", "noopener,noreferrer");
+                        }
+                      }}
                       className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         selectedProjects.includes(project.title)
                           ? "border-[#d0d5dd] bg-white text-[#344054] hover:bg-[#f9fafb]"
@@ -512,25 +516,16 @@ function GenAiAssessments({
                     >
                       {selectedProjects.includes(project.title) ? "Remove" : "Choose this project"}
                     </button>
-                    {projectGrant ? (
-                      <a
-                        href={project.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid={`link-kaggle-genai-project-${index + 1}`}
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc] hover:underline"
-                      >
-                        View brief
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <span
-                        data-testid={`status-kaggle-locked-${index + 1}`}
-                        className="text-xs font-medium text-[#667085]"
-                      >
-                        {accessLoading ? "Checking access…" : "Kaggle access locked"}
-                      </span>
-                    )}
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`link-kaggle-genai-project-${index + 1}`}
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc] hover:underline"
+                    >
+                      Open on Kaggle
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
                     </div>
                     {selectedProjects.includes(project.title) && loomProject !== project.title ? (
                       <button
@@ -551,15 +546,7 @@ function GenAiAssessments({
               </div>
               <p className="text-xs leading-5 text-[#667085]">
                 Complete any 2 projects and submit a Loom video walkthrough for one of them.
-                {projectGrant?.expiresAt
-                  ? ` Project access is available until ${formatIstDateTime(projectGrant.expiresAt)}.`
-                  : ""}
               </p>
-              {!projectGrant && !accessLoading ? (
-                <p data-testid="text-project-access-notice" className="rounded-lg bg-[#f9fafb] px-4 py-3 text-sm text-[#667085]">
-                  You can explore and choose your projects now. Kaggle challenge links unlock when project access is granted.
-                </p>
-              ) : null}
         </div>
       )}
       <div className="mt-6">
