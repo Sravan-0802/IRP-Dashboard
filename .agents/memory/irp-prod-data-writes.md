@@ -6,9 +6,9 @@ description: How to mutate IRP production student data (e.g. mark candidates FE-
 # Writing to the IRP production database
 
 Dev and prod are **separate** Postgres databases. The agent's `executeSql` against
-`environment: "production"` is **read-only** (SELECT only). Dev only contains demo
-students; real candidates (keyed by `${academy_user_id}@academy.local` in the
-`students` table) live in prod.
+`environment: "production"` is **read-only** (SELECT only). Development can also
+contain synced source records; do not infer the environment from whether a
+student appears in it.
 
 **Rule:** to mutate prod student data (journey state, project_submitted, etc.), the
 write must go through the **deployed app**. The pattern is:
@@ -16,8 +16,10 @@ write must go through the **deployed app**. The pattern is:
    (auth via `checkApiKey` — accepts `ANALYTICS_ADMIN_KEY` or `TOKEN_SECRET`).
 2. **Publish** so the endpoint reaches production (a code change is not live in prod
    until published).
-3. Call the endpoint against the production domain (`$REPLIT_DOMAINS`) with the admin
-   key in `x-api-key`.
+3. Obtain the current production URL through the deployment skill's
+   `getDeploymentInfo().primaryUrl`, then call the endpoint with the admin key
+   in `x-api-key`. Never use development environment domain variables as the
+   production URL.
 
 **Why:** there is no direct prod DB write path from the agent; the live app is the
 only writer. `POST /student/journey/state` only mutates the *authenticated* user, so

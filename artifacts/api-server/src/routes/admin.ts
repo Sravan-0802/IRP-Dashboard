@@ -47,8 +47,6 @@ import { listAuthCodeLogs } from "../lib/authCodeLog";
 import { runGenaiBigQuerySync } from "../lib/sync-bigquery";
 import { createAuthToken } from "../lib/authTokens";
 import {
-  MANUAL_DASHBOARD_ACCESS_GRANT_ID,
-  MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
   resolveAcademyUserDisplayName,
 } from "../lib/academyUserProfile";
 
@@ -415,7 +413,7 @@ router.put("/admin/unpaid-users/:academyUserId", async (req, res) => {
 });
 
 // GET /api/admin/dashboard-access/summary — current dashboard eligibility and
-// payment-gate counts from the BigQuery assessment mirror.
+// source-status counts from the BigQuery mirror. Payment is reporting-only.
 router.get("/admin/dashboard-access/summary", async (req, res) => {
   try {
     if (!checkApiKey(req)) {
@@ -429,7 +427,9 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
           user_id,
           yog,
           UPPER(REGEXP_REPLACE(BTRIM(COALESCE(payment_status, '')), '[[:space:]-]+', '_', 'g')) AS payment_raw,
-          UPPER(REGEXP_REPLACE(BTRIM(COALESCE(irp_eligible_status, '')), '[[:space:]-]+', '_', 'g')) AS irp_raw
+          UPPER(REGEXP_REPLACE(BTRIM(COALESCE(irp_eligible_status, '')), '[[:space:]-]+', '_', 'g')) AS irp_raw,
+          UPPER(BTRIM(COALESCE(lp_status, ''))) AS lp_raw,
+          UPPER(BTRIM(COALESCE(product_status, ''))) AS product_raw
         FROM academy_user_basic_details
         WHERE user_id IS NOT NULL
           AND BTRIM(user_id) <> ''
@@ -445,16 +445,10 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
             WHEN payment_raw = '' THEN NULL
             ELSE payment_raw
           END AS payment_status,
-          NULLIF(irp_raw, '') AS irp_status
+          NULLIF(irp_raw, '') AS irp_status,
+          NULLIF(lp_raw, '') AS lp_status,
+          NULLIF(product_raw, '') AS product_status
         FROM people
-      ),
-      grants AS (
-        SELECT
-          user_id,
-          bool_or(organisation_assessment_id = 'manual-access-grant') AS granted
-        FROM academy_user_assessment_details
-        WHERE organisation_assessment_id = 'manual-access-grant'
-        GROUP BY user_id
       ),
       sync AS (
         SELECT status, last_synced_at
@@ -469,11 +463,10 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
         COUNT(*) FILTER (WHERE payment_status IN ('UNPAID', 'PARTIALLY_PAID'))::int AS unpaid_users_total,
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
-            AND (payment_status IS NULL OR payment_status NOT IN ('UNPAID', 'PARTIALLY_PAID'))
+            AND lp_status = 'ACTIVE'
+            AND product_status = 'ACTIVE'
         )::int AS paid_dashboard_users,
-        -- Unpaid rows are all NOT_ELIGIBLE in this mirror, so eligible+unpaid is empty.
-        -- Yet-to-pay is the eligible group that has not paid in full. The access gate
-        -- still lets them in (NBFC / instalments).
+        -- Payment statistics below are reporting-only, not admission criteria.
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
             AND payment_status = 'YET_TO_PAY'
@@ -488,7 +481,8 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
             AND yog IN (2028, 2029, 2030)
-            AND grants.granted IS TRUE
+            AND lp_status = 'ACTIVE'
+            AND product_status = 'ACTIVE'
         )::int AS yog_cohort_access,
         COUNT(*) FILTER (
           WHERE irp_status = 'ELIGIBLE'
@@ -497,7 +491,6 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
         (SELECT status FROM sync) AS sync_status,
         (SELECT last_synced_at FROM sync) AS last_synced_at
       FROM norm
-      LEFT JOIN grants ON grants.user_id = norm.user_id
     `);
 
     const row = ((result as { rows?: Record<string, unknown>[] }).rows ?? [])[0] ?? {};
@@ -524,165 +517,15 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
   }
 });
 
-// POST /api/admin/dashboard-access/grant — explicitly grant dashboard access
-// without modifying the synced payment/eligibility mirror. The sentinel row
-// also makes userHasAssessmentData() pass for manually enrolled students.
-// Body: { academyUserIds: string[] }
-router.post("/admin/dashboard-access/grant", async (req, res) => {
-  try {
-    if (!checkApiKey(req)) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const raw = req.body?.academyUserIds;
-    const academyUserIds = Array.isArray(raw)
-      ? [...new Set(raw.map((v: unknown) => String(v).trim()).filter(Boolean))]
-      : [];
-    if (academyUserIds.length === 0) {
-      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
-      return;
-    }
-
-    const now = new Date();
-    const CHUNK = 500;
-    let enrolledBasic = 0;
-    let enrolledAssessment = 0;
-
-    for (let i = 0; i < academyUserIds.length; i += CHUNK) {
-      const chunk = academyUserIds.slice(i, i + CHUNK);
-
-      const result = await db.transaction(async (tx) => {
-        await tx
-          .delete(unpaidUsersTable)
-          .where(inArray(unpaidUsersTable.academyUserId, chunk));
-
-        await tx
-          .delete(academyUserAssessmentDetailsTable)
-          .where(
-            and(
-              inArray(academyUserAssessmentDetailsTable.userId, chunk),
-              eq(
-                academyUserAssessmentDetailsTable.organisationAssessmentId,
-                MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
-              ),
-            ),
-          );
-
-        const basicRows = await tx
-          .insert(academyUserBasicDetailsTable)
-          .values(chunk.map((userId) => ({ userId, syncedAt: now })))
-          .onConflictDoNothing({ target: academyUserBasicDetailsTable.userId })
-          .returning({ userId: academyUserBasicDetailsTable.userId });
-
-        const assessmentRows = await tx
-          .insert(academyUserAssessmentDetailsTable)
-          .values(
-            chunk.map((userId) => ({
-              userId,
-              organisationAssessmentId: MANUAL_DASHBOARD_ACCESS_GRANT_ID,
-              syncedAt: now,
-            })),
-          )
-          .onConflictDoNothing()
-          .returning({ id: academyUserAssessmentDetailsTable.id });
-
-        return { basicRows, assessmentRows };
-      });
-
-      enrolledBasic += result.basicRows.length;
-      enrolledAssessment += result.assessmentRows.length;
-    }
-
-    res.json({
-      ok: true,
-      requested: academyUserIds.length,
-      manualAccessGranted: academyUserIds.length,
-      enrolledBasic,
-      enrolledAssessment,
-    });
-  } catch (err) {
-    req.log.error({ err }, "Failed to grant dashboard access");
-    res.status(500).json({ error: "Internal server error" });
+// Retired overrides: preserve historical records but never create new ones.
+router.post(["/admin/dashboard-access/grant", "/admin/dashboard-access/revoke"], (req, res) => {
+  if (!checkApiKey(req)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
-});
-
-// POST /api/admin/dashboard-access/revoke — revoke manual dashboard access and
-// explicitly deny dashboard entry, regardless of the synced payment status.
-// Body: { academyUserIds: string[] }
-router.post("/admin/dashboard-access/revoke", async (req, res) => {
-  try {
-    if (!checkApiKey(req)) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const raw = req.body?.academyUserIds;
-    const academyUserIds = Array.isArray(raw)
-      ? [...new Set(raw.map((v: unknown) => String(v).trim()).filter(Boolean))]
-      : [];
-    if (academyUserIds.length === 0) {
-      res.status(400).json({ error: "academyUserIds must be a non-empty array" });
-      return;
-    }
-
-    const now = new Date();
-    const CHUNK = 500;
-    let locked = 0;
-    for (let i = 0; i < academyUserIds.length; i += CHUNK) {
-      const academyUserIdChunk = academyUserIds.slice(i, i + CHUNK);
-      const rows = await db.transaction(async (tx) => {
-        await tx
-          .delete(academyUserAssessmentDetailsTable)
-          .where(
-            and(
-              inArray(academyUserAssessmentDetailsTable.userId, academyUserIdChunk),
-              eq(
-                academyUserAssessmentDetailsTable.organisationAssessmentId,
-                MANUAL_DASHBOARD_ACCESS_GRANT_ID,
-              ),
-            ),
-          );
-
-        await tx
-          .insert(academyUserAssessmentDetailsTable)
-          .values(
-            academyUserIdChunk.map((userId) => ({
-              userId,
-              organisationAssessmentId: MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
-              syncedAt: now,
-            })),
-          )
-          .onConflictDoNothing();
-
-        const unpaidRows = academyUserIdChunk.map((academyUserId) => ({
-          academyUserId,
-          createdAt: now,
-        }));
-        return tx
-          .insert(unpaidUsersTable)
-          .values(unpaidRows)
-          .onConflictDoNothing({ target: unpaidUsersTable.academyUserId })
-          .returning({ academyUserId: unpaidUsersTable.academyUserId });
-      });
-      locked += rows.length;
-    }
-
-    const [{ unpaidTotal } = { unpaidTotal: 0 }] = await db
-      .select({ unpaidTotal: sql<number>`count(*)::int` })
-      .from(unpaidUsersTable);
-
-    res.json({
-      ok: true,
-      requested: academyUserIds.length,
-      locked,
-      alreadyUnpaid: academyUserIds.length - locked,
-      unpaidTotal,
-    });
-  } catch (err) {
-    req.log.error({ err }, "Failed to revoke dashboard access");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  res.status(410).json({
+    error: "Manual dashboard overrides are disabled. Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE.",
+  });
 });
 
 // POST /api/admin/blocked-users/import — fully deny access to a set of

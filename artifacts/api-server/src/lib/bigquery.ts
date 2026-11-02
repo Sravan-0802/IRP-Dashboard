@@ -267,9 +267,8 @@ function basicDetailsTableCandidates(): string[] {
 }
 
 /**
- * Reads identity + payment status for every academy user. Prefers the POCs
- * table; only drops to the legacy table (name only, no payment status) when the
- * service account cannot query the POCs one.
+ * Dashboard status sync requires the authoritative POCs fields. A legacy
+ * identity-only source must not replace access statuses with missing values.
  */
 /** One student's profile photo from the POCs table. Null when missing or BigQuery is unreachable. */
 export async function fetchProfilePicUrl(userId: string): Promise<string | null> {

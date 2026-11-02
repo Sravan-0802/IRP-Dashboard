@@ -9,7 +9,6 @@
 - [Drizzle pkey retry detection](drizzle-pkey-retry.md) — Drizzle wraps PG errors so err.message is "Failed query:…"; check err.cause.message too for constraint names like students_pkey.
 - [Dev seeding flow](dev-seeding-flow.md) — to run locally: curl /api/auth/me to find ACADEMY_USER_ID, then seed academy_user_basic_details + academy_user_assessment_details for that UUID.
 - [Analytics admin-key auth](analytics-admin-key-auth.md) — `dev` key fails locally because TOKEN_SECRET is set; secret values are redacted, so test admin routes via SQL not curl.
-- [Manual dashboard access overrides](manual-dashboard-access-overrides.md) — admin grant/revoke must override dashboard gating without changing the BigQuery payment mirror.
 - [Previewing gated views](preview-gated-views.md) — can't switch the ACADEMY_USER_ID secret; to screenshot a per-user gate, temporarily move the row in/out of the gating table for the current preview user.
 - [Publish merge-conflict markers](publish-merge-conflict-markers.md) — publish failures often come from committed `<<<<<<<` markers; grep artifacts/ for markers after any merge, before publish.
 - [L1 exam-access authoritative list](l1-exam-access-authoritative-list.md) — 5-July L1 slot/links come from uploaded exam-platform list (l1_exam_access table), NOT self-service registration; mock common, main date-gated.
@@ -19,3 +18,4 @@
 - [IRP NOC form requirement](irp-noc-form.md) — every IRP student, across tracks, must submit the internship NOC before profile progression.
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
 - [GenAI projects and Loom](genai-project-reference.md) — supplied RAG catalogue, screenshot exceptions, and all-student Loom availability/status rules.
+- [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission; payment and manual overrides do not.

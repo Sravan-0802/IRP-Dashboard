@@ -12,19 +12,17 @@
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
  *
- * The mirror is the source of truth for ordinary payment eligibility. Explicit
- * admin dashboard grants/revocations are stored separately as sentinel rows in
- * academy_user_assessment_details and take precedence without mutating this mirror.
- * Do not use the legacy `unpaid_users` table to infer payment eligibility.
+ * The mirror is the only source for the dashboard admission decision.
+ * Historical manual grant/revoke markers and legacy unpaid rows do not override
+ * the three required statuses.
  */
 import {
   db,
-  academyUserAssessmentDetailsTable,
   academyUserBasicDetailsTable,
   pool,
   type AcademyUserBasicDetails,
 } from "@workspace/db";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logger } from "./logger";
 import { fetchProfilePicUrl } from "./bigquery";
 
@@ -55,7 +53,7 @@ export const PAYMENT_STATUSES = [
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 /**
- * Payment statuses that fail the "has paid" half of the access gate.
+ * Payment classifications used for reporting only.
  *
  * Only an explicit `UNPAID` / `PARTIALLY_PAID` fails payment. `YET_TO_PAY` is the
  * NBFC / instalment cohort whose access is already funded, so treating anything
@@ -106,7 +104,7 @@ export function isDashboardStatusEligible(row: {
   );
 }
 
-/** True when this `payment_status` passes the payment half of the access gate. */
+/** Payment reporting helper; never use this to decide dashboard admission. */
 export function isPaidPaymentStatus(raw: unknown): boolean {
   const status = normalizePaymentStatusValue(raw);
   if (status === null) return true;
@@ -223,49 +221,18 @@ export type AcademyUserDashboardAccess = {
 /**
  * Resolves dashboard access from the POCs mirror. All three source statuses
  * must match exactly after normalization. Payment status is not an access rule.
- * A missing mirror row or status fails closed; explicit admin overrides remain
- * separate and retain their existing precedence.
+ * A missing mirror row or status fails closed. Historical manual overrides
+ * are intentionally ignored.
  */
 export async function getAcademyUserDashboardAccess(
   userId: string,
 ): Promise<AcademyUserDashboardAccess> {
-  const [row, manualOverrideRows] = await Promise.all([
-    getAcademyUserBasicDetails(userId),
-    db
-      .select({
-        organisationAssessmentId: academyUserAssessmentDetailsTable.organisationAssessmentId,
-      })
-      .from(academyUserAssessmentDetailsTable)
-      .where(
-        and(
-          eq(academyUserAssessmentDetailsTable.userId, userId),
-          inArray(academyUserAssessmentDetailsTable.organisationAssessmentId, [
-            MANUAL_DASHBOARD_ACCESS_GRANT_ID,
-            MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
-          ]),
-        ),
-      ),
-  ]);
-
-  const hasManualGrant = manualOverrideRows.some(
-    (override) => override.organisationAssessmentId === MANUAL_DASHBOARD_ACCESS_GRANT_ID,
-  );
-  const hasManualRevoke = manualOverrideRows.some(
-    (override) => override.organisationAssessmentId === MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
-  );
+  const row = await getAcademyUserBasicDetails(userId);
   const paymentStatus = row ? normalizePaymentStatusValue(row.paymentStatus) : null;
   const irpEligibleStatus = row ? normalizeIrpEligibleStatus(row.irpEligibleStatus) : null;
   const paymentPlan = row?.paymentPlan ?? null;
   const lpStatus = row ? normalizeAccessStatus(row.lpStatus) : null;
   const productStatus = row ? normalizeAccessStatus(row.productStatus) : null;
-
-  // Deny wins if both sentinels exist due to older or interrupted operations.
-  if (hasManualRevoke) {
-    return { allowed: false, paymentStatus, paymentPlan, irpEligibleStatus, lpStatus, productStatus };
-  }
-  if (hasManualGrant) {
-    return { allowed: true, paymentStatus, paymentPlan, irpEligibleStatus, lpStatus, productStatus };
-  }
 
   if (!row) {
     logger.warn({ userId }, "No academy_user_basic_details row; denying dashboard access");

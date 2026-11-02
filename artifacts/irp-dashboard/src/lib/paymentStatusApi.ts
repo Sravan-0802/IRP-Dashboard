@@ -24,7 +24,7 @@ export async function fetchDashboardAccess(): Promise<DashboardAccessStatus> {
     headers: authHeaders(),
   });
   if (!res.ok) {
-    throw new Error("Could not load payment status");
+    throw new Error("Could not verify dashboard access");
   }
   return (await res.json()) as DashboardAccessStatus;
 }

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CreditCard, Database, Eye, KeyRound, Loader2, RefreshCw, ShieldCheck, Upload, Users } from "lucide-react";
-import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
+import { useEffect, useState } from "react";
+import { CreditCard, Database, Eye, Loader2, RefreshCw, ShieldCheck, Users } from "lucide-react";
 
 type DashboardAccessSummary = {
   assessmentRows: number;
@@ -18,36 +17,13 @@ type DashboardAccessSummary = {
   lastSyncedAt: string | null;
 };
 
-type GrantResult = {
-  requested: number;
-  manualAccessGranted: number;
-  enrolledBasic?: number;
-  enrolledAssessment?: number;
-};
-
-type RevokeResult = {
-  requested: number;
-  locked: number;
-  alreadyUnpaid: number;
-  unpaidTotal: number;
-};
-
 export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
-  const [uidsText, setUidsText] = useState("");
-  const [csvName, setCsvName] = useState("");
-  const [saving, setSaving] = useState<"grant" | "revoke" | null>(null);
-  const [error, setError] = useState("");
-  const [grantResult, setGrantResult] = useState<GrantResult | null>(null);
-  const [revokeResult, setRevokeResult] = useState<RevokeResult | null>(null);
-
   const [previewUid, setPreviewUid] = useState("");
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [summary, setSummary] = useState<DashboardAccessSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
-
-  const parsedIds = useMemo(() => parseAcademyUserIds(uidsText), [uidsText]);
 
   async function loadSummary() {
     setSummaryLoading(true);
@@ -81,17 +57,6 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
       timeStyle: "short",
       timeZone: "Asia/Kolkata",
     });
-  }
-
-  function onCsvFile(file: File | null) {
-    if (!file) return;
-    setCsvName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = typeof reader.result === "string" ? reader.result : "";
-      setUidsText((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
-    };
-    reader.readAsText(file);
   }
 
   async function openStudentPreview() {
@@ -134,79 +99,6 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
     }
   }
 
-  async function grantAccess() {
-    if (parsedIds.length === 0 || saving) return;
-    setSaving("grant");
-    setError("");
-    setGrantResult(null);
-    setRevokeResult(null);
-    try {
-      const res = await fetch("/api/admin/dashboard-access/grant", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey.trim(),
-        },
-        body: JSON.stringify({ academyUserIds: parsedIds }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error((body as { error?: string }).error ?? `Grant failed (${res.status})`);
-      }
-      setGrantResult({
-        requested: Number((body as GrantResult).requested ?? 0),
-        manualAccessGranted: Number((body as GrantResult).manualAccessGranted ?? 0),
-        enrolledBasic: Number((body as GrantResult).enrolledBasic ?? 0),
-        enrolledAssessment: Number((body as GrantResult).enrolledAssessment ?? 0),
-      });
-      void loadSummary();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not grant dashboard access");
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  async function revokeAccess() {
-    if (parsedIds.length === 0 || saving) return;
-    if (
-      !window.confirm(
-        `Mark ${parsedIds.length} user${parsedIds.length === 1 ? "" : "s"} as Unpaid? They will see the payment gate instead of the dashboard.`,
-      )
-    ) {
-      return;
-    }
-    setSaving("revoke");
-    setError("");
-    setGrantResult(null);
-    setRevokeResult(null);
-    try {
-      const res = await fetch("/api/admin/dashboard-access/revoke", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey.trim(),
-        },
-        body: JSON.stringify({ academyUserIds: parsedIds }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error((body as { error?: string }).error ?? `Revoke failed (${res.status})`);
-      }
-      setRevokeResult({
-        requested: Number((body as RevokeResult).requested ?? 0),
-        locked: Number((body as RevokeResult).locked ?? 0),
-        alreadyUnpaid: Number((body as RevokeResult).alreadyUnpaid ?? 0),
-        unpaidTotal: Number((body as RevokeResult).unpaidTotal ?? 0),
-      });
-      void loadSummary();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not revoke dashboard access");
-    } finally {
-      setSaving(null);
-    }
-  }
-
   return (
     <div className="space-y-5">
       <div className="irp-card p-5">
@@ -218,7 +110,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 Dashboard access summary
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-[#6e6a8a]">
-                Live counts from payment status and IRP eligibility. Refresh after a sync.
+                Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE. Payment status and historical manual grants or revocations do not affect this decision.
               </p>
             </div>
           </div>
@@ -268,12 +160,12 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
               <div className="rounded-xl border border-[rgba(12,166,120,0.2)] bg-[#effbf6] p-4">
                 <ShieldCheck className="h-4 w-4 text-[#0ca678]" />
                 <p className="mt-3 text-2xl font-extrabold text-[#0d1117]">
-                  {(summary.yogCohortAccess ?? summary.paidDashboardUsers).toLocaleString("en-IN")}
+                  {summary.paidDashboardUsers.toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
-                  Dashboard access
+                  Status-qualified users
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">IRP eligible, YOG 2028, 2029 and 2030</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">All three source conditions met; sign-in and enrollment are still required</p>
               </div>
               <div className="rounded-xl border border-[rgba(245,159,0,0.22)] bg-[#fff9e9] p-4">
                 <CreditCard className="h-4 w-4 text-[#e67700]" />
@@ -283,7 +175,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-[#6e6a8a]">
                   Unpaid students
                 </p>
-                <p className="mt-1 text-xs text-[#6e6a8a]">Payment status is unpaid. None are IRP eligible</p>
+                <p className="mt-1 text-xs text-[#6e6a8a]">Payment reporting only; does not determine dashboard access</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6e6a8a]">
@@ -295,7 +187,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 2030: <strong className="text-[#0d1117]">{(summary.eligible2030 ?? 0).toLocaleString("en-IN")}</strong>
                 {" · "}
                 Eligible and yet to pay: <strong className="text-[#0d1117]">{(summary.eligibleYetToPay ?? 0).toLocaleString("en-IN")}</strong>
-                <span className="text-[#98a2b3]"> · still have access</span>
+                <span className="text-[#98a2b3]"> · payment reporting only</span>
               </span>
               <span>
                 Sync status: <strong className="capitalize text-[#0d1117]">{summary.syncStatus ?? "Not recorded"}</strong>
@@ -356,112 +248,10 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
         ) : null}
       </div>
 
-      <div className="irp-card p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#6741d9]" />
-            <div>
-              <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
-                Grant dashboard access
-              </h2>
-              <p className="mt-1 max-w-xl text-sm text-[#6e6a8a]">
-                Grant a manual dashboard-access override and enroll students who
-                are missing dashboard records. This does not change source
-                payment or eligibility data. Assessment links still use Access Loader.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
-          Academy User IDs
-        </label>
-        <textarea
-          value={uidsText}
-          onChange={(e) => setUidsText(e.target.value)}
-          rows={8}
-          placeholder={"Paste one ID per line, or CSV with an academy_user_id column…"}
-          className="w-full resize-y rounded-xl border border-[rgba(103,65,217,0.15)] bg-white px-3 py-2.5 font-mono text-xs text-[#0d1117] placeholder:font-sans placeholder:text-[#6e6a8a] focus:border-[#6741d9] focus:outline-none focus:ring-2 focus:ring-[rgba(103,65,217,0.12)]"
-        />
-
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.18)] bg-white px-3 py-1.5 text-xs font-semibold text-[#6741d9] hover:bg-[#f3f0ff]">
-            <Upload className="h-3.5 w-3.5" />
-            Upload CSV
-            <input
-              type="file"
-              accept=".csv,text/csv,text/plain"
-              className="hidden"
-              onChange={(e) => onCsvFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
-          {csvName ? <span className="text-xs text-[#6e6a8a]">{csvName}</span> : null}
-          <span className="text-xs font-semibold text-[#6e6a8a]">
-            {parsedIds.length} unique ID{parsedIds.length === 1 ? "" : "s"}
-          </span>
-        </div>
-
-        {error ? (
-          <p className="mt-3 text-sm font-semibold text-[#c2255c]">{error}</p>
-        ) : null}
-
-        {grantResult ? (
-          <div className="mt-3 rounded-xl border border-[rgba(12,166,120,0.25)] bg-[#e8faf4] px-4 py-3 text-sm text-[#0d1117]">
-            <p className="font-bold text-[#099268]">Manual dashboard access granted</p>
-            <p className="mt-1 text-[#6e6a8a]">
-              Granted for{" "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.manualAccessGranted}</span>
-              {" of "}
-              <span className="font-semibold text-[#0d1117]">{grantResult.requested}</span>
-              {" requested"}
-              {" · "}New dashboard records{" "}
-              <span className="font-semibold text-[#0d1117]">
-                {(grantResult.enrolledBasic ?? 0) + (grantResult.enrolledAssessment ?? 0)}
-              </span>
-            </p>
-          </div>
-        ) : null}
-
-        {revokeResult ? (
-          <div className="mt-3 rounded-xl border border-[rgba(232,89,12,0.25)] bg-[#fff4e6] px-4 py-3 text-sm text-[#0d1117]">
-            <p className="font-bold text-[#e8590c]">Marked unpaid</p>
-            <p className="mt-1 text-[#6e6a8a]">
-              Requested <span className="font-semibold text-[#0d1117]">{revokeResult.requested}</span>
-              {" · "}Newly unpaid{" "}
-              <span className="font-semibold text-[#0d1117]">{revokeResult.locked}</span>
-              {" · "}Already unpaid{" "}
-              <span className="font-semibold text-[#0d1117]">{revokeResult.alreadyUnpaid}</span>
-              {" · "}Unpaid total{" "}
-              <span className="font-semibold text-[#0d1117]">{revokeResult.unpaidTotal}</span>
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={parsedIds.length === 0 || saving !== null}
-            onClick={() => void grantAccess()}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {saving === "grant" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Grant dashboard access
-          </button>
-          <button
-            type="button"
-            disabled={parsedIds.length === 0 || saving !== null}
-            onClick={() => void revokeAccess()}
-            className="rounded-xl border border-[rgba(200,37,92,0.25)] bg-white px-4 py-2.5 text-sm font-semibold text-[#c2255c] hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {saving === "revoke" ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Loader2 className="h-4 w-4 animate-spin" /> Mark unpaid…
-              </span>
-            ) : (
-              "Mark unpaid instead"
-            )}
-          </button>
-        </div>
+      <div className="irp-card p-5 text-sm text-[#6e6a8a]">
+        Manual dashboard overrides are disabled. Correct the student's IRP, LP, or product
+        status in the authoritative source, then run the BigQuery sync. Assessment links
+        continue to use Access Loader.
       </div>
     </div>
   );
