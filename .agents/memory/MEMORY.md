@@ -22,3 +22,4 @@
 - [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission; payment and manual overrides do not.
 - [BigQuery sync verification](bigquery-sync-verification.md) — report per-table freshness honestly; no running warehouse job does not prove a bulk sync is idle.
 - [OpenAPI response schema names](openapi-response-schema-names.md) — avoid component names that duplicate Orval's operation-generated response export.
+- [Node 20 UI test runtime](jsdom-node20-compat.md) — latest jsdom pulls Undici 8, whose zstd stream API is missing here; use jsdom 26 with Vitest.
