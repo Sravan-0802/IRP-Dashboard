@@ -19,4 +19,5 @@
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
 - [GenAI projects and Loom](genai-project-reference.md) — supplied RAG catalogue, screenshot exceptions, and all-student Loom availability/status rules.
 - [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission; payment and manual overrides do not.
+- [BigQuery sync verification](bigquery-sync-verification.md) — report per-table freshness honestly; no running warehouse job does not prove a bulk sync is idle.
 - [OpenAPI response schema names](openapi-response-schema-names.md) — avoid component names that duplicate Orval's operation-generated response export.
