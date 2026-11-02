@@ -17,6 +17,27 @@ import {
 const JOIN_LEAD_MS = 15 * 60 * 1000;
 const SHOW_GENAI_INTERVIEW_PANEL = false;
 
+const GENAI_PROJECTS = [
+  {
+    title: "Intelligent RAG Challenge",
+    description:
+      "Apply Retrieval-Augmented Generation (RAG) concepts to build intelligent solutions that retrieve relevant information and generate accurate, context-aware responses.",
+    url: "https://www.kaggle.com/t/41aae299568d4090b671dc42c9aa80a5",
+  },
+  {
+    title: "Agentic RAG Challenge",
+    description:
+      "Explore agent-based RAG workflows to solve complex tasks using intelligent retrieval, reasoning, and automated decision-making.",
+    url: "https://www.kaggle.com/t/b8bb6acbe1ee4bc2bf18312134213caa",
+  },
+  {
+    title: "Building & Optimizing RAG Challenge",
+    description:
+      "Build and improve RAG pipelines by optimizing information retrieval, response relevance, and overall system performance.",
+    url: "https://www.kaggle.com/t/3d4e632d65aa4cc888f463a555094618",
+  },
+] as const;
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -401,37 +422,73 @@ function GenAiAssessments({
           </div>
         </div>
       ) : (
-        <div className="mt-4 rounded-xl bg-[#f9fafb] px-4 py-4">
-          <p className="text-sm font-semibold text-[#101828]">GenAI project</p>
+        <div className="mt-4 space-y-5">
           {projectGrant ? (
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-[#667085]">
-                  Your project link is available.
-                  {projectGrant.name ? ` ${projectGrant.name}` : ""}
-                </p>
-                {projectGrant.expiresAt ? (
-                  <p className="mt-1 text-xs text-[#667085]">
-                    Link available until {formatIstDateTime(projectGrant.expiresAt)}
-                  </p>
-                ) : null}
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <ProjectSummaryCard value={String(GENAI_PROJECTS.length)} label="projects available" />
+                <ProjectSummaryCard value="Any 2" label="to complete and submit" />
+                <ProjectSummaryCard value="1 Loom" label="video walkthrough for one of your 2" />
               </div>
-              <a
-                href={projectGrant.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2 text-sm font-bold text-white hover:bg-[#1849a9]"
-              >
-                Open Kaggle Project
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eaecf0] pb-3">
+                <h3 className="font-display text-base font-extrabold text-[#101828]">Choose your projects</h3>
+                <p className="text-sm text-[#667085]">Choose any 2</p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {GENAI_PROJECTS.map((project, index) => (
+                  <article
+                    key={project.title}
+                    className="flex h-full flex-col rounded-xl border border-[#eaecf0] bg-white p-4"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold tracking-wide text-[#667085]">
+                        PROJECT {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="rounded-full bg-[#f4f3ff] px-2 py-0.5 text-[10px] font-bold text-[#6941c6]">
+                        RAG challenge
+                      </span>
+                    </div>
+                    <h4 className="mt-3 font-display text-base font-extrabold leading-snug text-[#101828]">
+                      {project.title}
+                    </h4>
+                    <p className="mt-2 flex-1 text-sm leading-6 text-[#475467]">{project.description}</p>
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1849a9]"
+                    >
+                      Open Kaggle challenge
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </article>
+                ))}
+              </div>
+              <p className="text-xs leading-5 text-[#667085]">
+                Complete any 2 projects and submit a Loom video walkthrough for one of them.
+                {projectGrant.expiresAt
+                  ? ` Project access is available until ${formatIstDateTime(projectGrant.expiresAt)}.`
+                  : ""}
+              </p>
+            </>
           ) : (
-            <p className="mt-1 text-sm text-[#667085]">Submission opens after the last assessment.</p>
+            <div className="rounded-xl bg-[#f9fafb] px-4 py-4">
+              <p className="text-sm font-semibold text-[#101828]">GenAI project submission</p>
+              <p className="mt-1 text-sm text-[#667085]">Submission opens after the last assessment.</p>
+            </div>
           )}
         </div>
       )}
     </section>
+  );
+}
+
+function ProjectSummaryCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-4 py-3.5">
+      <p className="font-display text-xl font-extrabold text-[#6941c6]">{value}</p>
+      <p className="mt-0.5 text-xs leading-5 text-[#475467]">{label}</p>
+    </div>
   );
 }
 
