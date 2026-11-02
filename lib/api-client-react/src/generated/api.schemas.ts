@@ -156,6 +156,23 @@ export interface ContactMessageResponse {
   id: number;
 }
 
+export interface GenaiProjectSubmissionInput {
+  /** @minLength 1 */
+  projectTitle: string;
+  /** @minLength 1 */
+  loomUrl: string;
+}
+
+export interface GenaiProjectSubmission {
+  projectTitle: string;
+  loomUrl: string;
+  updatedAt: string;
+}
+
+export interface GenaiProjectSubmissionResponse {
+  submission: GenaiProjectSubmission | null;
+}
+
 export type DashboardAnalyticsEventRequestEventType = typeof DashboardAnalyticsEventRequestEventType[keyof typeof DashboardAnalyticsEventRequestEventType];
 
 

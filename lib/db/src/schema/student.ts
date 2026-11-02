@@ -617,8 +617,25 @@ export const academyUserGenaiNxtmockDetailsTable = pgTable(
   }),
 );
 
+/** One editable GenAI Loom walkthrough submission per authenticated Academy user. */
+export const genaiProjectSubmissionsTable = pgTable(
+  "genai_project_submissions",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    projectTitle: text("project_title").notNull(),
+    loomUrl: text("loom_url").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userUnique: unique("genai_project_submission_user_unique").on(t.userId),
+  }),
+);
+
 export type AcademyUserGenaiAssessmentDetails = typeof academyUserGenaiAssessmentDetailsTable.$inferSelect;
 export type AcademyUserGenaiNxtmockDetails = typeof academyUserGenaiNxtmockDetailsTable.$inferSelect;
+export type GenaiProjectSubmission = typeof genaiProjectSubmissionsTable.$inferSelect;
 
 export type RegistrationBatch = typeof registrationBatchesTable.$inferSelect;
 export type InsertRegistrationBatch = typeof registrationBatchesTable.$inferInsert;

@@ -218,6 +218,39 @@ export const LogDashboardAnalyticsEventResponse = zod.object({
 
 
 /**
+ * @summary Get the authenticated student's GenAI Loom walkthrough submission
+ */
+export const GetGenaiProjectSubmissionResponse = zod.object({
+  "submission": zod.union([zod.object({
+  "projectTitle": zod.string(),
+  "loomUrl": zod.string(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Save or update the authenticated student's GenAI Loom walkthrough
+ */
+
+
+
+
+export const SaveGenaiProjectSubmissionBody = zod.object({
+  "projectTitle": zod.string().min(1),
+  "loomUrl": zod.string().min(1)
+})
+
+export const SaveGenaiProjectSubmissionResponse = zod.object({
+  "submission": zod.union([zod.object({
+  "projectTitle": zod.string(),
+  "loomUrl": zod.string(),
+  "updatedAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
+/**
  * Returns the current student's registration for the given cycle (stored in Postgres)
  * @summary Get L1 assessment slot registration
  */

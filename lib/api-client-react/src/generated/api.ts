@@ -27,6 +27,8 @@ import type {
   DashboardAnalyticsSummary,
   DeleteL1Registration200,
   DeleteL1RegistrationParams,
+  GenaiProjectSubmissionInput,
+  GenaiProjectSubmissionResponse,
   GetL1RegistrationParams,
   HealthStatus,
   HumanInterviewResults,
@@ -903,6 +905,154 @@ export const useLogDashboardAnalyticsEvent = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLogDashboardAnalyticsEventMutationOptions(options));
+    }
+
+export const getGetGenaiProjectSubmissionUrl = () => {
+
+
+
+
+  return `/api/student/genai-project-submission`
+}
+
+/**
+ * @summary Get the authenticated student's GenAI Loom walkthrough submission
+ */
+export const getGenaiProjectSubmission = async ( options?: RequestInit): Promise<GenaiProjectSubmissionResponse> => {
+
+  return customFetch<GenaiProjectSubmissionResponse>(getGetGenaiProjectSubmissionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenaiProjectSubmissionQueryKey = () => {
+    return [
+    `/api/student/genai-project-submission`
+    ] as const;
+    }
+
+
+export const getGetGenaiProjectSubmissionQueryOptions = <TData = Awaited<ReturnType<typeof getGenaiProjectSubmission>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectSubmission>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenaiProjectSubmissionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenaiProjectSubmission>>> = ({ signal }) => getGenaiProjectSubmission({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectSubmission>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenaiProjectSubmissionQueryResult = NonNullable<Awaited<ReturnType<typeof getGenaiProjectSubmission>>>
+export type GetGenaiProjectSubmissionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated student's GenAI Loom walkthrough submission
+ */
+
+export function useGetGenaiProjectSubmission<TData = Awaited<ReturnType<typeof getGenaiProjectSubmission>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiProjectSubmission>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenaiProjectSubmissionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveGenaiProjectSubmissionUrl = () => {
+
+
+
+
+  return `/api/student/genai-project-submission`
+}
+
+/**
+ * @summary Save or update the authenticated student's GenAI Loom walkthrough
+ */
+export const saveGenaiProjectSubmission = async (genaiProjectSubmissionInput: GenaiProjectSubmissionInput, options?: RequestInit): Promise<GenaiProjectSubmissionResponse> => {
+
+  return customFetch<GenaiProjectSubmissionResponse>(getSaveGenaiProjectSubmissionUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(genaiProjectSubmissionInput)
+  }
+);}
+
+
+
+
+
+export const getSaveGenaiProjectSubmissionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveGenaiProjectSubmission>>, TError,{data: BodyType<GenaiProjectSubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveGenaiProjectSubmission>>, TError,{data: BodyType<GenaiProjectSubmissionInput>}, TContext> => {
+
+const mutationKey = ['saveGenaiProjectSubmission'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveGenaiProjectSubmission>>, {data: BodyType<GenaiProjectSubmissionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveGenaiProjectSubmission(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveGenaiProjectSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof saveGenaiProjectSubmission>>>
+    export type SaveGenaiProjectSubmissionMutationBody = BodyType<GenaiProjectSubmissionInput>
+    export type SaveGenaiProjectSubmissionMutationError = ErrorType<void>
+
+    /**
+ * @summary Save or update the authenticated student's GenAI Loom walkthrough
+ */
+export const useSaveGenaiProjectSubmission = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveGenaiProjectSubmission>>, TError,{data: BodyType<GenaiProjectSubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveGenaiProjectSubmission>>,
+        TError,
+        {data: BodyType<GenaiProjectSubmissionInput>},
+        TContext
+      > => {
+      return useMutation(getSaveGenaiProjectSubmissionMutationOptions(options));
     }
 
 export const getGetL1RegistrationUrl = (params?: GetL1RegistrationParams,) => {

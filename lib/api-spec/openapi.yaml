@@ -207,6 +207,42 @@ paths:
         "401":
           description: Unauthorized
 
+  /student/genai-project-submission:
+    get:
+      operationId: getGenaiProjectSubmission
+      tags: [student]
+      summary: Get the authenticated student's GenAI Loom walkthrough submission
+      responses:
+        "200":
+          description: Saved Loom walkthrough submission, if present
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenaiProjectSubmissionResponse"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: saveGenaiProjectSubmission
+      tags: [student]
+      summary: Save or update the authenticated student's GenAI Loom walkthrough
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenaiProjectSubmissionInput"
+      responses:
+        "200":
+          description: Submission saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenaiProjectSubmissionResponse"
+        "400":
+          description: Invalid Loom URL or project
+        "401":
+          description: Unauthorized
+
   /student/l1-registration:
     get:
       operationId: getL1Registration
@@ -627,6 +663,38 @@ components:
           type: boolean
         id:
           type: integer
+
+    GenaiProjectSubmissionInput:
+      type: object
+      required: [projectTitle, loomUrl]
+      properties:
+        projectTitle:
+          type: string
+          minLength: 1
+        loomUrl:
+          type: string
+          minLength: 1
+
+    GenaiProjectSubmission:
+      type: object
+      required: [projectTitle, loomUrl, updatedAt]
+      properties:
+        projectTitle:
+          type: string
+        loomUrl:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    GenaiProjectSubmissionResponse:
+      type: object
+      required: [submission]
+      properties:
+        submission:
+          anyOf:
+            - $ref: "#/components/schemas/GenaiProjectSubmission"
+            - type: "null"
 
     DashboardAnalyticsEventRequest:
       type: object

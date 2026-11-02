@@ -1,5 +1,5 @@
 - [BigQuery access history](bigquery-vpc-blocker.md) — historical VPC blocker is not permanent; development sync succeeded on 2026-10-07. Keep dashboard reads on the Postgres mirror.
-- [API server dev rebuild gotcha](api-server-dev-rebuild.md) — adding routes/schema needs a workflow restart (bundles only at startup) AND a db push, else 404 then 500.
+- [API server dev rebuild gotcha](api-server-dev-rebuild.md) — routes need a restart; review schema changes carefully when legacy DB drift makes Drizzle push unsafe.
 - [PostgreSQL pool restart handling](postgres-pool-restart.md) — managed DB restarts can terminate idle clients; keep pool errors handled and retry transient token inserts.
 - [IRP journey state semantics](irp-journey-state-semantics.md) — a level is "cleared" when journeyState contains `_POST_`; getPhase() alone is ambiguous for post-reattempt states.
 - [Hero live date-gating](hero-live-date-gating.md) — assessment "live" UI must be gated on isAssessmentLive() (date), not journey phase alone; no "window closes" before exam day.
