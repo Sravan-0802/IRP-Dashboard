@@ -292,6 +292,42 @@ export async function fetchProfilePicUrl(userId: string): Promise<string | null>
   }
 }
 
+/** Live, single-student admission check; never falls back to the Postgres mirror. */
+export async function fetchDashboardAccessStatuses(userId: string): Promise<BasicDetailRow | null> {
+  if (!userId.trim()) throw new Error("A student identity is required");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const lookup = async () => {
+    const bq = getBigQueryClient();
+    const dataset = await resolveDataset(bq);
+    const projectId = process.env["project_id"];
+    const table = process.env["BQ_BASIC_DETAILS_TABLE"]?.trim() || BASIC_DETAILS_POCS_TABLE;
+    if (table === BASIC_DETAILS_LEGACY_TABLE) {
+      throw new Error("The legacy source cannot verify dashboard access");
+    }
+    const [rows] = await bq.query({
+      query: `SELECT user_id, irp_eligible_status, lp_status, product_status,
+                     payment_status, payment_plan
+              FROM \`${projectId}.${dataset}.${table}\`
+              WHERE user_id = @userId LIMIT 2`,
+      params: { userId },
+      useQueryCache: false,
+      jobTimeoutMs: 10000,
+    });
+    if (rows.length > 1) throw new Error("Ambiguous dashboard access records");
+    return (rows[0] as BasicDetailRow | undefined) ?? null;
+  };
+  try {
+    return await Promise.race([
+      lookup(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Dashboard access verification timed out")), 15000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchBasicDetails(): Promise<BasicDetailRow[]> {
   const bq = getBigQueryClient();
   const dataset = await resolveDataset(bq);

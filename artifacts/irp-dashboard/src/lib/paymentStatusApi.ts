@@ -21,6 +21,7 @@ export type DashboardAccessStatus = {
 
 export async function fetchDashboardAccess(): Promise<DashboardAccessStatus> {
   const res = await fetch(`/api/student/payment-status`, {
+    cache: "no-store",
     headers: authHeaders(),
   });
   if (!res.ok) {

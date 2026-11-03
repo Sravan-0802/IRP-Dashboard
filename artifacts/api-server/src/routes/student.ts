@@ -31,7 +31,7 @@ import { getFeAssessmentStatus } from "../lib/feQualification";
 import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
 import {
   getAcademyUserBasicDetails,
-  getAcademyUserDashboardAccess,
+  getLiveAcademyUserDashboardAccess,
   isLikelyDisplayName,
   resolveAcademyUserDisplayName,
   resolveProfilePicUrl,
@@ -1352,6 +1352,7 @@ router.get("/student/genai-results", async (req, res) => {
 // GET /api/student/payment-status — dashboard access based on IRP, LP, and
 // product statuses. Payment status is not part of this restriction.
 router.get("/student/payment-status", async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   try {
     const userId = await resolveAcademyUserId(req);
     if (!userId) {
@@ -1359,7 +1360,7 @@ router.get("/student/payment-status", async (req, res) => {
       return;
     }
 
-    const access = await getAcademyUserDashboardAccess(userId);
+    const access = await getLiveAcademyUserDashboardAccess(userId);
     res.json({
       allowed: access.allowed,
       paymentStatus: access.paymentStatus,

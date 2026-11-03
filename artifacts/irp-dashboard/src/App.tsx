@@ -61,7 +61,7 @@ function Home() {
       <div className="flex min-h-[100dvh] items-center justify-center p-6">
         <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
           <p className="font-display text-lg font-extrabold text-ink">Could not verify dashboard access</p>
-          <p className="mt-2 text-sm text-muted2">Refresh to retry checking your IRP eligibility, LP status, and product status.</p>
+          <p className="mt-2 text-sm text-muted2">We couldn't fetch your latest access statuses. Refresh to retry. Your access has not been verified.</p>
           <button type="button" onClick={() => window.location.reload()} className="btn-pop mt-5 rounded-xl px-5 py-2.5 text-sm font-bold">
             Refresh dashboard
           </button>

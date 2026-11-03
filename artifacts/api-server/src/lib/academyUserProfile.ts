@@ -12,7 +12,7 @@
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
  *
- * The mirror is the only source for the dashboard admission decision.
+ * App-load admission checks query BigQuery live; other profile reads use the mirror.
  * Historical manual grant/revoke markers and legacy unpaid rows do not override
  * the three required statuses.
  */
@@ -246,6 +246,23 @@ export async function getAcademyUserDashboardAccess(
     irpEligibleStatus,
     lpStatus,
     productStatus,
+  };
+}
+
+/** Live app-load decision. Query errors propagate; stale mirror access is never substituted. */
+export async function getLiveAcademyUserDashboardAccess(userId: string): Promise<AcademyUserDashboardAccess> {
+  const { fetchDashboardAccessStatuses } = await import("./bigquery");
+  const row = await fetchDashboardAccessStatuses(userId);
+  const irpEligibleStatus = normalizeIrpEligibleStatus(row?.irp_eligible_status);
+  const lpStatus = normalizeAccessStatus(row?.lp_status);
+  const productStatus = normalizeAccessStatus(row?.product_status);
+  return {
+    allowed: isDashboardStatusEligible({ irpEligibleStatus, lpStatus, productStatus }),
+    irpEligibleStatus,
+    lpStatus,
+    productStatus,
+    paymentStatus: normalizePaymentStatusValue(row?.payment_status),
+    paymentPlan: row?.payment_plan ?? null,
   };
 }
 
