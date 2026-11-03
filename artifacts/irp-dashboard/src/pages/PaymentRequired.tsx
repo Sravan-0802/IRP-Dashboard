@@ -1,29 +1,33 @@
-import type { DashboardAccessStatus } from "@/lib/paymentStatusApi";
+/** Google Form for payment concerns. */
+export const PAYMENT_CONCERNS_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSclDxqCDijga_6ZGUTtnNvWZ7q6sX7t5AQW7u6C1wvJHPXzXQ/viewform";
 
-export function PaymentRequired({ statuses }: { statuses: DashboardAccessStatus | null }) {
+export function PaymentRequired() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center p-6">
       <div
-        className="w-full max-w-md rounded-2xl border border-[rgba(103,65,217,0.16)] p-8 shadow-soft"
+        className="w-full max-w-md rounded-2xl border border-[rgba(103,65,217,0.16)] p-8 text-center shadow-soft"
         style={{ background: "linear-gradient(130deg, #eef2ff, #f8f0ff)" }}
       >
-        <h1 className="font-display text-2xl font-extrabold text-ink">Dashboard access is not active</h1>
-        <p className="mt-2 text-sm text-muted2">
-          Access requires IRP eligibility and active LP and product statuses. Payment status is not used for this check.
+        <div className="text-5xl" aria-hidden="true">💳</div>
+        <h1 className="mt-4 font-display text-2xl font-extrabold text-ink">
+          Need help with dashboard access?
+        </h1>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-muted2">
+          Dashboard access requires IRP eligibility and active LP and product statuses. Payment status is not used for this check.
+          If you believe your status is incorrect, contact the IRP team.
         </p>
-        <dl className="mt-5 divide-y divide-[#e4def1] rounded-xl bg-white/70 px-4 text-left text-sm">
-          {[
-            ["IRP eligibility", statuses?.irpEligibleStatus, "ELIGIBLE"],
-            ["LP status", statuses?.lpStatus, "ACTIVE"],
-            ["Product status", statuses?.productStatus, "ACTIVE"],
-          ].map(([label, value, required]) => (
-            <div key={label} className="flex items-center justify-between gap-4 py-3">
-              <dt className="font-semibold text-ink">{label}</dt>
-              <dd className="text-right text-muted2">{value ?? "Not available"} <span className="text-dim">(requires {required})</span></dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-4 text-xs text-dim">If these statuses should be different, contact the IRP team to review your record.</p>
+        <a
+          href={PAYMENT_CONCERNS_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-pop mt-6 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold"
+        >
+          Payment concerns form
+        </a>
+        <p className="mx-auto mt-3 max-w-sm text-xs text-dim">
+          For payment questions, submit the form above. For eligibility status corrections, contact the IRP team.
+        </p>
       </div>
     </div>
   );

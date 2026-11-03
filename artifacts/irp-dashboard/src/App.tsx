@@ -71,7 +71,7 @@ function Home() {
   }
 
   if (!access?.allowed) {
-    return <PaymentRequired statuses={access} />;
+    return <PaymentRequired />;
   }
 
   // SSO user whose id isn't in our academy list — show a dedicated screen.
