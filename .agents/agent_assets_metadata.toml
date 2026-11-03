@@ -14,3 +14,17 @@ mtime_ms = 1788267517904
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:5c489bbb-61b7-402c-97fc-b6eddf2a18c1/da2b3067-ad1d-4dc2-bc8a-f4b7f694a01b/ecd29fde-f46e-46ab-8002-eae54499e4d6"
 storage_version_token = "1788267519128156"
 content_type = "text/csv"
+
+[[outputs]]
+id = "8jsJZJYAPontnFjkLadp6"
+uri = "file://attached_assets/access-help-preview.jpg"
+type = "image"
+title = "Access-help screen preview"
+description = "Preview rendered from the actual access-help component shown when IRP status is NOT_ELIGIBLE. No student data was changed."
+logical_id = "a05b8572-983e-4274-a1ec-090a52ce0d17"
+content_hash = "sha256:ce63bcfed0afe1002fb07934b8af096d3ab468e4c38927f76e28433725fc6de3"
+size = 33769
+mtime_ms = 1793690860916
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:5c489bbb-61b7-402c-97fc-b6eddf2a18c1/a05b8572-983e-4274-a1ec-090a52ce0d17/d2658c32-a4fd-4b0a-9f59-855a204dd05c"
+storage_version_token = "1793690870197004"
+content_type = "image/jpeg"
