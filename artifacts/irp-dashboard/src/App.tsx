@@ -5,6 +5,7 @@ import { useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-reac
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "./pages/Dashboard";
+import { ReferBanner } from "@/components/irp/ReferBanner";
 import Analytics from "./pages/Analytics";
 import Onboarding from "./pages/Onboarding";
 import NotEnrolled from "./pages/NotEnrolled";
@@ -114,9 +115,38 @@ function Home() {
   return <Dashboard />;
 }
 
+function ReferBannerPreview() {
+  return (
+    <div className="min-h-[100dvh] bg-[#f9fafb]">
+      <div className="flex min-h-[100dvh]">
+        <aside className="hidden w-[232px] shrink-0 border-r border-[#eaecf0] bg-white p-4 md:block">
+          <p className="font-display text-base font-extrabold text-ink">IRP 2.0</p>
+          <p className="mt-6 text-sm font-semibold text-[#6941c6]">IRP MERN Track</p>
+          <p className="mt-2 text-sm text-[#667085]">GenAI Track</p>
+        </aside>
+        <div className="min-w-0 flex-1">
+          <header className="border-b border-[#eaecf0] px-4 py-3 md:hidden">
+            <span className="font-display text-base font-extrabold text-ink">IRP 2.0</span>
+          </header>
+          <ReferBanner onInvite={() => undefined} onDismiss={() => undefined} />
+          <div className="p-4 sm:p-6 lg:p-8">
+            <h1 className="font-display text-2xl font-extrabold text-ink">Welcome back</h1>
+            <p className="mt-1 text-sm text-[#667085]">Referral bar preview — Invite opens the academy referral link.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Router() {
   return (
     <Switch>
+      {import.meta.env.DEV ? (
+        <Route path="/refer-preview">
+          <ReferBannerPreview />
+        </Route>
+      ) : null}
       <Route path="/analytics">
         <Analytics />
       </Route>

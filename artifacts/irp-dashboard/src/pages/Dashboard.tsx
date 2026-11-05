@@ -36,6 +36,7 @@ import { GenAiTrainingPopup } from "@/components/irp/GenAiTrainingPopup";
 import { useGenAiTrainingPopup } from "@/lib/useGenAiTrainingPopup";
 import { useGenAiTrainingConfig } from "@/lib/useGenAiTrainingConfig";
 import { isGenaiAssessmentLabel } from "@/lib/registrationBatchDisplay";
+import { ReferBanner, useReferBanner } from "@/components/irp/ReferBanner";
 
 const EMPTY_ASSESSMENTS: AssessmentResult[] = [];
 
@@ -59,6 +60,7 @@ export default function Dashboard() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsMode, setSettingsMode] = useState<"menu" | "to-standard">("menu");
   const [countdown, setCountdown] = useState({ days: 0 });
+  const referBanner = useReferBanner();
 
   useEffect(() => {
     trackDashboardVisitOnce();
@@ -216,6 +218,9 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16">
+          {(page === "dashboard" || page === "genai") && !referBanner.hidden ? (
+            <ReferBanner onInvite={referBanner.hideForSession} onDismiss={referBanner.hideForSession} />
+          ) : null}
           <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
             {page === "dashboard" && (
               <DashboardView
