@@ -23,3 +23,4 @@
 - [BigQuery sync verification](bigquery-sync-verification.md) — report per-table freshness honestly; no running warehouse job does not prove a bulk sync is idle.
 - [OpenAPI response schema names](openapi-response-schema-names.md) — avoid component names that duplicate Orval's operation-generated response export.
 - [Node 20 UI test runtime](jsdom-node20-compat.md) — latest jsdom pulls Undici 8, whose zstd stream API is missing here; use jsdom 26 with Vitest.
+- [Referral banner source fidelity](referral-banner-source.md) — preserve the supplied GitHub design and gift image; do not recreate the banner or substitute a library icon.
