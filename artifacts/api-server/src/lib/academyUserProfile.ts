@@ -12,9 +12,9 @@
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
  *
- * App-load admission checks query BigQuery live; other profile reads use the mirror.
- * Historical manual grant/revoke markers and legacy unpaid rows do not override
- * the three required statuses.
+ * App-load admission checks honor manual grants first, then query BigQuery live;
+ * other profile reads use the mirror. These profile helpers evaluate source
+ * statuses only; the payment-status route handles the explicit manual exception.
  */
 import {
   db,

@@ -77,3 +77,59 @@ test("each access check loads fresh statuses; all three required, no stale fallb
   await assert.rejects(get("student-a"), /warehouse unavailable/);
   assert.equal(calls, 7);
 });
+
+test("payment-status grants bypass BigQuery, while normal users still use live statuses", async () => {
+  const source = fs.readFileSync(new URL("../routes/student.ts", import.meta.url), "utf8");
+  const ast = ts.createSourceFile("student.ts", source, ts.ScriptTarget.Latest, true);
+  const route = ast.statements.find(n => ts.isExpressionStatement(n) &&
+    ts.isCallExpression(n.expression) && n.expression.arguments[0]?.text === "/student/payment-status");
+  assert.ok(route, "payment-status route exists");
+  let manual = true;
+  let liveCalls = 0;
+  let failLive = true;
+  let identity = "internal-user";
+  const context = {
+    exports: {},
+    require: () => ({ hasManualDashboardAccess: async () => manual }),
+    resolveAcademyUserId: async () => identity,
+    getLiveAcademyUserDashboardAccess: async () => {
+      liveCalls++;
+      if (failLive) throw new Error("warehouse unavailable");
+      return { allowed: false, irpEligibleStatus: "NOT_ELIGIBLE" };
+    },
+  };
+  vm.runInNewContext(ts.transpileModule(`exports.handler = ${route.expression.arguments[1].getText(ast)}`, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText, context);
+  const run = async () => {
+    const res = { code: 200, headers: {}, setHeader(k, v) { this.headers[k] = v; },
+      status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
+    await context.exports.handler({ log: { error() {} } }, res);
+    return res;
+  };
+  let result = await run();
+  assert.equal(result.body.allowed, true);
+  assert.equal(liveCalls, 0, "manual grant must never depend on warehouse availability");
+  assert.equal(result.headers["Cache-Control"], "private, no-store");
+  manual = false;
+  result = await run();
+  assert.equal(result.code, 500);
+  failLive = false;
+  result = await run();
+  assert.equal(result.body.allowed, false);
+  identity = null;
+  result = await run();
+  assert.equal(result.code, 401);
+});
+
+test("UID parser accepts newline, comma lists and headered or headerless CSV", () => {
+  const { parseAcademyUserIds: parse } = loadFunctions(
+    "../../../irp-dashboard/src/lib/parseAcademyUserIds.ts", ["parseAcademyUserIds"], {},
+  );
+  const a = "00000000-0000-4000-8000-000000000001";
+  const b = "00000000-0000-4000-8000-000000000002";
+  for (const input of [`${a},${b}`, `${a}\n${b}`, `academy_user_id,name\n${a},First\n${b},Second`, `${a},First\n${b},Second`]) {
+    assert.deepEqual([...parse(input)], [a, b]);
+  }
+  assert.deepEqual([...parse(`${a},${a}`)], [a]);
+});

@@ -26,9 +26,13 @@ export function parseAcademyUserIds(raw: string): string[] {
   const ids: string[] = [];
   for (let i = start; i < lines.length; i++) {
     const cols = splitCols(lines[i]);
-    const id = (cols[colIndex] ?? cols[0] ?? "").trim();
-    if (id && !/^(academy_user_id|user_id|uid|id)$/i.test(id)) {
-      ids.push(id);
+    // Headered CSV selects the ID column; a plain comma-separated list contains
+    // multiple IDs per line. Preserve headerless multi-column CSV handling.
+    const candidates = !hasHeader && cols.every(c => !c || /^[0-9a-f-]{36}$/i.test(c))
+      ? cols : [cols[colIndex] ?? cols[0] ?? ""];
+    for (const candidate of candidates) {
+      const id = candidate.trim().toLowerCase();
+      if (id && !/^(academy_user_id|user_id|uid|id)$/i.test(id)) ids.push(id);
     }
   }
 

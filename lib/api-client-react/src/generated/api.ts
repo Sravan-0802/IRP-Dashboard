@@ -39,6 +39,10 @@ import type {
   L1RegistrationRequest,
   L1RegistrationResponse,
   L1RegistrationSubmitResponse,
+  ManualAccessGrantResult,
+  ManualAccessInput,
+  ManualAccessList,
+  ManualAccessRevokeResult,
   Student,
   StudentActivity,
   StudentAssessments,
@@ -72,6 +76,207 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGrantManualDashboardAccessUrl = () => {
+
+
+
+
+  return `/api/admin/dashboard-access/grant`
+}
+
+export const grantManualDashboardAccess = async (manualAccessInput: ManualAccessInput, options?: RequestInit): Promise<ManualAccessGrantResult> => {
+
+  return customFetch<ManualAccessGrantResult>(getGrantManualDashboardAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(manualAccessInput)
+  }
+);}
+
+
+
+
+
+export const getGrantManualDashboardAccessMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof grantManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext> => {
+
+const mutationKey = ['grantManualDashboardAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof grantManualDashboardAccess>>, {data: BodyType<ManualAccessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  grantManualDashboardAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GrantManualDashboardAccessMutationResult = NonNullable<Awaited<ReturnType<typeof grantManualDashboardAccess>>>
+    export type GrantManualDashboardAccessMutationBody = BodyType<ManualAccessInput>
+    export type GrantManualDashboardAccessMutationError = ErrorType<void>
+
+    export const useGrantManualDashboardAccess = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof grantManualDashboardAccess>>,
+        TError,
+        {data: BodyType<ManualAccessInput>},
+        TContext
+      > => {
+      return useMutation(getGrantManualDashboardAccessMutationOptions(options));
+    }
+
+export const getRevokeManualDashboardAccessUrl = () => {
+
+
+
+
+  return `/api/admin/dashboard-access/revoke`
+}
+
+export const revokeManualDashboardAccess = async (manualAccessInput: ManualAccessInput, options?: RequestInit): Promise<ManualAccessRevokeResult> => {
+
+  return customFetch<ManualAccessRevokeResult>(getRevokeManualDashboardAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(manualAccessInput)
+  }
+);}
+
+
+
+
+
+export const getRevokeManualDashboardAccessMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext> => {
+
+const mutationKey = ['revokeManualDashboardAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeManualDashboardAccess>>, {data: BodyType<ManualAccessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revokeManualDashboardAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeManualDashboardAccessMutationResult = NonNullable<Awaited<ReturnType<typeof revokeManualDashboardAccess>>>
+    export type RevokeManualDashboardAccessMutationBody = BodyType<ManualAccessInput>
+    export type RevokeManualDashboardAccessMutationError = ErrorType<void>
+
+    export const useRevokeManualDashboardAccess = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeManualDashboardAccess>>, TError,{data: BodyType<ManualAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeManualDashboardAccess>>,
+        TError,
+        {data: BodyType<ManualAccessInput>},
+        TContext
+      > => {
+      return useMutation(getRevokeManualDashboardAccessMutationOptions(options));
+    }
+
+export const getListManualDashboardAccessUrl = () => {
+
+
+
+
+  return `/api/admin/dashboard-access/manual`
+}
+
+export const listManualDashboardAccess = async ( options?: RequestInit): Promise<ManualAccessList> => {
+
+  return customFetch<ManualAccessList>(getListManualDashboardAccessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListManualDashboardAccessQueryKey = () => {
+    return [
+    `/api/admin/dashboard-access/manual`
+    ] as const;
+    }
+
+
+export const getListManualDashboardAccessQueryOptions = <TData = Awaited<ReturnType<typeof listManualDashboardAccess>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listManualDashboardAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListManualDashboardAccessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listManualDashboardAccess>>> = ({ signal }) => listManualDashboardAccess({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listManualDashboardAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListManualDashboardAccessQueryResult = NonNullable<Awaited<ReturnType<typeof listManualDashboardAccess>>>
+export type ListManualDashboardAccessQueryError = ErrorType<void>
+
+
+
+export function useListManualDashboardAccess<TData = Awaited<ReturnType<typeof listManualDashboardAccess>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listManualDashboardAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListManualDashboardAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetHumanInterviewResultsUrl = () => {
 

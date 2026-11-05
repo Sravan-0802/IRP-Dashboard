@@ -5,6 +5,37 @@
  * IRP 2.0 Student Dashboard API
  * OpenAPI spec version: 0.1.0
  */
+export interface ManualAccessInput {
+  /**
+     * @minItems 1
+     * @maxItems 1000
+     * @items.pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+     */
+  academyUserIds: string[];
+}
+
+export interface ManualAccessGrantResult {
+  requested: number;
+  granted: number;
+  alreadyGranted: number;
+  userIds: string[];
+}
+
+export interface ManualAccessRevokeResult {
+  requested: number;
+  revoked: number;
+  userIds: string[];
+}
+
+export type ManualAccessListGrantsItem = {
+  userId: string;
+  grantedAt: string;
+};
+
+export interface ManualAccessList {
+  grants: ManualAccessListGrantsItem[];
+}
+
 export interface HumanInterviewAttempt {
   interviewId: string;
   interviewDate: string;

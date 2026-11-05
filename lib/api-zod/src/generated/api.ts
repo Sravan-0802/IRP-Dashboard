@@ -8,6 +8,47 @@
 import * as zod from 'zod';
 
 
+export const grantManualDashboardAccessBodyAcademyUserIdsItemRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+export const grantManualDashboardAccessBodyAcademyUserIdsMax = 1000;
+
+
+
+export const GrantManualDashboardAccessBody = zod.object({
+  "academyUserIds": zod.array(zod.string().regex(grantManualDashboardAccessBodyAcademyUserIdsItemRegExp)).min(1).max(grantManualDashboardAccessBodyAcademyUserIdsMax)
+})
+
+export const GrantManualDashboardAccessResponse = zod.object({
+  "requested": zod.number(),
+  "granted": zod.number(),
+  "alreadyGranted": zod.number(),
+  "userIds": zod.array(zod.string())
+})
+
+
+export const revokeManualDashboardAccessBodyAcademyUserIdsItemRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+export const revokeManualDashboardAccessBodyAcademyUserIdsMax = 1000;
+
+
+
+export const RevokeManualDashboardAccessBody = zod.object({
+  "academyUserIds": zod.array(zod.string().regex(revokeManualDashboardAccessBodyAcademyUserIdsItemRegExp)).min(1).max(revokeManualDashboardAccessBodyAcademyUserIdsMax)
+})
+
+export const RevokeManualDashboardAccessResponse = zod.object({
+  "requested": zod.number(),
+  "revoked": zod.number(),
+  "userIds": zod.array(zod.string())
+})
+
+
+export const ListManualDashboardAccessResponse = zod.object({
+  "grants": zod.array(zod.object({
+  "userId": zod.string(),
+  "grantedAt": zod.string()
+}))
+})
+
+
 /**
  * @summary All IRP L1 human interview attempts and latest scored result
  */

@@ -1360,6 +1360,11 @@ router.get("/student/payment-status", async (req, res) => {
       return;
     }
 
+    const { hasManualDashboardAccess } = await import("../lib/manualDashboardAccess");
+    if (await hasManualDashboardAccess(userId)) {
+      res.json({ allowed: true, paymentStatus: null, paymentPlan: null, irpEligibleStatus: null, lpStatus: null, productStatus: null });
+      return;
+    }
     const access = await getLiveAcademyUserDashboardAccess(userId);
     res.json({
       allowed: access.allowed,

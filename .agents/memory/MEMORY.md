@@ -19,8 +19,9 @@
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
 - [GenAI projects and Loom](genai-project-reference.md) — supplied RAG catalogue, screenshot exceptions, and all-student Loom availability/status rules.
 - [GenAI choice persistence scope](genai-choice-persistence.md) — project choices are browser-local preferences, not submission records; cross-device sync is separate scope.
-- [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission; payment and manual overrides do not.
+- [Dashboard status policy](dashboard-status-policy.md) — admin manual grants bypass live status checks; otherwise require IRP ELIGIBLE, LP ACTIVE, and product ACTIVE. Payment is not a gate.
 - [BigQuery sync verification](bigquery-sync-verification.md) — report per-table freshness honestly; no running warehouse job does not prove a bulk sync is idle.
 - [OpenAPI response schema names](openapi-response-schema-names.md) — avoid component names that duplicate Orval's operation-generated response export.
 - [Node 20 UI test runtime](jsdom-node20-compat.md) — latest jsdom pulls Undici 8, whose zstd stream API is missing here; use jsdom 26 with Vitest.
 - [Referral banner source fidelity](referral-banner-source.md) — preserve the supplied GitHub design and gift image; do not recreate the banner or substitute a library icon.
+- [OpenAPI UUID compatibility](openapi-uuid-validation.md) — use UUID patterns; current Orval emits unsupported Zod 4 syntax for UUID format against Zod 3.

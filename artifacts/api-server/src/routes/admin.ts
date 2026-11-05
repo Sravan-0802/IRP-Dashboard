@@ -51,6 +51,8 @@ import {
   resolveAcademyUserDisplayName,
 } from "../lib/academyUserProfile";
 import { ListGenaiProjectSubmissionsResponse } from "@workspace/api-zod";
+import { GrantManualDashboardAccessBody, RevokeManualDashboardAccessBody, GrantManualDashboardAccessResponse, RevokeManualDashboardAccessResponse, ListManualDashboardAccessResponse } from "@workspace/api-zod";
+import { grantManualDashboardAccess, revokeManualDashboardAccess, listManualDashboardAccess } from "../lib/manualDashboardAccess";
 
 const router = Router();
 
@@ -572,15 +574,33 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
   }
 });
 
-// Retired overrides: preserve historical records but never create new ones.
-router.post(["/admin/dashboard-access/grant", "/admin/dashboard-access/revoke"], (req, res) => {
-  if (!checkApiKey(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  res.status(410).json({
-    error: "Manual dashboard overrides are disabled. Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE.",
+for (const action of ["grant", "revoke"] as const) {
+  router.post(`/admin/dashboard-access/${action}`, async (req, res): Promise<void> => {
+    if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const parsed = (action === "grant" ? GrantManualDashboardAccessBody : RevokeManualDashboardAccessBody).safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: "Provide 1–1000 valid Academy User IDs (UUIDs)." }); return; }
+    try {
+      if (action === "grant") {
+        res.json(GrantManualDashboardAccessResponse.parse(await grantManualDashboardAccess(parsed.data.academyUserIds)));
+      } else {
+        res.json(RevokeManualDashboardAccessResponse.parse(await revokeManualDashboardAccess(parsed.data.academyUserIds)));
+      }
+    } catch (err) {
+      req.log.error({ err, action }, "Manual dashboard access update failed");
+      res.status(500).json({ error: "Could not update manual dashboard access" });
+    }
   });
+}
+
+router.get("/admin/dashboard-access/manual", async (req, res): Promise<void> => {
+  if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
+  res.setHeader("Cache-Control", "private, no-store");
+  try {
+    res.json(ListManualDashboardAccessResponse.parse(await listManualDashboardAccess()));
+  } catch (err) {
+    req.log.error({ err }, "Could not list manual dashboard grants");
+    res.status(500).json({ error: "Could not load manual dashboard grants" });
+  }
 });
 
 // POST /api/admin/blocked-users/import — fully deny access to a set of

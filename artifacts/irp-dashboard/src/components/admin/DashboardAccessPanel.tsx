@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CreditCard, Database, Eye, Loader2, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
 
 type DashboardAccessSummary = {
   assessmentRows: number;
@@ -24,6 +25,55 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
   const [summary, setSummary] = useState<DashboardAccessSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
+  const [uidsText, setUidsText] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualMessage, setManualMessage] = useState("");
+  const [manualError, setManualError] = useState("");
+  const [grantsError, setGrantsError] = useState("");
+  const [grantsLoading, setGrantsLoading] = useState(true);
+  const [grants, setGrants] = useState<{ userId: string; grantedAt: string }[]>([]);
+  const parsedIds = parseAcademyUserIds(uidsText);
+
+  async function loadGrants() {
+    setGrantsLoading(true);
+    setGrantsError("");
+    try {
+      const res = await fetch("/api/admin/dashboard-access/manual", {
+        cache: "no-store", headers: { "x-api-key": apiKey.trim() },
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not load manual grants");
+      setGrants(body.grants);
+    } catch (err) {
+      setGrantsError(err instanceof Error ? err.message : "Could not load manual grants");
+    } finally {
+      setGrantsLoading(false);
+    }
+  }
+
+  async function updateManualAccess(action: "grant" | "revoke") {
+    if (manualBusy || !parsedIds.length) return;
+    setManualBusy(true);
+    setManualMessage("");
+    setManualError("");
+    try {
+      const res = await fetch(`/api/admin/dashboard-access/${action}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": apiKey.trim() },
+        body: JSON.stringify({ academyUserIds: parsedIds }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not update manual access");
+      setManualMessage(action === "grant"
+        ? `${body.granted} granted; ${body.alreadyGranted} already granted (${body.requested} requested).`
+        : `${body.revoked} manual grants removed (${body.requested} requested). Normal status rules now apply.`);
+      await Promise.all([loadGrants(), loadSummary()]);
+    } catch (err) {
+      setManualError(err instanceof Error ? err.message : "Could not update manual access");
+    } finally {
+      setManualBusy(false);
+    }
+  }
 
   async function loadSummary() {
     setSummaryLoading(true);
@@ -46,6 +96,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
 
   useEffect(() => {
     void loadSummary();
+    void loadGrants();
   }, [apiKey]);
 
   function formatSummaryDate(value: string | null) {
@@ -110,7 +161,7 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 Dashboard access summary
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-[#6e6a8a]">
-                Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE. Payment status and historical manual grants or revocations do not affect this decision.
+                Access still needs IRP ELIGIBLE + LP ACTIVE + product ACTIVE unless a manual grant exists. Payment status is not an access requirement. The counts below report source statuses; manual grants are listed separately.
               </p>
             </div>
           </div>
@@ -248,10 +299,51 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
         ) : null}
       </div>
 
-      <div className="irp-card p-5 text-sm text-[#6e6a8a]">
-        Manual dashboard overrides are disabled. Correct the student's IRP, LP, or product
-        status in the authoritative source, then run the BigQuery sync. Assessment links
-        continue to use Access Loader.
+      <div className="irp-card p-5">
+        <h2 className="font-display text-lg font-extrabold text-[#0d1117]">Give manual dashboard access</h2>
+        <p className="mt-1 text-sm text-[#6e6a8a]">
+          Allow internal Academy User IDs to open the dashboard regardless of IRP, LP, or product statuses.
+          This override does not change assessment links — Access Loader still does that.
+        </p>
+        <label htmlFor="manual-access-uids" className="mb-2 mt-4 block text-sm font-semibold">Academy User IDs</label>
+        <textarea id="manual-access-uids" rows={5} value={uidsText}
+          onChange={e => { setUidsText(e.target.value); setManualMessage(""); setManualError(""); }}
+          placeholder="Paste UIDs separated by newlines or commas, or CSV with an academy_user_id column."
+          className="w-full rounded-xl border border-[#d0d5dd] bg-white p-3 font-mono text-xs"
+          disabled={manualBusy} />
+        <p className="mt-1 text-xs text-[#6e6a8a]">{parsedIds.length} unique UIDs parsed · Maximum 1,000 per request</p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <button type="button" onClick={() => void updateManualAccess("grant")}
+            disabled={manualBusy || !parsedIds.length || parsedIds.length > 1000}
+            className="rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40">
+            {manualBusy ? "Updating…" : "Give dashboard access"}
+          </button>
+          <button type="button" onClick={() => void updateManualAccess("revoke")}
+            disabled={manualBusy || !parsedIds.length || parsedIds.length > 1000}
+            className="rounded-xl border border-[#d0d5dd] px-4 py-2.5 text-sm font-bold disabled:opacity-40">
+            Remove manual access
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-[#6e6a8a]">Removing manual access restores normal eligibility checks. It does not delete the student or their assessments.</p>
+        {manualMessage && <p role="status" className="mt-3 text-sm text-green-700">{manualMessage}</p>}
+        {manualError && <p role="alert" className="mt-3 text-sm text-red-700">{manualError}</p>}
+        <div className="mb-3 mt-6 flex items-center justify-between">
+          <h3 className="text-sm font-bold">Recent grants</h3>
+          <button type="button" disabled={grantsLoading || manualBusy} onClick={() => void loadGrants()} className="text-sm text-[#6741d9]">Refresh grants</button>
+        </div>
+        {grantsError ? <p role="alert" className="text-sm text-red-700">{grantsError}</p>
+          : grantsLoading ? <p className="text-sm">Loading grants…</p>
+          : grants.length === 0 ? <p className="text-sm text-[#6e6a8a]">No active manual grants.</p>
+          : <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr className="border-b"><th className="py-2 pr-4">Academy User ID</th><th className="py-2">Granted at (IST)</th></tr></thead>
+              <tbody>{grants.map(grant => <tr key={grant.userId} className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs">{grant.userId}</td>
+                <td className="whitespace-nowrap py-2">{formatSummaryDate(grant.grantedAt)}</td>
+              </tr>)}</tbody>
+            </table>
+            <p className="mt-2 text-xs text-[#6e6a8a]">Showing up to 100 most recent active grants.</p>
+          </div>}
       </div>
     </div>
   );
