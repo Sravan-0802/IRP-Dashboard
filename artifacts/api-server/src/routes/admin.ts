@@ -50,6 +50,11 @@ import { createAuthToken } from "../lib/authTokens";
 import {
   resolveAcademyUserDisplayName,
 } from "../lib/academyUserProfile";
+import {
+  grantManualDashboardAccess,
+  listManualDashboardAccessGrants,
+  revokeManualDashboardAccess,
+} from "../lib/manualDashboardAccess";
 import { ListGenaiProjectSubmissionsResponse } from "@workspace/api-zod";
 
 const router = Router();
@@ -572,15 +577,74 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
   }
 });
 
-// Retired overrides: preserve historical records but never create new ones.
-router.post(["/admin/dashboard-access/grant", "/admin/dashboard-access/revoke"], (req, res) => {
-  if (!checkApiKey(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+function parseAcademyUserIdsFromBody(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const payload = body as { academyUserIds?: unknown; academyUserId?: unknown };
+  const collected: string[] = [];
+  if (typeof payload.academyUserId === "string") collected.push(payload.academyUserId);
+  if (Array.isArray(payload.academyUserIds)) {
+    for (const entry of payload.academyUserIds) {
+      if (typeof entry === "string") collected.push(entry);
+    }
   }
-  res.status(410).json({
-    error: "Manual dashboard overrides are disabled. Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE.",
-  });
+  return [...new Set(collected.map((id) => id.trim()).filter(Boolean))];
+}
+
+// GET /api/admin/dashboard-access/manual — recent internal UID grants
+router.get("/admin/dashboard-access/manual", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const grants = await listManualDashboardAccessGrants();
+    res.json({ grants, total: grants.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list manual dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/dashboard-access/grant — give dashboard access to internal UIDs
+// even when IRP/LP/product statuses would otherwise block them.
+router.post("/admin/dashboard-access/grant", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const academyUserIds = parseAcademyUserIdsFromBody(req.body);
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "Paste at least one Academy User ID" });
+      return;
+    }
+    const result = await grantManualDashboardAccess(academyUserIds);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to grant dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/dashboard-access/revoke — remove a manual grant only (does not
+// change BigQuery statuses or real assessment rows).
+router.post("/admin/dashboard-access/revoke", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const academyUserIds = parseAcademyUserIdsFromBody(req.body);
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "Paste at least one Academy User ID" });
+      return;
+    }
+    const result = await revokeManualDashboardAccess(academyUserIds);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // POST /api/admin/blocked-users/import — fully deny access to a set of
