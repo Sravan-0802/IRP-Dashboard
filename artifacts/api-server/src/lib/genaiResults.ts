@@ -2,9 +2,11 @@ import {
   db,
   academyUserGenaiAssessmentDetailsTable,
   academyUserGenaiNxtmockDetailsTable,
+  irpGenaiAssessmentQualificationStatusesTable,
   type AcademyUserGenaiAssessmentDetails,
 } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { buildGenaiQualificationOutput, publishGenaiQualificationOutput } from "./genaiQualificationOutput";
 import {
   fetchZGenaiAssessmentAttempts,
   fetchZGenaiNxtmockAttempts,
@@ -188,6 +190,7 @@ export async function syncGenaiAssessmentAttempts(): Promise<number> {
       });
   }
   await refreshGenaiQualificationStatuses(rules, now);
+  await publishGenaiQualificationOutput();
   return mapped.length;
 }
 
@@ -297,15 +300,7 @@ export async function refreshGenaiQualificationStatuses(
   await ensureGenaiResultTables();
   const activeRules = rules ?? (await getGenaiQualificationRules());
   const rows = await db
-    .select({
-      id: academyUserGenaiAssessmentDetailsTable.id,
-      attempted: academyUserGenaiAssessmentDetailsTable.attempted,
-      assessmentStartDatetime: academyUserGenaiAssessmentDetailsTable.assessmentStartDatetime,
-      mcqScore: academyUserGenaiAssessmentDetailsTable.mcqScore,
-      codingScore: academyUserGenaiAssessmentDetailsTable.codingScore,
-      assessmentTag: academyUserGenaiAssessmentDetailsTable.assessmentTag,
-      assessmentNumber: academyUserGenaiAssessmentDetailsTable.assessmentNumber,
-    })
+    .select()
     .from(academyUserGenaiAssessmentDetailsTable);
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const values = rows.slice(i, i + BATCH_SIZE).map((row) => {
@@ -320,6 +315,24 @@ export async function refreshGenaiQualificationStatuses(
         AND t.qualification_status IS DISTINCT FROM v.status
     `);
   }
+  const output = buildGenaiQualificationOutput(rows.map(row => ({
+    ...row,
+    qualificationStatus: qualificationStatusFor(row, activeRules, now),
+  })));
+  await db.transaction(async tx => {
+    for (let index = 0; index < output.length; index += BATCH_SIZE) {
+      await tx.insert(irpGenaiAssessmentQualificationStatusesTable)
+        .values(output.slice(index, index + BATCH_SIZE))
+        .onConflictDoUpdate({
+          target: [
+            irpGenaiAssessmentQualificationStatusesTable.userId,
+            irpGenaiAssessmentQualificationStatusesTable.assessmentSpecificTag,
+            irpGenaiAssessmentQualificationStatusesTable.assessmentTitle,
+          ],
+          set: { qualificationStatus: sql`excluded.qualification_status` },
+        });
+    }
+  });
   return rows.length;
 }
 

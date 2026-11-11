@@ -37,6 +37,7 @@ import {
   updateGenaiQualificationRules,
 } from "../lib/genaiQualificationRules";
 import { getGenaiAssessmentSummary, refreshGenaiQualificationStatuses } from "../lib/genaiResults";
+import { publishGenaiQualificationOutput } from "../lib/genaiQualificationOutput";
 import { getFeAssessmentSummary } from "../lib/feSummary";
 import {
   getL1QualificationRules,
@@ -982,6 +983,7 @@ router.put("/admin/genai-qualification-rules", async (req, res) => {
     }
     await updateGenaiQualificationRules(rules);
     await refreshGenaiQualificationStatuses(rules);
+    await publishGenaiQualificationOutput();
     res.json({ rules, summary: await getGenaiAssessmentSummary() });
   } catch (err) {
     req.log.error({ err }, "Failed to update GenAI qualification rules");

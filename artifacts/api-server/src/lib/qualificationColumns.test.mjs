@@ -64,3 +64,76 @@ test("GenAI persisted status uses MCQ and coding thresholds from matching tag ru
   assert.equal(genaiAssessmentStatus({ ...assessment, mcqScore: null, codingScore: null }, rules), "RESULT_PENDING");
   assert.equal(genaiAssessmentStatus({ ...assessment, attempted: 0 }, rules), "NOT_ATTEMPTED");
 });
+
+const { buildGenaiQualificationOutput, genaiOutputWarehouseRows } = functions(
+  "./genaiQualificationOutput.ts", ["buildGenaiQualificationOutput", "genaiOutputWarehouseRows"],
+);
+const genaiSource = {
+  id: 1, userId: "student", assessmentTag: "GENAI_A1", assessmentTitle: "GenAI 'A1'",
+  qualificationStatus: "QUALIFIED", attemptNumber: 1,
+  userAssessmentStartDatetime: new Date("2026-10-01"), assessmentStartDatetime: null,
+  syncedAt: new Date("2026-10-02"),
+};
+
+test("GenAI output keeps latest attempt, not best result or sync order", () => {
+  const newer = { ...genaiSource, id: 2, qualificationStatus: "NOT_QUALIFIED",
+    userAssessmentStartDatetime: new Date("2026-10-03"), attemptNumber: 2 };
+  for (const rows of [[newer, genaiSource], [genaiSource, newer]]) {
+    const output = buildGenaiQualificationOutput(rows);
+    assert.equal(output.length, 1);
+    assert.equal(output[0].qualificationStatus, "NOT_QUALIFIED");
+    assert.equal(output[0].assessmentSpecificTag, "GENAI_A1");
+  }
+});
+
+test("GenAI output separates students, tags and titles and preserves nullable identifiers", () => {
+  const output = buildGenaiQualificationOutput([
+    genaiSource, { ...genaiSource, userId: "other" }, { ...genaiSource, assessmentTag: "GENAI_A2" },
+    { ...genaiSource, assessmentTitle: "Other title" },
+    { ...genaiSource, assessmentTag: null, assessmentTitle: null },
+    { ...genaiSource, id: 2, assessmentTag: null, assessmentTitle: null },
+  ]);
+  assert.equal(output.length, 5);
+  const warehouse = genaiOutputWarehouseRows(output);
+  assert.equal(Object.keys(warehouse[0]).join(","), "user_id,assessment_specific_tag,assessment_title,qualification_status");
+  assert.equal(warehouse[0].assessment_title, "GenAI 'A1'");
+  assert.equal(warehouse[4].assessment_specific_tag, null);
+  assert.throws(() => buildGenaiQualificationOutput([{ ...genaiSource, qualificationStatus: null }]));
+});
+
+test("GenAI write-back is parameterized, batched, idempotent and reports failures", async () => {
+  const queries = [];
+  const output = Array.from({ length: 501 }, (_, i) => ({
+    userId: `student-${i}`, assessmentSpecificTag: "GENAI_A1",
+    assessmentTitle: "A1", qualificationStatus: "QUALIFIED",
+  }));
+  let fail = false;
+  const dataset = {
+    table: () => ({ getMetadata: async () => [{ schema: { fields: [
+      "user_id", "assessment_specific_tag", "assessment_title", "qualification_status",
+    ].map(name => ({ name, type: "STRING" })) } }] }),
+    getMetadata: async () => [{ location: "asia-south1" }],
+  };
+  const { publishGenaiQualificationOutput } = functions("./genaiQualificationOutput.ts",
+    ["publishGenaiQualificationOutput"], {
+      db: { select: () => ({ from: async () => output }) },
+      irpGenaiAssessmentQualificationStatusesTable: {},
+      genaiOutputWarehouseRows,
+      GENAI_QUALIFICATION_OUTPUT_TABLE: "project.dataset.output",
+      logger: { info: () => {} },
+      getBigQueryClient: () => ({ dataset: () => dataset, query: async options => {
+        queries.push(options);
+        if (fail) throw new Error("Write denied");
+      } }),
+    });
+  assert.equal(await publishGenaiQualificationOutput(), 501);
+  assert.equal(queries.length, 2);
+  assert.equal(JSON.parse(queries[0].params.rows).length, 500);
+  assert.equal(JSON.parse(queries[1].params.rows).length, 1);
+  assert.match(queries[0].query, /MERGE/);
+  assert.match(queries[0].query, /IS NOT DISTINCT FROM/);
+  assert.doesNotMatch(queries[0].query, /DELETE|TRUNCATE|student-0/);
+  assert.equal(queries[0].location, "asia-south1");
+  fail = true;
+  await assert.rejects(publishGenaiQualificationOutput(), /Write denied/);
+});
