@@ -58,7 +58,6 @@ import {
 } from "../lib/manualDashboardAccess";
 import { ListGenaiProjectSubmissionsResponse } from "@workspace/api-zod";
 import { GrantManualDashboardAccessBody, RevokeManualDashboardAccessBody, GrantManualDashboardAccessResponse, RevokeManualDashboardAccessResponse, ListManualDashboardAccessResponse } from "@workspace/api-zod";
-import { grantManualDashboardAccess, revokeManualDashboardAccess, listManualDashboardAccess } from "../lib/manualDashboardAccess";
 
 const router = Router();
 
