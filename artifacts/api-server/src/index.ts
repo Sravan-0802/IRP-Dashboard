@@ -3,6 +3,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startBigQuerySyncScheduler } from "./lib/sync-bigquery";
 import { refreshAssessmentQualificationStatuses } from "./lib/assessmentQualificationStatuses";
+import { refreshGenaiQualificationStatuses } from "./lib/genaiResults";
 
 const rawPort = process.env["PORT"];
 
@@ -25,7 +26,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  void refreshAssessmentQualificationStatuses()
+  void Promise.all([refreshAssessmentQualificationStatuses(), refreshGenaiQualificationStatuses()])
     .then(() => logger.info("Assessment qualification statuses refreshed"))
     .catch((err) => logger.error({ err }, "Assessment qualification status refresh failed"));
   startBigQuerySyncScheduler();

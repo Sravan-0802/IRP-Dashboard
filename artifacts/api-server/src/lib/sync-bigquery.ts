@@ -821,6 +821,8 @@ export async function runBigQuerySync(): Promise<SyncResult> {
           logger.warn({ err }, "Portal assessment sync failed; continuing with z_*");
         }
         const zCount = await syncZAssessmentAttempts();
+        const { refreshAssessmentQualificationStatuses } = await import("./assessmentQualificationStatuses");
+        await refreshAssessmentQualificationStatuses();
         return Math.max(portal, zCount);
       }),
       await runOne(NXTMOCK_DETAILS_KEY, async () => {

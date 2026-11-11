@@ -22,6 +22,7 @@ import {
 import { isMockAssessmentFields } from "./mainOnly";
 
 type AssessmentRow = {
+  id: number;
   userId: string;
   assessmentTag: string | null;
   assessmentTitle: string | null;
@@ -59,6 +60,9 @@ function assessmentFamily(row: Pick<AssessmentRow, "level" | "assessmentTag" | "
   ) {
     return "FE_PROJECT";
   }
+  // Completed-attempt imports may retain only A# plus L1, with no title.
+  // Explicit FE indicators above take precedence over this L1 fallback.
+  if (level === "L1" && feAssessmentIndex(tag) != null) return "L1_HUSTLER";
   return null;
 }
 
@@ -70,6 +74,26 @@ function assessmentSpecificTag(family: string, identifiers: Array<string | null>
     .map((identifier) => identifier?.toUpperCase().match(/(?:^|[_\s-])C(\d+)\b/)?.[1])
     .find((value) => value != null);
   return cycleNumber == null ? family : `${family}_C${cycleNumber}`;
+}
+
+/** Per-attempt result; do not copy a latest/best score onto older attempts. */
+export function detailedQualificationStatus(
+  row: AssessmentRow,
+  feRules: FeQualificationRule[],
+  l1Rules: L1QualificationRule[],
+): string | null {
+  const family = assessmentFamily(row);
+  if (!family || isMockAssessmentFields({ tag: row.assessmentTag, title: row.assessmentTitle })) return null;
+  const score = row.assessmentUserScore ??
+    ((row.mcqUserSectionScore ?? 0) + (row.codingUserSectionScore ?? 0) + (row.feUserSectionScore ?? 0));
+  const maximum = row.assessmentTotalScore ??
+    ((row.mcqSectionMaxScore ?? 0) + (row.codingSectionMaxScore ?? 0) + (row.feSectionMaxScore ?? 0));
+  return getFeAssessmentStatus(
+    [row.assessmentTag, row.cycle, row.assessmentTitle],
+    maximum > 0 ? (score / maximum) * 100 : null,
+    row.userAssessmentStartDatetime,
+    family === "L1_HUSTLER" ? l1Rules : feRules,
+  );
 }
 
 function timestamp(value: Date | null | undefined): number {
@@ -135,6 +159,7 @@ export async function refreshAssessmentQualificationStatuses(): Promise<void> {
 
   const rows = (await db
     .select({
+      id: academyUserAssessmentDetailsTable.id,
       userId: academyUserAssessmentDetailsTable.userId,
       assessmentTag: academyUserAssessmentDetailsTable.assessmentTag,
       assessmentTitle: academyUserAssessmentDetailsTable.assessmentTitle,
@@ -160,6 +185,19 @@ export async function refreshAssessmentQualificationStatuses(): Promise<void> {
       ]),
     )) as AssessmentRow[];
 
+  // Keep the detailed mirror's computed column in step with the compact latest-attempt table.
+  // This does not overwrite the warehouse-owned assessment_status.
+  for (let index = 0; index < rows.length; index += 500) {
+    const values = rows.slice(index, index + 500).map(row =>
+      sql`(${row.id}::int, ${detailedQualificationStatus(row, feRules, l1Rules)}::text)`);
+    await db.execute(sql`
+      UPDATE academy_user_assessment_details AS t
+      SET qualification_status = v.status
+      FROM (VALUES ${sql.join(values, sql`, `)}) AS v(id, status)
+      WHERE t.id = v.id AND t.qualification_status IS DISTINCT FROM v.status
+    `);
+  }
+
   const latestRows = new Map<string, { source: AssessmentRow; result: QualificationStatusRow }>();
   const supersededFamilyRows = new Map<
     string,
@@ -180,24 +218,7 @@ export async function refreshAssessmentQualificationStatuses(): Promise<void> {
         assessmentTitle: title,
       });
     }
-    const score =
-      row.assessmentUserScore ??
-      ((row.mcqUserSectionScore ?? 0) +
-        (row.codingUserSectionScore ?? 0) +
-        (row.feUserSectionScore ?? 0));
-    const maximum =
-      row.assessmentTotalScore ??
-      ((row.mcqSectionMaxScore ?? 0) +
-        (row.codingSectionMaxScore ?? 0) +
-        (row.feSectionMaxScore ?? 0));
-    const scorePercentage = maximum > 0 ? (score / maximum) * 100 : null;
-    const rules = family === "L1_HUSTLER" ? l1Rules : feRules;
-    const qualificationStatus = getFeAssessmentStatus(
-      identifiers,
-      scorePercentage,
-      row.userAssessmentStartDatetime,
-      rules,
-    );
+    const qualificationStatus = detailedQualificationStatus(row, feRules, l1Rules)!;
     const result: QualificationStatusRow = {
       userId: row.userId,
       assessmentSpecificTag: specificTag,

@@ -305,6 +305,8 @@ export const academyUserAssessmentDetailsTable = pgTable(
     attemptNumber: integer("attempt_number"),
     /** QUALIFIED | NOT QUALIFIED | NOT ATTEMPTED | … from z_* when available. */
     assessmentStatus: text("assessment_status"),
+    /** App-computed qualification using saved tag rules; null for non-assessment rows. */
+    qualificationStatus: text("qualification_status"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
