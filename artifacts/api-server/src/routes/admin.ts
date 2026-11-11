@@ -662,10 +662,10 @@ router.delete("/admin/blocked-users/:academyUserId", async (req, res) => {
   }
 });
 
-// POST /api/admin/dashboard-access/import — grant dashboard access to a batch
-// of academy users who have no assessment data yet (admin API key required).
-// Inserts a minimal row into academy_user_basic_details and a placeholder row
-// into academy_user_assessment_details so userHasAssessmentData() returns true.
+// POST /api/admin/dashboard-access/import — legacy bulk import (admin API key
+// required). Inserts a minimal row into academy_user_basic_details and a
+// placeholder row into academy_user_assessment_details. Dashboard access no
+// longer depends on assessment rows; it is decided by the three BigQuery statuses.
 // Body: { academyUserIds: string[] }
 router.post("/admin/dashboard-access/import", async (req, res) => {
   try {
@@ -701,7 +701,7 @@ router.post("/admin/dashboard-access/import", async (req, res) => {
         .returning({ userId: academyUserBasicDetailsTable.userId });
       upsertedBasic += basicRows.length;
 
-      // Upsert a placeholder assessment row so userHasAssessmentData() passes
+      // Upsert a placeholder assessment row (legacy; not required for access)
       const assessmentRows = await db
         .insert(academyUserAssessmentDetailsTable)
         .values(chunk.map((userId) => ({

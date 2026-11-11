@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db, studentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveAcademyUserId } from "../lib/auth";
-import { getOrCreateStudentForUser, userHasAssessmentData } from "../lib/student";
+import { getOrCreateStudentForUser } from "../lib/student";
 import { maybeAdvanceJourneyFromNxtmock } from "../lib/nxtmockInterview";
 
 const router = Router();
@@ -70,18 +70,6 @@ async function requireUserId(req: Request, res: Response): Promise<string | null
   return userId;
 }
 
-// Journey shape for users without a persisted row yet (e.g. not enrolled).
-const DEFAULT_JOURNEY = {
-  journeyState: "L1_PREP",
-  isWildcard: false,
-  hasCompletedOnboarding: true,
-  hasAttemptedL1: false,
-  l3ExamStarted: false,
-  reattemptDate: null,
-  projectSubmitted: false,
-  projectDueDate: null,
-};
-
 // ── L1-only gate (temporary) ────────────────────────────────────────────────
 // Only Level 1 is live right now. Any stored state above L1 (or a Wildcard /
 // PLACED state) is clamped down to its Level 1 equivalent on read, so students
@@ -115,14 +103,6 @@ router.get("/student/journey", async (req, res) => {
     if (!userId) return;
 
     const clamp = await shouldClampToL1(req);
-
-    // Only enrolled (assessed) users get a persisted, mutable journey. Everyone
-    // else gets a harmless default — they'll be shown the not-enrolled screen
-    // anyway because /student 404s for them.
-    if (!(await userHasAssessmentData(userId))) {
-      res.json(DEFAULT_JOURNEY);
-      return;
-    }
 
     let student = await getOrCreateStudentForUser(userId);
     if (!student) {
