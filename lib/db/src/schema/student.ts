@@ -584,6 +584,8 @@ export const academyUserGenaiAssessmentDetailsTable = pgTable(
     totalMax: real("total_max"),
     attempted: integer("attempted").notNull().default(0),
     attemptNumber: integer("attempt_number"),
+    /** QUALIFIED, NOT_QUALIFIED, RESULT_PENDING, NOT_ATTEMPTED, or UPCOMING. Set from the GenAI tag rules. */
+    qualificationStatus: text("qualification_status"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

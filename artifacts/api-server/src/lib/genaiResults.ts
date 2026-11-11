@@ -22,6 +22,11 @@ export const GENAI_NXTMOCK_DETAILS_KEY = "academy_user_genai_nxtmock_details";
 
 const BATCH_SIZE = 500;
 
+const ADD_QUALIFICATION_STATUS_SQL = `
+ALTER TABLE academy_user_genai_assessment_details
+  ADD COLUMN IF NOT EXISTS qualification_status text;
+`;
+
 const ENSURE_SQL = [
   `CREATE TABLE IF NOT EXISTS academy_user_genai_assessment_details (
     id serial PRIMARY KEY,
@@ -41,6 +46,7 @@ const ENSURE_SQL = [
     total_max real,
     attempted integer NOT NULL DEFAULT 0,
     attempt_number integer,
+    qualification_status text,
     synced_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT academy_user_genai_assessment_unique UNIQUE (user_id, organisation_assessment_id)
   )`,
@@ -68,6 +74,7 @@ export async function ensureGenaiResultTables(): Promise<void> {
   if (!ensurePromise) {
     ensurePromise = (async () => {
       for (const statement of ENSURE_SQL) await db.execute(sql.raw(statement));
+      await db.execute(sql.raw(ADD_QUALIFICATION_STATUS_SQL));
     })().catch((err) => {
       ensurePromise = null;
       throw err;
@@ -142,10 +149,15 @@ function mapNxtmock(r: ZGenaiNxtmockRow) {
 
 export async function syncGenaiAssessmentAttempts(): Promise<number> {
   await ensureGenaiResultTables();
+  const rules = await getGenaiQualificationRules();
+  const now = new Date();
   const rows = await fetchZGenaiAssessmentAttempts();
   const mapped = rows
     .filter((r) => toStr(r.user_id) && toStr(r.organisation_assessment_id))
-    .map(mapAssessment);
+    .map((r) => {
+      const row = mapAssessment(r);
+      return { ...row, qualificationStatus: qualificationStatusFor(row, rules, now) };
+    });
   for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
     await db
       .insert(academyUserGenaiAssessmentDetailsTable)
@@ -170,10 +182,12 @@ export async function syncGenaiAssessmentAttempts(): Promise<number> {
           totalMax: sql`excluded.total_max`,
           attempted: sql`excluded.attempted`,
           attemptNumber: sql`excluded.attempt_number`,
+          qualificationStatus: sql`excluded.qualification_status`,
           syncedAt: sql`excluded.synced_at`,
         },
       });
   }
+  await refreshGenaiQualificationStatuses(rules, now);
   return mapped.length;
 }
 
@@ -258,6 +272,55 @@ function sectionLabel(key: string): string {
       .map((w, i) => (i === 0 ? w[0].toUpperCase() + w.slice(1) : w))
       .join(" ")
   );
+}
+
+function qualificationStatusFor(
+  row: Pick<
+    AcademyUserGenaiAssessmentDetails,
+    "attempted" | "assessmentStartDatetime" | "mcqScore" | "codingScore" | "assessmentTag" | "assessmentNumber"
+  >,
+  rules: GenaiQualificationRule[],
+  now = new Date(),
+): GenaiAssessmentStatus {
+  return genaiAssessmentStatus(row, rules, now);
+}
+
+/**
+ * Writes qualification_status on every assessment row from the saved tag rules.
+ * Exact tag match wins, then the narrowest From–Through range. A3 with Through empty
+ * covers later assessments such as A4.
+ */
+export async function refreshGenaiQualificationStatuses(
+  rules?: GenaiQualificationRule[],
+  now = new Date(),
+): Promise<number> {
+  await ensureGenaiResultTables();
+  const activeRules = rules ?? (await getGenaiQualificationRules());
+  const rows = await db
+    .select({
+      id: academyUserGenaiAssessmentDetailsTable.id,
+      attempted: academyUserGenaiAssessmentDetailsTable.attempted,
+      assessmentStartDatetime: academyUserGenaiAssessmentDetailsTable.assessmentStartDatetime,
+      mcqScore: academyUserGenaiAssessmentDetailsTable.mcqScore,
+      codingScore: academyUserGenaiAssessmentDetailsTable.codingScore,
+      assessmentTag: academyUserGenaiAssessmentDetailsTable.assessmentTag,
+      assessmentNumber: academyUserGenaiAssessmentDetailsTable.assessmentNumber,
+    })
+    .from(academyUserGenaiAssessmentDetailsTable);
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const values = rows.slice(i, i + BATCH_SIZE).map((row) => {
+      const status = qualificationStatusFor(row, activeRules, now);
+      return sql`(${row.id}::int, ${status}::text)`;
+    });
+    await db.execute(sql`
+      UPDATE academy_user_genai_assessment_details AS t
+      SET qualification_status = v.status
+      FROM (VALUES ${sql.join(values, sql`, `)}) AS v(id, status)
+      WHERE t.id = v.id
+        AND t.qualification_status IS DISTINCT FROM v.status
+    `);
+  }
+  return rows.length;
 }
 
 export function genaiAssessmentStatus(
@@ -356,6 +419,14 @@ export async function getGenaiAssessmentSummary(): Promise<
   { tag: string; total: number; attempted: number; qualified: number }[]
 > {
   await ensureGenaiResultTables();
+  const missing = await db.execute(sql`
+    SELECT 1 FROM academy_user_genai_assessment_details
+    WHERE qualification_status IS NULL
+    LIMIT 1
+  `);
+  if (((missing as { rows?: unknown[] }).rows ?? []).length > 0) {
+    await refreshGenaiQualificationStatuses();
+  }
   const rules = await getGenaiQualificationRules();
   const rows = await db
     .select({
