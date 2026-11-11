@@ -1,8 +1,4 @@
-import {
-  db,
-  studentsTable,
-  academyUserAssessmentDetailsTable,
-} from "@workspace/db";
+import { db, studentsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import {
   getAcademyUserBasicDetails,
@@ -20,16 +16,6 @@ const DEFAULT_YOG = 2028;
  */
 export function emailForUser(userId: string): string {
   return `${userId}@academy.local`;
-}
-
-/** A user only gets dashboard access if they appear in the synced assessment data. */
-export async function userHasAssessmentData(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: academyUserAssessmentDetailsTable.id })
-    .from(academyUserAssessmentDetailsTable)
-    .where(eq(academyUserAssessmentDetailsTable.userId, userId))
-    .limit(1);
-  return Boolean(row);
 }
 
 export async function getStudentForUser(userId: string) {

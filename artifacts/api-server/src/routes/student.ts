@@ -28,7 +28,7 @@ import { isInL1July26Allowlist } from "../lib/l1July26Allowlist";
 import { getFeQualificationRules } from "../lib/feQualificationRules";
 import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getFeAssessmentStatus } from "../lib/feQualification";
-import { getOrCreateStudentForUser, getStudentForUser, userHasAssessmentData } from "../lib/student";
+import { getOrCreateStudentForUser, getStudentForUser } from "../lib/student";
 import {
   getAcademyUserBasicDetails,
   getLiveAcademyUserDashboardAccess,
@@ -90,10 +90,6 @@ async function getAcademyUserById(userId: string) {
 }
 
 async function getStudentProfile(userId: string) {
-  if (!(await userHasAssessmentData(userId))) {
-    return null;
-  }
-
   // This user's own profile row (per academy user_id), if it exists yet.
   const s = await getStudentForUser(userId);
   const academyUser = await getAcademyUserById(userId);
@@ -112,8 +108,6 @@ async function getStudentProfile(userId: string) {
 }
 
 async function getSubjectProgressResponse(userId: string) {
-  if (!(await userHasAssessmentData(userId))) return null;
-
   const academyUser = await getAcademyUserById(userId);
 
   const courses = await db
@@ -460,7 +454,6 @@ function isValidL1OnlineDetailRow(a: AssessmentApiRow): boolean {
 }
 
 async function getAssessmentResultsResponse(userId: string) {
-  if (!(await userHasAssessmentData(userId))) return null;
   await getFeQualificationRules();
 
   let summary: typeof irpL1RoundWiseSummaryTable.$inferSelect | undefined;
@@ -529,14 +522,6 @@ router.get("/student", async (req, res) => {
       return;
     }
     const profile = await getStudentProfile(userId);
-    if (!profile) {
-      res.status(404).json({
-        error: "Not found in IRP assessment data",
-        code: "NOT_ENROLLED",
-        userId,
-      });
-      return;
-    }
     res.json(profile);
   } catch (err) {
     req.log.error({ err }, "Failed to get student");
@@ -604,14 +589,6 @@ router.get("/student/progress", async (req, res) => {
       return;
     }
     const progress = await getSubjectProgressResponse(userId);
-    if (!progress) {
-      res.status(404).json({
-        error: "Not found in IRP assessment data",
-        code: "NOT_ENROLLED",
-        userId,
-      });
-      return;
-    }
     res.json(progress);
   } catch (err) {
     req.log.error({ err }, "Failed to get student progress");
@@ -627,14 +604,6 @@ router.get("/student/assessments", async (req, res) => {
       return;
     }
     const results = await getAssessmentResultsResponse(userId);
-    if (!results) {
-      res.status(404).json({
-        error: "Not found in IRP assessment data",
-        code: "NOT_ENROLLED",
-        userId,
-      });
-      return;
-    }
     res.json({
       assessments: results.assessments.map(
         ({ levelNumber: _levelNumber, ...assessment }) => assessment,

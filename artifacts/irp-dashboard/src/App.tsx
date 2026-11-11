@@ -8,7 +8,6 @@ import Dashboard from "./pages/Dashboard";
 import { ReferBanner } from "@/components/irp/ReferBanner";
 import Analytics from "./pages/Analytics";
 import Onboarding from "./pages/Onboarding";
-import NotEnrolled from "./pages/NotEnrolled";
 import PaymentRequired from "./pages/PaymentRequired";
 import NotFound from "@/pages/not-found";
 import { redirectToLogin, shouldRequireSsoLogin } from "@/lib/authToken";
@@ -16,11 +15,6 @@ import { useJourney, ApiError } from "@/lib/useJourney";
 import { useDashboardAccess } from "@/lib/usePaymentStatus";
 
 const queryClient = new QueryClient();
-
-function isNotEnrolled(error: unknown): boolean {
-  const e = error as { status?: number; data?: { code?: string } } | null;
-  return e?.status === 404 && e?.data?.code === "NOT_ENROLLED";
-}
 
 function isUnauthorized(error: unknown): boolean {
   const e = error as { status?: number } | null;
@@ -73,11 +67,6 @@ function Home() {
 
   if (!access?.allowed) {
     return <PaymentRequired />;
-  }
-
-  // SSO user whose id isn't in our academy list — show a dedicated screen.
-  if (isNotEnrolled(studentError)) {
-    return <NotEnrolled />;
   }
 
   if (journeyError) {
