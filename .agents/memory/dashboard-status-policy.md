@@ -3,9 +3,11 @@ name: Dashboard status policy
 description: User-required three-status admission rule and authoritative source handling.
 ---
 
-Normal dashboard admission requires `irp_eligible_status = ELIGIBLE`, `lp_status = ACTIVE`, and `product_status = ACTIVE`. Payment status, including “not explicitly unpaid,” must not be used as a dashboard restriction. An admin manual grant is an explicit exception: allow it before querying BigQuery, including during warehouse failures.
+Dashboard admission requires only `irp_eligible_status = ELIGIBLE`, `lp_status = ACTIVE`, and `product_status = ACTIVE`. Payment status, including “not explicitly unpaid,” must not be used as a dashboard restriction. Historical `manual-access-grant` / `manual-access-revoke` rows (old bulk imports) must not override the three source statuses. Assessment rows are not required for admission.
 
-**Why:** The user originally selected only three statuses, then explicitly changed that policy to let internal Academy User IDs use admin-issued manual grants.
+**Exception (user-requested 2026-11-11):** admins can grant dashboard access to specific UIDs from the admin Dashboard access panel. Those grants are stored as `dashboard-access-override` rows in `academy_user_assessment_details` and bypass the three statuses; "Remove manual access" deletes them. Do not remove this feature or fold the legacy `manual-access-grant` rows into it.
+
+**Why:** The user explicitly requested these three conditions instead of the prior payment-based restriction, and later asked for a manual admin grant for internal UIDs without reviving thousands of old bulk grants.
 
 **How to apply:** Check the manual grant first; otherwise compare normalized status values exactly. Missing or unrecognized required statuses must not grant normal access. Keep source statuses unchanged. Revocation removes only the manual sentinel, not the enrollment record or assessment links; Access Loader still controls links.
 

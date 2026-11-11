@@ -12,9 +12,10 @@
  *   - year of graduation→ `yog`
  *   - avatar            → `profile_pic_url`
  *
- * App-load admission checks honor manual grants first, then query BigQuery live;
- * other profile reads use the mirror. These profile helpers evaluate source
- * statuses only; the payment-status route handles the explicit manual exception.
+ * App-load admission checks query BigQuery live; other profile reads use the mirror.
+ * A `dashboard-access-override` assessment sentinel (admin Dashboard access
+ * panel) bypasses the three statuses. Legacy `manual-access-grant` rows and
+ * unpaid rows do not.
  */
 import {
   db,
@@ -28,6 +29,12 @@ import { fetchProfilePicUrl } from "./bigquery";
 
 export const MANUAL_DASHBOARD_ACCESS_GRANT_ID = "manual-access-grant";
 export const MANUAL_DASHBOARD_ACCESS_REVOKE_ID = "manual-access-revoke";
+/**
+ * Sentinel written by the admin "Give dashboard access" panel. Kept separate
+ * from the legacy `manual-access-grant` rows (old bulk imports), which must
+ * not bypass the three statuses.
+ */
+export const DASHBOARD_ACCESS_OVERRIDE_ID = "dashboard-access-override";
 
 /**
  * Values actually present in `payment_status` (measured over 45,195 rows):
@@ -221,8 +228,8 @@ export type AcademyUserDashboardAccess = {
 /**
  * Resolves dashboard access from the POCs mirror. All three source statuses
  * must match exactly after normalization. Payment status is not an access rule.
- * A missing mirror row or status fails closed. Historical manual overrides
- * are intentionally ignored.
+ * A missing mirror row or status fails closed. Admin manual grants are applied
+ * in the payment-status route before this helper runs.
  */
 export async function getAcademyUserDashboardAccess(
   userId: string,

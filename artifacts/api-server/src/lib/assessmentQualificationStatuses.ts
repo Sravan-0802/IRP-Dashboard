@@ -5,6 +5,7 @@ import {
 } from "@workspace/db";
 import { and, eq, notInArray, or, sql } from "drizzle-orm";
 import {
+  DASHBOARD_ACCESS_OVERRIDE_ID,
   MANUAL_DASHBOARD_ACCESS_GRANT_ID,
   MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
 } from "./academyUserProfile";
@@ -182,6 +183,7 @@ export async function refreshAssessmentQualificationStatuses(): Promise<void> {
       notInArray(academyUserAssessmentDetailsTable.organisationAssessmentId, [
         MANUAL_DASHBOARD_ACCESS_GRANT_ID,
         MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+        DASHBOARD_ACCESS_OVERRIDE_ID,
       ]),
     )) as AssessmentRow[];
 

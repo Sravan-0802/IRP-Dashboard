@@ -44,6 +44,7 @@ Student dashboard for the NxtWave IRP program (React + Vite frontend, Express AP
 ## Current product decisions (user-confirmed — do not change without asking)
 - **Dashboard access** = BigQuery `irp_eligible_status = ELIGIBLE` AND `lp_status = ACTIVE` AND `product_status = ACTIVE`. Checked live on app load via `GET /api/student/payment-status`.
 - **Payment status is not an access rule.**
+- **Admin manual grant is an intended exception.** UIDs granted from the admin Dashboard access panel ("Give dashboard access") are stored as `dashboard-access-override` rows and get the dashboard even if the three statuses fail. "Remove manual access" deletes them. Legacy `manual-access-grant` rows (old bulk imports) must NOT grant access. Do not remove or change this.
 - **Assessment records are not an access rule.** A student with zero rows in `academy_user_assessment_details` still gets the dashboard (empty assessments). Do not re-add `userHasAssessmentData()` or the NOT_ENROLLED screen.
 
 ## Run & Operate
@@ -58,3 +59,4 @@ Student dashboard for the NxtWave IRP program (React + Vite frontend, Express AP
 - Admin endpoints (API-key auth): `artifacts/api-server/src/routes/admin.ts`
 - DB schema: `lib/db/src/schema/`
 - Project notes: `.agents/memory/` (background only — the rules above win)
+ 

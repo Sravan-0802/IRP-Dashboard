@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { CreditCard, Database, Eye, Loader2, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CreditCard, Database, Eye, KeyRound, Loader2, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { parseAcademyUserIds } from "@/lib/parseAcademyUserIds";
 
 type DashboardAccessSummary = {
@@ -18,62 +18,22 @@ type DashboardAccessSummary = {
   lastSyncedAt: string | null;
 };
 
+type ManualGrantRow = { userId: string; grantedAt: string | null };
+
 export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
   const [previewUid, setPreviewUid] = useState("");
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState("");
+  const [grantUids, setGrantUids] = useState("");
+  const [granting, setGranting] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [grantError, setGrantError] = useState("");
+  const [grantResult, setGrantResult] = useState("");
+  const [manualGrants, setManualGrants] = useState<ManualGrantRow[]>([]);
   const [summary, setSummary] = useState<DashboardAccessSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
-  const [uidsText, setUidsText] = useState("");
-  const [manualBusy, setManualBusy] = useState(false);
-  const [manualMessage, setManualMessage] = useState("");
-  const [manualError, setManualError] = useState("");
-  const [grantsError, setGrantsError] = useState("");
-  const [grantsLoading, setGrantsLoading] = useState(true);
-  const [grants, setGrants] = useState<{ userId: string; grantedAt: string }[]>([]);
-  const parsedIds = parseAcademyUserIds(uidsText);
-
-  async function loadGrants() {
-    setGrantsLoading(true);
-    setGrantsError("");
-    try {
-      const res = await fetch("/api/admin/dashboard-access/manual", {
-        cache: "no-store", headers: { "x-api-key": apiKey.trim() },
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Could not load manual grants");
-      setGrants(body.grants);
-    } catch (err) {
-      setGrantsError(err instanceof Error ? err.message : "Could not load manual grants");
-    } finally {
-      setGrantsLoading(false);
-    }
-  }
-
-  async function updateManualAccess(action: "grant" | "revoke") {
-    if (manualBusy || !parsedIds.length) return;
-    setManualBusy(true);
-    setManualMessage("");
-    setManualError("");
-    try {
-      const res = await fetch(`/api/admin/dashboard-access/${action}`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-api-key": apiKey.trim() },
-        body: JSON.stringify({ academyUserIds: parsedIds }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Could not update manual access");
-      setManualMessage(action === "grant"
-        ? `${body.granted} granted; ${body.alreadyGranted} already granted (${body.requested} requested).`
-        : `${body.revoked} manual grants removed (${body.requested} requested). Normal status rules now apply.`);
-      await Promise.all([loadGrants(), loadSummary()]);
-    } catch (err) {
-      setManualError(err instanceof Error ? err.message : "Could not update manual access");
-    } finally {
-      setManualBusy(false);
-    }
-  }
+  const parsedGrantIds = useMemo(() => parseAcademyUserIds(grantUids), [grantUids]);
 
   async function loadSummary() {
     setSummaryLoading(true);
@@ -94,9 +54,22 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
     }
   }
 
+  async function loadManualGrants() {
+    try {
+      const res = await fetch("/api/admin/dashboard-access/manual", {
+        headers: { "x-api-key": apiKey.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      setManualGrants(((body as { grants?: ManualGrantRow[] }).grants ?? []).slice(0, 50));
+    } catch {
+      /* keep previous list */
+    }
+  }
+
   useEffect(() => {
     void loadSummary();
-    void loadGrants();
+    void loadManualGrants();
   }, [apiKey]);
 
   function formatSummaryDate(value: string | null) {
@@ -150,6 +123,46 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
     }
   }
 
+  async function submitManualAccess(action: "grant" | "revoke") {
+    const academyUserIds = parseAcademyUserIds(grantUids);
+    if (academyUserIds.length === 0 || granting || revoking) return;
+    if (action === "grant") setGranting(true);
+    else setRevoking(true);
+    setGrantError("");
+    setGrantResult("");
+    try {
+      const res = await fetch(`/api/admin/dashboard-access/${action}`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey.trim(),
+        },
+        body: JSON.stringify({ academyUserIds }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((body as { error?: string }).error ?? `${action} failed (${res.status})`);
+      }
+      if (action === "grant") {
+        const granted = Number((body as { granted?: number }).granted ?? 0);
+        const already = Number((body as { alreadyGranted?: number }).alreadyGranted ?? 0);
+        setGrantResult(
+          `Granted ${granted.toLocaleString("en-IN")} UID${granted === 1 ? "" : "s"}` +
+            (already > 0 ? ` · ${already.toLocaleString("en-IN")} already had access` : ""),
+        );
+      } else {
+        const removed = Number((body as { removed?: number }).removed ?? 0);
+        setGrantResult(`Removed manual access for ${removed.toLocaleString("en-IN")} UID${removed === 1 ? "" : "s"}`);
+      }
+      await loadManualGrants();
+    } catch (err) {
+      setGrantError(err instanceof Error ? err.message : "Could not update dashboard access");
+    } finally {
+      setGranting(false);
+      setRevoking(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="irp-card p-5">
@@ -161,7 +174,8 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
                 Dashboard access summary
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-[#6e6a8a]">
-                Access still needs IRP ELIGIBLE + LP ACTIVE + product ACTIVE unless a manual grant exists. Payment status is not an access requirement. The counts below report source statuses; manual grants are listed separately.
+                Access requires IRP ELIGIBLE, LP ACTIVE, and product ACTIVE — unless you give a
+                manual grant below for an internal UID.
               </p>
             </div>
           </div>
@@ -300,50 +314,85 @@ export function DashboardAccessPanel({ apiKey }: { apiKey: string }) {
       </div>
 
       <div className="irp-card p-5">
-        <h2 className="font-display text-lg font-extrabold text-[#0d1117]">Give manual dashboard access</h2>
-        <p className="mt-1 text-sm text-[#6e6a8a]">
-          Allow internal Academy User IDs to open the dashboard regardless of IRP, LP, or product statuses.
-          This override does not change assessment links — Access Loader still does that.
+        <div className="mb-4 flex items-start gap-2">
+          <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#6741d9]" />
+          <div>
+            <h2 className="font-display text-lg font-extrabold text-[#0d1117]">
+              Give manual dashboard access
+            </h2>
+            <p className="mt-1 max-w-xl text-sm text-[#6e6a8a]">
+              Paste one or more internal Academy User IDs. They can open the dashboard even if
+              IRP / LP / product statuses are not set. This does not change assessment links —
+              use Access Loader for those.
+            </p>
+          </div>
+        </div>
+
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#6e6a8a]">
+          Academy User IDs
+        </label>
+        <textarea
+          value={grantUids}
+          onChange={(e) => {
+            setGrantUids(e.target.value);
+            setGrantError("");
+            setGrantResult("");
+          }}
+          rows={4}
+          placeholder={"bd7a1006-18af-475b-af4b-6c49c3340abd\nuser_id"}
+          className="w-full rounded-xl border border-[rgba(103,65,217,0.15)] bg-white px-3 py-2.5 font-mono text-xs text-[#0d1117] placeholder:font-sans placeholder:text-[#6e6a8a] focus:border-[#6741d9] focus:outline-none focus:ring-2 focus:ring-[rgba(103,65,217,0.12)]"
+        />
+        <p className="mt-1.5 text-xs text-[#6e6a8a]">
+          {parsedGrantIds.length.toLocaleString("en-IN")} UID{parsedGrantIds.length === 1 ? "" : "s"} parsed
         </p>
-        <label htmlFor="manual-access-uids" className="mb-2 mt-4 block text-sm font-semibold">Academy User IDs</label>
-        <textarea id="manual-access-uids" rows={5} value={uidsText}
-          onChange={e => { setUidsText(e.target.value); setManualMessage(""); setManualError(""); }}
-          placeholder="Paste UIDs separated by newlines or commas, or CSV with an academy_user_id column."
-          className="w-full rounded-xl border border-[#d0d5dd] bg-white p-3 font-mono text-xs"
-          disabled={manualBusy} />
-        <p className="mt-1 text-xs text-[#6e6a8a]">{parsedIds.length} unique UIDs parsed · Maximum 1,000 per request</p>
-        <div className="mt-3 flex flex-wrap gap-3">
-          <button type="button" onClick={() => void updateManualAccess("grant")}
-            disabled={manualBusy || !parsedIds.length || parsedIds.length > 1000}
-            className="rounded-xl bg-[#6741d9] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40">
-            {manualBusy ? "Updating…" : "Give dashboard access"}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={parsedGrantIds.length === 0 || granting || revoking}
+            onClick={() => void submitManualAccess("grant")}
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#3b5bdb] to-[#6741d9] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {granting ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+            Give dashboard access
           </button>
-          <button type="button" onClick={() => void updateManualAccess("revoke")}
-            disabled={manualBusy || !parsedIds.length || parsedIds.length > 1000}
-            className="rounded-xl border border-[#d0d5dd] px-4 py-2.5 text-sm font-bold disabled:opacity-40">
+          <button
+            type="button"
+            disabled={parsedGrantIds.length === 0 || granting || revoking}
+            onClick={() => void submitManualAccess("revoke")}
+            className="flex items-center gap-1.5 rounded-xl border border-[rgba(103,65,217,0.18)] bg-white px-4 py-2.5 text-sm font-bold text-[#6741d9] transition-colors hover:bg-[#f3f0ff] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {revoking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Remove manual access
           </button>
         </div>
-        <p className="mt-2 text-xs text-[#6e6a8a]">Removing manual access restores normal eligibility checks. It does not delete the student or their assessments.</p>
-        {manualMessage && <p role="status" className="mt-3 text-sm text-green-700">{manualMessage}</p>}
-        {manualError && <p role="alert" className="mt-3 text-sm text-red-700">{manualError}</p>}
-        <div className="mb-3 mt-6 flex items-center justify-between">
-          <h3 className="text-sm font-bold">Recent grants</h3>
-          <button type="button" disabled={grantsLoading || manualBusy} onClick={() => void loadGrants()} className="text-sm text-[#6741d9]">Refresh grants</button>
-        </div>
-        {grantsError ? <p role="alert" className="text-sm text-red-700">{grantsError}</p>
-          : grantsLoading ? <p className="text-sm">Loading grants…</p>
-          : grants.length === 0 ? <p className="text-sm text-[#6e6a8a]">No active manual grants.</p>
-          : <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead><tr className="border-b"><th className="py-2 pr-4">Academy User ID</th><th className="py-2">Granted at (IST)</th></tr></thead>
-              <tbody>{grants.map(grant => <tr key={grant.userId} className="border-b">
-                <td className="py-2 pr-4 font-mono text-xs">{grant.userId}</td>
-                <td className="whitespace-nowrap py-2">{formatSummaryDate(grant.grantedAt)}</td>
-              </tr>)}</tbody>
+        {grantError ? (
+          <p className="mt-3 text-sm font-semibold text-[#c2255c]">{grantError}</p>
+        ) : null}
+        {grantResult ? (
+          <p className="mt-3 text-sm font-semibold text-[#0ca678]">{grantResult}</p>
+        ) : null}
+
+        {manualGrants.length > 0 ? (
+          <div className="mt-5 overflow-x-auto rounded-xl border border-[rgba(103,65,217,0.12)]">
+            <table className="min-w-full text-left text-xs">
+              <thead className="bg-[#f8f7ff] text-[11px] font-bold uppercase tracking-wider text-[#6e6a8a]">
+                <tr>
+                  <th className="px-3 py-2">Recently granted UID</th>
+                  <th className="px-3 py-2">Granted at</th>
+                </tr>
+              </thead>
+              <tbody>
+                {manualGrants.map((row) => (
+                  <tr key={row.userId} className="border-t border-[rgba(103,65,217,0.08)]">
+                    <td className="px-3 py-2 font-mono text-[#0d1117]">{row.userId}</td>
+                    <td className="px-3 py-2 text-[#6e6a8a]">{formatSummaryDate(row.grantedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
-            <p className="mt-2 text-xs text-[#6e6a8a]">Showing up to 100 most recent active grants.</p>
-          </div>}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -1,6 +1,10 @@
 import { db, academyUserAssessmentDetailsTable, irpL1AssessmentStatusesTable } from "@workspace/db";
 import { notInArray, sql } from "drizzle-orm";
-import { MANUAL_DASHBOARD_ACCESS_GRANT_ID, MANUAL_DASHBOARD_ACCESS_REVOKE_ID } from "./academyUserProfile";
+import {
+  DASHBOARD_ACCESS_OVERRIDE_ID,
+  MANUAL_DASHBOARD_ACCESS_GRANT_ID,
+  MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+} from "./academyUserProfile";
 import { feAssessmentIndex, getFeAssessmentStatus, requiredFePercentage } from "./feQualification";
 import { getL1QualificationRules } from "./l1QualificationRules";
 import { isMockAssessmentFields } from "./mainOnly";
@@ -50,6 +54,7 @@ export async function getL1AssessmentSummary(): Promise<L1TagSummary[]> {
       notInArray(academyUserAssessmentDetailsTable.organisationAssessmentId, [
         MANUAL_DASHBOARD_ACCESS_GRANT_ID,
         MANUAL_DASHBOARD_ACCESS_REVOKE_ID,
+        DASHBOARD_ACCESS_OVERRIDE_ID,
       ]),
     );
 

@@ -30,6 +30,8 @@ import { getStudentAccessGrants } from "../lib/accessBatches";
 import { getFeAssessmentStatus } from "../lib/feQualification";
 import { getOrCreateStudentForUser, getStudentForUser } from "../lib/student";
 import {
+  DASHBOARD_ACCESS_OVERRIDE_ID,
+  MANUAL_DASHBOARD_ACCESS_GRANT_ID,
   getAcademyUserBasicDetails,
   getLiveAcademyUserDashboardAccess,
   isLikelyDisplayName,
@@ -37,6 +39,7 @@ import {
   resolveProfilePicUrl,
   sanitizeProfilePicUrl,
 } from "../lib/academyUserProfile";
+import { hasManualDashboardAccessGrant } from "../lib/manualDashboardAccess";
 import { getNxtmockInterviewForUser } from "../lib/nxtmockInterview";
 import { getVisibilitySettings, toResponse } from "../lib/visibilitySettings";
 import { getGenAiTrainingPopup } from "../lib/genAiTrainingPopup";
@@ -475,7 +478,11 @@ async function getAssessmentResultsResponse(userId: string) {
     .from(academyUserAssessmentDetailsTable)
     .where(eq(academyUserAssessmentDetailsTable.userId, userId));
   const detailAssessments = detailRows
-    .filter((r) => r.organisationAssessmentId !== "manual-access-grant")
+    .filter(
+      (r) =>
+        r.organisationAssessmentId !== MANUAL_DASHBOARD_ACCESS_GRANT_ID &&
+        r.organisationAssessmentId !== DASHBOARD_ACCESS_OVERRIDE_ID,
+    )
     .map(mapDetailAssessmentRow)
     .filter(isMainAssessmentApiRow);
 
@@ -1329,11 +1336,31 @@ router.get("/student/payment-status", async (req, res) => {
       return;
     }
 
-    const { hasManualDashboardAccess } = await import("../lib/manualDashboardAccess");
-    if (await hasManualDashboardAccess(userId)) {
-      res.json({ allowed: true, paymentStatus: null, paymentPlan: null, irpEligibleStatus: null, lpStatus: null, productStatus: null });
+    const manualGrant = await hasManualDashboardAccessGrant(userId);
+    if (manualGrant) {
+      try {
+        const access = await getLiveAcademyUserDashboardAccess(userId);
+        res.json({
+          allowed: true,
+          paymentStatus: access.paymentStatus,
+          paymentPlan: access.paymentPlan,
+          irpEligibleStatus: access.irpEligibleStatus,
+          lpStatus: access.lpStatus,
+          productStatus: access.productStatus,
+        });
+      } catch {
+        res.json({
+          allowed: true,
+          paymentStatus: null,
+          paymentPlan: null,
+          irpEligibleStatus: null,
+          lpStatus: null,
+          productStatus: null,
+        });
+      }
       return;
     }
+
     const access = await getLiveAcademyUserDashboardAccess(userId);
     res.json({
       allowed: access.allowed,

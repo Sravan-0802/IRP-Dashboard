@@ -51,6 +51,11 @@ import { createAuthToken } from "../lib/authTokens";
 import {
   resolveAcademyUserDisplayName,
 } from "../lib/academyUserProfile";
+import {
+  grantManualDashboardAccess,
+  listManualDashboardAccessGrants,
+  revokeManualDashboardAccess,
+} from "../lib/manualDashboardAccess";
 import { ListGenaiProjectSubmissionsResponse } from "@workspace/api-zod";
 import { GrantManualDashboardAccessBody, RevokeManualDashboardAccessBody, GrantManualDashboardAccessResponse, RevokeManualDashboardAccessResponse, ListManualDashboardAccessResponse } from "@workspace/api-zod";
 import { grantManualDashboardAccess, revokeManualDashboardAccess, listManualDashboardAccess } from "../lib/manualDashboardAccess";
@@ -575,32 +580,73 @@ router.get("/admin/dashboard-access/summary", async (req, res) => {
   }
 });
 
-for (const action of ["grant", "revoke"] as const) {
-  router.post(`/admin/dashboard-access/${action}`, async (req, res): Promise<void> => {
-    if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
-    const parsed = (action === "grant" ? GrantManualDashboardAccessBody : RevokeManualDashboardAccessBody).safeParse(req.body);
-    if (!parsed.success) { res.status(400).json({ error: "Provide 1–1000 valid Academy User IDs (UUIDs)." }); return; }
-    try {
-      if (action === "grant") {
-        res.json(GrantManualDashboardAccessResponse.parse(await grantManualDashboardAccess(parsed.data.academyUserIds)));
-      } else {
-        res.json(RevokeManualDashboardAccessResponse.parse(await revokeManualDashboardAccess(parsed.data.academyUserIds)));
-      }
-    } catch (err) {
-      req.log.error({ err, action }, "Manual dashboard access update failed");
-      res.status(500).json({ error: "Could not update manual dashboard access" });
+function parseAcademyUserIdsFromBody(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const payload = body as { academyUserIds?: unknown; academyUserId?: unknown };
+  const collected: string[] = [];
+  if (typeof payload.academyUserId === "string") collected.push(payload.academyUserId);
+  if (Array.isArray(payload.academyUserIds)) {
+    for (const entry of payload.academyUserIds) {
+      if (typeof entry === "string") collected.push(entry);
     }
-  });
+  }
+  return [...new Set(collected.map((id) => id.trim()).filter(Boolean))];
 }
 
-router.get("/admin/dashboard-access/manual", async (req, res): Promise<void> => {
-  if (!checkApiKey(req)) { res.status(401).json({ error: "Unauthorized" }); return; }
-  res.setHeader("Cache-Control", "private, no-store");
+// GET /api/admin/dashboard-access/manual — recent internal UID grants
+router.get("/admin/dashboard-access/manual", async (req, res) => {
   try {
-    res.json(ListManualDashboardAccessResponse.parse(await listManualDashboardAccess()));
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const grants = await listManualDashboardAccessGrants();
+    res.json({ grants, total: grants.length });
   } catch (err) {
-    req.log.error({ err }, "Could not list manual dashboard grants");
-    res.status(500).json({ error: "Could not load manual dashboard grants" });
+    req.log.error({ err }, "Failed to list manual dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/dashboard-access/grant — give dashboard access to internal UIDs
+// even when IRP/LP/product statuses would otherwise block them.
+router.post("/admin/dashboard-access/grant", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const academyUserIds = parseAcademyUserIdsFromBody(req.body);
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "Paste at least one Academy User ID" });
+      return;
+    }
+    const result = await grantManualDashboardAccess(academyUserIds);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to grant dashboard access");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/dashboard-access/revoke — remove a manual grant only (does not
+// change BigQuery statuses or real assessment rows).
+router.post("/admin/dashboard-access/revoke", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const academyUserIds = parseAcademyUserIdsFromBody(req.body);
+    if (academyUserIds.length === 0) {
+      res.status(400).json({ error: "Paste at least one Academy User ID" });
+      return;
+    }
+    const result = await revokeManualDashboardAccess(academyUserIds);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke dashboard access");
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
