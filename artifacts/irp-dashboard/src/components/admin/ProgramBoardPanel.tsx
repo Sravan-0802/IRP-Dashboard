@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { CalendarDays, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
   DEFAULT_PROGRAM_BOARD,
@@ -243,14 +243,28 @@ function CalendarEditor({
   onEvents: (events: CalendarEvent[]) => void;
   onUpcoming: (upcoming: CalendarUpcoming[]) => void;
 }) {
+  const newEventRowRef = useRef<HTMLDivElement>(null);
+  const [focusNewEvent, setFocusNewEvent] = useState(false);
+
+  useEffect(() => {
+    if (!focusNewEvent) return;
+    newEventRowRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    newEventRowRef.current?.querySelector("input")?.focus();
+    setFocusNewEvent(false);
+  }, [focusNewEvent, events]);
+
   return (
     <div className="space-y-5">
       <ListBlock
         title="Calendar chips"
-        onAdd={() => onEvents([...events, { id: newId("event"), date: "2026-10-01", program: "genai", label: "New event" }])}
+        onAdd={() => {
+          const event = { id: newId("event"), date: "", program: "genai" as const, label: "New event" };
+          setFocusNewEvent(true);
+          onEvents([event, ...events]);
+        }}
       >
         {events.map((event, index) => (
-          <Row key={event.id}>
+          <Row key={event.id} ref={index === 0 && focusNewEvent ? newEventRowRef : undefined}>
             <Field label="Date" value={event.date} onChange={(value) => onEvents(replaceAt(events, index, { ...event, date: value }))} />
             <SelectField
               label="Program"
@@ -335,8 +349,8 @@ function ListBlock({ title, onAdd, children }: { title: string; onAdd: () => voi
   );
 }
 
-function Row({ children }: { children: ReactNode }) {
-  return <div className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
+function Row({ children, ref }: { children: ReactNode; ref?: Ref<HTMLDivElement> }) {
+  return <div ref={ref} className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
