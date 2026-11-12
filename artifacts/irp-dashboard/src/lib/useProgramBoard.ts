@@ -1,22 +1,27 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getAuthToken } from "@/lib/authToken";
 import { DEFAULT_PROGRAM_BOARD, type ProgramBoard } from "@/lib/programBoard";
 
+async function fetchProgramBoard(): Promise<ProgramBoard> {
+  const token = getAuthToken();
+  const res = await fetch("/api/student/program-board", {
+    cache: "no-store",
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Program board request failed (${res.status})`);
+  const data = (await res.json()) as ProgramBoard;
+  if (!data?.genai || !data.calendar) throw new Error("Program board response is incomplete");
+  return data;
+}
+
 export function useProgramBoard(): ProgramBoard {
-  const [board, setBoard] = useState<ProgramBoard>(DEFAULT_PROGRAM_BOARD);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/student/program-board")
-      .then(async (res) => (res.ok ? ((await res.json()) as ProgramBoard) : null))
-      .then((data) => {
-        if (cancelled || !data?.genai || !data.calendar) return;
-        setBoard(data);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return board;
+  const query = useQuery({
+    queryKey: ["student", "program-board"],
+    queryFn: fetchProgramBoard,
+    staleTime: 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  return query.data ?? DEFAULT_PROGRAM_BOARD;
 }

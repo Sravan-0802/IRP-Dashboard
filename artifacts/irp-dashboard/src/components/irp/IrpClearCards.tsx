@@ -2,24 +2,29 @@ import { useState } from "react";
 import {
   BarChart3,
   Check,
-  ChevronRight,
+  ClipboardList,
   Clock,
   Code2,
+  Eye,
   FileText,
+  Info,
+  Laptop,
   Lock,
-  Sparkles,
+  LockOpen,
+  Medal,
+  MessageCircle,
   Users,
   X,
 } from "lucide-react";
 import type { JourneyStep } from "./ui";
+import { L1CoursesDialog } from "./LevelCoursesDialog";
 import {
   ClearCardDialog,
-  downloadOnlineAssessmentBadge,
   type BadgeThemeId,
   type OnlineBadgeStudent,
 } from "./OnlineAssessmentBadge";
 
-type Tone = "done" | "failed" | "active" | "locked";
+export type Tone = "done" | "failed" | "active" | "locked";
 
 function toneOf(status: JourneyStep["status"]): Tone {
   if (status === "done") return "done";
@@ -105,11 +110,67 @@ function bodyCopy(meta: (typeof STAGE_META)[number], tone: Tone): string {
   return meta.lockedBody;
 }
 
-function footerLabel(tone: Tone, earned: boolean): string {
-  if (earned) return "Downloaded";
-  if (tone === "failed") return "Not Cleared";
-  if (tone === "active") return "In progress";
-  return "Locked";
+export const RAIL_DOT: Record<Tone, string> = {
+  done: "bg-[#16a34a] text-white shadow-[0_0_0_4px_#dcfce7]",
+  failed: "bg-[#f97316] text-white shadow-[0_0_0_4px_#ffedd5,0_0_18px_rgba(249,115,22,0.45)]",
+  active: "bg-[#2563eb] text-white shadow-[0_0_0_4px_#dbeafe]",
+  locked: "bg-[#e4e7ec] text-[#667085] shadow-[0_0_0_4px_#f2f4f7]",
+};
+
+/** Rail segment leading into a stage, coloured by that stage's state. */
+export const RAIL_SEGMENT: Record<Tone, string> = {
+  done: "h-[3px] rounded-full bg-[#16a34a]",
+  failed: "h-[3px] rounded-full bg-[linear-gradient(90deg,#16a34a_0%,#f97316_100%)]",
+  active: "h-[3px] rounded-full bg-[linear-gradient(90deg,#16a34a_0%,#2563eb_100%)]",
+  locked: "h-0 border-t-[3px] border-dashed border-[#d0d5dd]",
+};
+
+export const CARD_SURFACE: Record<Tone, string> = {
+  done: "border-[#bbf7d0] bg-[linear-gradient(180deg,#f0fdf4_0%,#ffffff_60%)]",
+  failed: "border-[#fed7aa] bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_60%)]",
+  active: "border-[#bfdbfe] bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_60%)]",
+  locked: "border-[#e4e7ec] bg-[linear-gradient(180deg,#f9fafb_0%,#ffffff_60%)]",
+};
+
+const ILLUSTRATION_TILE: Record<Tone, string> = {
+  done: "bg-[linear-gradient(135deg,#dcfce7_0%,#f0fdf4_100%)] text-[#16a34a]",
+  failed: "bg-[linear-gradient(135deg,#ffedd5_0%,#fff7ed_100%)] text-[#ea580c]",
+  active: "bg-[linear-gradient(135deg,#dbeafe_0%,#eff6ff_100%)] text-[#2563eb]",
+  locked: "bg-[linear-gradient(135deg,#eaecf0_0%,#f9fafb_100%)] text-[#98a2b3]",
+};
+
+const STAGE_ICON: Record<string, typeof FileText> = {
+  "Online Assessment": ClipboardList,
+  "FE Project": Laptop,
+  "Human Interview": Users,
+  "Level 2 Access": LockOpen,
+};
+
+function StageIllustration({ label, tone }: { label: string; tone: Tone }) {
+  return (
+    <IllustrationTile icon={STAGE_ICON[label] ?? FileText} tone={tone} chat={label === "Human Interview"} />
+  );
+}
+
+/** Large stage icon tile: tick badge when done, chat bubble for interview stages in progress. */
+export function IllustrationTile({ icon, tone, chat = false }: { icon: typeof FileText; tone: Tone; chat?: boolean }) {
+  const Icon = tone === "locked" ? Lock : icon;
+  return (
+    <span className={`relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${ILLUSTRATION_TILE[tone]}`}>
+      <span aria-hidden className="absolute left-2 top-2 h-1.5 w-1.5 rounded-full bg-current opacity-30" />
+      <span aria-hidden className="absolute bottom-3 left-1.5 h-1 w-1 rounded-full bg-current opacity-25" />
+      <Icon className="h-8 w-8" strokeWidth={1.75} />
+      {tone === "done" ? (
+        <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#16a34a] text-white ring-2 ring-white">
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+      ) : chat && tone !== "locked" ? (
+        <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#ea580c] shadow-[0_2px_6px_rgba(16,24,40,0.12)]">
+          <MessageCircle className="h-3.5 w-3.5" />
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export function IrpClearCards({
@@ -122,21 +183,8 @@ export function IrpClearCards({
   feMinScore: number;
 }) {
   const [viewing, setViewing] = useState<BadgeThemeId | null>(null);
-  const [busy, setBusy] = useState<BadgeThemeId | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [coursesOpen, setCoursesOpen] = useState(false);
   const earned = steps.filter((step) => step.status === "done").length;
-
-  async function onDownload(themeId: BadgeThemeId) {
-    setError(null);
-    setBusy(themeId);
-    try {
-      await downloadOnlineAssessmentBadge(student, themeId);
-    } catch {
-      setError("Could not download the IRP Clear Card. Try again.");
-    } finally {
-      setBusy(null);
-    }
-  }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-[#f6ead8] bg-white shadow-[0_8px_30px_rgba(16,24,40,0.04)]">
@@ -152,59 +200,78 @@ export function IrpClearCards({
         </p>
       </div>
 
-      <div className="px-3 py-4 sm:px-5">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-stretch">
+      <div className="px-3 py-4 sm:px-5 sm:py-5">
+        <ol aria-hidden className="relative mb-4 hidden grid-cols-4 gap-4 xl:grid">
+          {STAGE_META.map((meta, index) => {
+            const tone = toneOf(stepByLabel(steps, meta.label)?.status ?? "locked");
+            const next = STAGE_META[index + 1];
+            const nextTone = next ? toneOf(stepByLabel(steps, next.label)?.status ?? "locked") : null;
+            return (
+              <li key={meta.label} className="relative flex justify-center">
+                {nextTone ? (
+                  <span
+                    className={`absolute left-[calc(50%+22px)] top-1/2 w-[calc(100%-44px+1rem)] -translate-y-1/2 ${RAIL_SEGMENT[nextTone]}`}
+                  />
+                ) : null}
+                <span
+                  className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold ${RAIL_DOT[tone]}`}
+                >
+                  {index + 1}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {STAGE_META.map((meta, index) => {
             const step = stepByLabel(steps, meta.label);
             const tone = toneOf(step?.status ?? "locked");
-            const Icon = meta.Icon;
             const canDownload = tone === "done" && meta.themeId != null;
             const innerLabel = step?.badgeLabel;
+            const opensCourses = meta.label === "Online Assessment";
             return (
               <div key={meta.label} className="contents">
                 <article
-                  className={`flex min-w-0 flex-1 flex-col rounded-2xl border bg-white p-4 ${
-                    tone === "done"
-                      ? "border-[#86efac]"
-                      : tone === "failed"
-                        ? "border-[#fdba74]"
-                        : tone === "active"
-                          ? "border-[#93c5fd]"
-                          : "border-[#e5e7eb]"
+                  onClick={
+                    opensCourses
+                      ? (event) => {
+                          if ((event.target as HTMLElement).closest("button, a")) return;
+                          setCoursesOpen(true);
+                        }
+                      : undefined
+                  }
+                  data-testid={opensCourses ? "card-online-assessment" : undefined}
+                  className={`relative flex min-w-0 flex-col overflow-hidden rounded-2xl border p-4 shadow-[0_4px_16px_rgba(16,24,40,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,24,40,0.10)] sm:p-5 ${CARD_SURFACE[tone]} ${
+                    opensCourses ? "cursor-pointer" : ""
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <StageIllustration label={meta.label} tone={tone} />
+                    <div className="flex flex-col items-end gap-1.5">
+                      <StatusPill tone={tone} />
+                      {opensCourses ? (
+                        <button
+                          type="button"
+                          onClick={() => setCoursesOpen(true)}
+                          data-testid="button-view-l1-courses"
+                          className="inline-flex items-center gap-1 rounded-full border border-[#bfdbfe] bg-white/80 px-2.5 py-0.5 text-[11px] font-bold text-[#2563eb] transition-colors hover:border-[#93c5fd] hover:bg-[#eff6ff] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+                        >
+                          <Info className="h-3 w-3" />
+                          How to clear?
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <h3 className="mt-4 flex items-center gap-2 text-lg font-extrabold tracking-tight text-[#111827]">
                     <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold text-white ${
-                        tone === "done"
-                          ? "bg-[#16a34a]"
-                          : tone === "failed"
-                            ? "bg-[#f97316]"
-                            : tone === "active"
-                              ? "bg-[#2563eb]"
-                              : "bg-[#d1d5db]"
-                      }`}
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold xl:hidden ${RAIL_DOT[tone]}`}
                     >
                       {index + 1}
                     </span>
-                    <StatusPill tone={tone} />
-                  </div>
-
-                  <span
-                    className={`mt-4 flex h-11 w-11 items-center justify-center rounded-xl ${
-                      tone === "done"
-                        ? "bg-[#ecfdf3] text-[#16a34a]"
-                        : tone === "failed"
-                          ? "bg-[#fff7ed] text-[#f97316]"
-                          : tone === "active"
-                            ? "bg-[#eff6ff] text-[#2563eb]"
-                            : "bg-[#f3f4f6] text-[#9ca3af]"
-                    }`}
-                  >
-                    {tone === "locked" ? <Lock className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                  </span>
-
-                  <h3 className="mt-3 text-base font-extrabold text-[#111827]">{meta.label}</h3>
+                    {meta.label}
+                  </h3>
                   {tone === "done" && innerLabel ? (
                     <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-[#ecfdf3] px-2 py-0.5 text-[11px] font-bold text-[#15803d]">
                       <Check className="h-3 w-3" />
@@ -212,7 +279,6 @@ export function IrpClearCards({
                     </p>
                   ) : null}
                   <p className="mt-2 text-sm leading-relaxed text-[#667085]">{bodyCopy(meta, tone)}</p>
-
                   {meta.label === "FE Project" && tone === "failed" ? (
                     <p className="mt-3 flex items-start gap-2 rounded-xl bg-[#fff7ed] px-3 py-2 text-xs font-semibold leading-relaxed text-[#c2410c]">
                       <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -222,28 +288,21 @@ export function IrpClearCards({
 
                   <div className="mt-auto pt-4">
                     {canDownload && meta.themeId ? (
-                      <div className="flex w-fit flex-col gap-2">
+                      <span className="block rounded-xl bg-[linear-gradient(135deg,#c4b5fd_0%,#93c5fd_100%)] p-px shadow-[0_6px_16px_rgba(105,65,198,0.25)]">
                         <button
                           type="button"
                           onClick={() => setViewing(meta.themeId)}
-                          className="inline-flex w-full items-center justify-center rounded-xl border border-[#d0d5dd] bg-white px-3 py-2 text-xs font-extrabold text-[#111827] transition-colors hover:bg-[#f9fafb]"
+                          className="flex w-full items-center justify-center gap-2 rounded-[11px] bg-[linear-gradient(135deg,#6941c6_0%,#7f56d9_100%)] px-3 py-2.5 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
                         >
+                          <Eye className="h-4 w-4" />
                           View IRP Clear Card
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => void onDownload(meta.themeId as BadgeThemeId)}
-                          disabled={busy === meta.themeId}
-                          className="inline-flex w-full items-center justify-center rounded-xl bg-[#6941c6] px-3 py-2 text-xs font-extrabold text-white transition-colors hover:bg-[#5925dc] disabled:opacity-60"
-                        >
-                          {busy === meta.themeId ? "Downloading…" : "Download IRP Clear Card"}
-                        </button>
-                      </div>
+                      </span>
                     ) : (
                       <button
                         type="button"
                         disabled
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-sm font-bold text-[#98a2b3]"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#e4e7ec] bg-[#f2f4f7]/80 px-3 py-2.5 text-sm font-bold text-[#98a2b3]"
                       >
                         <Lock className="h-4 w-4" />
                         IRP Clear Card Locked
@@ -251,21 +310,12 @@ export function IrpClearCards({
                     )}
                   </div>
                 </article>
-                {index < STAGE_META.length - 1 ? (
-                  <span
-                    className={`hidden h-7 w-7 shrink-0 items-center justify-center self-center rounded-full xl:flex ${
-                      tone === "done" ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#f3f4f6] text-[#d1d5db]"
-                    }`}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </span>
-                ) : null}
               </div>
             );
           })}
         </div>
-        {error ? <p className="mt-3 text-xs font-medium text-[#b42318]">{error}</p> : null}
       </div>
+      <L1CoursesDialog open={coursesOpen} onOpenChange={setCoursesOpen} />
       <ClearCardDialog
         open={viewing != null}
         themeId={viewing ?? "online"}
@@ -275,48 +325,30 @@ export function IrpClearCards({
         }}
       />
 
-      <div className="mx-3 mb-3 flex flex-col gap-3 rounded-2xl bg-[#fff7ed] px-4 py-3 sm:mx-5 sm:mb-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#f97316] shadow-sm">
-            <Sparkles className="h-4 w-4" />
+      <div className="mx-3 mb-3 flex flex-col gap-4 rounded-2xl border border-[#ece8ff] bg-[linear-gradient(90deg,#f7f5ff_0%,#faf8ff_55%,#f5f8ff_100%)] px-4 py-4 sm:mx-5 sm:mb-5 lg:flex-row lg:items-center">
+        <div className="flex items-center gap-3 lg:w-[19rem] lg:shrink-0">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#fef0c7_0%,#fdb022_100%)] text-white shadow-[0_6px_14px_rgba(247,144,9,0.35)]">
+            <Medal className="h-6 w-6" />
           </span>
           <div>
-            <p className="text-sm font-extrabold text-[#111827]">
-              Your IRP Clear Cards ({earned}/4 earned)
-            </p>
+            <p className="text-base font-extrabold text-[#111827]">Your IRP Clear Cards ({earned}/4 earned)</p>
             <p className="text-xs text-[#667085]">Complete each stage and download your IRP Clear Cards here.</p>
           </div>
         </div>
+        <span aria-hidden className="hidden h-12 w-px bg-[#e4e0f5] lg:block" />
         <div className="flex flex-wrap gap-2">
           {STAGE_META.map((meta, index) => {
             const tone = toneOf(stepByLabel(steps, meta.label)?.status ?? "locked");
-            const earnedCard = tone === "done";
             return (
               <span
                 key={meta.label}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[#344054] shadow-sm"
+                className="inline-flex items-center gap-2 rounded-full border border-[#eef0f4] bg-white py-1 pl-1 pr-1.5 text-xs font-bold text-[#344054] shadow-[0_1px_3px_rgba(16,24,40,0.06)]"
               >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] text-white ${
-                    earnedCard ? "bg-[#16a34a]" : tone === "failed" ? "bg-[#f97316]" : "bg-[#d1d5db]"
-                  }`}
-                >
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${RAIL_DOT[tone]}`}>
                   {index + 1}
                 </span>
                 {meta.label}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] ${
-                    earnedCard
-                      ? "bg-[#ecfdf3] text-[#15803d]"
-                      : tone === "failed"
-                        ? "bg-[#fff7ed] text-[#c2410c]"
-                        : tone === "active"
-                          ? "bg-[#eff6ff] text-[#1d4ed8]"
-                          : "bg-[#f3f4f6] text-[#98a2b3]"
-                  }`}
-                >
-                  {footerLabel(tone, earnedCard)}
-                </span>
+                <StatusPill tone={tone} />
               </span>
             );
           })}
@@ -326,7 +358,7 @@ export function IrpClearCards({
   );
 }
 
-function StatusPill({ tone }: { tone: Tone }) {
+export function StatusPill({ tone }: { tone: Tone }) {
   const label =
     tone === "done" ? "Completed" : tone === "failed" ? "Not Cleared" : tone === "active" ? "In progress" : "Locked";
   const className =

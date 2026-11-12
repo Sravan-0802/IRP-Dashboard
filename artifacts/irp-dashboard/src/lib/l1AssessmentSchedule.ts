@@ -105,17 +105,17 @@ export const L1_JULY26_HUSTLER_CALENDAR = {
 } as const;
 
 export const L1_REGISTRATION_BANNER_EYEBROW = "Level 1 · The Hustler";
-export const L1_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
+export const L1_REGISTRATION_BANNER_TITLE = "IRP L1 Online Assessment";
 export const L1_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
+  "We are conducting our IRP Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessments Calendar.";
 
 export const L1_REGISTRATION_CLOSED_BANNER_TITLE = "Registration closed";
 export const L1_REGISTRATION_CLOSED_BANNER_TEXT =
   "Registrations for the L1 Hustler Assessment are now closed.";
 
-export const L1_JULY12_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
+export const L1_JULY12_REGISTRATION_BANNER_TITLE = "IRP L1 Online Assessment";
 export const L1_JULY12_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessment Calendar.";
+  "We are conducting our IRP Assessment for Level 1 – The Hustler. If you are interested and willing to appear, please confirm your availability by registering through the Assessment Calendar.";
 export const L1_JULY12_REGISTRATION_OPENS_BANNER_TITLE = "Registration opens soon";
 export const L1_JULY12_REGISTRATION_OPENS_BANNER_TEXT =
   "Slot registration for the L1 Hustler Assessment opens soon. Please return to book your time slot.";
@@ -123,9 +123,9 @@ export const L1_JULY12_REGISTRATION_CLOSED_BANNER_TEXT =
   "Registrations for the L1 Hustler Assessment are now closed.";
 
 /** Cycle 3 banner text. */
-export const L1_JULY26_REGISTRATION_BANNER_TITLE = "IRP 2.0 L1 Online Assessment";
+export const L1_JULY26_REGISTRATION_BANNER_TITLE = "IRP L1 Online Assessment";
 export const L1_JULY26_BANNER_TEXT =
-  "We are conducting our IRP 2.0 Assessment for Level 1 – The Hustler. Registration is open now — confirm your slot via the Assessment Calendar.";
+  "We are conducting our IRP Assessment for Level 1 – The Hustler. Registration is open now — confirm your slot via the Assessment Calendar.";
 export const L1_JULY26_REGISTRATION_CLOSED_BANNER_TEXT =
   "Registrations for the L1 Hustler Assessment are now closed.";
 

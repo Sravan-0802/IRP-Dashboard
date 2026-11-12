@@ -83,10 +83,12 @@ test("selection guard preserves URL validation and loading/saving protection", (
   assert.equal(submitDraft(["A", "B"], "A", { saving: true }).saves.length, 0);
 });
 
-test("form options and submit button use the chosen pair without a saved-title bypass", () => {
+test("dropdown lists every title until 2 are chosen, then only the chosen pair", () => {
+  assert.match(source, /allProjects=\{GENAI_PROJECT_TITLES\}/);
   assert.match(source, /availableProjects=\{selectedProjects\}/);
-  assert.match(formSource, /availableProjects\.map\(\(title\) =>/);
-  assert.match(formSource, /disabled=\{!hasTwoProjects \|\| saving\}/);
+  assert.match(formSource, /hasTwoProjects \? availableProjects : allProjects/);
+  assert.match(formSource, /disabled=\{saving\}/);
+  assert.match(source, /if \(selectedProjects\.length >= 2\) return;\s*setSelectedProjects\(\[\.\.\.selectedProjects, title\]\)/);
   assert.match(formSource, /disabled=\{!canSubmitProject \|\| loading \|\| saving \|\| !loomUrl\.trim\(\)\}/);
   assert.doesNotMatch(source, /selectedLoomProject \?\? loomSubmission/);
 });

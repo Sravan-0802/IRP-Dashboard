@@ -109,13 +109,13 @@ function ReferBannerPreview() {
     <div className="min-h-[100dvh] bg-[#f9fafb]">
       <div className="flex min-h-[100dvh]">
         <aside className="hidden w-[232px] shrink-0 border-r border-[#eaecf0] bg-white p-4 md:block">
-          <p className="font-display text-base font-extrabold text-ink">IRP 2.0</p>
-          <p className="mt-6 text-sm font-semibold text-[#6941c6]">IRP MERN Track</p>
+          <p className="font-display text-base font-extrabold text-ink">IRP</p>
+          <p className="mt-6 text-sm font-semibold text-[#6941c6]">MERN Track</p>
           <p className="mt-2 text-sm text-[#667085]">GenAI Track</p>
         </aside>
         <div className="min-w-0 flex-1">
           <header className="border-b border-[#eaecf0] px-4 py-3 md:hidden">
-            <span className="font-display text-base font-extrabold text-ink">IRP 2.0</span>
+            <span className="font-display text-base font-extrabold text-ink">IRP</span>
           </header>
           <ReferBanner onInvite={() => undefined} onDismiss={() => undefined} />
           <div className="p-4 sm:p-6 lg:p-8">
@@ -152,6 +152,9 @@ function Router() {
         <Home />
       </Route>
       <Route path="/noc-form">
+        <Home />
+      </Route>
+      <Route path="/home">
         <Home />
       </Route>
       <Route path="/about">

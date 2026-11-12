@@ -1,7 +1,7 @@
 import { NXTMOCK_CLEAR_RATING_THRESHOLD } from "@/lib/nxtmockInterview";
 
 /**
- * IRP 2.0 NxtMock / AI Mock Interview — shown to students who cleared FE Project.
+ * IRP NxtMock / AI Mock Interview — shown to students who cleared FE Project.
  *
  * Main Interview = timed live interview window.
  * Mock Interview = practice / mock link (separate from Main).

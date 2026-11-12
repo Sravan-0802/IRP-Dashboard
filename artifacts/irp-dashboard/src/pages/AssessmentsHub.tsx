@@ -429,7 +429,7 @@ export function AssessmentsHub({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Hub</h1>
+        <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">Assessments Center</h1>
         <p className="mt-1 text-sm text-muted2">
           {level === 1 && registrationBatch
             ? "Your assessment registration is open. Choose your slot below."

@@ -10,6 +10,11 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof GenaiLoomSubm
   render(
     React.createElement(GenaiLoomSubmissionForm, {
       projectTitle: "Intelligent RAG Challenge",
+      allProjects: [
+        "Intelligent RAG Challenge",
+        "Agentic RAG Challenge",
+        "Building & Optimizing RAG Challenge",
+      ],
       availableProjects: [
         "Intelligent RAG Challenge",
         "Agentic RAG Challenge",
@@ -80,6 +85,24 @@ describe("GenAI Loom submission form", () => {
     });
 
     expect(screen.getByRole("status").textContent).toMatch(/Successfully submitted.*saved/i);
+  });
+
+  it("lists every title until 2 are chosen, then only the chosen pair", () => {
+    const optionValues = () =>
+      Array.from((screen.getByTestId("select-genai-loom-project") as HTMLSelectElement).options)
+        .filter((option) => option.value)
+        .map((option) => option.value);
+
+    renderForm({ availableProjects: ["Intelligent RAG Challenge"] });
+    expect(optionValues()).toEqual([
+      "Intelligent RAG Challenge",
+      "Agentic RAG Challenge",
+      "Building & Optimizing RAG Challenge",
+    ]);
+    cleanup();
+
+    renderForm();
+    expect(optionValues()).toEqual(["Intelligent RAG Challenge", "Agentic RAG Challenge"]);
   });
 
   it("shows request-error feedback from the save request", () => {

@@ -10,6 +10,11 @@ import {
 
 type EditorTab = "genai" | "calendar";
 
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 function newId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -247,15 +252,19 @@ function CalendarEditor({
     <div className="space-y-5">
       <ListBlock
         title="Calendar chips"
-        onAdd={() => onEvents([...events, { id: newId("event"), date: "2026-10-01", program: "genai", label: "New event" }])}
+        onAdd={() => onEvents([...events, { id: newId("event"), date: todayIso(), program: "genai", label: "New event" }])}
       >
+        <p className="text-xs text-[#667085]">
+          One chip per date. If a chip shares a word with a Coming up title that covers that date (for example
+          &quot;Training C3&quot; and &quot;GenAI Training Sessions (Cycle 3)&quot;), students see the full title.
+        </p>
         {events.map((event, index) => (
           <Row key={event.id}>
-            <Field label="Date" value={event.date} onChange={(value) => onEvents(replaceAt(events, index, { ...event, date: value }))} />
+            <Field label="Date" type="date" value={event.date} onChange={(value) => onEvents(replaceAt(events, index, { ...event, date: value }))} />
             <SelectField
               label="Program"
               value={event.program}
-              options={[["genai", "GenAI"], ["irp", "IRP"]]}
+              options={[["genai", "GenAI"], ["irp", "MERN"]]}
               onChange={(value) => onEvents(replaceAt(events, index, { ...event, program: value as CalendarEvent["program"] }))}
             />
             <Field label="Label" value={event.label} onChange={(value) => onEvents(replaceAt(events, index, { ...event, label: value }))} />
@@ -278,10 +287,15 @@ function CalendarEditor({
             <SelectField
               label="Program"
               value={item.program}
-              options={[["genai", "GenAI"], ["irp", "IRP"]]}
+              options={[["genai", "GenAI"], ["irp", "MERN"]]}
               onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, program: value as CalendarUpcoming["program"] }))}
             />
-            <Field label="When" value={item.when} onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, when: value }))} />
+            <Field
+              label="When"
+              placeholder="Sun, 4 Oct · 5 to 14 Oct · 31 Oct to 1 Nov"
+              value={item.when}
+              onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, when: value }))}
+            />
             <Field label="Title" value={item.title} onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, title: value }))} />
             <Field label="Detail" value={item.detail} onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, detail: value }))} />
             <SelectField
@@ -339,11 +353,25 @@ function Row({ children }: { children: ReactNode }) {
   return <div className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: "text" | "date";
+  placeholder?: string;
+}) {
   return (
     <label className="block text-[11px] font-semibold text-[#667085]">
       {label}
       <input
+        type={type}
+        placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="mt-1 w-full rounded-lg border border-[#d0d5dd] px-2.5 py-1.5 text-sm font-medium text-[#101828]"

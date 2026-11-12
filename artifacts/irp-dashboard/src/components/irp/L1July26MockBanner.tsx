@@ -30,7 +30,7 @@ export function L1July26MockBanner({ compact = false }: { compact?: boolean }) {
             <p
               className={`mt-1 font-display font-extrabold text-ink ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}
             >
-              IRP 2.0 L1 Mock Assessment — Live Now
+              IRP L1 Mock Assessment — Live Now
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted2">
               Your mock assessment is live. Attempting the mock is{" "}

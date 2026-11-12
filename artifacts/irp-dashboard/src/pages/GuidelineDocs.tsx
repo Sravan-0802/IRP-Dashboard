@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import type { Journey } from "@/lib/journey";
 import type { StepStatus } from "@/components/irp/ui";
@@ -10,6 +10,10 @@ import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 const TOPIN_GUIDELINES_URL = "https://bit.ly/placement-assessment-guidelines";
 const FE_GUIDELINES_URL =
   "https://docs.google.com/document/d/11ppsy40_mCRL5qaeUp_1iO9ygl0j46Ub3elZu6XsPnc/edit?tab=t.0";
+const INTERVIEW_SLOT_GUIDE_URL =
+  "https://docs.google.com/document/d/1g3Wz64Q4XlPhzgKx3jlXmsFmY_gR8VwEfLu5Iejy9Zs/edit?tab=t.9r6t8bc4a3ba";
+const INTERVIEW_HANDBOOK_URL =
+  "https://docs.google.com/document/d/123dFRjjs_5lSrA1MC68J-1kM1vcI6EyIM-AXMad0UfA/edit?tab=t.9sm6cer92hvs";
 
 type StageId = "online" | "fe" | "interview";
 
@@ -213,25 +217,61 @@ function InterviewProcess({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
-        <h2 className="font-display text-lg font-extrabold text-[#101828]">Human Interview process</h2>
-        <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#344054]">
-          <p className="font-bold text-[#101828]">Step 1: Book your interview slot</p>
+        <h2 className="font-display text-lg font-extrabold text-[#101828]">Human Interview Process:</h2>
+        <div className="mt-4 space-y-4 text-sm leading-relaxed text-[#344054]">
+          <section className="space-y-2">
+            <p className="font-bold text-[#101828]">📌 Step 1: Book Your Interview Slot</p>
+            <p>
+              You will receive an Interview Slot Selection email. Once you receive it, you must select and book your
+              interview slot.
+            </p>
+            <p>
+              👉 Interview Slot Selection Guide:
+              <br />
+              <a
+                href={INTERVIEW_SLOT_GUIDE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-interview-slot-guide"
+                className="font-semibold text-[#6941c6] underline underline-offset-2 hover:text-[#5925dc]"
+              >
+                Candidate Interview Slot Selection Guide || Interview Coordinator App - Google Docs
+                <ExternalLink className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />
+              </a>
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <p className="font-bold text-[#101828]">⚠️ Step 2: Integrity Score – New Interview Requirement</p>
+            <p>An Integrity Score has now been introduced as part of your Technical Interview evaluation.</p>
+            <p>To ensure your Integrity Score is evaluated, you must:</p>
+            <ul className="space-y-1">
+              <li>✅ Follow the Pre-Interview Checklist</li>
+              <li>✅ Complete the required Self-Declaration with the panelist before your interview begins</li>
+            </ul>
+            <p>
+              👉 Student Pre-Interview Kit:
+              <br />
+              <a
+                href={INTERVIEW_HANDBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-interview-handbook"
+                className="font-semibold text-[#6941c6] underline underline-offset-2 hover:text-[#5925dc]"
+              >
+                Candidate Interview Handbook - Google Docs
+                <ExternalLink className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />
+              </a>
+            </p>
+            <p className="rounded-lg bg-[#fffaeb] px-3 py-2 text-[#b54708]">
+              ❗ Please go through the Pre-Interview Kit carefully before your interview. The checklist and
+              Self-Declaration are mandatory for the Integrity Score evaluation.
+            </p>
+          </section>
+
           <p>
-            You will receive an Interview Slot Selection email. Once you receive it, select and book your interview slot.
-            Use the Candidate Interview Slot Selection Guide in the Interview Coordinator app.
-          </p>
-          <p className="font-bold text-[#101828]">Step 2: Integrity Score</p>
-          <p>
-            An Integrity Score is now part of the Technical Interview evaluation. Follow the Pre-Interview Checklist and
-            complete the required Self-Declaration with the panelist before the interview begins.
-          </p>
-          <p>
-            The checklist and Self-Declaration are in the Candidate Interview Handbook. Both are mandatory for the
-            Integrity Score.
-          </p>
-          <p>
-            After the slot-selection email arrives, book your slot, complete the pre-interview requirements, and come
-            prepared.
+            Once you receive the slot-selection email, book your slot, complete the pre-interview requirements, and come
+            prepared for your interview. 🚀
           </p>
         </div>
         <button

@@ -15,7 +15,7 @@ export function AppSwitcher({ active }: AppSwitcherProps) {
       {active === "landing" ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-white">
           <Rocket className="h-3.5 w-3.5" />
-          IRP 2.0
+          IRP
         </span>
       ) : (
         <a
@@ -23,7 +23,7 @@ export function AppSwitcher({ active }: AppSwitcherProps) {
           className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-gray-500 transition-colors hover:bg-primary/10 hover:text-primary"
         >
           <Rocket className="h-3.5 w-3.5" />
-          IRP 2.0
+          IRP
         </a>
       )}
 

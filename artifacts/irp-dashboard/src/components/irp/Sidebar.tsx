@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, Info, LayoutGrid, Mail, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Calendar, ClipboardCheck, FileText, Home, LayoutGrid, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -10,23 +10,22 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "guidelines" | "noc" | "about";
+export type PageKey = "dashboard" | "genai" | "slot" | "guidelines" | "noc" | "home";
 
 const SECTIONS: {
   title: string;
   items: { key: PageKey; icon: typeof LayoutGrid; label: string; badge?: string }[];
 }[] = [
   {
-    title: "Your tracks",
+    title: "Tracks",
     items: [
-      { key: "dashboard", icon: LayoutGrid, label: "IRP MERN Track" },
+      { key: "dashboard", icon: LayoutGrid, label: "MERN Track" },
       { key: "genai", icon: Sparkles, label: "GenAI Track", badge: "NEW" },
     ],
   },
   {
     title: "Assessments",
     items: [
-      { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
       { key: "slot", icon: Calendar, label: "Assessment Calendar" },
     ],
   },
@@ -46,7 +45,6 @@ export function SidebarContent({
   active,
   onNavigate,
   onOpenFeedback,
-  onOpenContact,
 }: {
   name: string;
   yog: number;
@@ -56,7 +54,6 @@ export function SidebarContent({
   active: PageKey;
   onNavigate: (key: PageKey) => void;
   onOpenFeedback: () => void;
-  onOpenContact: () => void;
 }) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -68,8 +65,8 @@ export function SidebarContent({
           IRP
         </div>
         <div className="leading-tight">
-          <p className="font-display text-sm font-semibold tracking-tight text-[#101828]">IRP 2.0</p>
-          <p className="text-[11px] font-medium text-[#667085]">Internship Readiness</p>
+          <p className="font-display text-sm font-semibold tracking-tight text-[#101828]">IRP</p>
+          <p className="text-[11px] font-medium text-[#667085]">Internship Readiness Program</p>
         </div>
       </div>
 
@@ -109,6 +106,19 @@ export function SidebarContent({
       </div>
 
       <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-3">
+        <button
+          type="button"
+          onClick={() => onNavigate("home")}
+          className={cn(
+            "mb-3 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
+            active === "home"
+              ? "bg-[#f4f3ff] text-[#6941c6]"
+              : "text-[#667085] hover:bg-[#f9fafb] hover:text-[#344054]",
+          )}
+        >
+          <Home className="h-4 w-4 shrink-0" />
+          Home
+        </button>
         {SECTIONS.map((section) => (
           <div key={section.title} className="mb-3">
             <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#98a2b3]">{section.title}</p>
@@ -137,19 +147,6 @@ export function SidebarContent({
             </div>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => onNavigate("about")}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/30",
-            active === "about"
-              ? "bg-[#f9f5ff] text-[#6941c6]"
-              : "text-[#667085] hover:bg-[#f9fafb] hover:text-[#344054]",
-          )}
-        >
-          <Info className="h-4 w-4 shrink-0" />
-          About
-        </button>
       </nav>
 
       <div className="space-y-2 border-t border-[#eaecf0] px-3 py-3">
@@ -166,13 +163,6 @@ export function SidebarContent({
             <span className="block text-[11px] font-medium text-white/85">Mandatory · Complete the form</span>
           </span>
           <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={onOpenContact}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#667085] transition-colors hover:bg-[#f9fafb] hover:text-[#344054] focus:outline-none"
-        >
-          <Mail className="h-4 w-4" /> Help & Support
         </button>
         <FeedbackButton onClick={onOpenFeedback} />
       </div>

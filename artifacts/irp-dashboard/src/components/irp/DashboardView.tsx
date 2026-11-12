@@ -33,7 +33,6 @@ import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 import { useStudentAccess } from "@/lib/useStudentAccess";
-import { ContactUs } from "./ContactUs";
 import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 import { formatYearOfJoin } from "./OnlineAssessmentBadge";
 import { IrpClearCards } from "./IrpClearCards";
@@ -437,8 +436,6 @@ export function DashboardView({
           </div>
         </>
       )}
-
-      <ContactUs />
     </div>
   );
 }
