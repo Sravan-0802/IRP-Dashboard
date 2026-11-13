@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { PROGRAM_BOARD_QUERY_KEY } from "@/lib/useProgramBoard";
 import {
   DEFAULT_PROGRAM_BOARD,
   type CalendarEvent,
@@ -20,6 +22,7 @@ function newId(prefix: string): string {
 }
 
 export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<EditorTab>("genai");
   const [draft, setDraft] = useState<ProgramBoard>(DEFAULT_PROGRAM_BOARD);
   const [loading, setLoading] = useState(true);
@@ -61,6 +64,7 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to save");
       setDraft(body as ProgramBoard);
+      void queryClient.invalidateQueries({ queryKey: PROGRAM_BOARD_QUERY_KEY });
       setMessage("Saved. Students see this on GenAI Program and Assessment Calendar.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save");

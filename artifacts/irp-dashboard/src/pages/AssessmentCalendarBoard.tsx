@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Sparkles, Target, type LucideIcon } from "lucide-react";
-import { useProgramBoard } from "@/lib/useProgramBoard";
+import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Sparkles, Target, type LucideIcon } from "lucide-react";
+import { DEFAULT_PROGRAM_BOARD } from "@/lib/programBoard";
+import { useProgramBoardQuery } from "@/lib/useProgramBoard";
 import type { CalendarEvent, CalendarUpcoming } from "@/lib/programBoard";
 
 type Program = "irp" | "genai";
@@ -166,7 +167,8 @@ const FILTER_THEME: Record<
 };
 
 export function AssessmentCalendarBoard() {
-  const calendar = useProgramBoard().calendar;
+  const boardQuery = useProgramBoardQuery();
+  const calendar = boardQuery.data?.calendar ?? DEFAULT_PROGRAM_BOARD.calendar;
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -200,8 +202,35 @@ export function AssessmentCalendarBoard() {
   ).size;
   const monthName = cursor.toLocaleDateString("en-US", { month: "long" });
 
+  if (!boardQuery.data && boardQuery.isLoading) {
+    return <p className="rounded-xl border border-[#eaecf0] bg-white p-5 text-sm text-[#667085]" role="status">Loading calendar…</p>;
+  }
+
+  if (!boardQuery.data && boardQuery.isError) {
+    return (
+      <section className="rounded-xl border border-[#fecdca] bg-white p-5" role="alert">
+        <h1 className="font-display text-lg font-extrabold text-[#b42318]">Calendar could not be loaded</h1>
+        <p className="mt-1 text-sm text-[#667085]">The latest saved schedule is unavailable. Try again to reload it.</p>
+        <button
+          type="button"
+          data-testid="button-retry-calendar"
+          onClick={() => void boardQuery.refetch()}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#6941c6] px-3 py-2 text-xs font-bold text-white"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Retry
+        </button>
+      </section>
+    );
+  }
+
   return (
     <div className="space-y-5">
+      {boardQuery.isError ? (
+        <p className="rounded-lg border border-[#fedf89] bg-[#fffaeb] px-3 py-2 text-xs font-semibold text-[#93370d]" role="status">
+          Could not refresh the calendar. Showing the last successfully loaded schedule.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-extrabold tracking-tight text-[#101828] sm:text-[28px]">
