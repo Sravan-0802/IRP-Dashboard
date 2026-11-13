@@ -71,7 +71,8 @@ INSERT INTO irp_v2.assessment_criteria
   (track, stage, assessment_specific_tag, criteria_type, qualifying_score_percentage, created_by, reason)
 SELECT 'MERN', 'ASSESSMENT', 'ACADEMY-IRP-2.0_MAIN_L1_HUSTLER-ASSESSMENT_A' || n, 'PERCENTAGE', 70,
        'migration', 'L1 default rule: A1 onward 70%'
-FROM generate_series(1, 10) AS n;
+FROM generate_series(1, 10) AS n
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
 -- Old online cycle tags: the dashboard judges them exactly like Hustler sits (70%), not by the
 -- old stored result, so they get the same criteria.
@@ -79,7 +80,8 @@ INSERT INTO irp_v2.assessment_criteria
   (track, stage, assessment_specific_tag, criteria_type, qualifying_score_percentage, created_by, reason)
 VALUES
   ('MERN','ASSESSMENT','ACADEMY-IRP-2.0_MAIN_L1_ASSESSMENT_C1','PERCENTAGE',70,'migration','Old cycle tag: L1 rule 70%'),
-  ('MERN','ASSESSMENT','ACADEMY-IRP-2.0_MAIN_L1_ASSESSMENT_C2','PERCENTAGE',70,'migration','Old cycle tag: L1 rule 70%');
+  ('MERN','ASSESSMENT','ACADEMY-IRP-2.0_MAIN_L1_ASSESSMENT_C2','PERCENTAGE',70,'migration','Old cycle tag: L1 rule 70%')
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
 INSERT INTO irp_v2.assessment_criteria
   (track, stage, assessment_specific_tag, criteria_type, qualifying_score_percentage, created_by, reason)
@@ -92,7 +94,8 @@ VALUES
   ('MERN','PROJECT','ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A6','PERCENTAGE', 90,'migration','FE rule A3-A6'),
   ('MERN','PROJECT','ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A7','PERCENTAGE', 75,'migration','FE rule A7 onward'),
   ('MERN','PROJECT','ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A8','PERCENTAGE', 75,'migration','FE rule A7 onward'),
-  ('MERN','PROJECT','ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A9','PERCENTAGE', 75,'migration','FE rule A7 onward');
+  ('MERN','PROJECT','ACADEMY-IRP-2.0_MAIN_L1_FE-Project_A9','PERCENTAGE', 75,'migration','FE rule A7 onward')
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
 INSERT INTO irp_v2.assessment_criteria
   (track, stage, assessment_specific_tag, criteria_type, created_by, reason)
@@ -100,7 +103,8 @@ VALUES
   ('MERN','INTERVIEW',     'ACADEMY-IRP-2.0_MAIN_L1_HUMAN-INTERVIEW', 'EXTERNAL_RESULT','migration','Academy Nexus clearance_status'),
   ('MERN','PROJECT',      'ACADEMY-IRP-2.0_MAIN_L1_FE-Project_C1',   'EXTERNAL_RESULT','migration','Old cycle tag: keep BigQuery result'),
   ('MERN','PROJECT',       'ACADEMY-IRP-2.0_MAIN_L1_FE-PROJECT',      'EXTERNAL_RESULT','migration','Old cycle tag: keep BigQuery result'),
-  ('MERN','MOCK_INTERVIEW','ACADEMY-IRP-2.0_MAIN_L1_NXTMOCK_C3',      'EXTERNAL_RESULT','migration','Old cycle tag: keep BigQuery result');
+  ('MERN','MOCK_INTERVIEW','ACADEMY-IRP-2.0_MAIN_L1_NXTMOCK_C3',      'EXTERNAL_RESULT','migration','Old cycle tag: keep BigQuery result')
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
 INSERT INTO irp_v2.assessment_criteria
   (track, stage, assessment_specific_tag, criteria_type,
@@ -109,7 +113,8 @@ VALUES
   ('GENAI','ASSESSMENT','ACADEMY-GENAI-IRP-2.0_MAIN_ASSESSMENT_A1','SECTION_MARKS',20,48,'migration','GenAI rules saved 30 Oct 2026'),
   ('GENAI','ASSESSMENT','ACADEMY-GENAI-IRP-2.0_MAIN_ASSESSMENT_A2','SECTION_MARKS',20,48,'migration','GenAI rules saved 30 Oct 2026'),
   ('GENAI','ASSESSMENT','ACADEMY-GENAI-IRP-2.0_MAIN_ASSESSMENT_A3','SECTION_MARKS',25,48,'migration','GenAI rules saved 30 Oct 2026'),
-  ('GENAI','ASSESSMENT','ACADEMY-GENAI-IRP-2.0_MAIN_ASSESSMENT_A4','SECTION_MARKS',25,48,'migration','GenAI rules saved 30 Oct 2026');
+  ('GENAI','ASSESSMENT','ACADEMY-GENAI-IRP-2.0_MAIN_ASSESSMENT_A4','SECTION_MARKS',25,48,'migration','GenAI rules saved 30 Oct 2026')
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
 -- ---------------------------------------------------------------------------
 -- 3. mern_track_attempts
