@@ -21,6 +21,8 @@ import type {
 
 import type {
   AdminGenaiProjectSubmissionsList,
+  CalendarRevision,
+  CalendarRevisionRestoreInput,
   ContactMessageRequest,
   ContactMessageResponse,
   DashboardAnalyticsEventRequest,
@@ -39,6 +41,7 @@ import type {
   L1RegistrationRequest,
   L1RegistrationResponse,
   L1RegistrationSubmitResponse,
+  ListAdminCalendarRevisionsParams,
   ManualAccessGrantResult,
   ManualAccessInput,
   ManualAccessList,
@@ -284,6 +287,150 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateAdminProgramBoardMutationOptions(options));
+    }
+
+export const getListAdminCalendarRevisionsUrl = (params: ListAdminCalendarRevisionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/program-board/calendar-revisions?${stringifiedParams}` : `/api/admin/program-board/calendar-revisions`
+}
+
+export const listAdminCalendarRevisions = async (params: ListAdminCalendarRevisionsParams, options?: RequestInit): Promise<CalendarRevision[]> => {
+
+  return customFetch<CalendarRevision[]>(getListAdminCalendarRevisionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminCalendarRevisionsQueryKey = (params?: ListAdminCalendarRevisionsParams,) => {
+    return [
+    `/api/admin/program-board/calendar-revisions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminCalendarRevisionsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminCalendarRevisions>>, TError = ErrorType<void>>(params: ListAdminCalendarRevisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminCalendarRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminCalendarRevisionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminCalendarRevisions>>> = ({ signal }) => listAdminCalendarRevisions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminCalendarRevisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminCalendarRevisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminCalendarRevisions>>>
+export type ListAdminCalendarRevisionsQueryError = ErrorType<void>
+
+
+
+export function useListAdminCalendarRevisions<TData = Awaited<ReturnType<typeof listAdminCalendarRevisions>>, TError = ErrorType<void>>(
+ params: ListAdminCalendarRevisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminCalendarRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminCalendarRevisionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRestoreAdminCalendarRevisionUrl = (revisionId: string,) => {
+
+
+
+
+  return `/api/admin/program-board/calendar-revisions/${revisionId}/restore`
+}
+
+export const restoreAdminCalendarRevision = async (revisionId: string,
+    calendarRevisionRestoreInput: CalendarRevisionRestoreInput, options?: RequestInit): Promise<ProgramBoardDocument> => {
+
+  return customFetch<ProgramBoardDocument>(getRestoreAdminCalendarRevisionUrl(revisionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(calendarRevisionRestoreInput)
+  }
+);}
+
+
+
+
+
+export const getRestoreAdminCalendarRevisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreAdminCalendarRevision>>, TError,{revisionId: string;data: BodyType<CalendarRevisionRestoreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreAdminCalendarRevision>>, TError,{revisionId: string;data: BodyType<CalendarRevisionRestoreInput>}, TContext> => {
+
+const mutationKey = ['restoreAdminCalendarRevision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreAdminCalendarRevision>>, {revisionId: string;data: BodyType<CalendarRevisionRestoreInput>}> = (props) => {
+          const {revisionId,data} = props ?? {};
+
+          return  restoreAdminCalendarRevision(revisionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreAdminCalendarRevisionMutationResult = NonNullable<Awaited<ReturnType<typeof restoreAdminCalendarRevision>>>
+    export type RestoreAdminCalendarRevisionMutationBody = BodyType<CalendarRevisionRestoreInput>
+    export type RestoreAdminCalendarRevisionMutationError = ErrorType<void>
+
+    export const useRestoreAdminCalendarRevision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreAdminCalendarRevision>>, TError,{revisionId: string;data: BodyType<CalendarRevisionRestoreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreAdminCalendarRevision>>,
+        TError,
+        {revisionId: string;data: BodyType<CalendarRevisionRestoreInput>},
+        TContext
+      > => {
+      return useMutation(getRestoreAdminCalendarRevisionMutationOptions(options));
     }
 
 export const getGrantManualDashboardAccessUrl = () => {

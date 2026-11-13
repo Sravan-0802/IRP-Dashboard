@@ -527,6 +527,31 @@ export type ProgramBoardDocument = ProgramBoardInput & ({
   updatedAt: string | null;
 });
 
+export interface CalendarRevisionRestoreInput {
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  month: string;
+  /** @nullable */
+  expectedUpdatedAt: string | null;
+}
+
+export interface CalendarRevision {
+  /** @pattern ^\d+$ */
+  id: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  month: string;
+  /** @maxItems 1000 */
+  events: CalendarAssessmentEntry[];
+  author: string;
+  createdAt: string;
+}
+
+export type ListAdminCalendarRevisionsParams = {
+/**
+ * @pattern ^\d{4}-(0[1-9]|1[0-2])$
+ */
+month: string;
+};
+
 export type GetGenaiProjectProgressParams = {
 search?: string;
 status?: GetGenaiProjectProgressStatus;

@@ -1,5 +1,16 @@
 import { Router } from "express";
-import { GetAdminProgramBoardResponse, UpdateAdminProgramBoardBody, UpdateAdminProgramBoardResponse } from "@workspace/api-zod";
+import {
+  GetAdminProgramBoardResponse,
+  ListAdminCalendarRevisionsQueryParams,
+  ListAdminCalendarRevisionsResponse,
+  RestoreAdminCalendarRevisionBody,
+  RestoreAdminCalendarRevisionParams,
+  RestoreAdminCalendarRevisionResponse,
+  RestoreAdminCalendarRevisionHeader,
+  UpdateAdminProgramBoardBody,
+  UpdateAdminProgramBoardHeader,
+  UpdateAdminProgramBoardResponse,
+} from "@workspace/api-zod";
 import {
   db,
   studentsTable,
@@ -26,7 +37,16 @@ import {
   parseGenAiTrainingPopupBody,
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
-import { getProgramBoard, parseProgramBoardBody, ProgramBoardConflictError, updateProgramBoard } from "../lib/programBoard";
+import {
+  getProgramBoard,
+  listCalendarRevisions,
+  parseProgramBoardBody,
+  ProgramBoardConflictError,
+  ProgramBoardRevisionConflictError,
+  ProgramBoardRevisionNotFoundError,
+  restoreCalendarRevision,
+  updateProgramBoard,
+} from "../lib/programBoard";
 import {
   getFeQualificationRules,
   parseFeQualificationRules,
@@ -896,6 +916,11 @@ router.put("/admin/program-board", async (req, res) => {
       res.status(400).json({ error: contract.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ") });
       return;
     }
+    const header = UpdateAdminProgramBoardHeader.safeParse({ "x-calendar-author": req.get("x-calendar-author") });
+    if (!header.success) {
+      res.status(400).json({ error: header.error.issues.map((issue) => issue.message).join("; ") });
+      return;
+    }
     if (typeof contract.data.expectedUpdatedAt === "string" && !Number.isFinite(Date.parse(contract.data.expectedUpdatedAt))) {
       res.status(400).json({ error: "Invalid saved-version timestamp" });
       return;
@@ -908,13 +933,82 @@ router.put("/admin/program-board", async (req, res) => {
     const expected = typeof contract.data.expectedUpdatedAt === "string"
       ? new Date(contract.data.expectedUpdatedAt).toISOString()
       : contract.data.expectedUpdatedAt;
-    res.json(UpdateAdminProgramBoardResponse.parse(await updateProgramBoard(parsed.board, expected)));
+    res.json(UpdateAdminProgramBoardResponse.parse(await updateProgramBoard(parsed.board, expected, header.data["x-calendar-author"])));
   } catch (err) {
     if (err instanceof ProgramBoardConflictError) {
       res.status(409).json({ error: err.message });
       return;
     }
     req.log.error({ err }, "Failed to update program board");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/admin/program-board/calendar-revisions — saved versions for one month.
+router.get("/admin/program-board/calendar-revisions", async (req, res): Promise<void> => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const query = ListAdminCalendarRevisionsQueryParams.safeParse(req.query);
+    if (!query.success) {
+      res.status(400).json({ error: query.error.issues.map((issue) => issue.message).join("; ") });
+      return;
+    }
+    res.json(ListAdminCalendarRevisionsResponse.parse(await listCalendarRevisions(query.data.month)));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list calendar revisions");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/admin/program-board/calendar-revisions/:revisionId/restore — restore only one month.
+router.post("/admin/program-board/calendar-revisions/:revisionId/restore", async (req, res): Promise<void> => {
+  try {
+    if (!checkApiKey(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const params = RestoreAdminCalendarRevisionParams.safeParse(req.params);
+    const body = RestoreAdminCalendarRevisionBody.safeParse(req.body);
+    const header = RestoreAdminCalendarRevisionHeader.safeParse({ "x-calendar-author": req.get("x-calendar-author") });
+    if (!params.success || !body.success || !header.success) {
+      const issues = [
+        ...(params.success ? [] : params.error.issues),
+        ...(body.success ? [] : body.error.issues),
+        ...(header.success ? [] : header.error.issues),
+      ];
+      res.status(400).json({ error: issues.map((issue) => issue.message).join("; ") });
+      return;
+    }
+    if (typeof body.data.expectedUpdatedAt === "string" && !Number.isFinite(Date.parse(body.data.expectedUpdatedAt))) {
+      res.status(400).json({ error: "Invalid saved-version timestamp" });
+      return;
+    }
+    const expected = typeof body.data.expectedUpdatedAt === "string"
+      ? new Date(body.data.expectedUpdatedAt).toISOString()
+      : body.data.expectedUpdatedAt;
+    res.json(RestoreAdminCalendarRevisionResponse.parse(await restoreCalendarRevision(
+      params.data.revisionId,
+      body.data.month,
+      expected,
+      header.data["x-calendar-author"],
+    )));
+  } catch (err) {
+    if (err instanceof ProgramBoardConflictError) {
+      res.status(409).json({ error: err.message });
+      return;
+    }
+    if (err instanceof ProgramBoardRevisionConflictError) {
+      res.status(409).json({ error: err.message });
+      return;
+    }
+    if (err instanceof ProgramBoardRevisionNotFoundError) {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "Failed to restore calendar revision");
     res.status(500).json({ error: "Internal server error" });
   }
 });

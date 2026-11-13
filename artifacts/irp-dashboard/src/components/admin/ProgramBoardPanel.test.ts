@@ -13,6 +13,7 @@ afterEach(() => {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json" },
 });
+const isCalendarHistoryRequest = (url: unknown) => String(url).includes("/calendar-revisions?");
 function showPanel() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   render(React.createElement(QueryClientProvider, { client: queryClient },
@@ -26,7 +27,7 @@ async function openCalendar() {
 
 describe("ProgramBoardPanel", () => {
   it("adds an assessment and focuses its name field", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json(DEFAULT_PROGRAM_BOARD)));
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => isCalendarHistoryRequest(url) ? json([]) : json(DEFAULT_PROGRAM_BOARD)));
     showPanel();
     await openCalendar();
     fireEvent.click(screen.getByTestId("button-add-calendar-assessment"));
@@ -36,7 +37,9 @@ describe("ProgramBoardPanel", () => {
   });
 
   it("refreshes the generated student calendar query after a successful save", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json({ ...DEFAULT_PROGRAM_BOARD, updatedAt: "2030-01-01T00:00:00.000Z" })));
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => isCalendarHistoryRequest(url)
+      ? json([])
+      : json({ ...DEFAULT_PROGRAM_BOARD, updatedAt: "2030-01-01T00:00:00.000Z" })));
     const queryClient = showPanel();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
     await waitFor(() => expect((screen.getByTestId("button-save-program-board") as HTMLButtonElement).disabled).toBe(false));
@@ -67,6 +70,7 @@ describe("ProgramBoardPanel", () => {
     let saved: ProgramBoard | undefined;
     const transport = vi.fn(async (_url: unknown, init?: RequestInit) => {
       if (init?.method === "PUT") saved = JSON.parse(String(init.body));
+      if (isCalendarHistoryRequest(_url)) return json([]);
       return json(saved ? { ...saved, updatedAt: "2030-01-02T00:00:00.000Z" } : initial);
     });
     vi.stubGlobal("fetch", transport);
@@ -92,7 +96,7 @@ describe("ProgramBoardPanel", () => {
   });
 
   it("keeps a row visible when its date is cleared so the admin can correct it", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json(DEFAULT_PROGRAM_BOARD)));
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => isCalendarHistoryRequest(url) ? json([]) : json(DEFAULT_PROGRAM_BOARD)));
     showPanel();
     await openCalendar();
     fireEvent.click(screen.getByTestId("button-add-calendar-assessment"));
@@ -117,6 +121,7 @@ describe("ProgramBoardPanel", () => {
         expectedTimestamp = JSON.parse(String(init.body)).expectedUpdatedAt;
         return json({ error: "Another admin saved a newer schedule. Your draft has been kept." }, 409);
       }
+      if (isCalendarHistoryRequest(_url)) return json([]);
       return json(initial);
     }));
     showPanel();
@@ -141,6 +146,7 @@ describe("ProgramBoardPanel", () => {
     let saved: ProgramBoard | undefined;
     vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
       if (init?.method === "PUT") saved = JSON.parse(String(init.body));
+      if (isCalendarHistoryRequest(_url)) return json([]);
       return json(saved ? { ...saved, updatedAt: "2030-01-02T00:00:00.000Z" } : initial);
     }));
     const queryClient = showPanel();
@@ -152,5 +158,68 @@ describe("ProgramBoardPanel", () => {
     await waitFor(() => expect(saved?.calendar.events.map((event) => event.id)).toEqual(["keep-me"]));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["/api/student/program-board"] });
     expect(await screen.findByTestId("text-program-board-saved")).toHaveProperty("textContent", expect.stringContaining("Saved at"));
+  });
+
+  it("shows the month comparison and confirms before restoring a revision", async () => {
+    const now = new Date();
+    const month = monthPrefix(now.getFullYear(), now.getMonth());
+    const initial: ProgramBoard = {
+      ...DEFAULT_PROGRAM_BOARD,
+      updatedAt: "2030-01-02T00:00:00.000Z",
+      calendar: {
+        upcoming: [],
+        events: [{
+          id: "current", date: `${month}-12`, program: "irp", label: "Current assessment",
+          mode: "online", link: "https://example.com/current",
+        }],
+      },
+    };
+    const previous = {
+      id: "11",
+      month,
+      events: [{
+        id: "previous", date: `${month}-10`, program: "genai", label: "Earlier assessment",
+        mode: "offline", link: "https://example.com/previous",
+      }],
+      author: "Previous admin",
+      createdAt: "2030-01-01T00:00:00.000Z",
+    };
+    const restored: ProgramBoard = {
+      ...initial,
+      updatedAt: "2030-01-03T00:00:00.000Z",
+      calendar: { ...initial.calendar, events: previous.events },
+    };
+    const fetchMock = vi.fn(async (url: unknown, init?: RequestInit) => {
+      if (String(url).includes("/calendar-revisions?")) return json([previous]);
+      if (init?.method === "POST") return json(restored);
+      return json(initial);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    showPanel();
+    await openCalendar();
+
+    fireEvent.click(await screen.findByTestId("button-calendar-revision-11"));
+    expect(screen.getByTestId("panel-calendar-revision-comparison")).toHaveProperty(
+      "textContent",
+      expect.stringContaining("Current assessment"),
+    );
+    expect(screen.getByTestId("panel-calendar-revision-comparison")).toHaveProperty(
+      "textContent",
+      expect.stringContaining("Earlier assessment"),
+    );
+    fireEvent.click(screen.getByTestId("button-restore-calendar-revision"));
+
+    await waitFor(() => expect(window.confirm).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId("text-program-board-saved")).toHaveProperty(
+      "textContent",
+      expect.stringContaining("Calendar month restored"),
+    );
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(post).toBeDefined();
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({
+      month,
+      expectedUpdatedAt: initial.updatedAt,
+    });
   });
 });

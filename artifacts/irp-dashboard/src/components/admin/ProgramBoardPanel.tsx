@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAdminProgramBoard, updateAdminProgramBoard, type ProgramBoardInput } from "@workspace/api-client-react";
+import { getAdminProgramBoard, updateAdminProgramBoard, type ProgramBoardInput, type ProgramBoardDocument } from "@workspace/api-client-react";
 import { CalendarDays, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { PROGRAM_BOARD_QUERY_KEY } from "@/lib/useProgramBoard";
 import { MonthlyCalendarEditor } from "@/components/admin/MonthlyCalendarEditor";
@@ -52,6 +52,14 @@ function newId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function initialCalendarAuthor(): string {
+  try {
+    return window.localStorage.getItem("irp-calendar-author") || "Admin";
+  } catch {
+    return "Admin";
+  }
+}
+
 export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<EditorTab>("genai");
@@ -62,6 +70,7 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [calendarAuthor, setCalendarAuthor] = useState(initialCalendarAuthor);
   // Background loads never overwrite in-progress edits.
   const dirtyRef = useRef(false);
 
@@ -116,7 +125,9 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
     }
     try {
       const input = { expectedUpdatedAt: draft.updatedAt, genai: draft.genai, calendar: { events, upcoming: draft.calendar.upcoming } } as unknown as ProgramBoardInput;
-      const body = (await updateAdminProgramBoard(input, { headers: { "x-api-key": apiKey.trim() } })) as unknown as ProgramBoard;
+      const body = (await updateAdminProgramBoard(input, {
+        headers: { "x-api-key": apiKey.trim(), "x-calendar-author": calendarAuthor.trim() || "Admin" },
+      })) as unknown as ProgramBoard;
       setDraft(body);
       dirtyRef.current = false;
       setDirty(false);
@@ -176,6 +187,27 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
       ) : (
         <MonthlyCalendarEditor
           events={draft.calendar.events}
+          apiKey={apiKey}
+          updatedAt={draft.updatedAt}
+          author={calendarAuthor}
+          dirty={dirty}
+          onAuthorChange={(value) => {
+            setCalendarAuthor(value);
+            try {
+              window.localStorage.setItem("irp-calendar-author", value);
+            } catch {
+              // The field remains usable when browser storage is unavailable.
+            }
+          }}
+          onRestored={(board) => {
+            const restored = board as unknown as ProgramBoardDocument as unknown as ProgramBoard;
+            setDraft(restored);
+            dirtyRef.current = false;
+            setDirty(false);
+            setError("");
+            setMessage("Calendar month restored. Students see the restored schedule immediately.");
+            void queryClient.invalidateQueries({ queryKey: PROGRAM_BOARD_QUERY_KEY });
+          }}
           onEvents={(events) => edit((prev) => ({ ...prev, calendar: { ...prev.calendar, events } }))}
         />
       )}

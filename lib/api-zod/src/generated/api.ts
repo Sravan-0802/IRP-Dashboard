@@ -200,6 +200,14 @@ export const GetAdminProgramBoardResponse = zod.object({
 }))
 
 
+export const updateAdminProgramBoardHeaderXCalendarAuthorMax = 80;
+
+
+
+export const UpdateAdminProgramBoardHeader = zod.object({
+  "x-calendar-author": zod.string().max(updateAdminProgramBoardHeaderXCalendarAuthorMax).optional()
+})
+
 export const updateAdminProgramBoardBodyGenaiClassHourMin = 0;
 export const updateAdminProgramBoardBodyGenaiClassHourMax = 23;
 
@@ -374,6 +382,162 @@ export const UpdateAdminProgramBoardResponse = zod.object({
   "mode": zod.enum(['online', 'offline']).optional(),
   "link": zod.string().max(updateAdminProgramBoardResponseOneCalendarEventsItemLinkMax).optional()
 })).max(updateAdminProgramBoardResponseOneCalendarEventsMax),
+  "upcoming": zod.array(zod.object({
+  "id": zod.string(),
+  "program": zod.enum(['irp', 'genai']),
+  "when": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "action": zod.enum(['', 'register', 'submit']),
+  "badge": zod.enum(['', 'not-registered', 'upcoming', 'locked'])
+}))
+})
+}).and(zod.object({
+  "updatedAt": zod.string().nullable()
+}))
+
+
+export const listAdminCalendarRevisionsQueryMonthRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+
+
+export const ListAdminCalendarRevisionsQueryParams = zod.object({
+  "month": zod.coerce.string().regex(listAdminCalendarRevisionsQueryMonthRegExp)
+})
+
+export const listAdminCalendarRevisionsResponseIdRegExp = new RegExp('^\\d+$');
+export const listAdminCalendarRevisionsResponseMonthRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const listAdminCalendarRevisionsResponseEventsItemIdMax = 80;
+
+export const listAdminCalendarRevisionsResponseEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const listAdminCalendarRevisionsResponseEventsItemLabelMax = 200;
+
+export const listAdminCalendarRevisionsResponseEventsItemLinkMax = 2000;
+
+export const listAdminCalendarRevisionsResponseEventsMax = 1000;
+
+
+
+export const ListAdminCalendarRevisionsResponseItem = zod.object({
+  "id": zod.string().regex(listAdminCalendarRevisionsResponseIdRegExp),
+  "month": zod.string().regex(listAdminCalendarRevisionsResponseMonthRegExp),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(listAdminCalendarRevisionsResponseEventsItemIdMax),
+  "date": zod.string().regex(listAdminCalendarRevisionsResponseEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(listAdminCalendarRevisionsResponseEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(listAdminCalendarRevisionsResponseEventsItemLinkMax).optional()
+})).max(listAdminCalendarRevisionsResponseEventsMax),
+  "author": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminCalendarRevisionsResponse = zod.array(ListAdminCalendarRevisionsResponseItem)
+
+
+export const restoreAdminCalendarRevisionPathRevisionIdRegExp = new RegExp('^\\d+$');
+
+
+export const RestoreAdminCalendarRevisionParams = zod.object({
+  "revisionId": zod.coerce.string().regex(restoreAdminCalendarRevisionPathRevisionIdRegExp)
+})
+
+export const restoreAdminCalendarRevisionHeaderXCalendarAuthorMax = 80;
+
+
+
+export const RestoreAdminCalendarRevisionHeader = zod.object({
+  "x-calendar-author": zod.string().max(restoreAdminCalendarRevisionHeaderXCalendarAuthorMax).optional()
+})
+
+export const restoreAdminCalendarRevisionBodyMonthRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+
+
+export const RestoreAdminCalendarRevisionBody = zod.object({
+  "month": zod.string().regex(restoreAdminCalendarRevisionBodyMonthRegExp),
+  "expectedUpdatedAt": zod.string().nullable()
+})
+
+export const restoreAdminCalendarRevisionResponseOneGenaiClassHourMin = 0;
+export const restoreAdminCalendarRevisionResponseOneGenaiClassHourMax = 23;
+
+export const restoreAdminCalendarRevisionResponseOneGenaiClassMinuteMin = 0;
+export const restoreAdminCalendarRevisionResponseOneGenaiClassMinuteMax = 59;
+
+export const restoreAdminCalendarRevisionResponseOneCalendarEventsItemIdMax = 80;
+
+export const restoreAdminCalendarRevisionResponseOneCalendarEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const restoreAdminCalendarRevisionResponseOneCalendarEventsItemLabelMax = 200;
+
+export const restoreAdminCalendarRevisionResponseOneCalendarEventsItemLinkMax = 2000;
+
+export const restoreAdminCalendarRevisionResponseOneCalendarEventsMax = 1000;
+
+
+
+export const RestoreAdminCalendarRevisionResponse = zod.object({
+  "expectedUpdatedAt": zod.string().nullish().describe('Optional optimistic lock; null means no saved document was loaded'),
+  "genai": zod.object({
+  "subtitle": zod.string(),
+  "liveBadge": zod.string(),
+  "weekLabel": zod.string(),
+  "classTitle": zod.string(),
+  "weekOf": zod.string(),
+  "classHour": zod.number().min(restoreAdminCalendarRevisionResponseOneGenaiClassHourMin).max(restoreAdminCalendarRevisionResponseOneGenaiClassHourMax),
+  "classMinute": zod.number().min(restoreAdminCalendarRevisionResponseOneGenaiClassMinuteMin).max(restoreAdminCalendarRevisionResponseOneGenaiClassMinuteMax),
+  "stats": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "hint": zod.string(),
+  "hintTone": zod.enum(['default', 'warn'])
+})),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "when": zod.string(),
+  "score": zod.string(),
+  "note": zod.string(),
+  "noteTone": zod.enum(['default', 'warn']),
+  "status": zod.enum(['completed', 'open', 'upcoming']),
+  "actionLabel": zod.string()
+})),
+  "classes": zod.array(zod.object({
+  "day": zod.string(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "time": zod.string(),
+  "duration": zod.string(),
+  "instructor": zod.string(),
+  "action": zod.string(),
+  "live": zod.boolean(),
+  "link": zod.string()
+})),
+  "recordingsEmpty": zod.string(),
+  "portalLabel": zod.string(),
+  "practiceEyebrow": zod.string(),
+  "practiceTitle": zod.string(),
+  "practiceBody": zod.string(),
+  "practiceCta": zod.string(),
+  "aboutTitle": zod.string(),
+  "aboutBody": zod.string(),
+  "syllabusLabel": zod.string(),
+  "communityLabel": zod.string(),
+  "supportLabel": zod.string(),
+  "liveUrl": zod.string(),
+  "portalUrl": zod.string(),
+  "practiceUrl": zod.string(),
+  "syllabusUrl": zod.string(),
+  "communityUrl": zod.string()
+}),
+  "calendar": zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(restoreAdminCalendarRevisionResponseOneCalendarEventsItemIdMax),
+  "date": zod.string().regex(restoreAdminCalendarRevisionResponseOneCalendarEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(restoreAdminCalendarRevisionResponseOneCalendarEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(restoreAdminCalendarRevisionResponseOneCalendarEventsItemLinkMax).optional()
+})).max(restoreAdminCalendarRevisionResponseOneCalendarEventsMax),
   "upcoming": zod.array(zod.object({
   "id": zod.string(),
   "program": zod.enum(['irp', 'genai']),

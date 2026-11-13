@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ChevronLeft, ChevronRight, Download, FileUp, Plus, Trash2, X } from "lucide-react";
+import { listAdminCalendarRevisions, restoreAdminCalendarRevision, type CalendarRevision, type ProgramBoardDocument } from "@workspace/api-client-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Download, FileUp, History, Loader2, Plus, Trash2, X } from "lucide-react";
 import {
   CSV_MAX_BYTES,
   CSV_MAX_ROWS,
@@ -32,9 +33,21 @@ type Preview = { fileName: string; events: CalendarEvent[]; errors: CsvRowError[
 
 export function MonthlyCalendarEditor({
   events,
+  apiKey,
+  updatedAt,
+  author,
+  dirty,
+  onAuthorChange,
+  onRestored,
   onEvents,
 }: {
   events: CalendarEvent[];
+  apiKey: string;
+  updatedAt: string | null;
+  author: string;
+  dirty: boolean;
+  onAuthorChange: (author: string) => void;
+  onRestored: (board: ProgramBoardDocument) => void;
   onEvents: (events: CalendarEvent[]) => void;
 }) {
   const now = new Date();
@@ -46,6 +59,11 @@ export function MonthlyCalendarEditor({
   const [fileError, setFileError] = useState("");
   const [focusId, setFocusId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [revisions, setRevisions] = useState<CalendarRevision[]>([]);
+  const [selectedRevision, setSelectedRevision] = useState<CalendarRevision | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [restoring, setRestoring] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadVersionRef = useRef(0);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -80,6 +98,27 @@ export function MonthlyCalendarEditor({
     setPage((current) => Math.min(current, pageCount));
   }, [pageCount]);
 
+  useEffect(() => {
+    let active = true;
+    setHistoryLoading(true);
+    setHistoryError("");
+    setSelectedRevision(null);
+    void listAdminCalendarRevisions(
+      { month: monthPrefix(year, month) },
+      { headers: { "x-api-key": apiKey.trim() }, cache: "no-store" },
+    ).then((items) => {
+      if (active) {
+        if (!Array.isArray(items)) throw new Error("The revision history response was invalid.");
+        setRevisions(items);
+      }
+    }).catch((err: unknown) => {
+      const e = err as { data?: { error?: string }; message?: string } | null;
+      if (active) setHistoryError(e?.data?.error || e?.message || "Could not load revision history.");
+    }).finally(() => {
+      if (active) setHistoryLoading(false);
+    });
+    return () => { active = false; };
+  }, [apiKey, month, updatedAt, year]);
   function shift(delta: number) {
     uploadVersionRef.current++;
     const d = new Date(year, month + delta, 1);
@@ -153,6 +192,42 @@ export function MonthlyCalendarEditor({
     }
   }
 
+  const currentMonthEvents = events.filter((event) => event.date.startsWith(`${monthPrefix(year, month)}-`));
+  const selectedEvents = selectedRevision?.events ?? [];
+  const sameAsSelected = selectedRevision
+    ? JSON.stringify([...currentMonthEvents].sort((a, b) => a.id.localeCompare(b.id))) ===
+      JSON.stringify([...selectedEvents].sort((a, b) => a.id.localeCompare(b.id)))
+    : false;
+
+  async function restoreSelectedRevision() {
+    if (!selectedRevision || dirty || restoring || sameAsSelected) return;
+    const confirmedRestore = window.confirm(
+      `Restore ${monthLabel} to the version saved ${new Date(selectedRevision.createdAt).toLocaleString()} by ${selectedRevision.author}? This replaces only ${monthLabel}; other months and GenAI Program content stay unchanged.`,
+    );
+    if (!confirmedRestore) return;
+    setRestoring(true);
+    setHistoryError("");
+    try {
+      const board = await restoreAdminCalendarRevision(
+        selectedRevision.id,
+        { month: monthPrefix(year, month), expectedUpdatedAt: updatedAt },
+        {
+          headers: {
+            "x-api-key": apiKey.trim(),
+            "x-calendar-author": author.trim() || "Admin",
+          },
+        },
+      );
+      onRestored(board);
+      setSelectedRevision(null);
+    } catch (err) {
+      const e = err as { data?: { error?: string }; message?: string } | null;
+      setHistoryError(e?.data?.error || e?.message || "Could not restore this revision.");
+    } finally {
+      setRestoring(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-[#eaecf0] bg-[#f9fafb] p-3">
@@ -180,6 +255,19 @@ export function MonthlyCalendarEditor({
           <span className="font-bold text-[#101828]">{monthEvents.length}</span> in {monthLabel} · {otherCount} in other months · {events.length}/1000 total
         </p>
       </div>
+      <label className="block max-w-xs text-[11px] font-semibold text-[#667085]">
+        Change author
+        <input
+          type="text"
+          maxLength={80}
+          value={author}
+          onChange={(event) => onAuthorChange(event.target.value)}
+          placeholder="Admin"
+          data-testid="input-calendar-author"
+          className="mt-1 w-full rounded-lg border border-[#d0d5dd] bg-white px-2.5 py-1.5 text-sm font-medium text-[#101828]"
+        />
+        <span className="mt-1 block font-normal">This name is recorded with saved calendar revisions.</span>
+      </label>
 
       <section className="space-y-3 rounded-xl border border-dashed border-[#d6bbfb] bg-[#fcfaff] p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -318,6 +406,88 @@ export function MonthlyCalendarEditor({
           })
         )}
       </section>
+
+      <section className="space-y-3 rounded-xl border border-[#eaecf0] bg-white p-4" data-testid="panel-calendar-revision-history">
+        <div className="flex items-start gap-2">
+          <History className="mt-0.5 h-4 w-4 text-[#6941c6]" />
+          <div>
+            <h3 className="text-sm font-extrabold text-[#101828]">{monthLabel} revision history</h3>
+            <p className="mt-0.5 text-xs text-[#667085]">Compare a saved version with the current month before restoring it.</p>
+          </div>
+        </div>
+        {historyError ? <p role="alert" data-testid="text-calendar-history-error" className="text-xs font-semibold text-[#b42318]">{historyError}</p> : null}
+        {historyLoading ? (
+          <p className="flex items-center gap-2 py-2 text-xs text-[#667085]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading revisions…</p>
+        ) : revisions.length === 0 ? (
+          <p className="text-xs text-[#667085]" data-testid="text-calendar-history-empty">No saved revisions for {monthLabel} yet. A starting version is recorded the first time this month changes.</p>
+        ) : (
+          <div className="space-y-2" data-testid="list-calendar-revisions">
+            {revisions.map((revision) => (
+              <button
+                key={revision.id}
+                type="button"
+                aria-pressed={selectedRevision?.id === revision.id}
+                data-testid={`button-calendar-revision-${revision.id}`}
+                onClick={() => setSelectedRevision(revision)}
+                className={`flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left ${selectedRevision?.id === revision.id ? "border-[#6941c6] bg-[#fcfaff]" : "border-[#eaecf0] bg-white"}`}
+              >
+                <span>
+                  <span className="block text-xs font-bold text-[#101828]">{new Date(revision.createdAt).toLocaleString()}</span>
+                  <span className="block text-[11px] text-[#667085]">By {revision.author} · {revision.events.length} {revision.events.length === 1 ? "assessment" : "assessments"}</span>
+                </span>
+                <span className="text-[11px] font-semibold text-[#6941c6]">{selectedRevision?.id === revision.id ? "Compared" : "Compare"}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {selectedRevision ? (
+          <div className="space-y-3 rounded-lg border border-[#d6bbfb] bg-[#fcfaff] p-3" data-testid="panel-calendar-revision-comparison">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ComparisonList title={`Current ${monthLabel}`} events={currentMonthEvents} />
+              <ComparisonList
+                title={`Saved ${new Date(selectedRevision.createdAt).toLocaleDateString()} by ${selectedRevision.author}`}
+                events={selectedEvents}
+              />
+            </div>
+            {sameAsSelected ? (
+              <p className="text-xs font-semibold text-[#067647]">This revision already matches the current month.</p>
+            ) : (
+              <p className="text-xs text-[#667085]">Restoring replaces this month only. Other months and GenAI Program content remain unchanged.</p>
+            )}
+            {dirty ? <p className="text-xs font-semibold text-[#b54708]">Save or discard your unsaved edits before restoring a revision.</p> : null}
+            <button
+              type="button"
+              disabled={sameAsSelected || dirty || restoring}
+              data-testid="button-restore-calendar-revision"
+              onClick={() => void restoreSelectedRevision()}
+              className="rounded-lg bg-[#b42318] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {restoring ? "Restoring…" : `Restore ${monthLabel} version`}
+            </button>
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function ComparisonList({ title, events }: { title: string; events: CalendarEvent[] }) {
+  return (
+    <div className="min-w-0 rounded-md border border-[#eaecf0] bg-white p-3">
+      <h4 className="text-xs font-bold text-[#101828]">{title}</h4>
+      {events.length === 0 ? (
+        <p className="mt-2 text-xs text-[#667085]">No assessments.</p>
+      ) : (
+        <ul className="mt-2 max-h-48 space-y-2 overflow-auto">
+          {events.map((event) => (
+            <li key={event.id} className="border-t border-[#f2f4f7] pt-2 text-xs">
+              <p className="font-semibold text-[#101828]">{event.date} · {event.label}</p>
+              <p className="text-[#667085]">{PROGRAM_NAME[event.program]}{event.mode ? ` · ${MODE_NAME[event.mode]}` : ""}</p>
+              {event.link ? <p className="truncate text-[#6941c6]">{event.link}</p> : null}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

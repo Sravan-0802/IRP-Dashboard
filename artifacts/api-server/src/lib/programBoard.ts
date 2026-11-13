@@ -1,5 +1,5 @@
 import { db, pool, programBoardTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { ProgramBoardDocument } from "@workspace/api-zod";
 
 const ROW_ID = 1;
@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS program_board (
   payload text NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS program_board_calendar_revisions (
+  id bigserial PRIMARY KEY,
+  month text NOT NULL CHECK (month ~ '^\\d{4}-(0[1-9]|1[0-2])$'),
+  events jsonb NOT NULL,
+  author text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  board_updated_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS program_board_calendar_revisions_month_created_idx
+  ON program_board_calendar_revisions (month, created_at DESC, id DESC);
 `;
 
 let ensureTablePromise: Promise<void> | null = null;
@@ -72,6 +82,13 @@ export const PROGRAM_BOARD_DEFAULTS: ProgramBoardContent = {
 };
 
 export type ProgramBoardResponse = ProgramBoardContent & { updatedAt: string | null };
+export type CalendarRevision = {
+  id: string;
+  month: string;
+  events: ProgramBoardContent["calendar"]["events"];
+  author: string;
+  createdAt: string;
+};
 
 function text(value: unknown, max = MAX_TEXT): string {
   if (typeof value !== "string") return "";
@@ -295,28 +312,232 @@ export class ProgramBoardConflictError extends Error {
   }
 }
 
-export async function updateProgramBoard(board: ProgramBoardContent, expectedUpdatedAt?: string | null): Promise<ProgramBoardResponse> {
-  await ensureProgramBoardTable();
+export class ProgramBoardRevisionNotFoundError extends Error {
+  constructor() {
+    super("Calendar revision not found.");
+    this.name = "ProgramBoardRevisionNotFoundError";
+  }
+}
+
+export class ProgramBoardRevisionConflictError extends Error {
+  constructor() {
+    super("This revision contains an assessment ID now used in another month. Resolve that entry before restoring.");
+    this.name = "ProgramBoardRevisionConflictError";
+  }
+}
+
+type StoredProgramBoard = { board: ProgramBoardContent; updatedAt: Date | null };
+type ProgramBoardClient = {
+  query: <T = Record<string, unknown>>(text: string, values?: unknown[]) => Promise<{ rows: T[] }>;
+  release: () => void;
+};
+
+function storedBoard(payload: unknown, updatedAt: Date | null): StoredProgramBoard {
+  if (payload == null) return { board: PROGRAM_BOARD_DEFAULTS, updatedAt: null };
+  const raw = typeof payload === "string" ? JSON.parse(payload) : payload;
+  const parsed = parseProgramBoardBody(raw);
+  if (!parsed.ok) throw new Error(`Stored program board is invalid: ${parsed.error}`);
+  return { board: parsed.board, updatedAt };
+}
+
+function eventsForMonth(board: ProgramBoardContent, month: string) {
+  return board.calendar.events.filter((event) => event.date.startsWith(`${month}-`));
+}
+
+function changedMonths(before: ProgramBoardContent, after: ProgramBoardContent): string[] {
+  const months = new Set<string>();
+  for (const event of [...before.calendar.events, ...after.calendar.events]) {
+    if (/^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(event.date)) months.add(event.date.slice(0, 7));
+  }
+  return [...months].filter((month) =>
+    JSON.stringify(eventsForMonth(before, month)) !== JSON.stringify(eventsForMonth(after, month)),
+  );
+}
+
+function authorLabel(author: unknown): string {
+  return typeof author === "string" && author.trim() ? author.trim().slice(0, 80) : "Admin";
+}
+
+async function readBoardForUpdate(client: ProgramBoardClient): Promise<StoredProgramBoard> {
+  const { rows } = await client.query<{ payload: string; updatedAt: Date }>(
+    'SELECT payload, updated_at AS "updatedAt" FROM program_board WHERE id = $1 FOR UPDATE',
+    [ROW_ID],
+  );
+  const row = rows[0];
+  return row ? storedBoard(row.payload, row.updatedAt) : storedBoard(null, null);
+}
+
+function assertExpectedVersion(current: StoredProgramBoard, expectedUpdatedAt?: string | null): void {
+  if (expectedUpdatedAt === undefined) return;
+  const expected = expectedUpdatedAt === null ? null : Date.parse(expectedUpdatedAt);
+  const actual = current.updatedAt?.getTime() ?? null;
+  if (expected !== actual) throw new ProgramBoardConflictError();
+}
+
+async function ensureMonthBaseline(
+  client: ProgramBoardClient,
+  month: string,
+  before: StoredProgramBoard,
+  fallbackCreatedAt: Date,
+): Promise<void> {
+  const { rows } = await client.query<{ exists: boolean }>(
+    "SELECT EXISTS (SELECT 1 FROM program_board_calendar_revisions WHERE month = $1) AS exists",
+    [month],
+  );
+  if (rows[0]?.exists) return;
+  await client.query(
+    `INSERT INTO program_board_calendar_revisions
+      (month, events, author, created_at, board_updated_at)
+     VALUES ($1, $2::jsonb, $3, $4, $5)`,
+    [
+      month,
+      JSON.stringify(eventsForMonth(before.board, month)),
+      "Before history tracking",
+      before.updatedAt ?? fallbackCreatedAt,
+      before.updatedAt,
+    ],
+  );
+}
+
+async function saveBoardInTransaction(
+  client: ProgramBoardClient,
+  before: StoredProgramBoard,
+  board: ProgramBoardContent,
+  author: unknown,
+): Promise<ProgramBoardResponse> {
+  const changed = changedMonths(before.board, board);
+  const { rows: clockRows } = await client.query<{ savedAt: Date }>(
+    `SELECT greatest(
+       clock_timestamp(),
+       COALESCE($1::timestamptz + interval '1 millisecond', '-infinity'::timestamptz)
+     ) AS "savedAt"`,
+    [before.updatedAt],
+  );
+  const savedAt = clockRows[0]?.savedAt ?? new Date();
+  for (const month of changed) {
+    await ensureMonthBaseline(client, month, before, savedAt);
+  }
   const payload = JSON.stringify(board);
-  const [row] = await db
-    .insert(programBoardTable)
-    .values({ id: ROW_ID, payload })
-    .onConflictDoUpdate({
-      target: programBoardTable.id,
-      set: {
-        payload,
-        // Advance at least one millisecond so a second save cannot reuse the
-        // version returned to another admin moments earlier.
-        updatedAt: sql`greatest(clock_timestamp(), ${programBoardTable.updatedAt} + interval '1 millisecond')`,
-      },
-      // JS timestamps use milliseconds, while legacy Postgres defaults retain microseconds.
-      ...(expectedUpdatedAt === undefined ? {} : {
-        setWhere: expectedUpdatedAt === null
-          ? sql`false`
-          : sql`date_trunc('milliseconds', ${programBoardTable.updatedAt}) = ${expectedUpdatedAt}::timestamptz`,
-      }),
-    })
-    .returning();
-  if (!row) throw new ProgramBoardConflictError();
-  return toResponse(board, row.updatedAt);
+  const { rows } = await client.query<{ updatedAt: Date }>(
+    `INSERT INTO program_board (id, payload, updated_at)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = EXCLUDED.updated_at
+     RETURNING updated_at AS "updatedAt"`,
+    [ROW_ID, payload, savedAt],
+  );
+  const updatedAt = rows[0]?.updatedAt ?? savedAt;
+  for (const month of changed) {
+    await client.query(
+      `INSERT INTO program_board_calendar_revisions
+        (month, events, author, created_at, board_updated_at)
+       VALUES ($1, $2::jsonb, $3, $4, $4)`,
+      [month, JSON.stringify(eventsForMonth(board, month)), authorLabel(author), updatedAt],
+    );
+  }
+  return toResponse(board, updatedAt);
+}
+
+export async function updateProgramBoard(
+  board: ProgramBoardContent,
+  expectedUpdatedAt?: string | null,
+  author?: unknown,
+): Promise<ProgramBoardResponse> {
+  await ensureProgramBoardTable();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock($1, $2)", [71942, ROW_ID]);
+    const before = await readBoardForUpdate(client);
+    assertExpectedVersion(before, expectedUpdatedAt);
+    const result = await saveBoardInTransaction(client, before, board, author);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function listCalendarRevisions(month: string): Promise<CalendarRevision[]> {
+  await ensureProgramBoardTable();
+  const { rows } = await pool.query<{
+    id: string;
+    month: string;
+    events: unknown;
+    author: string;
+    createdAt: Date;
+  }>(
+    `SELECT id::text, month, events, author, created_at AS "createdAt"
+     FROM program_board_calendar_revisions
+     WHERE month = $1
+     ORDER BY created_at DESC, id DESC`,
+    [month],
+  );
+  return rows.map((row) => {
+    const storedEvents = typeof row.events === "string" ? JSON.parse(row.events) : row.events;
+    const parsed = parseCalendar({ events: storedEvents, upcoming: [] });
+    if (!parsed) throw new Error(`Stored calendar revision ${row.id} is invalid`);
+    return {
+      id: row.id,
+      month: row.month,
+      events: parsed.events,
+      author: row.author,
+      createdAt: row.createdAt.toISOString(),
+    };
+  });
+}
+
+export async function restoreCalendarRevision(
+  revisionId: string,
+  month: string,
+  expectedUpdatedAt: string | null,
+  author?: unknown,
+): Promise<ProgramBoardResponse> {
+  await ensureProgramBoardTable();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock($1, $2)", [71942, ROW_ID]);
+    const before = await readBoardForUpdate(client);
+    assertExpectedVersion(before, expectedUpdatedAt);
+    const { rows } = await client.query<{ events: unknown }>(
+      "SELECT events FROM program_board_calendar_revisions WHERE id = $1 AND month = $2",
+      [revisionId, month],
+    );
+    if (!rows[0]) throw new ProgramBoardRevisionNotFoundError();
+    const targetEvents = typeof rows[0].events === "string" ? JSON.parse(rows[0].events) : rows[0].events;
+    const targetCalendar = parseCalendar({ events: targetEvents, upcoming: [] });
+    if (!targetCalendar) throw new Error(`Stored calendar revision ${revisionId} is invalid`);
+    const otherMonthIds = new Set(
+      before.board.calendar.events
+        .filter((event) => !event.date.startsWith(`${month}-`))
+        .map((event) => event.id),
+    );
+    if (targetCalendar.events.some((event) => otherMonthIds.has(event.id))) {
+      throw new ProgramBoardRevisionConflictError();
+    }
+    const nextEvents = [
+      ...before.board.calendar.events.filter((event) => !event.date.startsWith(`${month}-`)),
+      ...targetCalendar.events,
+    ];
+    const parsed = parseProgramBoardBody({
+      ...before.board,
+      calendar: { ...before.board.calendar, events: nextEvents },
+    });
+    if (!parsed.ok) throw new Error(`Restored program board is invalid: ${parsed.error}`);
+    if (changedMonths(before.board, parsed.board).length === 0) {
+      await client.query("COMMIT");
+      return toResponse(before.board, before.updatedAt);
+    }
+    const result = await saveBoardInTransaction(client, before, parsed.board, author);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
