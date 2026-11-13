@@ -208,6 +208,12 @@ export function Hero({
       pipelineStage = settings.feProjectResults || feCleared ? "human_interview_active" : "fe_project_active";
     }
 
+    // The Level 1 stage cards below already show this progress. Keep a banner only
+    // while it carries the live Human Interview link, which appears nowhere else.
+    if (!(pipelineStage === "human_interview_active" && humanInterviewGrantUrl)) {
+      return null;
+    }
+
     if (
       feCleared &&
       !settings.humanInterviewResults &&
@@ -430,7 +436,7 @@ export function Hero({
       >
         <div className="text-5xl">🎉</div>
         <h2 className="mt-3 font-display text-3xl font-extrabold text-ink">You're placed!</h2>
-        <p className="mt-2 text-sm text-muted2">Congratulations on completing the IRP 2.0 journey.</p>
+        <p className="mt-2 text-sm text-muted2">Congratulations on completing the IRP journey.</p>
       </div>
     );
   }

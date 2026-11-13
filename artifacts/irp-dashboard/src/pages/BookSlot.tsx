@@ -3,7 +3,9 @@ import { Calendar, Clock, Trophy, CheckCircle2, CalendarCheck } from "lucide-rea
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard } from "@/components/irp/ui";
 import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
+import type { Journey } from "@/lib/journey";
 import { AssessmentCalendarBoard } from "./AssessmentCalendarBoard";
+import { AssessmentsHub } from "./AssessmentsHub";
 import {
   L1_JULY26_HUSTLER_CALENDAR,
   L1_JULY26_HUSTLER_SLOTS,
@@ -144,7 +146,7 @@ function AssessmentCalendarContent() {
           {registration ? <L1RegistrationSuccess record={registration} calendar={calendar} /> : null}
 
           <p className="text-xs text-muted2">
-            The assessment link will be shared on exam day via the Assessments Hub. Attempt the mock assessment before
+            The assessment link will be shared on exam day at the top of this page. Attempt the mock assessment before
             the Hustler exam.
           </p>
         </div>
@@ -220,7 +222,7 @@ function SlotConfirmedContent({ registration }: { registration: L1RegistrationRe
         <L1RegistrationSuccess record={bookedRecord} calendar={calendar} />
 
         <p className="text-xs text-muted2">
-          The assessment link will be shared on exam day via the Assessments Hub.
+          The assessment link will be shared on exam day at the top of this page.
         </p>
       </div>
     </IrpCard>
@@ -228,9 +230,13 @@ function SlotConfirmedContent({ registration }: { registration: L1RegistrationRe
 }
 
 export function BookSlot({
+  level = 1,
+  journey,
   assessments = [],
   userId,
 }: {
+  level?: 1 | 2 | 3;
+  journey?: Journey;
   assessments?: AssessmentResult[];
   userId?: string;
 }) {
@@ -242,7 +248,8 @@ export function BookSlot({
   const showCalendar = isCandidate && !cleared && registrationOpen;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <AssessmentsHub level={level} assessments={assessments} journey={journey} userId={userId ?? ""} />
       <AssessmentCalendarBoard />
       {showCalendar ? <AssessmentCalendarContent /> : null}
     </div>

@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowRight,
   Award,
   Braces,
   Blocks,
@@ -13,14 +12,13 @@ import {
   Crown,
   FileQuestion,
   Gauge,
+  GraduationCap,
   Layers,
-  Rocket,
   Sparkles,
   Target,
   Timer,
   TrendingUp,
   UserRound,
-  Zap,
 } from "lucide-react";
 import {
   Accordion,
@@ -43,7 +41,182 @@ type Level = {
   assessment: string[];
   post: string[];
   outcome: string;
+  assessmentLabel?: string;
+  postLabel?: string;
 };
+
+type Track = "mern" | "genai";
+
+const GENAI_STAGES: Level[] = [
+  {
+    id: "G1",
+    step: "Stage 1",
+    title: "GenAI Assessments",
+    tagline: "Mock + Main",
+    icon: FileQuestion,
+    accent: "#175cd3",
+    accentSoft: "#eff8ff",
+    accentText: "#175cd3",
+    summary: "Show your skills and potential through GenAI.",
+    assessment: ["MCQ section · 30 marks", "Coding section · 50 marks", "Attempt the mock first, then the main assessment"],
+    postLabel: "To move on",
+    post: ["Clear the qualifying marks in both MCQ and coding"],
+    outcome: "Qualify to unlock the GenAI project",
+  },
+  {
+    id: "G2",
+    step: "Stage 2",
+    title: "Project Submission",
+    tagline: "Kaggle",
+    icon: Braces,
+    accent: "#7f56d9",
+    accentSoft: "#f4f3ff",
+    accentText: "#6941c6",
+    summary: "Build RAG projects on Kaggle and walk us through one of them.",
+    assessmentLabel: "Choose any 2",
+    assessment: ["Intelligent RAG Challenge", "Agentic RAG Challenge", "Building & Optimizing RAG Challenge"],
+    postLabel: "Then submit",
+    post: ["Loom video walkthrough for one of your 2 projects"],
+    outcome: "Your project is evaluated before the interview",
+  },
+  {
+    id: "G3",
+    step: "Stage 3",
+    title: "Human Interview",
+    tagline: "Final round",
+    icon: UserRound,
+    accent: "#039855",
+    accentSoft: "#ecfdf3",
+    accentText: "#067647",
+    summary: "Opens after your GenAI project is evaluated.",
+    assessmentLabel: "Before your interview",
+    assessment: [
+      "Book your slot from the Interview Slot Selection email",
+      "Follow the Pre-Interview Checklist",
+      "Complete the Self-Declaration with the panelist",
+    ],
+    post: [],
+    outcome: "Integrity Score is part of your evaluation",
+  },
+];
+
+type TrackInfo = {
+  id: Track;
+  name: string;
+  tagline: string;
+  count: string;
+  icon: LucideIcon;
+  headerBg: string;
+  border: string;
+  steps: Level[];
+};
+
+function TrackPanel({ track }: { track: TrackInfo }) {
+  const TrackIcon = track.icon;
+  return (
+    <div
+      className="animate-pop-in overflow-hidden rounded-2xl border bg-white shadow-[0_8px_30px_rgba(16,24,40,0.05)]"
+      style={{ borderColor: track.border }}
+      data-testid={`home-track-${track.id}`}
+    >
+      <div className="relative overflow-hidden px-5 py-5 text-white sm:px-6" style={{ background: track.headerBg }}>
+        <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/10" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-16 right-16 h-28 w-28 rounded-full bg-white/5" />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+            <TrackIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display text-xl font-bold tracking-tight">{track.name}</h3>
+            <p className="text-sm text-white/80">{track.tagline}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">{track.count}</span>
+        </div>
+      </div>
+
+      <ol className="bg-[#f9fafb] px-4 py-4 sm:px-5 sm:py-5">
+        {track.steps.map((step, index) => {
+          const Icon = step.icon;
+          const last = index === track.steps.length - 1;
+          return (
+            <li key={step.id}>
+              <article
+                className="hover-lift overflow-hidden rounded-xl border border-[#eaecf0] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.06)]"
+                data-testid={`home-step-${step.id}`}
+              >
+                <div className="h-1 w-full" style={{ backgroundColor: step.accent }} />
+                <div className="p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: step.accentSoft, color: step.accent }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">{step.step}</p>
+                      <h4 className="font-display text-base font-bold tracking-tight text-[#101828]">{step.title}</h4>
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    style={{ backgroundColor: step.accentSoft, color: step.accentText }}
+                  >
+                    {step.tagline}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-[#667085]">{step.summary}</p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
+                      {step.assessmentLabel ?? "Assessment"}
+                    </p>
+                    <ul className="mt-1.5 space-y-1">
+                      {step.assessment.map((item) => (
+                        <li key={item} className="flex gap-2 text-[13px] leading-snug text-[#344054]">
+                          <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: step.accent }} />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {step.post.length > 0 ? (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
+                        {step.postLabel ?? "Post assessment"}
+                      </p>
+                      <ul className="mt-1.5 space-y-1">
+                        {step.post.map((item) => (
+                          <li key={item} className="flex gap-2 text-[13px] leading-snug text-[#344054]">
+                            <CheckCircle2 className="mt-[1px] h-3.5 w-3.5 shrink-0 text-[#12b76a]" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+
+                <p className="mt-4 flex items-center gap-1.5 rounded-lg border border-[#eaecf0] bg-[#f9fafb] px-3 py-2 text-xs font-semibold text-[#344054]">
+                  <Award className="h-3.5 w-3.5 shrink-0" style={{ color: step.accent }} />
+                  {step.outcome}
+                </p>
+                </div>
+              </article>
+              {!last ? (
+                <div aria-hidden className="flex justify-center py-1.5">
+                  <span className="h-5 w-0 border-l-2 border-dashed border-[#d0d5dd]" />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
 const LEVELS: Level[] = [
   {
@@ -108,17 +281,33 @@ const LEVELS: Level[] = [
   },
 ];
 
+const TRACKS: Record<Track, TrackInfo> = {
+  mern: {
+    id: "mern",
+    name: "MERN Track",
+    tagline: "Build your industry readiness through IRP.",
+    count: "3 levels",
+    icon: Target,
+    headerBg: "linear-gradient(135deg, #054f31 0%, #039855 100%)",
+    border: "#abefc6",
+    steps: LEVELS,
+  },
+  genai: {
+    id: "genai",
+    name: "GenAI Track",
+    tagline: "Show your skills and potential through GenAI.",
+    count: "3 stages",
+    icon: Sparkles,
+    headerBg: "linear-gradient(135deg, #2d31a6 0%, #6941c6 100%)",
+    border: "#c7d7fe",
+    steps: GENAI_STAGES,
+  },
+};
+
 const STATS: { icon: LucideIcon; value: string; label: string }[] = [
-  { icon: Layers, value: "3", label: "Levels on one path" },
+  { icon: Layers, value: "MERN, GenAI", label: "Two tracks, one goal" },
   { icon: TrendingUp, value: "₹5K–₹25K+", label: "Monthly stipend range" },
   { icon: Building2, value: "Real teams", label: "Not a simulation" },
-];
-
-const WILDCARD_GATES = [
-  "DSA Levels 2, 3 & 4",
-  "Full stack Gen AI",
-  "CodeChef rating > 1600",
-  "Human mock interview",
 ];
 
 const CHECKLIST: { icon: LucideIcon; title: string; detail: string }[] = [
@@ -181,8 +370,8 @@ const L1_ASSESSMENT_SECTIONS = [
 
 const FAQ = [
   {
-    q: "Who is IRP 2.0 for?",
-    a: "IRP 2.0 is built for YOG 2028 and 2029 students who want a structured path from assessments to a paid internship.",
+    q: "Who is IRP for?",
+    a: "IRP (Internship Readiness Program) is built for YOG 2028 and 2029 students who want a structured path from assessments to a paid internship.",
   },
   {
     q: "What is the standard route?",
@@ -234,17 +423,14 @@ export function AboutIrp() {
   return (
     <div className="space-y-8 pb-10">
       <section
-        className="animate-pop-in relative overflow-hidden rounded-2xl px-6 py-8 sm:px-10 sm:py-12"
-        style={{
-          background: "linear-gradient(135deg, #53389e 0%, #6941c6 45%, #7f56d9 100%)",
-        }}
+        className="animate-pop-in relative overflow-hidden rounded-2xl"
+        style={{ background: "linear-gradient(135deg, #53389e 0%, #6941c6 45%, #7f56d9 100%)" }}
       >
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.18]"
           style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 0)",
+            backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 0)",
             backgroundSize: "22px 22px",
           }}
         />
@@ -257,10 +443,10 @@ export function AboutIrp() {
           className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-[#f79009]/20 blur-3xl"
         />
 
-        <div className="relative">
+        <div className="relative px-6 py-8 sm:px-10 sm:py-12">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
             <Sparkles className="h-3.5 w-3.5" />
-            Internship Readiness Path 2.0
+            IRP - Internship Readiness Program
           </span>
 
           <h1 className="mt-4 max-w-2xl font-display text-3xl font-bold leading-[1.15] tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
@@ -293,88 +479,24 @@ export function AboutIrp() {
       <section>
         <SectionHeading
           eyebrow="The journey"
-          title="Three levels. One path."
-          description="Each level has an assessment, then post-assessment rounds you must clear to move forward."
+          title="Two tracks. One goal."
+          description="Pick your path. Both lead to internship readiness."
         />
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {LEVELS.map((level, i) => {
-            const Icon = level.icon;
-            return (
-              <IrpCard
-                key={level.id}
-                className="hover-lift animate-pop-in relative flex h-full flex-col overflow-hidden"
-                style={{ animationDelay: `${i * 70}ms` }}
-              >
-                <div className="h-1 w-full" style={{ backgroundColor: level.accent }} />
-
-                <div className="flex flex-1 flex-col p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: level.accentSoft, color: level.accent }}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span
-                      className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                      style={{ backgroundColor: level.accentSoft, color: level.accentText }}
-                    >
-                      {level.tagline}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
-                    {level.step}
-                  </p>
-                  <h3 className="mt-0.5 font-display text-lg font-bold tracking-tight text-[#101828]">
-                    {level.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#667085]">{level.summary}</p>
-
-                  <div className="mt-5 space-y-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
-                        Assessment
-                      </p>
-                      <ul className="mt-2 space-y-1.5">
-                        {level.assessment.map((item) => (
-                          <li key={item} className="flex gap-2 text-[13px] leading-relaxed text-[#344054]">
-                            <span
-                              className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: level.accent }}
-                            />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
-                        Post assessment
-                      </p>
-                      <ul className="mt-2 space-y-1.5">
-                        {level.post.map((item) => (
-                          <li key={item} className="flex gap-2 text-[13px] leading-relaxed text-[#344054]">
-                            <CheckCircle2 className="mt-[2px] h-3.5 w-3.5 shrink-0 text-[#12b76a]" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="mt-auto pt-5">
-                    <div className="flex items-center gap-2 rounded-lg border border-[#eaecf0] bg-[#f9fafb] px-3 py-2.5">
-                      <Award className="h-4 w-4 shrink-0" style={{ color: level.accent }} />
-                      <p className="text-[13px] font-semibold text-[#344054]">{level.outcome}</p>
-                    </div>
-                  </div>
-                </div>
-              </IrpCard>
-            );
-          })}
+        <div className="relative grid gap-4 lg:grid-cols-2 lg:gap-8">
+          <TrackPanel track={TRACKS.mern} />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-10 z-10 hidden -translate-x-1/2 flex-col items-center lg:flex"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#f9fafb] bg-[#101828] text-white shadow-lg">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            <span className="mt-1.5 rounded-full bg-[#101828] px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">
+              IRP
+            </span>
+          </div>
+          <TrackPanel track={TRACKS.genai} />
         </div>
       </section>
 
@@ -455,73 +577,6 @@ export function AboutIrp() {
             </div>
           </IrpCard>
         </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-5">
-        <IrpCard className="relative overflow-hidden border-[#e9d7fe] p-6 lg:col-span-3">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#f4ebff] blur-2xl"
-          />
-          <div className="relative">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6941c6] text-white">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6941c6]">
-                  Route 2
-                </p>
-                <h3 className="font-display text-lg font-bold tracking-tight text-[#101828]">
-                  The Wildcard
-                </h3>
-              </div>
-            </div>
-
-            <p className="mt-4 text-sm leading-relaxed text-[#667085]">
-              Think you are top 1%? Skip Level 1 and Level 2 and go straight for Infinite Aura — if
-              you can clear all four eligibility gates.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {WILDCARD_GATES.map((gate) => (
-                <span
-                  key={gate}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#e9d7fe] bg-[#f9f5ff] px-3 py-1.5 text-xs font-semibold text-[#6941c6]"
-                >
-                  <Target className="h-3.5 w-3.5" />
-                  {gate}
-                </span>
-              ))}
-            </div>
-          </div>
-        </IrpCard>
-
-        <IrpCard className="flex flex-col justify-center gap-4 p-6 lg:col-span-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#ecfdf3] text-[#039855]">
-            <Rocket className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="font-display text-base font-bold tracking-tight text-[#101828]">
-              After Level 2, you choose
-            </h3>
-            <p className="mt-1 text-sm leading-relaxed text-[#667085]">
-              Take an internship offer worth ₹5K–₹15K a month, or keep pushing for Infinite Aura and
-              ₹25K+ with mentorship from senior engineers.
-            </p>
-          </div>
-          <div className="space-y-2">
-            {["Take the internship", "Push for the top"].map((option) => (
-              <div
-                key={option}
-                className="flex items-center justify-between rounded-lg border border-[#eaecf0] bg-[#f9fafb] px-3 py-2.5"
-              >
-                <span className="text-[13px] font-semibold text-[#344054]">{option}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-[#98a2b3]" />
-              </div>
-            ))}
-          </div>
-        </IrpCard>
       </section>
 
       <section>

@@ -210,7 +210,7 @@ export function L1RegistrationModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
           <QuestionCard step={1} title="Availability">
             <p className="mb-3 text-sm leading-relaxed text-muted2">
-              Are you available to attend the Internship Readiness Path 2.0 Assessment?
+              Are you available to attend the Internship Readiness Program (IRP) Assessment?
             </p>
             <select
               id="l1-availability"
@@ -266,7 +266,7 @@ export function L1RegistrationModal({
                 <p className="mt-3 rounded-xl border border-[rgba(245,159,0,0.3)] bg-[#fff9db] px-4 py-3 text-xs leading-relaxed text-[#9c6500]">
                   Please note that if you register for the assessment and do not attend without prior communication, it
                   may adversely impact your eligibility for future opportunities. Attendance for assessments is taken
-                  very seriously under IRP 2.0, and all absences are recorded.
+                  very seriously under IRP, and all absences are recorded.
                 </p>
               </QuestionCard>
             </>

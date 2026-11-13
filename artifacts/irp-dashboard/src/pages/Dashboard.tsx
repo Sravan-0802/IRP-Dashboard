@@ -24,7 +24,6 @@ import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { NocFormCard } from "@/components/irp/NocFormCard";
-import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import { AboutIrp } from "./AboutIrp";
 import { GenAiProgram } from "./GenAiProgram";
@@ -69,8 +68,6 @@ export default function Dashboard() {
   const navigate = (key: PageKey) => {
     if (key === "dashboard") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_DASHBOARD);
-    } else if (key === "assessments") {
-      trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENTS_HUB);
     } else if (key === "slot") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENT_CALENDAR);
     }
@@ -80,15 +77,6 @@ export default function Dashboard() {
   function openFeedback() {
     trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.FEEDBACK_OPEN);
     setFeedbackOpen(true);
-  }
-
-  function openContactUs() {
-    trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.CONTACT_US_CLICK);
-    setMobileOpen(false);
-    navigate("dashboard");
-    setTimeout(() => {
-      document.getElementById("contact-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
   }
 
   const displayStudent = student ?? (studentError ? DEMO_STUDENT : null);
@@ -183,7 +171,6 @@ export default function Dashboard() {
           active={page}
           onNavigate={navigate}
           onOpenFeedback={openFeedback}
-          onOpenContact={openContactUs}
         />
       </aside>
 
@@ -203,7 +190,6 @@ export default function Dashboard() {
               active={page}
               onNavigate={(k) => { navigate(k); setMobileOpen(false); }}
               onOpenFeedback={() => { setMobileOpen(false); openFeedback(); }}
-              onOpenContact={() => { openContactUs(); }}
             />
           </div>
         </div>
@@ -214,7 +200,7 @@ export default function Dashboard() {
           <button type="button" onClick={() => setMobileOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#eaecf0] bg-white text-[#6941c6]">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-display text-base font-extrabold text-ink">IRP 2.0</span>
+          <span className="truncate font-display text-base font-extrabold text-ink">IRP - Internship Readiness Program</span>
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16">
@@ -246,15 +232,14 @@ export default function Dashboard() {
             {page === "genai" && (
               <GenAiProgram />
             )}
-            {page === "assessments" && (
-              <AssessmentsHub
+            {page === "slot" && (
+              <BookSlot
                 level={getLevel(journey.journeyState)}
-                assessments={displayAssessments}
                 journey={journey}
+                assessments={displayAssessments}
                 userId={userId}
               />
             )}
-            {page === "slot" && <BookSlot assessments={displayAssessments} userId={userId} />}
             {page === "guidelines" && (
               <GuidelineDocs
                 journey={journey}
@@ -262,7 +247,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
-            {page === "about" && <AboutIrp />}
+            {page === "home" && <AboutIrp />}
           </div>
         </main>
       </div>

@@ -375,8 +375,8 @@ function assessmentsFromRoundWise(
     out.push({
       organisationAssessmentId: ROUND_WISE_HUSTLER_ORG_ID,
       assessmentTitle: num
-        ? `IRP 2.0 L1 Hustler Assessment ${num}`
-        : "IRP 2.0 L1 Hustler Assessment",
+        ? `IRP L1 Hustler Assessment ${num}`
+        : "IRP L1 Hustler Assessment",
       assessmentTag: num,
       level: "L1",
       cycle: num,
@@ -417,8 +417,8 @@ function assessmentsFromRoundWise(
     out.push({
       organisationAssessmentId: ROUND_WISE_FE_ORG_ID,
       assessmentTitle: num
-        ? `IRP 2.0 FE Project ${num}`
-        : "IRP 2.0 FE Project",
+        ? `IRP FE Project ${num}`
+        : "IRP FE Project",
       assessmentTag: num,
       level: "L1 FE-PROJECT",
       cycle: num,

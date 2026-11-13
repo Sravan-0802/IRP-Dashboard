@@ -12,10 +12,10 @@ export default function Onboarding() {
     <div className="flex min-h-[100dvh] flex-col items-center justify-center px-4 py-10">
       <div className="mb-8 text-center">
         <span className="font-display text-sm font-bold uppercase tracking-[0.3em] text-brand">
-          IRP 2.0
+          Internship Readiness Program
         </span>
         <h1 className="mt-2 font-display text-3xl font-extrabold text-ink sm:text-4xl">
-          Welcome to IRP 2.0
+          Welcome to IRP
         </h1>
         <p className="mt-2 text-sm text-muted2">
           Here's how your journey is structured. Let's get started.

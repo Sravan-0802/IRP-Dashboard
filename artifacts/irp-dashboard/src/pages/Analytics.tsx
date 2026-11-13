@@ -789,7 +789,7 @@ export default function AnalyticsPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#6741d9]/70">IRP 2.0</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#6741d9]/70">IRP</p>
             <h1 className="mt-1 font-display text-2xl font-extrabold text-[#0d1117] sm:text-3xl">
               Dashboard Analytics
             </h1>

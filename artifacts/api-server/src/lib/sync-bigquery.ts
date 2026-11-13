@@ -847,6 +847,10 @@ export async function runBigQuerySync(): Promise<SyncResult> {
     } catch (err) {
       logger.error({ err }, "Failed to refresh app-owned L1 assessment statuses after BigQuery sync");
     }
+    // Dual-write: keep the new irp_v2 tables in step with the old ones (no-op until irp_v2 exists).
+    // refreshIrpV2 never throws, so the old sync result is unaffected.
+    const { refreshIrpV2 } = await import("./irpV2Refresh");
+    await refreshIrpV2();
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {
     syncInProgress = false;

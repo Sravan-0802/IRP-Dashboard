@@ -1,4 +1,4 @@
-/** Registered students for IRP 2.0 L1 Mock Assessment (25 Jul 2026). */
+/** Registered students for IRP L1 Mock Assessment (25 Jul 2026). */
 const L1_JULY25_MOCK_ALLOWLIST = new Set<string>([
   "6cf79dcc-0f21-42cf-b1e7-3e1c2c9a35b1",
   "e6c3700f-fe59-43de-b5a7-ab1d74f5fdf1",

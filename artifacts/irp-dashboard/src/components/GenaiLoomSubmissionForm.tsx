@@ -22,6 +22,7 @@ function isValidLoomUrl(value: string): boolean {
 
 export function GenaiLoomSubmissionForm({
   projectTitle,
+  allProjects,
   availableProjects,
   onProjectChange,
   submission,
@@ -35,6 +36,8 @@ export function GenaiLoomSubmissionForm({
   onResetSaveState,
 }: {
   projectTitle: string | null;
+  /** Every GenAI project title; only `availableProjects` can be picked. */
+  allProjects: readonly string[];
   availableProjects: string[];
   onProjectChange: (title: string) => void;
   submission: LoomSubmissionRecord | null;
@@ -51,6 +54,7 @@ export function GenaiLoomSubmissionForm({
   const [validationError, setValidationError] = useState<string | null>(null);
   const hasTwoProjects = availableProjects.length === 2;
   const canSubmitProject = hasTwoProjects && projectTitle !== null && availableProjects.includes(projectTitle);
+  const projectOptions = hasTwoProjects ? availableProjects : allProjects;
 
   useEffect(() => {
     setLoomUrl(submission?.loomUrl ?? "");
@@ -118,7 +122,7 @@ export function GenaiLoomSubmissionForm({
           <p id="genai-loom-selection-help" className="mt-2 text-sm text-[#475467]" aria-live="polite">
             {hasTwoProjects
               ? "Choose one of your 2 selected projects below. To change your choices, remove a project in Project Submission and choose another."
-              : `${availableProjects.length} of 2 projects selected. Open Project Submission above and choose your projects first.`}
+              : `${availableProjects.length} of 2 projects selected. Pick a project below or in Project Submission. You need 2 projects before you can submit.`}
           </p>
           {submission ? (
             <p className="mt-2 text-xs font-medium text-[#475467]" data-testid="text-genai-loom-saved-project">
@@ -146,14 +150,19 @@ export function GenaiLoomSubmissionForm({
             id="genai-loom-project"
             data-testid="select-genai-loom-project"
             value={projectTitle ?? ""}
-            disabled={!hasTwoProjects || saving}
+            disabled={saving}
             aria-describedby="genai-loom-selection-help"
-            onChange={(event) => onProjectChange(event.target.value)}
+            onChange={(event) => {
+              setValidationError(null);
+              onProjectChange(event.target.value);
+            }}
             className="w-full rounded-lg border border-[#d0d5dd] bg-white px-3 py-2.5 text-sm text-[#101828]"
           >
             <option value="" disabled>Choose a project</option>
-            {availableProjects.map((title) => (
-              <option key={title} value={title}>{title}</option>
+            {projectOptions.map((title) => (
+              <option key={title} value={title}>
+                {title}
+              </option>
             ))}
           </select>
         </div>

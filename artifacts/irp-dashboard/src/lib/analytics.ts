@@ -29,7 +29,7 @@ export const DASHBOARD_ANALYTICS_EVENTS = {
   FEEDBACK_OPEN: "feedback_open",
   CONTACT_US_CLICK: "contact_us_click",
   MOCK_ASSESSMENT_LINK_CLICK: "mock_assessment_link_click",
-  /** Fresh counter for IRP 2.0 L1 Mock Assessment Start clicks (25 Jul 2026 window). */
+  /** Fresh counter for IRP L1 Mock Assessment Start clicks (25 Jul 2026 window). */
   L1_JULY25_MOCK_START_CLICK: "l1_july25_mock_start_click",
   MAIN_ASSESSMENT_LINK_CLICK: "main_assessment_link_click",
 } as const;
