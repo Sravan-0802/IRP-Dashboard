@@ -22,6 +22,7 @@ import {
 } from "@/lib/programBoard";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleDateString("en-US", { month: "long" }));
+const PAGE_SIZE = 10;
 
 function newId(): string {
   return `assessment-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -44,6 +45,7 @@ export function MonthlyCalendarEditor({
   const [confirmed, setConfirmed] = useState(false);
   const [fileError, setFileError] = useState("");
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadVersionRef = useRef(0);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -51,10 +53,12 @@ export function MonthlyCalendarEditor({
   const prefix = `${monthPrefix(year, month)}-`;
   const monthLabel = `${MONTHS[month]} ${year}`;
   const monthEvents = useMemo(
-    () => events.filter((e) => e.date.startsWith(prefix) || !isIsoDate(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label)),
+    () => events.filter((e) => e.date.startsWith(prefix) || !isIsoDate(e.date)).sort((a, b) => a.date.localeCompare(b.date)),
     [events, prefix],
   );
   const otherCount = events.length - monthEvents.length;
+  const pageCount = Math.max(1, Math.ceil(monthEvents.length / PAGE_SIZE));
+  const pageEvents = monthEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const years = useMemo(() => {
     const set = new Set<number>([thisYear - 1, thisYear, thisYear + 1, thisYear + 2, year]);
     for (const e of events) {
@@ -72,12 +76,17 @@ export function MonthlyCalendarEditor({
     setFocusId(null);
   }, [focusId, events]);
 
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount));
+  }, [pageCount]);
+
   function shift(delta: number) {
     uploadVersionRef.current++;
     const d = new Date(year, month + delta, 1);
     setYear(d.getFullYear());
     setMonth(d.getMonth());
     setPreview(null);
+    setPage(1);
   }
 
   function patch(id: string, next: Partial<CalendarEvent>) {
@@ -92,7 +101,13 @@ export function MonthlyCalendarEditor({
     const todayKey = `${prefix}${String(now.getDate()).padStart(2, "0")}`;
     const date = now.getFullYear() === year && now.getMonth() === month ? todayKey : `${prefix}01`;
     const event: CalendarEvent = { id: newId(), date, program: "irp", label: "", mode: "online", link: "" };
-    onEvents([...events, event]);
+    const next = [...events, event];
+    const nextMonth = next
+      .filter((item) => item.date.startsWith(prefix) || !isIsoDate(item.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const eventIndex = nextMonth.findIndex((item) => item.id === event.id);
+    setPage(Math.floor(eventIndex / PAGE_SIZE) + 1);
+    onEvents(next);
     setFocusId(event.id);
   }
 
@@ -132,6 +147,7 @@ export function MonthlyCalendarEditor({
       onEvents(replaceMonthEvents(events, year, month, preview.events));
       setPreview(null);
       setConfirmed(false);
+      setPage(1);
     } catch (err) {
       setFileError(err instanceof Error ? err.message : "Could not apply this import.");
     }
@@ -146,13 +162,13 @@ export function MonthlyCalendarEditor({
           </button>
           <label className="text-[11px] font-semibold text-[#667085]">
             Month
-            <select data-testid="select-admin-calendar-month" value={month} onChange={(e) => { uploadVersionRef.current++; setMonth(Number(e.target.value)); setPreview(null); }} className="mt-1 block rounded-lg border border-[#d0d5dd] bg-white px-2.5 py-1.5 text-sm font-medium text-[#101828]">
+            <select data-testid="select-admin-calendar-month" value={month} onChange={(e) => { uploadVersionRef.current++; setMonth(Number(e.target.value)); setPreview(null); setPage(1); }} className="mt-1 block rounded-lg border border-[#d0d5dd] bg-white px-2.5 py-1.5 text-sm font-medium text-[#101828]">
               {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
             </select>
           </label>
           <label className="text-[11px] font-semibold text-[#667085]">
             Year
-            <select data-testid="select-admin-calendar-year" value={year} onChange={(e) => { uploadVersionRef.current++; setYear(Number(e.target.value)); setPreview(null); }} className="mt-1 block rounded-lg border border-[#d0d5dd] bg-white px-2.5 py-1.5 text-sm font-medium text-[#101828]">
+            <select data-testid="select-admin-calendar-year" value={year} onChange={(e) => { uploadVersionRef.current++; setYear(Number(e.target.value)); setPreview(null); setPage(1); }} className="mt-1 block rounded-lg border border-[#d0d5dd] bg-white px-2.5 py-1.5 text-sm font-medium text-[#101828]">
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
@@ -242,16 +258,25 @@ export function MonthlyCalendarEditor({
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-extrabold text-[#101828]">{monthLabel} assessments</h3>
-          <button type="button" data-testid="button-add-calendar-assessment" onClick={add} className="inline-flex items-center gap-1 rounded-lg border border-[#d0d5dd] px-2.5 py-1 text-xs font-semibold text-[#344054]">
-            <Plus className="h-3.5 w-3.5" /> Add
-          </button>
+          <div className="flex items-center gap-2">
+            {pageCount > 1 ? (
+              <nav aria-label="Assessment rows pagination" className="flex items-center gap-1.5 text-xs text-[#667085]">
+                <button type="button" aria-label="Previous assessment page" data-testid="button-admin-calendar-prev-page" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded border border-[#d0d5dd] px-2 py-1 font-semibold disabled:opacity-40">Previous</button>
+                <span data-testid="text-admin-calendar-page">Page {page} of {pageCount}</span>
+                <button type="button" aria-label="Next assessment page" data-testid="button-admin-calendar-next-page" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} className="rounded border border-[#d0d5dd] px-2 py-1 font-semibold disabled:opacity-40">Next</button>
+              </nav>
+            ) : null}
+            <button type="button" data-testid="button-add-calendar-assessment" onClick={add} className="inline-flex items-center gap-1 rounded-lg border border-[#d0d5dd] px-2.5 py-1 text-xs font-semibold text-[#344054]">
+              <Plus className="h-3.5 w-3.5" /> Add
+            </button>
+          </div>
         </div>
         {monthEvents.length === 0 ? (
           <p className="rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-4 py-6 text-center text-sm text-[#667085]" data-testid="text-admin-calendar-empty">
             No assessments in {monthLabel}. Upload a CSV or add one.
           </p>
         ) : (
-          monthEvents.map((event) => {
+          pageEvents.map((event) => {
             const problems = calendarEventProblems(event);
             const legacy = isLegacyEvent(event) && !event.mode;
             return (

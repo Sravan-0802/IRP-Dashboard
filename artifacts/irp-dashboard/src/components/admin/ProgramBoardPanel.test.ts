@@ -128,4 +128,29 @@ describe("ProgramBoardPanel", () => {
     expect(expectedTimestamp).toBe(initial.updatedAt);
     expect(screen.queryByTestId("text-program-board-saved")).toBeNull();
   });
+
+  it("saves a deletion and refreshes the student calendar query", async () => {
+    const now = new Date();
+    const initial = {
+      ...DEFAULT_PROGRAM_BOARD, updatedAt: "2030-01-01T00:00:00.000Z",
+      calendar: { upcoming: [], events: [
+        { id: "remove-me", date: `${monthPrefix(now.getFullYear(), now.getMonth())}-12`, program: "irp", label: "Removed assessment", mode: "online", link: "https://example.com/remove-me" },
+        { id: "keep-me", date: `${monthPrefix(now.getFullYear(), now.getMonth())}-13`, program: "genai", label: "Keep assessment", mode: "offline", link: "https://example.com/keep-me" },
+      ] },
+    };
+    let saved: ProgramBoard | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
+      if (init?.method === "PUT") saved = JSON.parse(String(init.body));
+      return json(saved ? { ...saved, updatedAt: "2030-01-02T00:00:00.000Z" } : initial);
+    }));
+    const queryClient = showPanel();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    await openCalendar();
+    fireEvent.click(screen.getByTestId("button-delete-assessment-remove-me"));
+    expect(screen.queryByTestId("row-calendar-assessment-remove-me")).toBeNull();
+    fireEvent.click(screen.getByTestId("button-save-program-board"));
+    await waitFor(() => expect(saved?.calendar.events.map((event) => event.id)).toEqual(["keep-me"]));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["/api/student/program-board"] });
+    expect(await screen.findByTestId("text-program-board-saved")).toHaveProperty("textContent", expect.stringContaining("Saved at"));
+  });
 });
