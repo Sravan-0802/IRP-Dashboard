@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import {
   Check,
   ChevronRight,
@@ -602,13 +602,6 @@ function GenAiAssessments({
       <p className="mt-1 text-sm text-[#667085]">
         View your section-wise scores here. Find scheduled assessment dates and links in the Assessment Calendar.
       </p>
-      <Link
-        href="/assessment-calendar"
-        data-testid="link-genai-assessment-calendar"
-        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#6941c6] px-3 py-2 text-sm font-bold text-white hover:bg-[#5925dc]"
-      >
-        Assessment Calendar <ChevronRight className="h-4 w-4" />
-      </Link>
       <div className="mt-4 inline-flex flex-wrap rounded-lg bg-[#f2f4f7] p-1">
         <button
           type="button"
