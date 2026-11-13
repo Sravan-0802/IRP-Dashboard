@@ -122,6 +122,8 @@ test("a successful guarded save returns the exact stored timestamp", async () =>
   const result = await updateProgramBoard(board([event()]), "2030-01-01T00:00:00.000Z");
   assert.equal(result.updatedAt, "2030-01-02T00:00:00.000Z");
   assert.equal(result.calendar.events[0].link, "https://example.com/assessment");
+  assert.match(conflictOptions.set.updatedAt.text, /greatest\(clock_timestamp\(\)/);
+  assert.match(conflictOptions.set.updatedAt.text, /\+ interval '1 millisecond'/);
 });
 
 test("removing an assessment persists its absence in the next student board read", async () => {

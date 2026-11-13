@@ -303,7 +303,12 @@ export async function updateProgramBoard(board: ProgramBoardContent, expectedUpd
     .values({ id: ROW_ID, payload })
     .onConflictDoUpdate({
       target: programBoardTable.id,
-      set: { payload, updatedAt: new Date() },
+      set: {
+        payload,
+        // Advance at least one millisecond so a second save cannot reuse the
+        // version returned to another admin moments earlier.
+        updatedAt: sql`greatest(clock_timestamp(), ${programBoardTable.updatedAt} + interval '1 millisecond')`,
+      },
       // JS timestamps use milliseconds, while legacy Postgres defaults retain microseconds.
       ...(expectedUpdatedAt === undefined ? {} : {
         setWhere: expectedUpdatedAt === null
