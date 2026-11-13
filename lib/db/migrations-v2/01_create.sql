@@ -251,9 +251,6 @@ CREATE TABLE irp_v2.mern_track (
   reattempt_date                                  text,
   project_submitted                               boolean NOT NULL DEFAULT false,
   project_due_date                                text,
-  -- Course progress (15 MERN courses)
-  course_progress                                 jsonb NOT NULL DEFAULT '[]',
-  course_progress_percentage                      real,
   calculated_at                                   timestamptz,
   updated_at                                      timestamptz NOT NULL DEFAULT now(),
   CHECK (hustler_assessment_status IN ('NOT_ATTEMPTED','ACTIVE','RESULT_PENDING','QUALIFIED','NOT_QUALIFIED')),
@@ -302,9 +299,6 @@ CREATE TABLE irp_v2.genai_track (
   genai_nxtmock_status                              text,
   genai_nxtmock_interview_rating                    real,
   genai_nxtmock_attempt_date                        timestamptz,
-  -- Course progress ("Generative AI" course)
-  course_progress                                   jsonb NOT NULL DEFAULT '[]',
-  course_progress_percentage                        real,
   calculated_at                                     timestamptz,
   updated_at                                        timestamptz NOT NULL DEFAULT now(),
   CHECK (genai_assessment_status      IN ('NOT_ATTEMPTED','ACTIVE','RESULT_PENDING','QUALIFIED','NOT_QUALIFIED')),

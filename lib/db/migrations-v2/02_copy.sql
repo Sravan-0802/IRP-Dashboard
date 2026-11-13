@@ -22,7 +22,6 @@ SELECT DISTINCT x.uid, 'NOT_IN_BIGQUERY'
 FROM (
   SELECT user_id AS uid FROM public.academy_user_assessment_details
   UNION SELECT user_id FROM public.academy_user_nxtmock_details
-  UNION SELECT user_id FROM public.academy_user_course_progress
   UNION SELECT user_id FROM public.academy_user_genai_assessment_details
   UNION SELECT user_id FROM public.academy_user_genai_nxtmock_details
   UNION SELECT candidate_id FROM public.human_interview_results
@@ -530,27 +529,6 @@ SET level2_status = CASE
   WHEN journey_state ~ '^L[23]_' THEN 'ACTIVE'
   ELSE 'NOT_ATTEMPTED' END;
 
--- 6f. Course progress: the 15 MERN courses (everything except "Generative AI")
-UPDATE irp_v2.mern_track t
-SET course_progress = cp.courses, course_progress_percentage = cp.pct
-FROM (
-  SELECT user_id,
-         jsonb_agg(jsonb_build_object(
-           'course_id', course_id, 'course_title', course_title,
-           'mcqs_completed', mcqs_completed, 'total_mcqs', total_mcqs, 'mcq_completion_pct', mcq_completion_pct,
-           'coding_problems_completed', coding_problems_completed, 'total_coding_problems', total_coding_problems,
-           'coding_completion_pct', coding_completion_pct,
-           'overall_completed', overall_completed, 'overall_total', overall_total,
-           'overall_completion_pct', overall_completion_pct, 'synced_at', synced_at)
-           ORDER BY course_title) AS courses,
-         CASE WHEN sum(overall_total) > 0
-              THEN (sum(overall_completed)::float8 / sum(overall_total)::float8 * 100) END AS pct
-  FROM public.academy_user_course_progress
-  WHERE course_title IS DISTINCT FROM 'Generative AI'
-  GROUP BY user_id
-) cp
-WHERE t.user_id = cp.user_id;
-
 -- ---------------------------------------------------------------------------
 -- 7. genai_track — one row per user
 -- ---------------------------------------------------------------------------
@@ -612,25 +590,6 @@ FROM (
   ORDER BY a.user_id, a.user_assessment_start_datetime DESC NULLS LAST, a.attempt_number DESC
 ) b
 WHERE t.user_id = b.user_id;
-
-UPDATE irp_v2.genai_track t
-SET course_progress = cp.courses, course_progress_percentage = cp.pct
-FROM (
-  SELECT user_id,
-         jsonb_agg(jsonb_build_object(
-           'course_id', course_id, 'course_title', course_title,
-           'mcqs_completed', mcqs_completed, 'total_mcqs', total_mcqs, 'mcq_completion_pct', mcq_completion_pct,
-           'coding_problems_completed', coding_problems_completed, 'total_coding_problems', total_coding_problems,
-           'coding_completion_pct', coding_completion_pct,
-           'overall_completed', overall_completed, 'overall_total', overall_total,
-           'overall_completion_pct', overall_completion_pct, 'synced_at', synced_at)) AS courses,
-         CASE WHEN sum(overall_total) > 0
-              THEN (sum(overall_completed)::float8 / sum(overall_total)::float8 * 100) END AS pct
-  FROM public.academy_user_course_progress
-  WHERE course_title = 'Generative AI'
-  GROUP BY user_id
-) cp
-WHERE t.user_id = cp.user_id;
 
 -- ---------------------------------------------------------------------------
 -- 8. login_tokens — only tokens that are still valid; stored as sha256 hashes

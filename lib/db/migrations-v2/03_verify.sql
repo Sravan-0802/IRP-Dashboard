@@ -36,7 +36,6 @@ old_ids AS (
   SELECT user_id AS uid FROM public.academy_user_basic_details
   UNION SELECT user_id FROM public.academy_user_assessment_details
   UNION SELECT user_id FROM public.academy_user_nxtmock_details
-  UNION SELECT user_id FROM public.academy_user_course_progress
   UNION SELECT user_id FROM public.academy_user_genai_assessment_details
   UNION SELECT user_id FROM public.academy_user_genai_nxtmock_details
   UNION SELECT candidate_id FROM public.human_interview_results

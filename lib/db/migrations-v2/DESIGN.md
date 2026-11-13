@@ -8,7 +8,7 @@ The IRP (Internship Readiness Program) dashboard shows each student where they s
 
 Most student results are produced outside the dashboard:
 
-- **BigQuery** is the company data warehouse. It holds each student's profile, course progress, and every assessment sitting. The API copies this data into Postgres once a day at 10:00 IST.
+- **BigQuery** is the company data warehouse. It holds each student's profile and every assessment sitting. The API copies this data into Postgres once a day at 10:00 IST.
 - **Academy Nexus** is a separate internal service that holds human interview results. An admin triggers that copy by hand.
 
 The dashboard itself creates a smaller amount of data: login tokens, assessment registrations, project submissions, support chat, feedback, click events, and admin settings.
@@ -61,7 +61,7 @@ The database has 44 tables. An audit of the code and the data found:
 | Table | One row is | Purpose |
 |---|---|---|
 | `users` | one student | Profile from BigQuery plus dashboard access override and onboarding flag. |
-| `mern_track` | one student | The student's current result for each MERN stage, their journey state, and course progress. |
+| `mern_track` | one student | The student's current result for each MERN stage, and their journey state. Course progress is not part of the new model. |
 | `genai_track` | one student | The same for GenAI stages, plus the project and Loom submission. |
 | `mern_track_attempts` | one sit | Every MERN assessment, FE project, AI mock and human interview sitting. |
 | `genai_track_attempts` | one sit | Every GenAI assessment and AI mock sitting. Same columns as the MERN table. |
