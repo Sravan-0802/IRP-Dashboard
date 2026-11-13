@@ -132,22 +132,14 @@ INSERT INTO irp_v2.mern_track_attempts (
 SELECT
   d.user_id,
   CASE
-    WHEN d.assessment_tag ILIKE '%FE-PROJECT%' OR d.level ILIKE '%FE-PROJECT%'
+    WHEN d.full_tag ILIKE '%FE-PROJECT%' OR d.level ILIKE '%FE-PROJECT%'
       OR d.assessment_title ILIKE '%FE PROJECT%' OR d.assessment_title ILIKE '%FE-PROJECT%' THEN 'PROJECT'
-    WHEN d.assessment_tag ILIKE '%NXTMOCK%'    OR d.level ILIKE '%NXTMOCK%'    THEN 'MOCK_INTERVIEW'
+    WHEN d.full_tag ILIKE '%NXTMOCK%'       OR d.level ILIKE '%NXTMOCK%'    THEN 'MOCK_INTERVIEW'
     ELSE 'ASSESSMENT'
   END,
   'BIGQUERY',
   d.organisation_assessment_id,
-  -- An older sync stored only the assessment number ('A4') as the tag. Rebuild the
-  -- BigQuery assessment_specific_tag: kind + number (confirmed against the z_* tables).
-  CASE
-    WHEN d.assessment_tag ~ '^A[0-9]+$' AND d.assessment_title ILIKE '%FE Project%'
-      THEN 'ACADEMY-IRP-2.0_MAIN_L1_FE-Project_' || d.assessment_tag
-    WHEN d.assessment_tag ~ '^A[0-9]+$' AND d.assessment_title ILIKE '%Hustler Assessment%'
-      THEN 'ACADEMY-IRP-2.0_MAIN_L1_HUSTLER-ASSESSMENT_' || d.assessment_tag
-    ELSE d.assessment_tag
-  END,
+  d.full_tag,
   d.assessment_title,
   CASE WHEN d.assessment_tag ~* '(^|_)MOCK(_|$)' OR d.assessment_title ~* '\mMOCK\M' THEN 'MOCK' ELSE 'MAIN' END,
   d.level,
@@ -190,7 +182,29 @@ SELECT
     'previous_qualification_status',  d.qualification_status)),
   d.assessment_status,
   d.synced_at
-FROM public.academy_user_assessment_details d
+FROM (
+  -- An older sync stored only the assessment number ('A4') as the tag. Rebuild the BigQuery
+  -- assessment_specific_tag (confirmed against the z_* tables):
+  --   1. from the title (FE Project / Hustler Assessment);
+  --   2. else from another row of the SAME assessment id that has the full tag with the same number
+  --      (some copies of the data have no title on these rows).
+  SELECT x.*,
+         CASE
+           WHEN x.assessment_tag ~ '^A[0-9]+$' AND x.assessment_title ILIKE '%FE Project%'
+             THEN 'ACADEMY-IRP-2.0_MAIN_L1_FE-Project_' || x.assessment_tag
+           WHEN x.assessment_tag ~ '^A[0-9]+$' AND x.assessment_title ILIKE '%Hustler Assessment%'
+             THEN 'ACADEMY-IRP-2.0_MAIN_L1_HUSTLER-ASSESSMENT_' || x.assessment_tag
+           WHEN x.assessment_tag ~ '^A[0-9]+$'
+             THEN COALESCE(
+               (SELECT max(y.assessment_tag) FROM public.academy_user_assessment_details y
+                WHERE y.organisation_assessment_id = x.organisation_assessment_id
+                  AND y.assessment_tag LIKE 'ACADEMY-%'
+                  AND right(y.assessment_tag, length(x.assessment_tag) + 1) = '_' || x.assessment_tag),
+               x.assessment_tag)
+           ELSE x.assessment_tag
+         END AS full_tag
+  FROM public.academy_user_assessment_details x
+) d
 WHERE d.organisation_assessment_id NOT IN ('manual-access-grant','manual-access-revoke','dashboard-access-override');
 
 -- 3b. Old NxtMock (AI mock) interviews
