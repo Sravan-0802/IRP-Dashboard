@@ -148,7 +148,8 @@ checks(section, check_name, expected, actual) AS (
   UNION ALL SELECT 'support', 'valid login tokens', (SELECT count(*) FROM public.forms_auth_tokens WHERE expires_at > now()),
          (SELECT count(*) FROM irp_v2.login_tokens)
   UNION ALL SELECT 'support', 'sync status rows', (SELECT count(*) FROM public.bigquery_sync_status),
-         (SELECT count(*) FROM irp_v2.sync_logs)
+         -- the daily refresh adds its own 'irp_v2_refresh' row; it has no old-table counterpart
+         (SELECT count(*) FROM irp_v2.sync_logs WHERE job_name <> 'irp_v2_refresh')
   UNION ALL SELECT 'support', 'GenAI project submissions', (SELECT count(*) FROM public.genai_project_submissions),
          (SELECT count(*) FROM irp_v2.genai_track WHERE genai_video_submitted_at IS NOT NULL)
 )
