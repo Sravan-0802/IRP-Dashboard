@@ -866,8 +866,12 @@ export async function runBigQuerySync(): Promise<SyncResult> {
     }
     // Dual-write: keep the new irp_v2 tables in step with the old ones (no-op until irp_v2 exists).
     // refreshIrpV2 never throws, so the old sync result is unaffected.
-    const { refreshIrpV2 } = await import("./irpV2Refresh");
-    await refreshIrpV2();
+    try {
+      const { refreshIrpV2 } = await import("./irpV2Refresh");
+      await refreshIrpV2();
+    } catch (err) {
+      logger.error({ err }, "irp_v2 refresh could not start; old sync result is unaffected");
+    }
     return { ok: results.every((r) => r.status === "success"), results };
   } finally {
     syncInProgress = false;

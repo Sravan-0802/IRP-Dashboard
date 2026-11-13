@@ -9,12 +9,32 @@
  *  - Only reads public.*; never changes the old tables. Never throws: failures are logged.
  *  - Must be switched off once the app writes to irp_v2 directly (step 6).
  */
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { pool } from "@workspace/db";
 import { logger } from "./logger";
-import resetSql from "../../../../lib/db/migrations-v2/04_refresh_reset.sql";
-import copySql from "../../../../lib/db/migrations-v2/02_copy.sql";
-import paritySql from "../../../../lib/db/migrations-v2/parity_old_dashboard.sql";
-import verifySql from "../../../../lib/db/migrations-v2/03_verify.sql";
+
+/**
+ * The SQL lives in lib/db/migrations-v2 and is read from disk at run time, so this works however the
+ * sync is started: the esbuild bundle (dist/index.mjs), tsx on the TypeScript source (the daily
+ * scripts/daily-bq-sync.sh job), or the sync-now / run-sync scripts. Walks up from this file and from
+ * the working directory until it finds the folder.
+ */
+export function findMigrationsDir(): string | null {
+  const starts = [dirname(fileURLToPath(import.meta.url)), process.cwd()];
+  for (const start of starts) {
+    let dir = start;
+    for (let i = 0; i < 8; i++) {
+      const candidate = join(dir, "lib", "db", "migrations-v2");
+      if (existsSync(join(candidate, "02_copy.sql"))) return candidate;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  return null;
+}
 
 export interface IrpV2RefreshResult {
   status: "skipped" | "success" | "error";
@@ -40,6 +60,16 @@ export async function refreshIrpV2(): Promise<IrpV2RefreshResult> {
   if (refreshInProgress) {
     return { status: "skipped", reason: "refresh already in progress" };
   }
+  const migrationsDir = findMigrationsDir();
+  if (!migrationsDir) {
+    logger.warn("irp_v2 refresh skipped: lib/db/migrations-v2 not found next to the app");
+    return { status: "skipped", reason: "migrations-v2 folder not found" };
+  }
+  const readSql = (name: string) => readFileSync(join(migrationsDir, name), "utf8");
+  const resetSql = readSql("04_refresh_reset.sql");
+  const copySql = readSql("02_copy.sql");
+  const paritySql = readSql("parity_old_dashboard.sql");
+  const verifySql = readSql("03_verify.sql");
   refreshInProgress = true;
   const startedAt = new Date();
   try {
