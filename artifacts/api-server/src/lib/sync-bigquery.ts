@@ -36,6 +36,12 @@ import {
   normalizePaymentStatusValue,
 } from "./academyUserProfile";
 import { getL1AssessmentSummary } from "./l1Summary";
+import {
+  diffSyncedAccess,
+  loadAccessSnapshot,
+  recordAccessChanges,
+  type AccessSnapshot,
+} from "./dashboardAccessLog";
 
 const BASIC_DETAILS_KEY = "academy_user_basic_details";
 const COURSE_PROGRESS_KEY = "academy_user_course_progress";
@@ -150,6 +156,13 @@ async function syncBasicDetails(): Promise<number> {
     (r) => r.userId,
   );
 
+  let accessSnapshot: AccessSnapshot | null = null;
+  try {
+    accessSnapshot = await loadAccessSnapshot();
+  } catch (err) {
+    logger.warn({ err }, "Could not read dashboard access before sync; access changes will not be logged");
+  }
+
   for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
     const batch = mapped.slice(i, i + BATCH_SIZE);
     await db
@@ -173,6 +186,10 @@ async function syncBasicDetails(): Promise<number> {
           syncedAt: sql`excluded.synced_at`,
         },
       });
+  }
+
+  if (accessSnapshot) {
+    await recordAccessChanges(diffSyncedAccess(accessSnapshot, mapped));
   }
   return mapped.length;
 }
