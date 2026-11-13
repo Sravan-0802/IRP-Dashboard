@@ -1,14 +1,45 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getAdminProgramBoard, updateAdminProgramBoard, type ProgramBoardInput } from "@workspace/api-client-react";
 import { CalendarDays, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { PROGRAM_BOARD_QUERY_KEY } from "@/lib/useProgramBoard";
+import { MonthlyCalendarEditor } from "@/components/admin/MonthlyCalendarEditor";
 import {
   DEFAULT_PROGRAM_BOARD,
+  MAX_CALENDAR_EVENTS,
+  calendarEventProblems,
   type CalendarEvent,
-  type CalendarUpcoming,
   type GenAiAssessment,
   type ProgramBoard,
 } from "@/lib/programBoard";
+
+function errorText(err: unknown, fallback: string): string {
+  const e = err as { data?: { error?: string }; message?: string } | null;
+  return e?.data?.error || e?.message || fallback;
+}
+
+/** Trims new/edited entries; legacy fields that were never set stay undefined. */
+function cleanEvents(events: CalendarEvent[]): CalendarEvent[] {
+  return events.map((e) => {
+    const next: CalendarEvent = { id: e.id, date: e.date.trim(), program: e.program, label: e.label.trim() };
+    if (e.mode !== undefined) next.mode = e.mode;
+    if (e.link !== undefined) next.link = e.link.trim();
+    return next;
+  });
+}
+
+/** Returns a blocking message, or "" when the calendar is safe to save. */
+function calendarSaveProblem(events: CalendarEvent[]): string {
+  if (events.length > MAX_CALENDAR_EVENTS) return `Calendar has ${events.length} entries; the limit is ${MAX_CALENDAR_EVENTS}.`;
+  const ids = new Set<string>();
+  for (const e of events) {
+    if (ids.has(e.id)) return `Two calendar entries share the id ${e.id}. Delete one and try again.`;
+    ids.add(e.id);
+    const problems = calendarEventProblems(e);
+    if (problems.length) return `Fix the assessment on ${e.date || "a blank date"}${e.label ? ` (${e.label})` : ""}: ${problems.join(", ")}.`;
+  }
+  return "";
+}
 
 type EditorTab = "genai" | "calendar";
 
@@ -26,55 +57,81 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
   const [tab, setTab] = useState<EditorTab>("genai");
   const [draft, setDraft] = useState<ProgramBoard>(DEFAULT_PROGRAM_BOARD);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [dirty, setDirty] = useState(false);
+  // Background loads never overwrite in-progress edits.
+  const dirtyRef = useRef(false);
+
+  const edit = useCallback((updater: (prev: ProgramBoard) => ProgramBoard) => {
+    dirtyRef.current = true;
+    setDirty(true);
+    setMessage("");
+    setDraft(updater);
+  }, []);
 
   const load = useCallback(async () => {
     if (!apiKey.trim()) return;
     setLoading(true);
+    setHasLoaded(false);
     setError("");
     try {
-      const res = await fetch("/api/admin/program-board", { headers: { "x-api-key": apiKey.trim() } });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load");
-      setDraft(body as ProgramBoard);
+      const body = await getAdminProgramBoard({ headers: { "x-api-key": apiKey.trim() }, cache: "no-store" });
+      setDraft(body as unknown as ProgramBoard);
+      setHasLoaded(true);
+      dirtyRef.current = false;
+      setDirty(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load program content");
+      setError(errorText(err, "Could not load program content"));
     } finally {
       setLoading(false);
     }
   }, [apiKey]);
 
   useEffect(() => {
+    if (dirtyRef.current) return;
     void load();
   }, [load]);
 
+  function refresh() {
+    if (dirtyRef.current && !window.confirm("Discard unsaved changes and reload the saved version?")) return;
+    dirtyRef.current = false;
+    void load();
+  }
+
   async function save() {
-    if (!apiKey.trim() || saving) return;
+    if (!apiKey.trim() || saving || !hasLoaded) return;
     setSaving(true);
     setError("");
     setMessage("");
+    const events = cleanEvents(draft.calendar.events);
+    const problem = calendarSaveProblem(events);
+    if (problem) {
+      setError(problem);
+      setTab("calendar");
+      setSaving(false);
+      return;
+    }
     try {
-      const res = await fetch("/api/admin/program-board", {
-        method: "PUT",
-        headers: { "content-type": "application/json", "x-api-key": apiKey.trim() },
-        body: JSON.stringify(draft),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to save");
-      setDraft(body as ProgramBoard);
+      const input = { expectedUpdatedAt: draft.updatedAt, genai: draft.genai, calendar: { events, upcoming: draft.calendar.upcoming } } as unknown as ProgramBoardInput;
+      const body = (await updateAdminProgramBoard(input, { headers: { "x-api-key": apiKey.trim() } })) as unknown as ProgramBoard;
+      setDraft(body);
+      dirtyRef.current = false;
+      setDirty(false);
       void queryClient.invalidateQueries({ queryKey: PROGRAM_BOARD_QUERY_KEY });
-      setMessage("Saved. Students see this on GenAI Program and Assessment Calendar.");
+      const at = body.updatedAt ? new Date(body.updatedAt).toLocaleString() : new Date().toLocaleString();
+      setMessage(`Saved at ${at}. Students see this on GenAI Program and Assessment Calendar.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save");
+      setError(errorText(err, "Could not save"));
     } finally {
       setSaving(false);
     }
   }
 
   function patchGenAi<K extends keyof ProgramBoard["genai"]>(key: K, value: ProgramBoard["genai"][K]) {
-    setDraft((prev) => ({ ...prev, genai: { ...prev.genai, [key]: value } }));
+    edit((prev) => ({ ...prev, genai: { ...prev.genai, [key]: value } }));
   }
 
   return (
@@ -87,15 +144,16 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
           </div>
           <p className="max-w-2xl text-sm text-[#6e6a8a]">
             Add, edit, or remove what students see. Save stores it for every student.
-            {draft.updatedAt ? ` Last saved ${new Date(draft.updatedAt).toLocaleString()}.` : " Nothing saved yet — students still see the sample."}
+            {draft.updatedAt ? ` Last saved ${new Date(draft.updatedAt).toLocaleString()}.` : " Nothing saved yet."}
+            {dirty ? " You have unsaved changes." : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void load()} disabled={loading || saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.2)] px-3 py-1.5 text-xs font-semibold text-[#6941c6] disabled:opacity-50">
+          <button type="button" data-testid="button-refresh-program-board" onClick={refresh} disabled={loading || saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(103,65,217,0.2)] px-3 py-1.5 text-xs font-semibold text-[#6941c6] disabled:opacity-50">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
-          <button type="button" onClick={() => void save()} disabled={loading || saving} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6941c6] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+          <button type="button" data-testid="button-save-program-board" onClick={() => void save()} disabled={loading || saving || !hasLoaded} className="inline-flex items-center gap-1.5 rounded-lg bg-[#6941c6] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Save
           </button>
@@ -107,21 +165,21 @@ export function ProgramBoardPanel({ apiKey }: { apiKey: string }) {
         <TabButton active={tab === "calendar"} onClick={() => setTab("calendar")}>Assessment Calendar</TabButton>
       </div>
 
-      {error ? <p className="text-sm font-semibold text-[#b42318]">{error}</p> : null}
-      {message ? <p className="text-sm font-semibold text-[#067647]">{message}</p> : null}
+      {error ? <p role="alert" data-testid="text-program-board-error" className="text-sm font-semibold text-[#b42318]">{error}</p> : null}
+      {message ? <p data-testid="text-program-board-saved" className="text-sm font-semibold text-[#067647]">{message}</p> : null}
 
+      <fieldset disabled={saving} className="min-w-0">
       {loading ? (
         <p className="py-8 text-sm text-[#6e6a8a]">Loading…</p>
       ) : tab === "genai" ? (
         <GenAiEditor draft={draft.genai} onChange={patchGenAi} />
       ) : (
-        <CalendarEditor
+        <MonthlyCalendarEditor
           events={draft.calendar.events}
-          upcoming={draft.calendar.upcoming}
-          onEvents={(events) => setDraft((prev) => ({ ...prev, calendar: { ...prev.calendar, events } }))}
-          onUpcoming={(upcoming) => setDraft((prev) => ({ ...prev, calendar: { ...prev.calendar, upcoming } }))}
+          onEvents={(events) => edit((prev) => ({ ...prev, calendar: { ...prev.calendar, events } }))}
         />
       )}
+      </fieldset>
     </div>
   );
 }
@@ -155,7 +213,7 @@ function GenAiEditor({
         }
       >
         <p className="text-xs text-[#667085]">
-          Edit a row or delete it, then press Save. Registration open shows the banner. Completed shows under Your scores.
+          Completed entries appear under historical scores. Manage assessment dates, modes and links in the Assessment Calendar tab; entries here no longer create schedule cards.
         </p>
         {draft.assessments.map((item, index) => (
           <Row key={item.id}>
@@ -241,102 +299,6 @@ function GenAiEditor({
   );
 }
 
-function CalendarEditor({
-  events,
-  upcoming,
-  onEvents,
-  onUpcoming,
-}: {
-  events: CalendarEvent[];
-  upcoming: CalendarUpcoming[];
-  onEvents: (events: CalendarEvent[]) => void;
-  onUpcoming: (upcoming: CalendarUpcoming[]) => void;
-}) {
-  // A new chip goes to the top of the list; scroll to it and focus its Date field.
-  const newEventRowRef = useRef<HTMLDivElement>(null);
-  const [focusNewEvent, setFocusNewEvent] = useState(false);
-
-  useEffect(() => {
-    if (!focusNewEvent) return;
-    newEventRowRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-    newEventRowRef.current?.querySelector("input")?.focus();
-    setFocusNewEvent(false);
-  }, [focusNewEvent, events]);
-
-  return (
-    <div className="space-y-5">
-      <ListBlock
-        title="Calendar chips"
-        onAdd={() => {
-          const event = { id: newId("event"), date: todayIso(), program: "genai" as const, label: "New event" };
-          setFocusNewEvent(true);
-          onEvents([event, ...events]);
-        }}
-      >
-        <p className="text-xs text-[#667085]">
-          One chip per date. If a chip shares a word with a Coming up title that covers that date (for example
-          &quot;Training C3&quot; and &quot;GenAI Training Sessions (Cycle 3)&quot;), students see the full title.
-        </p>
-        {events.map((event, index) => (
-          <Row key={event.id} ref={index === 0 && focusNewEvent ? newEventRowRef : undefined}>
-            <Field label="Date" type="date" value={event.date} onChange={(value) => onEvents(replaceAt(events, index, { ...event, date: value }))} />
-            <SelectField
-              label="Program"
-              value={event.program}
-              options={[["genai", "GenAI"], ["irp", "MERN"]]}
-              onChange={(value) => onEvents(replaceAt(events, index, { ...event, program: value as CalendarEvent["program"] }))}
-            />
-            <Field label="Label" value={event.label} onChange={(value) => onEvents(replaceAt(events, index, { ...event, label: value }))} />
-            <Remove onClick={() => onEvents(events.filter((row) => row.id !== event.id))} />
-          </Row>
-        ))}
-      </ListBlock>
-
-      <ListBlock
-        title="Coming up"
-        onAdd={() =>
-          onUpcoming([
-            ...upcoming,
-            { id: newId("upcoming"), program: "genai", when: "", title: "New item", detail: "", action: "", badge: "upcoming" },
-          ])
-        }
-      >
-        {upcoming.map((item, index) => (
-          <Row key={item.id}>
-            <SelectField
-              label="Program"
-              value={item.program}
-              options={[["genai", "GenAI"], ["irp", "MERN"]]}
-              onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, program: value as CalendarUpcoming["program"] }))}
-            />
-            <Field
-              label="When"
-              placeholder="Sun, 4 Oct · 5 to 14 Oct · 31 Oct to 1 Nov"
-              value={item.when}
-              onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, when: value }))}
-            />
-            <Field label="Title" value={item.title} onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, title: value }))} />
-            <Field label="Detail" value={item.detail} onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, detail: value }))} />
-            <SelectField
-              label="Button"
-              value={item.action}
-              options={[["", "None"], ["register", "Register"], ["submit", "Submit"]]}
-              onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, action: value as CalendarUpcoming["action"] }))}
-            />
-            <SelectField
-              label="Badge"
-              value={item.badge}
-              options={[["", "None"], ["not-registered", "Not registered"], ["upcoming", "Upcoming"], ["locked", "Locked"]]}
-              onChange={(value) => onUpcoming(replaceAt(upcoming, index, { ...item, badge: value as CalendarUpcoming["badge"] }))}
-            />
-            <Remove onClick={() => onUpcoming(upcoming.filter((row) => row.id !== item.id))} />
-          </Row>
-        ))}
-      </ListBlock>
-    </div>
-  );
-}
-
 function replaceAt<T>(list: T[], index: number, next: T): T[] {
   return list.map((item, i) => (i === index ? next : item));
 }
@@ -368,8 +330,8 @@ function ListBlock({ title, onAdd, children }: { title: string; onAdd: () => voi
   );
 }
 
-function Row({ children, ref }: { children: ReactNode; ref?: Ref<HTMLDivElement> }) {
-  return <div ref={ref} className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
+function Row({ children }: { children: ReactNode }) {
+  return <div className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
 }
 
 function Field({

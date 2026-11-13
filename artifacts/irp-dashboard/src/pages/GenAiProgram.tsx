@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   Check,
   ChevronRight,
@@ -26,12 +26,8 @@ import {
   GenaiLoomSubmissionForm,
   type LoomSubmissionRecord,
 } from "@/components/GenaiLoomSubmissionForm";
-import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
-import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
 import { useProgramBoard } from "@/lib/useProgramBoard";
 import type { GenAiAssessment } from "@/lib/programBoard";
-import { accessStageLabel, isGenaiAccessStage } from "@/lib/accessStages";
-import { isAccessGrantLive, useStudentAccess } from "@/lib/useStudentAccess";
 import { useGenaiProjectSubmission } from "@/lib/useGenaiProjectSubmission";
 import { useGenaiProjectChoices } from "@/lib/useGenaiProjectChoices";
 import {
@@ -153,9 +149,6 @@ export function GenAiProgram() {
         </p>
       </div>
 
-      <RegistrationBatchCallout track="genai" />
-      <GenAiAccessLinks />
-      <ScheduledAccessCallouts track="genai" />
       <GenAiJourney
         assessments={g.assessments}
         results={results.assessments}
@@ -321,18 +314,18 @@ function GenAiJourney({
   selectedProjectCount: number;
   onTab: (tab: TrackTab) => void;
 }) {
+  const [, setLocation] = useLocation();
   const { query: submissionQuery } = useGenaiProjectSubmission(true);
   const submitted = Boolean(submissionQuery.data?.submission);
   const written = results.filter((item) => WRITTEN_STATUSES.includes(item.status)).length;
   const qualified = results.some((item) => item.status === "QUALIFIED");
   const pending = results.some((item) => item.status === "RESULT_PENDING");
   const upcoming = results.some((item) => item.status === "UPCOMING");
-  const registrationOpen = assessments.some((item) => item.status === "open");
   const projectLocked = assessments.length === 0 || assessments.some((item) => item.status !== "completed");
 
   const assessmentTone: Tone = qualified
     ? "done"
-    : written > 0 && !pending && !upcoming && !registrationOpen
+    : written > 0 && !pending && !upcoming
       ? "failed"
       : "active";
   const projectUnlocked = qualified || !projectLocked;
@@ -360,14 +353,15 @@ function GenAiJourney({
           ? "You qualified in a GenAI assessment."
           : assessmentTone === "failed"
             ? "Your GenAI assessment scores are below the qualifying marks so far."
-            : registrationOpen
-              ? "Registration is open. Register for your next GenAI assessment."
-              : pending
+            : pending
                 ? "Your GenAI assessment result is being processed."
                 : upcoming
-                  ? "Your next GenAI assessment is coming up."
-                  : "Qualify in a GenAI assessment to move to the project.",
-      action: { label: written > 0 ? "View scores" : "View assessments", onClick: () => openTab("assessments") },
+                  ? "Find your next assessment's date and link in the Assessment Calendar."
+                  : "Qualify in a GenAI assessment to move to the project. Scheduled assessments are in the calendar.",
+      action: {
+        label: written > 0 ? "View scores" : "Assessment Calendar",
+        onClick: () => written > 0 ? openTab("assessments") : setLocation("/assessment-calendar"),
+      },
     },
     {
       key: "project",
@@ -576,10 +570,7 @@ function GenAiAssessments({
   onTab: (tab: TrackTab) => void;
   projectChoices: ProjectChoices;
 }) {
-  const openItems = assessments.filter((item) => item.status === "open");
   const completed = assessments.filter((item) => item.status === "completed");
-  const openCount = openItems.length;
-  const upcoming = results.filter((item) => item.status === "UPCOMING");
   const scored = results.filter((item) => item.status !== "UPCOMING");
   const { selectedProjects, setSelectedProjects, choicesReady, choicesError } = projectChoices;
   const [loomProject, setLoomProject] = useState<string | null>(null);
@@ -609,8 +600,15 @@ function GenAiAssessments({
     <section id="genai-assessments" className="scroll-mt-4 rounded-2xl border border-[#eaecf0] bg-white p-5 sm:p-6">
       <h2 className="font-display text-lg font-extrabold text-[#101828]">GenAI Assessments</h2>
       <p className="mt-1 text-sm text-[#667085]">
-        Register for your GenAI assessments and see your section-wise scores. Fixed dates for your batch.
+        View your section-wise scores here. Find scheduled assessment dates and links in the Assessment Calendar.
       </p>
+      <Link
+        href="/assessment-calendar"
+        data-testid="link-genai-assessment-calendar"
+        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#6941c6] px-3 py-2 text-sm font-bold text-white hover:bg-[#5925dc]"
+      >
+        Assessment Calendar <ChevronRight className="h-4 w-4" />
+      </Link>
       <div className="mt-4 inline-flex flex-wrap rounded-lg bg-[#f2f4f7] p-1">
         <button
           type="button"
@@ -621,11 +619,6 @@ function GenAiAssessments({
           }`}
         >
           Assessments
-          {openCount > 0 ? (
-            <span className="rounded-full bg-[#f79009] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              {openCount} to register
-            </span>
-          ) : null}
         </button>
         <button
           type="button"
@@ -651,32 +644,6 @@ function GenAiAssessments({
 
       {tab === "assessments" ? (
         <div className="mt-4 space-y-4">
-          {openItems.map((item) => (
-            <div key={item.id} className="rounded-xl border border-[#f9dbaf] bg-[#fffaeb] px-4 py-3">
-              <p className="text-[11px] font-bold tracking-wide text-[#b54708]">REGISTRATION OPEN</p>
-              <p className="mt-1 text-sm font-bold text-[#b54708]">{cleanTitle(item.title)}</p>
-              <p className="mt-1 text-sm text-[#344054]">
-                {item.when}
-                {item.note ? <span className="font-semibold text-[#b54708]"> · {item.note}</span> : null}
-              </p>
-            </div>
-          ))}
-          {upcoming.length > 0 ? (
-            <div>
-              <h3 className="text-sm font-semibold text-[#101828]">Upcoming</h3>
-              <ul className="mt-2 divide-y divide-[#f2f4f7] border-t border-[#f2f4f7]">
-                {upcoming.map((item) => (
-                  <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-[#101828]">{genaiAssessmentTitle(item)}</p>
-                      <p className="mt-0.5 text-sm text-[#667085]">{formatIstDateTime(item.startsAt)}</p>
-                    </div>
-                    <GenaiStatusChip status={item.status} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
           <div>
             <h3 className="text-sm font-semibold text-[#101828]">Your scores</h3>
             {resultsError ? (
@@ -930,58 +897,6 @@ function GenaiScoreRow({ item }: { item: GenaiAssessmentResult }) {
         </div>
       ) : null}
     </li>
-  );
-}
-
-/** Live GenAI exam / interview links from admin access grants. */
-function GenAiAccessLinks() {
-  const { grants } = useStudentAccess();
-  const live = grants.filter(
-    (g) =>
-      isGenaiAccessStage(g.stage) &&
-      g.stage !== "genai_project" &&
-      isAccessGrantLive(g) &&
-      Boolean(g.url?.trim()),
-  );
-  if (live.length === 0) return null;
-  return (
-    <div className="grid gap-3">
-      {live.map((grant) => {
-        const kind = grant.linkKind === "default" ? "" : grant.linkKind === "mock" ? "Mock" : "Main";
-        const cta =
-          grant.stage === "genai_ai_interview"
-            ? grant.linkKind === "mock" ? "Start Mock Interview" : "Start Interview"
-            : grant.linkKind === "mock" ? "Start Mock" : "Start Assessment";
-        return (
-          <section
-            key={grant.batchId}
-            className="flex flex-col gap-3 rounded-2xl border border-[#d1e9ff] bg-[#f5faff] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
-          >
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold tracking-wide text-[#175cd3]">
-                {kind ? `${kind.toUpperCase()} · ` : ""}OPEN NOW
-              </p>
-              <p className="mt-1 font-display text-base font-extrabold text-[#101828]">
-                {accessStageLabel(grant.stage)}
-              </p>
-              {grant.name ? <p className="mt-0.5 text-sm text-[#667085]">{grant.name}</p> : null}
-              {grant.expiresAt ? (
-                <p className="mt-0.5 text-xs text-[#667085]">Closes {formatIstDateTime(grant.expiresAt)}</p>
-              ) : null}
-            </div>
-            <a
-              href={grant.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#175cd3] px-4 py-2 text-sm font-bold text-white hover:bg-[#1849a9]"
-            >
-              {cta}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </section>
-        );
-      })}
-    </div>
   );
 }
 

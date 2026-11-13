@@ -1,31 +1,34 @@
-import { useQuery } from "@tanstack/react-query";
+import { getGetStudentProgramBoardQueryKey, useGetStudentProgramBoard } from "@workspace/api-client-react";
 import { getAuthToken } from "@/lib/authToken";
 import { DEFAULT_PROGRAM_BOARD, type ProgramBoard } from "@/lib/programBoard";
 
-export const PROGRAM_BOARD_QUERY_KEY = ["student", "program-board"] as const;
+/** Student program board cache key (generated). Invalidate this after admin saves. */
+export const PROGRAM_BOARD_QUERY_KEY = getGetStudentProgramBoardQueryKey();
 export const PROGRAM_BOARD_REFRESH_INTERVAL_MS = 30_000;
 
-async function fetchProgramBoard(): Promise<ProgramBoard> {
+/** Explicit bearer header so the local sessionStorage token works even before the global getter is set. */
+function studentAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
-  const res = await fetch("/api/student/program-board", {
-    cache: "no-store",
-    headers: token ? { authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error(`Program board request failed (${res.status})`);
-  const data = (await res.json()) as ProgramBoard;
-  if (!data?.genai || !data.calendar) throw new Error("Program board response is incomplete");
-  return data;
+  return token ? { authorization: `Bearer ${token}` } : {};
 }
 
 export function useProgramBoardQuery() {
-  return useQuery({
-    queryKey: PROGRAM_BOARD_QUERY_KEY,
-    queryFn: fetchProgramBoard,
-    staleTime: 0,
-    refetchInterval: PROGRAM_BOARD_REFRESH_INTERVAL_MS,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    retry: 1,
+  return useGetStudentProgramBoard<ProgramBoard>({
+    query: {
+      queryKey: PROGRAM_BOARD_QUERY_KEY,
+      staleTime: 0,
+      refetchInterval: PROGRAM_BOARD_REFRESH_INTERVAL_MS,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+      retry: 1,
+      select(data) {
+        if (!data?.genai || !Array.isArray(data?.calendar?.events) || !Array.isArray(data?.calendar?.upcoming)) {
+          throw new Error("Program board response is incomplete");
+        }
+        return data;
+      },
+    },
+    request: { cache: "no-store", headers: studentAuthHeaders() },
   });
 }
 

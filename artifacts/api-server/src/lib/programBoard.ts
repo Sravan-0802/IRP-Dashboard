@@ -1,8 +1,10 @@
 import { db, pool, programBoardTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import type { ProgramBoardDocument } from "@workspace/api-zod";
 
 const ROW_ID = 1;
 const MAX_ITEMS = 40;
+const MAX_CALENDAR_ITEMS = 1000;
 const MAX_TEXT = 500;
 const MAX_BODY = 2000;
 
@@ -32,7 +34,9 @@ async function ensureProgramBoardTable(): Promise<void> {
 const LIVE_URL = "https://meetings.ccbp.in/mid/irp-genai-training";
 const PRACTICE_URL = "https://nxtinterview.ccbp.in/interview/67b87057-99ab-4db4-811c-48fa2620b515";
 
-export const PROGRAM_BOARD_DEFAULTS = {
+export type ProgramBoardContent = Omit<ProgramBoardDocument, "updatedAt">;
+
+export const PROGRAM_BOARD_DEFAULTS: ProgramBoardContent = {
   genai: {
     subtitle: "Live classes and your GenAI path.",
     liveBadge: "",
@@ -62,42 +66,10 @@ export const PROGRAM_BOARD_DEFAULTS = {
     communityUrl: LIVE_URL,
   },
   calendar: {
-    events: [
-      { id: "e1", date: "2026-10-04", program: "irp", label: "L1 Assessment" },
-      { id: "e2", date: "2026-10-05", program: "genai", label: "Training C3" },
-      { id: "e3", date: "2026-10-07", program: "genai", label: "Training C3" },
-      { id: "e4", date: "2026-10-09", program: "genai", label: "Training C3" },
-      { id: "e5", date: "2026-10-10", program: "irp", label: "Ask an Achiever" },
-      { id: "e6", date: "2026-10-11", program: "irp", label: "Interview" },
-      { id: "e7", date: "2026-10-12", program: "irp", label: "Contest starts" },
-      { id: "e8", date: "2026-10-12", program: "genai", label: "Training C3" },
-      { id: "e9", date: "2026-10-14", program: "genai", label: "Training C3" },
-      { id: "e10", date: "2026-10-17", program: "genai", label: "Mock" },
-      { id: "e11", date: "2026-10-18", program: "genai", label: "Main" },
-      { id: "e12", date: "2026-10-19", program: "irp", label: "Contest ends" },
-      { id: "e13", date: "2026-10-19", program: "genai", label: "Training C4" },
-      { id: "e14", date: "2026-10-21", program: "genai", label: "Training C4" },
-      { id: "e15", date: "2026-10-23", program: "genai", label: "Training C4" },
-      { id: "e16", date: "2026-10-26", program: "genai", label: "Training C4" },
-      { id: "e17", date: "2026-10-28", program: "genai", label: "Training C4" },
-      { id: "e18", date: "2026-10-31", program: "genai", label: "Mock" },
-      { id: "e19", date: "2026-11-01", program: "genai", label: "Main" },
-    ],
-    upcoming: [
-      { id: "u1", program: "irp", when: "Sun, 4 Oct", title: "L1 Hustler Online Assessment", detail: "Online assessment", action: "", badge: "" },
-      { id: "u2", program: "genai", when: "5 to 14 Oct", title: "GenAI Training Sessions (Cycle 3)", detail: "Monday, Wednesday, Friday", action: "", badge: "" },
-      { id: "u3", program: "irp", when: "Sat, 10 Oct", title: "Ask an Achiever", detail: "Student who secured an internship through IRP", action: "", badge: "" },
-      { id: "u4", program: "irp", when: "Sun, 11 Oct", title: "Human Interview Sessions", detail: "Interview sessions", action: "", badge: "" },
-      { id: "u5", program: "irp", when: "12 to 19 Oct", title: "IRP Logo Design Contest", detail: "Starts 12 Oct · Ends 19 Oct", action: "", badge: "" },
-      { id: "u6", program: "genai", when: "Sat, 17 Oct", title: "GenAI Assessment Mock", detail: "Mock assessment", action: "", badge: "" },
-      { id: "u7", program: "genai", when: "Sun, 18 Oct", title: "GenAI Assessment Main", detail: "Main assessment", action: "", badge: "" },
-      { id: "u8", program: "genai", when: "19 to 28 Oct", title: "GenAI Training Sessions (Cycle 4)", detail: "For priority individuals", action: "", badge: "" },
-      { id: "u9", program: "genai", when: "31 Oct to 1 Nov", title: "GenAI Assessment Mock & Main", detail: "Mock on 31 Oct · Main on 1 Nov", action: "", badge: "" },
-    ],
+    events: [],
+    upcoming: [],
   },
 };
-
-export type ProgramBoardContent = typeof PROGRAM_BOARD_DEFAULTS;
 
 export type ProgramBoardResponse = ProgramBoardContent & { updatedAt: string | null };
 
@@ -224,14 +196,16 @@ function parseCalendar(raw: unknown): ProgramBoardContent["calendar"] | null {
   const row = asRecord(raw);
   if (!row) return null;
   return {
-    events: asList(row.events).map((item, index) => {
+    events: (Array.isArray(row.events) ? row.events.slice(0, MAX_CALENDAR_ITEMS) : []).map((item, index): ProgramBoardContent["calendar"]["events"][number] => {
       const event = asRecord(item);
       const date = text(event?.date, 10);
       return {
         id: idOf(event?.id, "event", index),
         date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "",
         program: oneOf(event?.program, ["irp", "genai"] as const, "irp"),
-        label: text(event?.label, 80),
+        label: text(event?.label, 200),
+        ...(event?.mode === "online" || event?.mode === "offline" ? { mode: event.mode } : {}),
+        ...(typeof event?.link === "string" ? { link: text(event.link, 2000) } : {}),
       };
     }).filter((event) => event.date && event.label),
     upcoming: asList(row.upcoming).map((item, index) => {
@@ -252,6 +226,49 @@ function parseCalendar(raw: unknown): ProgramBoardContent["calendar"] | null {
 export function parseProgramBoardBody(body: unknown): { ok: true; board: ProgramBoardContent } | { ok: false; error: string } {
   const row = asRecord(body);
   if (!row) return { ok: false, error: "Expected a JSON object" };
+  const calendarInput = asRecord(row.calendar);
+  if (!calendarInput || !Array.isArray(calendarInput.events)) {
+    return { ok: false, error: "calendar.events must be an array" };
+  }
+  if (calendarInput.events.length > MAX_CALENDAR_ITEMS) {
+    return { ok: false, error: `At most ${MAX_CALENDAR_ITEMS} calendar assessments can be saved` };
+  }
+  const ids = new Set<string>();
+  for (const [index, value] of calendarInput.events.entries()) {
+    const event = asRecord(value);
+    const prefix = `Assessment row ${index + 1}: `;
+    if (!event || typeof event.id !== "string" || !/^[\w.-]{1,80}$/.test(event.id)) {
+      return { ok: false, error: prefix + "a valid assessment ID is required" };
+    }
+    if (ids.has(event.id)) return { ok: false, error: prefix + "duplicate assessment ID" };
+    ids.add(event.id);
+    if (typeof event.label !== "string" || !event.label.trim() || event.label.trim().length > 200) {
+      return { ok: false, error: prefix + "assessment name must contain 1–200 characters" };
+    }
+    const date = typeof event.date === "string" ? event.date : "";
+    const parsedDate = new Date(`${date}T00:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
+      return { ok: false, error: prefix + "use a real assessment date in YYYY-MM-DD format" };
+    }
+    if (event.program !== "irp" && event.program !== "genai") {
+      return { ok: false, error: prefix + "program must be MERN/IRP or GenAI" };
+    }
+    if (event.mode !== undefined && event.mode !== "online" && event.mode !== "offline") {
+      return { ok: false, error: prefix + "assessment mode must be Online or Offline" };
+    }
+    const link = typeof event.link === "string" ? event.link.trim() : "";
+    if ((event.mode !== undefined && !link) || (event.link !== undefined && typeof event.link !== "string")) {
+      return { ok: false, error: prefix + "an assessment link is required" };
+    }
+    if (link) {
+      try {
+        const url = new URL(link);
+        if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password || link.length > 2000) throw new Error("invalid");
+      } catch {
+        return { ok: false, error: prefix + "assessment link must be a valid http(s) URL without credentials" };
+      }
+    }
+  }
   const genai = parseGenAi(row.genai);
   const calendar = parseCalendar(row.calendar);
   if (!genai || !calendar) return { ok: false, error: "genai and calendar are required" };
@@ -266,16 +283,19 @@ export async function getProgramBoard(): Promise<ProgramBoardResponse> {
   await ensureProgramBoardTable();
   const [row] = await db.select().from(programBoardTable).where(eq(programBoardTable.id, ROW_ID)).limit(1);
   if (!row) return toResponse(PROGRAM_BOARD_DEFAULTS, null);
-  try {
-    const parsed = parseProgramBoardBody(JSON.parse(row.payload));
-    if (!parsed.ok) return toResponse(PROGRAM_BOARD_DEFAULTS, row.updatedAt);
-    return toResponse(parsed.board, row.updatedAt);
-  } catch {
-    return toResponse(PROGRAM_BOARD_DEFAULTS, row.updatedAt);
+  const parsed = parseProgramBoardBody(JSON.parse(row.payload));
+  if (!parsed.ok) throw new Error(`Stored program board is invalid: ${parsed.error}`);
+  return toResponse(parsed.board, row.updatedAt);
+}
+
+export class ProgramBoardConflictError extends Error {
+  constructor() {
+    super("Another admin saved a newer schedule. Your draft has been kept. Refresh before saving again.");
+    this.name = "ProgramBoardConflictError";
   }
 }
 
-export async function updateProgramBoard(board: ProgramBoardContent): Promise<ProgramBoardResponse> {
+export async function updateProgramBoard(board: ProgramBoardContent, expectedUpdatedAt?: string | null): Promise<ProgramBoardResponse> {
   await ensureProgramBoardTable();
   const payload = JSON.stringify(board);
   const [row] = await db
@@ -284,7 +304,14 @@ export async function updateProgramBoard(board: ProgramBoardContent): Promise<Pr
     .onConflictDoUpdate({
       target: programBoardTable.id,
       set: { payload, updatedAt: new Date() },
+      // JS timestamps use milliseconds, while legacy Postgres defaults retain microseconds.
+      ...(expectedUpdatedAt === undefined ? {} : {
+        setWhere: expectedUpdatedAt === null
+          ? sql`false`
+          : sql`date_trunc('milliseconds', ${programBoardTable.updatedAt}) = ${expectedUpdatedAt}::timestamptz`,
+      }),
     })
     .returning();
-  return toResponse(board, row?.updatedAt ?? new Date());
+  if (!row) throw new ProgramBoardConflictError();
+  return toResponse(board, row.updatedAt);
 }

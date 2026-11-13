@@ -43,6 +43,8 @@ import type {
   ManualAccessInput,
   ManualAccessList,
   ManualAccessRevokeResult,
+  ProgramBoardDocument,
+  ProgramBoardInput,
   Student,
   StudentActivity,
   StudentAssessments,
@@ -76,6 +78,213 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetStudentProgramBoardUrl = () => {
+
+
+
+
+  return `/api/student/program-board`
+}
+
+export const getStudentProgramBoard = async ( options?: RequestInit): Promise<ProgramBoardDocument> => {
+
+  return customFetch<ProgramBoardDocument>(getGetStudentProgramBoardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentProgramBoardQueryKey = () => {
+    return [
+    `/api/student/program-board`
+    ] as const;
+    }
+
+
+export const getGetStudentProgramBoardQueryOptions = <TData = Awaited<ReturnType<typeof getStudentProgramBoard>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentProgramBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentProgramBoardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentProgramBoard>>> = ({ signal }) => getStudentProgramBoard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentProgramBoard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentProgramBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentProgramBoard>>>
+export type GetStudentProgramBoardQueryError = ErrorType<void>
+
+
+
+export function useGetStudentProgramBoard<TData = Awaited<ReturnType<typeof getStudentProgramBoard>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentProgramBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentProgramBoardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminProgramBoardUrl = () => {
+
+
+
+
+  return `/api/admin/program-board`
+}
+
+export const getAdminProgramBoard = async ( options?: RequestInit): Promise<ProgramBoardDocument> => {
+
+  return customFetch<ProgramBoardDocument>(getGetAdminProgramBoardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminProgramBoardQueryKey = () => {
+    return [
+    `/api/admin/program-board`
+    ] as const;
+    }
+
+
+export const getGetAdminProgramBoardQueryOptions = <TData = Awaited<ReturnType<typeof getAdminProgramBoard>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminProgramBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminProgramBoardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminProgramBoard>>> = ({ signal }) => getAdminProgramBoard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminProgramBoard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminProgramBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminProgramBoard>>>
+export type GetAdminProgramBoardQueryError = ErrorType<void>
+
+
+
+export function useGetAdminProgramBoard<TData = Awaited<ReturnType<typeof getAdminProgramBoard>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminProgramBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminProgramBoardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminProgramBoardUrl = () => {
+
+
+
+
+  return `/api/admin/program-board`
+}
+
+export const updateAdminProgramBoard = async (programBoardInput: ProgramBoardInput, options?: RequestInit): Promise<ProgramBoardDocument> => {
+
+  return customFetch<ProgramBoardDocument>(getUpdateAdminProgramBoardUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(programBoardInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminProgramBoardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminProgramBoard>>, TError,{data: BodyType<ProgramBoardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminProgramBoard>>, TError,{data: BodyType<ProgramBoardInput>}, TContext> => {
+
+const mutationKey = ['updateAdminProgramBoard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminProgramBoard>>, {data: BodyType<ProgramBoardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAdminProgramBoard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminProgramBoardMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminProgramBoard>>>
+    export type UpdateAdminProgramBoardMutationBody = BodyType<ProgramBoardInput>
+    export type UpdateAdminProgramBoardMutationError = ErrorType<void>
+
+    export const useUpdateAdminProgramBoard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminProgramBoard>>, TError,{data: BodyType<ProgramBoardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminProgramBoard>>,
+        TError,
+        {data: BodyType<ProgramBoardInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminProgramBoardMutationOptions(options));
+    }
 
 export const getGrantManualDashboardAccessUrl = () => {
 

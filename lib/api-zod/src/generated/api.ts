@@ -8,6 +8,387 @@
 import * as zod from 'zod';
 
 
+export const getStudentProgramBoardResponseOneGenaiClassHourMin = 0;
+export const getStudentProgramBoardResponseOneGenaiClassHourMax = 23;
+
+export const getStudentProgramBoardResponseOneGenaiClassMinuteMin = 0;
+export const getStudentProgramBoardResponseOneGenaiClassMinuteMax = 59;
+
+export const getStudentProgramBoardResponseOneCalendarEventsItemIdMax = 80;
+
+export const getStudentProgramBoardResponseOneCalendarEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getStudentProgramBoardResponseOneCalendarEventsItemLabelMax = 200;
+
+export const getStudentProgramBoardResponseOneCalendarEventsItemLinkMax = 2000;
+
+export const getStudentProgramBoardResponseOneCalendarEventsMax = 1000;
+
+
+
+export const GetStudentProgramBoardResponse = zod.object({
+  "expectedUpdatedAt": zod.string().nullish().describe('Optional optimistic lock; null means no saved document was loaded'),
+  "genai": zod.object({
+  "subtitle": zod.string(),
+  "liveBadge": zod.string(),
+  "weekLabel": zod.string(),
+  "classTitle": zod.string(),
+  "weekOf": zod.string(),
+  "classHour": zod.number().min(getStudentProgramBoardResponseOneGenaiClassHourMin).max(getStudentProgramBoardResponseOneGenaiClassHourMax),
+  "classMinute": zod.number().min(getStudentProgramBoardResponseOneGenaiClassMinuteMin).max(getStudentProgramBoardResponseOneGenaiClassMinuteMax),
+  "stats": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "hint": zod.string(),
+  "hintTone": zod.enum(['default', 'warn'])
+})),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "when": zod.string(),
+  "score": zod.string(),
+  "note": zod.string(),
+  "noteTone": zod.enum(['default', 'warn']),
+  "status": zod.enum(['completed', 'open', 'upcoming']),
+  "actionLabel": zod.string()
+})),
+  "classes": zod.array(zod.object({
+  "day": zod.string(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "time": zod.string(),
+  "duration": zod.string(),
+  "instructor": zod.string(),
+  "action": zod.string(),
+  "live": zod.boolean(),
+  "link": zod.string()
+})),
+  "recordingsEmpty": zod.string(),
+  "portalLabel": zod.string(),
+  "practiceEyebrow": zod.string(),
+  "practiceTitle": zod.string(),
+  "practiceBody": zod.string(),
+  "practiceCta": zod.string(),
+  "aboutTitle": zod.string(),
+  "aboutBody": zod.string(),
+  "syllabusLabel": zod.string(),
+  "communityLabel": zod.string(),
+  "supportLabel": zod.string(),
+  "liveUrl": zod.string(),
+  "portalUrl": zod.string(),
+  "practiceUrl": zod.string(),
+  "syllabusUrl": zod.string(),
+  "communityUrl": zod.string()
+}),
+  "calendar": zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(getStudentProgramBoardResponseOneCalendarEventsItemIdMax),
+  "date": zod.string().regex(getStudentProgramBoardResponseOneCalendarEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(getStudentProgramBoardResponseOneCalendarEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(getStudentProgramBoardResponseOneCalendarEventsItemLinkMax).optional()
+})).max(getStudentProgramBoardResponseOneCalendarEventsMax),
+  "upcoming": zod.array(zod.object({
+  "id": zod.string(),
+  "program": zod.enum(['irp', 'genai']),
+  "when": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "action": zod.enum(['', 'register', 'submit']),
+  "badge": zod.enum(['', 'not-registered', 'upcoming', 'locked'])
+}))
+})
+}).and(zod.object({
+  "updatedAt": zod.string().nullable()
+}))
+
+
+export const getAdminProgramBoardResponseOneGenaiClassHourMin = 0;
+export const getAdminProgramBoardResponseOneGenaiClassHourMax = 23;
+
+export const getAdminProgramBoardResponseOneGenaiClassMinuteMin = 0;
+export const getAdminProgramBoardResponseOneGenaiClassMinuteMax = 59;
+
+export const getAdminProgramBoardResponseOneCalendarEventsItemIdMax = 80;
+
+export const getAdminProgramBoardResponseOneCalendarEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getAdminProgramBoardResponseOneCalendarEventsItemLabelMax = 200;
+
+export const getAdminProgramBoardResponseOneCalendarEventsItemLinkMax = 2000;
+
+export const getAdminProgramBoardResponseOneCalendarEventsMax = 1000;
+
+
+
+export const GetAdminProgramBoardResponse = zod.object({
+  "expectedUpdatedAt": zod.string().nullish().describe('Optional optimistic lock; null means no saved document was loaded'),
+  "genai": zod.object({
+  "subtitle": zod.string(),
+  "liveBadge": zod.string(),
+  "weekLabel": zod.string(),
+  "classTitle": zod.string(),
+  "weekOf": zod.string(),
+  "classHour": zod.number().min(getAdminProgramBoardResponseOneGenaiClassHourMin).max(getAdminProgramBoardResponseOneGenaiClassHourMax),
+  "classMinute": zod.number().min(getAdminProgramBoardResponseOneGenaiClassMinuteMin).max(getAdminProgramBoardResponseOneGenaiClassMinuteMax),
+  "stats": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "hint": zod.string(),
+  "hintTone": zod.enum(['default', 'warn'])
+})),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "when": zod.string(),
+  "score": zod.string(),
+  "note": zod.string(),
+  "noteTone": zod.enum(['default', 'warn']),
+  "status": zod.enum(['completed', 'open', 'upcoming']),
+  "actionLabel": zod.string()
+})),
+  "classes": zod.array(zod.object({
+  "day": zod.string(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "time": zod.string(),
+  "duration": zod.string(),
+  "instructor": zod.string(),
+  "action": zod.string(),
+  "live": zod.boolean(),
+  "link": zod.string()
+})),
+  "recordingsEmpty": zod.string(),
+  "portalLabel": zod.string(),
+  "practiceEyebrow": zod.string(),
+  "practiceTitle": zod.string(),
+  "practiceBody": zod.string(),
+  "practiceCta": zod.string(),
+  "aboutTitle": zod.string(),
+  "aboutBody": zod.string(),
+  "syllabusLabel": zod.string(),
+  "communityLabel": zod.string(),
+  "supportLabel": zod.string(),
+  "liveUrl": zod.string(),
+  "portalUrl": zod.string(),
+  "practiceUrl": zod.string(),
+  "syllabusUrl": zod.string(),
+  "communityUrl": zod.string()
+}),
+  "calendar": zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(getAdminProgramBoardResponseOneCalendarEventsItemIdMax),
+  "date": zod.string().regex(getAdminProgramBoardResponseOneCalendarEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(getAdminProgramBoardResponseOneCalendarEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(getAdminProgramBoardResponseOneCalendarEventsItemLinkMax).optional()
+})).max(getAdminProgramBoardResponseOneCalendarEventsMax),
+  "upcoming": zod.array(zod.object({
+  "id": zod.string(),
+  "program": zod.enum(['irp', 'genai']),
+  "when": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "action": zod.enum(['', 'register', 'submit']),
+  "badge": zod.enum(['', 'not-registered', 'upcoming', 'locked'])
+}))
+})
+}).and(zod.object({
+  "updatedAt": zod.string().nullable()
+}))
+
+
+export const updateAdminProgramBoardBodyGenaiClassHourMin = 0;
+export const updateAdminProgramBoardBodyGenaiClassHourMax = 23;
+
+export const updateAdminProgramBoardBodyGenaiClassMinuteMin = 0;
+export const updateAdminProgramBoardBodyGenaiClassMinuteMax = 59;
+
+export const updateAdminProgramBoardBodyCalendarEventsItemIdMax = 80;
+
+export const updateAdminProgramBoardBodyCalendarEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateAdminProgramBoardBodyCalendarEventsItemLabelMax = 200;
+
+export const updateAdminProgramBoardBodyCalendarEventsItemLinkMax = 2000;
+
+export const updateAdminProgramBoardBodyCalendarEventsMax = 1000;
+
+
+
+export const UpdateAdminProgramBoardBody = zod.object({
+  "expectedUpdatedAt": zod.string().nullish().describe('Optional optimistic lock; null means no saved document was loaded'),
+  "genai": zod.object({
+  "subtitle": zod.string(),
+  "liveBadge": zod.string(),
+  "weekLabel": zod.string(),
+  "classTitle": zod.string(),
+  "weekOf": zod.string(),
+  "classHour": zod.number().min(updateAdminProgramBoardBodyGenaiClassHourMin).max(updateAdminProgramBoardBodyGenaiClassHourMax),
+  "classMinute": zod.number().min(updateAdminProgramBoardBodyGenaiClassMinuteMin).max(updateAdminProgramBoardBodyGenaiClassMinuteMax),
+  "stats": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "hint": zod.string(),
+  "hintTone": zod.enum(['default', 'warn'])
+})),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "when": zod.string(),
+  "score": zod.string(),
+  "note": zod.string(),
+  "noteTone": zod.enum(['default', 'warn']),
+  "status": zod.enum(['completed', 'open', 'upcoming']),
+  "actionLabel": zod.string()
+})),
+  "classes": zod.array(zod.object({
+  "day": zod.string(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "time": zod.string(),
+  "duration": zod.string(),
+  "instructor": zod.string(),
+  "action": zod.string(),
+  "live": zod.boolean(),
+  "link": zod.string()
+})),
+  "recordingsEmpty": zod.string(),
+  "portalLabel": zod.string(),
+  "practiceEyebrow": zod.string(),
+  "practiceTitle": zod.string(),
+  "practiceBody": zod.string(),
+  "practiceCta": zod.string(),
+  "aboutTitle": zod.string(),
+  "aboutBody": zod.string(),
+  "syllabusLabel": zod.string(),
+  "communityLabel": zod.string(),
+  "supportLabel": zod.string(),
+  "liveUrl": zod.string(),
+  "portalUrl": zod.string(),
+  "practiceUrl": zod.string(),
+  "syllabusUrl": zod.string(),
+  "communityUrl": zod.string()
+}),
+  "calendar": zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateAdminProgramBoardBodyCalendarEventsItemIdMax),
+  "date": zod.string().regex(updateAdminProgramBoardBodyCalendarEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(updateAdminProgramBoardBodyCalendarEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(updateAdminProgramBoardBodyCalendarEventsItemLinkMax).optional()
+})).max(updateAdminProgramBoardBodyCalendarEventsMax),
+  "upcoming": zod.array(zod.object({
+  "id": zod.string(),
+  "program": zod.enum(['irp', 'genai']),
+  "when": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "action": zod.enum(['', 'register', 'submit']),
+  "badge": zod.enum(['', 'not-registered', 'upcoming', 'locked'])
+}))
+})
+})
+
+export const updateAdminProgramBoardResponseOneGenaiClassHourMin = 0;
+export const updateAdminProgramBoardResponseOneGenaiClassHourMax = 23;
+
+export const updateAdminProgramBoardResponseOneGenaiClassMinuteMin = 0;
+export const updateAdminProgramBoardResponseOneGenaiClassMinuteMax = 59;
+
+export const updateAdminProgramBoardResponseOneCalendarEventsItemIdMax = 80;
+
+export const updateAdminProgramBoardResponseOneCalendarEventsItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateAdminProgramBoardResponseOneCalendarEventsItemLabelMax = 200;
+
+export const updateAdminProgramBoardResponseOneCalendarEventsItemLinkMax = 2000;
+
+export const updateAdminProgramBoardResponseOneCalendarEventsMax = 1000;
+
+
+
+export const UpdateAdminProgramBoardResponse = zod.object({
+  "expectedUpdatedAt": zod.string().nullish().describe('Optional optimistic lock; null means no saved document was loaded'),
+  "genai": zod.object({
+  "subtitle": zod.string(),
+  "liveBadge": zod.string(),
+  "weekLabel": zod.string(),
+  "classTitle": zod.string(),
+  "weekOf": zod.string(),
+  "classHour": zod.number().min(updateAdminProgramBoardResponseOneGenaiClassHourMin).max(updateAdminProgramBoardResponseOneGenaiClassHourMax),
+  "classMinute": zod.number().min(updateAdminProgramBoardResponseOneGenaiClassMinuteMin).max(updateAdminProgramBoardResponseOneGenaiClassMinuteMax),
+  "stats": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "hint": zod.string(),
+  "hintTone": zod.enum(['default', 'warn'])
+})),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "title": zod.string(),
+  "when": zod.string(),
+  "score": zod.string(),
+  "note": zod.string(),
+  "noteTone": zod.enum(['default', 'warn']),
+  "status": zod.enum(['completed', 'open', 'upcoming']),
+  "actionLabel": zod.string()
+})),
+  "classes": zod.array(zod.object({
+  "day": zod.string(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "time": zod.string(),
+  "duration": zod.string(),
+  "instructor": zod.string(),
+  "action": zod.string(),
+  "live": zod.boolean(),
+  "link": zod.string()
+})),
+  "recordingsEmpty": zod.string(),
+  "portalLabel": zod.string(),
+  "practiceEyebrow": zod.string(),
+  "practiceTitle": zod.string(),
+  "practiceBody": zod.string(),
+  "practiceCta": zod.string(),
+  "aboutTitle": zod.string(),
+  "aboutBody": zod.string(),
+  "syllabusLabel": zod.string(),
+  "communityLabel": zod.string(),
+  "supportLabel": zod.string(),
+  "liveUrl": zod.string(),
+  "portalUrl": zod.string(),
+  "practiceUrl": zod.string(),
+  "syllabusUrl": zod.string(),
+  "communityUrl": zod.string()
+}),
+  "calendar": zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateAdminProgramBoardResponseOneCalendarEventsItemIdMax),
+  "date": zod.string().regex(updateAdminProgramBoardResponseOneCalendarEventsItemDateRegExp),
+  "program": zod.enum(['irp', 'genai']),
+  "label": zod.string().min(1).max(updateAdminProgramBoardResponseOneCalendarEventsItemLabelMax),
+  "mode": zod.enum(['online', 'offline']).optional(),
+  "link": zod.string().max(updateAdminProgramBoardResponseOneCalendarEventsItemLinkMax).optional()
+})).max(updateAdminProgramBoardResponseOneCalendarEventsMax),
+  "upcoming": zod.array(zod.object({
+  "id": zod.string(),
+  "program": zod.enum(['irp', 'genai']),
+  "when": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "action": zod.enum(['', 'register', 'submit']),
+  "badge": zod.enum(['', 'not-registered', 'upcoming', 'locked'])
+}))
+})
+}).and(zod.object({
+  "updatedAt": zod.string().nullable()
+}))
+
+
 export const grantManualDashboardAccessBodyAcademyUserIdsItemRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const grantManualDashboardAccessBodyAcademyUserIdsMax = 1000;
 

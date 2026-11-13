@@ -1,5 +1,6 @@
 import {
   Brain,
+  CalendarDays,
   Code2,
   Mic,
   Zap,
@@ -22,18 +23,12 @@ import {
 import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
 import { l1HustlerJourneySteps } from "@/lib/l1JourneySteps";
 import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
-import { Hero } from "./Hero";
-import { ScheduledAccessCallouts } from "./ScheduledAccessCallouts";
 import { JourneyBar, IrpCard, type JourneyStep } from "./ui";
 import type { SubjectRow } from "./ProgressSummary";
 import { AssessmentResults } from "./AssessmentResults";
-import { FeMockCallout } from "./FeMockCallout";
-import { FeProjectCallout } from "./FeProjectCallout";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
-import { useStudentAccess } from "@/lib/useStudentAccess";
-import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 import { formatYearOfJoin } from "./OnlineAssessmentBadge";
 import { IrpClearCards } from "./IrpClearCards";
 import { HumanInterviewResults } from "./HumanInterviewResults";
@@ -228,15 +223,6 @@ export function DashboardView({
   const { settings } = useVisibilitySettings();
   const { data: humanResults } = useHumanInterviewResults(userId);
   const { minScore: feProjectMinScore } = useFeProjectConfig();
-  const { findGrant } = useStudentAccess();
-  const humanInterviewGrantUrl =
-    findGrant("human_interview", "default")?.url?.trim() ||
-    findGrant("human_interview", "main")?.url?.trim() ||
-    null;
-  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
-  const humanInterviewReady =
-    feCleared || journey.journeyState === "L1_HUMAN_INTERVIEW";
-
   const motivation = assessmentMotivation(
     phase,
     days,
@@ -282,8 +268,23 @@ export function DashboardView({
         ) : null}
       </div>
 
-      {/* Current registration status comes from admin-uploaded batch membership and responses. */}
-      {level === 1 && !journey.isWildcard ? <RegistrationBatchCallout /> : null}
+      {onOpenAssessmentCalendar ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d9d6fe] bg-[#f4f3ff] px-4 py-4 sm:px-5">
+          <div>
+            <p className="font-display text-base font-extrabold text-[#42307d]">Your assessment schedule</p>
+            <p className="mt-1 text-sm text-[#6941c6]">Find every scheduled assessment, its mode and its link in the calendar.</p>
+          </div>
+          <button
+            type="button"
+            data-testid="button-open-assessment-calendar"
+            onClick={onOpenAssessmentCalendar}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#6941c6] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#5925dc]"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Assessment Calendar
+          </button>
+        </div>
+      ) : null}
 
       {showResultsProcessingBanner ? (
         <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
@@ -293,17 +294,6 @@ export function DashboardView({
           </p>
         </div>
       ) : null}
-
-      <Hero
-        journey={journey}
-        days={days}
-        examDateLabel={examDateLabel}
-        assessments={assessments}
-        feProjectMinScore={feProjectMinScore}
-        userId={userId}
-      />
-
-      <ScheduledAccessCallouts />
 
       {level === 1 && !journey.isWildcard ? (
         <IrpClearCards
@@ -336,19 +326,6 @@ export function DashboardView({
       ) : null}
 
       {level === 1 && !journey.isWildcard ? (
-        <FeMockCallout assessments={assessments} userId={userId} feProjectMinScore={feProjectMinScore} />
-      ) : null}
-
-      {level === 1 && !journey.isWildcard ? (
-        <FeProjectCallout
-          journey={journey}
-          assessments={assessments}
-          feProjectMinScore={feProjectMinScore}
-          userId={userId}
-        />
-      ) : null}
-
-      {level === 1 && !journey.isWildcard ? (
         <FeProjectResults
           journey={journey}
           assessments={assessments}
@@ -358,35 +335,6 @@ export function DashboardView({
         />
       ) : null}
 
-
-      {level === 1 &&
-      !journey.isWildcard &&
-      humanInterviewReady &&
-      humanInterviewGrantUrl ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-[rgba(59,91,219,0.2)] bg-[linear-gradient(120deg,#edf2ff_0%,#f8f7ff_100%)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold text-ink">
-            Your Human Interview link is ready.
-          </span>
-          <a
-            href={humanInterviewGrantUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-          >
-            Open Human Interview
-          </a>
-        </div>
-      ) : level === 1 &&
-        !journey.isWildcard &&
-        humanInterviewReady &&
-        !settings.humanInterviewResults &&
-        !humanInterviewGrantUrl ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft">
-          <span className="text-sm font-medium text-muted2">
-            Human Interview details are being processed. They will appear here once released.
-          </span>
-        </div>
-      ) : null}
 
       <HumanInterviewResults userId={userId} />
 

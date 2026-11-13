@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { GetStudentProgramBoardResponse } from "@workspace/api-zod";
 import { db } from "@workspace/db";
 import {
   studentsTable,
@@ -1258,7 +1259,7 @@ router.get("/student/program-board", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    res.json(await getProgramBoard());
+    res.json(GetStudentProgramBoardResponse.parse(await getProgramBoard()));
   } catch (err) {
     req.log.error({ err }, "Failed to get program board");
     res.status(500).json({ error: "Internal server error" });

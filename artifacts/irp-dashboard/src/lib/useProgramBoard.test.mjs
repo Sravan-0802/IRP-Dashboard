@@ -5,42 +5,50 @@ import vm from "node:vm";
 import ts from "typescript";
 
 const source = await readFile(new URL("./useProgramBoard.ts", import.meta.url), "utf8");
-const fetchFn = source.match(/async function fetchProgramBoard\(\)[\s\S]*?\n\}/)?.[0];
-
-async function runFetch({ token, status = 200, body = { genai: {}, calendar: { events: [], upcoming: [] } } }) {
-  assert.ok(fetchFn, "fetchProgramBoard exists");
-  const calls = [];
+function runHook(token, response = { genai: {}, calendar: { events: [], upcoming: [] } }) {
+  let options;
   const context = {
-    getAuthToken: () => token,
-    fetch: async (url, init) => {
-      calls.push({ url, init });
-      return { ok: status >= 200 && status < 300, status, json: async () => body };
+    exports: {},
+    require(name) {
+      if (name === "@workspace/api-client-react") return {
+        getGetStudentProgramBoardQueryKey: () => ["/api/student/program-board"],
+        useGetStudentProgramBoard(input) {
+          options = input;
+          return { data: input.query.select(response), isError: false };
+        },
+      };
+      if (name === "@/lib/authToken") return { getAuthToken: () => token };
+      if (name === "@/lib/programBoard") return { DEFAULT_PROGRAM_BOARD: {} };
+      throw new Error(name);
     },
-    result: null,
-    error: null,
   };
-  const code = ts.transpileModule(
-    `${fetchFn}\nfetchProgramBoard().then((v) => { result = v; }, (e) => { error = e; });`,
-    { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
-  ).outputText;
-  vm.runInNewContext(code, context);
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  return { calls, result: context.result, error: context.error };
+  vm.runInNewContext(ts.transpileModule(source, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText, context);
+  const result = context.exports.useProgramBoardQuery();
+  return { result, options };
 }
 
-test("program board request sends the SSO token as a Bearer header", async () => {
-  const { calls, result } = await runFetch({ token: "sso-token" });
-  assert.equal(calls[0].url, "/api/student/program-board");
-  assert.equal(calls[0].init.headers.authorization, "Bearer sso-token");
-  assert.ok(result?.calendar);
+test("generated program board request receives the SSO bearer token", () => {
+  const { options, result } = runHook("sso-token");
+  assert.equal(options.request.headers.authorization, "Bearer sso-token");
+  assert.equal(options.request.cache, "no-store");
+  assert.ok(result.data.calendar);
 });
 
-test("program board request works without a token (local dev fallback)", async () => {
-  const { calls } = await runFetch({ token: null });
-  assert.equal(calls[0].init.headers.authorization, undefined);
+test("local dev requests omit the bearer header when no token is present", () => {
+  assert.equal(runHook(null).options.request.headers.authorization, undefined);
 });
 
-test("a rejected request surfaces as an error instead of silently keeping stale data", async () => {
-  const { error } = await runFetch({ token: "expired", status: 401 });
-  assert.match(String(error?.message), /401/);
+test("the student calendar refreshes on mount, focus and every 30 seconds", () => {
+  const { options } = runHook(null);
+  assert.equal(options.query.queryKey[0], "/api/student/program-board");
+  assert.equal(options.query.staleTime, 0);
+  assert.equal(options.query.refetchInterval, 30_000);
+  assert.equal(options.query.refetchOnMount, "always");
+  assert.equal(options.query.refetchOnWindowFocus, true);
+});
+
+test("incomplete responses fail explicitly instead of becoming a sample calendar", () => {
+  assert.throws(() => runHook(null, { genai: {} }), /response is incomplete/);
 });

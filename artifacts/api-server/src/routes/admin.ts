@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { GetAdminProgramBoardResponse, UpdateAdminProgramBoardBody, UpdateAdminProgramBoardResponse } from "@workspace/api-zod";
 import {
   db,
   studentsTable,
@@ -25,7 +26,7 @@ import {
   parseGenAiTrainingPopupBody,
   updateGenAiTrainingPopup,
 } from "../lib/genAiTrainingPopup";
-import { getProgramBoard, parseProgramBoardBody, updateProgramBoard } from "../lib/programBoard";
+import { getProgramBoard, parseProgramBoardBody, ProgramBoardConflictError, updateProgramBoard } from "../lib/programBoard";
 import {
   getFeQualificationRules,
   parseFeQualificationRules,
@@ -876,7 +877,7 @@ router.get("/admin/program-board", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    res.json(await getProgramBoard());
+    res.json(GetAdminProgramBoardResponse.parse(await getProgramBoard()));
   } catch (err) {
     req.log.error({ err }, "Failed to get program board");
     res.status(500).json({ error: "Internal server error" });
@@ -890,13 +891,29 @@ router.put("/admin/program-board", async (req, res) => {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
-    const parsed = parseProgramBoardBody(req.body);
+    const contract = UpdateAdminProgramBoardBody.safeParse(req.body);
+    if (!contract.success) {
+      res.status(400).json({ error: contract.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ") });
+      return;
+    }
+    if (typeof contract.data.expectedUpdatedAt === "string" && !Number.isFinite(Date.parse(contract.data.expectedUpdatedAt))) {
+      res.status(400).json({ error: "Invalid saved-version timestamp" });
+      return;
+    }
+    const parsed = parseProgramBoardBody(contract.data);
     if (!parsed.ok) {
       res.status(400).json({ error: parsed.error });
       return;
     }
-    res.json(await updateProgramBoard(parsed.board));
+    const expected = typeof contract.data.expectedUpdatedAt === "string"
+      ? new Date(contract.data.expectedUpdatedAt).toISOString()
+      : contract.data.expectedUpdatedAt;
+    res.json(UpdateAdminProgramBoardResponse.parse(await updateProgramBoard(parsed.board, expected)));
   } catch (err) {
+    if (err instanceof ProgramBoardConflictError) {
+      res.status(409).json({ error: err.message });
+      return;
+    }
     req.log.error({ err }, "Failed to update program board");
     res.status(500).json({ error: "Internal server error" });
   }

@@ -1,257 +1,39 @@
-import { useEffect, useState } from "react";
-import { Calendar, Clock, Trophy, CheckCircle2, CalendarCheck } from "lucide-react";
+import { useState } from "react";
 import type { AssessmentResult } from "@workspace/api-client-react";
-import { IrpCard } from "@/components/irp/ui";
-import { L1RegistrationModal, L1RegistrationSuccess } from "@/components/irp/L1RegistrationModal";
 import type { Journey } from "@/lib/journey";
+import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { AssessmentCalendarBoard } from "./AssessmentCalendarBoard";
-import { AssessmentsHub } from "./AssessmentsHub";
-import {
-  L1_JULY26_HUSTLER_CALENDAR,
-  L1_JULY26_HUSTLER_SLOTS,
-  getValidJuly26HustlerSlot,
-  syncL1HustlerSlotFromRegistration,
-  type L1RegistrationRecord,
-} from "@/lib/l1AssessmentSchedule";
-import { isL1July26RegistrationOpen } from "@/lib/irpDates";
-import { isCycle1Cleared, isCycle2Candidate } from "@/lib/l1StudentTrack";
-import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
-import { useL1Registration } from "@/lib/useL1Registration";
 
-const JULY26_SLOT_IDS = new Set<string>(L1_JULY26_HUSTLER_SLOTS.map((s) => s.id));
-const JULY26_DEFAULT_SLOT = L1_JULY26_HUSTLER_SLOTS[0]?.id;
-
-function AssessmentCalendarContent() {
-  const calendar = L1_JULY26_HUSTLER_CALENDAR;
-  const { registration, submit, isSubmitted, submitting } = useL1Registration();
-  const [selectedSlot, setSelectedSlot] = useState<string | undefined>(() => getValidJuly26HustlerSlot());
-  const [registerOpen, setRegisterOpen] = useState(false);
-
-  useEffect(() => {
-    if (registration?.slotId && JULY26_SLOT_IDS.has(registration.slotId)) {
-      setSelectedSlot(registration.slotId);
-      return;
-    }
-    // Drop stale slot-1 / slot-2 left from earlier cycles in localStorage.
-    setSelectedSlot((prev) =>
-      prev && JULY26_SLOT_IDS.has(prev) ? prev : JULY26_DEFAULT_SLOT,
-    );
-  }, [registration?.slotId]);
-
-  function openRegister() {
-    const slot =
-      selectedSlot && JULY26_SLOT_IDS.has(selectedSlot) ? selectedSlot : JULY26_DEFAULT_SLOT;
-    if (!slot || isSubmitted) return;
-    if (slot !== selectedSlot) setSelectedSlot(slot);
-    setRegisterOpen(true);
-  }
-
-  async function handleSubmit(record: L1RegistrationRecord) {
-    return submit(record);
-  }
-
-  function handleComplete(record: L1RegistrationRecord) {
-    syncL1HustlerSlotFromRegistration(record);
-    if (record.slotId) {
-      setSelectedSlot(record.slotId);
-    }
-  }
-
-  return (
-    <>
-      <IrpCard className="overflow-hidden p-0">
-        <div
-          className="border-b border-[rgba(103,65,217,0.1)] px-5 py-4 sm:px-6"
-          style={{ background: "linear-gradient(130deg, #eef2ff, #f8f0ff)" }}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff9db] text-[#e67700]">
-              <Trophy className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted2">
-                {calendar.subtitle}
-              </p>
-              <h2 className="font-display text-xl font-extrabold text-ink">{calendar.title}</h2>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-5 p-5 sm:p-6">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-                <Calendar className="h-3.5 w-3.5 text-brand" />
-                Date
-              </div>
-              <p className="mt-1 text-sm font-bold text-ink">{calendar.dateLabel}</p>
-            </div>
-            <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-                <Clock className="h-3.5 w-3.5 text-brand" />
-                Duration
-              </div>
-              <p className="mt-1 text-sm font-bold text-ink">{calendar.duration}</p>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted2">
-              <Clock className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
-              Your slot
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {calendar.slots.map((slot) => {
-                const selected = selectedSlot === slot.id;
-                return (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    disabled={isSubmitted}
-                    onClick={() => setSelectedSlot(slot.id)}
-                    className={
-                      selected
-                        ? "rounded-xl border-2 border-[#3b5bdb] bg-[#eef2ff] px-4 py-2.5 text-sm font-bold text-[#3b5bdb]"
-                        : "rounded-xl border-2 border-[#dee2e6] bg-white px-4 py-2.5 text-sm font-semibold text-muted2 transition-colors hover:border-[#3b5bdb]/40 disabled:cursor-default disabled:opacity-70"
-                    }
-                  >
-                    {slot.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {isSubmitted ? (
-              <span className="inline-flex items-center gap-2 rounded-xl border border-[rgba(12,166,120,0.35)] bg-[#e8faf0] px-5 py-2.5 text-sm font-bold text-teal">
-                <CheckCircle2 className="h-4 w-4" />
-                Submitted
-              </span>
-            ) : (
-              <button
-                type="button"
-                disabled={!selectedSlot}
-                onClick={openRegister}
-                className="btn-pop rounded-xl px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Book · Register for slot
-              </button>
-            )}
-            {!isSubmitted && !selectedSlot ? (
-              <span className="text-sm font-medium text-muted2">Select a slot, then complete registration.</span>
-            ) : null}
-          </div>
-
-          {registration ? <L1RegistrationSuccess record={registration} calendar={calendar} /> : null}
-
-          <p className="text-xs text-muted2">
-            The assessment link will be shared on exam day at the top of this page. Attempt the mock assessment before
-            the Hustler exam.
-          </p>
-        </div>
-      </IrpCard>
-
-      <L1RegistrationModal
-        open={registerOpen}
-        onOpenChange={setRegisterOpen}
-        slotId={selectedSlot}
-        calendar={calendar}
-        submitting={submitting}
-        onSubmit={handleSubmit}
-        onComplete={handleComplete}
-      />
-    </>
-  );
-}
-
-function SlotConfirmedContent({ registration }: { registration: L1RegistrationRecord | null }) {
-  const calendar = L1_JULY26_HUSTLER_CALENDAR;
-  const bookedSlotId = registration?.slotId ?? JULY26_DEFAULT_SLOT;
-  const bookedRecord: L1RegistrationRecord =
-    registration?.availability === "yes" && registration.slotId
-      ? registration
-      : {
-          availability: "yes",
-          slotId: bookedSlotId,
-          submittedAt: new Date().toISOString(),
-        };
-
-  return (
-    <IrpCard className="overflow-hidden p-0">
-      <div
-        className="border-b border-[rgba(12,166,120,0.2)] px-5 py-4 sm:px-6"
-        style={{ background: "linear-gradient(130deg, #e8faf0, #f3f0ff)" }}
-      >
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-teal shadow-sm">
-            <CalendarCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal">
-              Registration confirmed
-            </p>
-            <h2 className="font-display text-xl font-extrabold text-ink">
-              Slot booked for {calendar.dateLabel}
-            </h2>
-            <p className="mt-1 text-sm text-muted2">
-              Your assessment registration is confirmed for 26th July 2026.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-5 p-5 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-              <Calendar className="h-3.5 w-3.5 text-brand" />
-              Date
-            </div>
-            <p className="mt-1 text-sm font-bold text-ink">{calendar.dateLabel}</p>
-          </div>
-          <div className="rounded-xl border border-[rgba(103,65,217,0.12)] bg-white px-4 py-3">
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted2">
-              <Clock className="h-3.5 w-3.5 text-brand" />
-              Duration
-            </div>
-            <p className="mt-1 text-sm font-bold text-ink">{calendar.duration}</p>
-          </div>
-        </div>
-
-        <L1RegistrationSuccess record={bookedRecord} calendar={calendar} />
-
-        <p className="text-xs text-muted2">
-          The assessment link will be shared on exam day at the top of this page.
-        </p>
-      </div>
-    </IrpCard>
-  );
-}
-
-export function BookSlot({
-  level = 1,
-  journey,
-  assessments = [],
-  userId,
-}: {
+/** The uploaded calendar is the only schedule surface; legacy July cards are retired. */
+export function BookSlot(_props: {
   level?: 1 | 2 | 3;
   journey?: Journey;
   assessments?: AssessmentResult[];
   userId?: string;
 }) {
-  const cleared = isCycle1Cleared(assessments, userId);
-  const isCandidate = isCycle2Candidate(assessments, userId);
-  const registrationOpen =
-    isL1July26RegistrationOpen() || isJuly26BookingTestUser(userId);
-
-  const showCalendar = isCandidate && !cleared && registrationOpen;
-
+  const [registrationOpen, setRegistrationOpen] = useState(false);
   return (
-    <div className="space-y-8">
-      <AssessmentsHub level={level} assessments={assessments} journey={journey} userId={userId ?? ""} />
+    <div className="space-y-6">
       <AssessmentCalendarBoard />
-      {showCalendar ? <AssessmentCalendarContent /> : null}
+      <section className="rounded-xl border border-[#eaecf0] bg-white p-4">
+        <button
+          type="button"
+          aria-expanded={registrationOpen}
+          aria-controls="calendar-registration-details"
+          data-testid="button-calendar-registration-details"
+          onClick={() => setRegistrationOpen((open) => !open)}
+          className="text-sm font-bold text-[#6941c6] hover:underline"
+        >
+          {registrationOpen ? "Hide registration details" : "View your registration details"}
+        </button>
+        <p className="mt-1 text-xs text-[#667085]">Manage an existing batch registration here. Assessment dates and links are listed in the calendar above.</p>
+        {registrationOpen ? (
+          <div id="calendar-registration-details" className="mt-4 space-y-4">
+            <RegistrationBatchCallout />
+            <RegistrationBatchCallout track="genai" />
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

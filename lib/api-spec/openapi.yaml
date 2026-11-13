@@ -15,6 +15,50 @@ tags:
   - name: analytics
     description: Dashboard usage analytics
 paths:
+  /student/program-board:
+    get:
+      operationId: getStudentProgramBoard
+      tags: [student]
+      responses:
+        "200":
+          description: Latest admin-managed program and assessment schedule
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgramBoardDocument" }
+        "401":
+          description: Authentication required
+  /admin/program-board:
+    get:
+      operationId: getAdminProgramBoard
+      security: [{ ApiKeyAuth: [] }]
+      responses:
+        "200":
+          description: Saved program board
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgramBoardDocument" }
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateAdminProgramBoard
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProgramBoardInput" }
+      responses:
+        "200":
+          description: Saved schedule, available immediately to students
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgramBoardDocument" }
+        "400":
+          description: Invalid schedule
+        "401":
+          description: Unauthorized
+        "409":
+          description: Another admin saved a newer version; reload before saving
   /admin/dashboard-access/grant:
     post:
       operationId: grantManualDashboardAccess
@@ -1083,3 +1127,121 @@ components:
             $ref: "#/components/schemas/L1Registration"
         l1RegistrationCount:
           type: integer
+    ProgramBoardInput:
+      type: object
+      required: [genai, calendar]
+      properties:
+        expectedUpdatedAt:
+          type: [string, "null"]
+          description: Optional optimistic lock; null means no saved document was loaded
+        genai: { $ref: "#/components/schemas/ProgramGenAiContent" }
+        calendar: { $ref: "#/components/schemas/ProgramCalendarContent" }
+    ProgramBoardDocument:
+      allOf:
+        - $ref: "#/components/schemas/ProgramBoardInput"
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt: { type: [string, "null"] }
+    ProgramCalendarContent:
+      type: object
+      required: [events, upcoming]
+      properties:
+        events:
+          type: array
+          maxItems: 1000
+          items: { $ref: "#/components/schemas/CalendarAssessmentEntry" }
+        upcoming:
+          type: array
+          items: { $ref: "#/components/schemas/CalendarLegacyUpcoming" }
+    CalendarAssessmentEntry:
+      type: object
+      required: [id, date, program, label]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 80 }
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        program: { type: string, enum: [irp, genai] }
+        label: { type: string, minLength: 1, maxLength: 200 }
+        mode: { type: string, enum: [online, offline] }
+        link: { type: string, maxLength: 2000 }
+    CalendarLegacyUpcoming:
+      type: object
+      required: [id, program, when, title, detail, action, badge]
+      properties:
+        id: { type: string }
+        program: { type: string, enum: [irp, genai] }
+        when: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        action: { type: string, enum: ["", register, submit] }
+        badge: { type: string, enum: ["", not-registered, upcoming, locked] }
+    ProgramGenAiContent:
+      type: object
+      required: [subtitle, liveBadge, weekLabel, classTitle, weekOf, classHour, classMinute, stats, assessments, classes, recordingsEmpty, portalLabel, practiceEyebrow, practiceTitle, practiceBody, practiceCta, aboutTitle, aboutBody, syllabusLabel, communityLabel, supportLabel, liveUrl, portalUrl, practiceUrl, syllabusUrl, communityUrl]
+      properties:
+        subtitle: { type: string }
+        liveBadge: { type: string }
+        weekLabel: { type: string }
+        classTitle: { type: string }
+        weekOf: { type: string }
+        classHour: { type: integer, minimum: 0, maximum: 23 }
+        classMinute: { type: integer, minimum: 0, maximum: 59 }
+        stats:
+          type: array
+          items: { $ref: "#/components/schemas/ProgramGenAiStat" }
+        assessments:
+          type: array
+          items: { $ref: "#/components/schemas/ProgramGenAiAssessment" }
+        classes:
+          type: array
+          items: { $ref: "#/components/schemas/ProgramGenAiClass" }
+        recordingsEmpty: { type: string }
+        portalLabel: { type: string }
+        practiceEyebrow: { type: string }
+        practiceTitle: { type: string }
+        practiceBody: { type: string }
+        practiceCta: { type: string }
+        aboutTitle: { type: string }
+        aboutBody: { type: string }
+        syllabusLabel: { type: string }
+        communityLabel: { type: string }
+        supportLabel: { type: string }
+        liveUrl: { type: string }
+        portalUrl: { type: string }
+        practiceUrl: { type: string }
+        syllabusUrl: { type: string }
+        communityUrl: { type: string }
+    ProgramGenAiStat:
+      type: object
+      required: [label, value, hint, hintTone]
+      properties:
+        label: { type: string }
+        value: { type: string }
+        hint: { type: string }
+        hintTone: { type: string, enum: [default, warn] }
+    ProgramGenAiAssessment:
+      type: object
+      required: [id, label, title, when, score, note, noteTone, status, actionLabel]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        title: { type: string }
+        when: { type: string }
+        score: { type: string }
+        note: { type: string }
+        noteTone: { type: string, enum: [default, warn] }
+        status: { type: string, enum: [completed, open, upcoming] }
+        actionLabel: { type: string }
+    ProgramGenAiClass:
+      type: object
+      required: [day, date, title, time, duration, instructor, action, live, link]
+      properties:
+        day: { type: string }
+        date: { type: string }
+        title: { type: string }
+        time: { type: string }
+        duration: { type: string }
+        instructor: { type: string }
+        action: { type: string }
+        live: { type: boolean }
+        link: { type: string }

@@ -341,6 +341,192 @@ export interface DashboardAnalyticsSummary {
   l1RegistrationCount: number;
 }
 
+export type ProgramGenAiStatHintTone = typeof ProgramGenAiStatHintTone[keyof typeof ProgramGenAiStatHintTone];
+
+
+export const ProgramGenAiStatHintTone = {
+  default: 'default',
+  warn: 'warn',
+} as const;
+
+export interface ProgramGenAiStat {
+  label: string;
+  value: string;
+  hint: string;
+  hintTone: ProgramGenAiStatHintTone;
+}
+
+export type ProgramGenAiAssessmentNoteTone = typeof ProgramGenAiAssessmentNoteTone[keyof typeof ProgramGenAiAssessmentNoteTone];
+
+
+export const ProgramGenAiAssessmentNoteTone = {
+  default: 'default',
+  warn: 'warn',
+} as const;
+
+export type ProgramGenAiAssessmentStatus = typeof ProgramGenAiAssessmentStatus[keyof typeof ProgramGenAiAssessmentStatus];
+
+
+export const ProgramGenAiAssessmentStatus = {
+  completed: 'completed',
+  open: 'open',
+  upcoming: 'upcoming',
+} as const;
+
+export interface ProgramGenAiAssessment {
+  id: string;
+  label: string;
+  title: string;
+  when: string;
+  score: string;
+  note: string;
+  noteTone: ProgramGenAiAssessmentNoteTone;
+  status: ProgramGenAiAssessmentStatus;
+  actionLabel: string;
+}
+
+export interface ProgramGenAiClass {
+  day: string;
+  date: string;
+  title: string;
+  time: string;
+  duration: string;
+  instructor: string;
+  action: string;
+  live: boolean;
+  link: string;
+}
+
+export interface ProgramGenAiContent {
+  subtitle: string;
+  liveBadge: string;
+  weekLabel: string;
+  classTitle: string;
+  weekOf: string;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  classHour: number;
+  /**
+     * @minimum 0
+     * @maximum 59
+     */
+  classMinute: number;
+  stats: ProgramGenAiStat[];
+  assessments: ProgramGenAiAssessment[];
+  classes: ProgramGenAiClass[];
+  recordingsEmpty: string;
+  portalLabel: string;
+  practiceEyebrow: string;
+  practiceTitle: string;
+  practiceBody: string;
+  practiceCta: string;
+  aboutTitle: string;
+  aboutBody: string;
+  syllabusLabel: string;
+  communityLabel: string;
+  supportLabel: string;
+  liveUrl: string;
+  portalUrl: string;
+  practiceUrl: string;
+  syllabusUrl: string;
+  communityUrl: string;
+}
+
+export type CalendarAssessmentEntryProgram = typeof CalendarAssessmentEntryProgram[keyof typeof CalendarAssessmentEntryProgram];
+
+
+export const CalendarAssessmentEntryProgram = {
+  irp: 'irp',
+  genai: 'genai',
+} as const;
+
+export type CalendarAssessmentEntryMode = typeof CalendarAssessmentEntryMode[keyof typeof CalendarAssessmentEntryMode];
+
+
+export const CalendarAssessmentEntryMode = {
+  online: 'online',
+  offline: 'offline',
+} as const;
+
+export interface CalendarAssessmentEntry {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  program: CalendarAssessmentEntryProgram;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  label: string;
+  mode?: CalendarAssessmentEntryMode;
+  /** @maxLength 2000 */
+  link?: string;
+}
+
+export type CalendarLegacyUpcomingProgram = typeof CalendarLegacyUpcomingProgram[keyof typeof CalendarLegacyUpcomingProgram];
+
+
+export const CalendarLegacyUpcomingProgram = {
+  irp: 'irp',
+  genai: 'genai',
+} as const;
+
+export type CalendarLegacyUpcomingAction = typeof CalendarLegacyUpcomingAction[keyof typeof CalendarLegacyUpcomingAction];
+
+
+export const CalendarLegacyUpcomingAction = {
+  '': '',
+  register: 'register',
+  submit: 'submit',
+} as const;
+
+export type CalendarLegacyUpcomingBadge = typeof CalendarLegacyUpcomingBadge[keyof typeof CalendarLegacyUpcomingBadge];
+
+
+export const CalendarLegacyUpcomingBadge = {
+  '': '',
+  'not-registered': 'not-registered',
+  upcoming: 'upcoming',
+  locked: 'locked',
+} as const;
+
+export interface CalendarLegacyUpcoming {
+  id: string;
+  program: CalendarLegacyUpcomingProgram;
+  when: string;
+  title: string;
+  detail: string;
+  action: CalendarLegacyUpcomingAction;
+  badge: CalendarLegacyUpcomingBadge;
+}
+
+export interface ProgramCalendarContent {
+  /** @maxItems 1000 */
+  events: CalendarAssessmentEntry[];
+  upcoming: CalendarLegacyUpcoming[];
+}
+
+export interface ProgramBoardInput {
+  /**
+     * Optional optimistic lock; null means no saved document was loaded
+     * @nullable
+     */
+  expectedUpdatedAt?: string | null;
+  genai: ProgramGenAiContent;
+  calendar: ProgramCalendarContent;
+}
+
+export type ProgramBoardDocument = ProgramBoardInput & ({
+  /** @nullable */
+  updatedAt: string | null;
+});
+
 export type GetGenaiProjectProgressParams = {
 search?: string;
 status?: GetGenaiProjectProgressStatus;

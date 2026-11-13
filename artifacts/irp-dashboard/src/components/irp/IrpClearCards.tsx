@@ -92,7 +92,7 @@ function headerCopy(steps: JourneyStep[], required: number): string {
     return "Qualify in the Level 1 online assessment to start collecting your IRP Clear Cards.";
   }
   if (fe === "failed") {
-    return "You have qualified in the online assessment. Your FE project score is available on the dashboard. A re-attempt link will appear when released.";
+    return "You have qualified in the online assessment. Your FE project score is available on the dashboard. Find re-attempt schedules and links in the Assessment Calendar.";
   }
   if (fe !== "done") {
     return "You have qualified in the online assessment. Qualify in the FE Project to continue.";
