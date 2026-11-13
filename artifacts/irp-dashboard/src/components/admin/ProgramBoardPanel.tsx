@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { CalendarDays, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
   DEFAULT_PROGRAM_BOARD,
@@ -248,18 +248,33 @@ function CalendarEditor({
   onEvents: (events: CalendarEvent[]) => void;
   onUpcoming: (upcoming: CalendarUpcoming[]) => void;
 }) {
+  // A new chip goes to the top of the list; scroll to it and focus its Date field.
+  const newEventRowRef = useRef<HTMLDivElement>(null);
+  const [focusNewEvent, setFocusNewEvent] = useState(false);
+
+  useEffect(() => {
+    if (!focusNewEvent) return;
+    newEventRowRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    newEventRowRef.current?.querySelector("input")?.focus();
+    setFocusNewEvent(false);
+  }, [focusNewEvent, events]);
+
   return (
     <div className="space-y-5">
       <ListBlock
         title="Calendar chips"
-        onAdd={() => onEvents([...events, { id: newId("event"), date: todayIso(), program: "genai", label: "New event" }])}
+        onAdd={() => {
+          const event = { id: newId("event"), date: todayIso(), program: "genai" as const, label: "New event" };
+          setFocusNewEvent(true);
+          onEvents([event, ...events]);
+        }}
       >
         <p className="text-xs text-[#667085]">
           One chip per date. If a chip shares a word with a Coming up title that covers that date (for example
           &quot;Training C3&quot; and &quot;GenAI Training Sessions (Cycle 3)&quot;), students see the full title.
         </p>
         {events.map((event, index) => (
-          <Row key={event.id}>
+          <Row key={event.id} ref={index === 0 && focusNewEvent ? newEventRowRef : undefined}>
             <Field label="Date" type="date" value={event.date} onChange={(value) => onEvents(replaceAt(events, index, { ...event, date: value }))} />
             <SelectField
               label="Program"
@@ -349,8 +364,8 @@ function ListBlock({ title, onAdd, children }: { title: string; onAdd: () => voi
   );
 }
 
-function Row({ children }: { children: ReactNode }) {
-  return <div className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
+function Row({ children, ref }: { children: ReactNode; ref?: Ref<HTMLDivElement> }) {
+  return <div ref={ref} className="grid items-end gap-2 rounded-xl border border-[#eaecf0] p-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>;
 }
 
 function Field({
