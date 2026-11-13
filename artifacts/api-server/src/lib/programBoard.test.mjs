@@ -132,12 +132,20 @@ test("preserves legacy entries without inventing a mode or link", () => {
   assert.equal(result.board.calendar.events[0].link, undefined);
 });
 
+test("accepts a new assessment when its link is omitted or blank", () => {
+  for (const link of [undefined, ""]) {
+    const assessment = event({ id: "optional-link", link });
+    const result = parseProgramBoardBody(board([assessment]));
+    assert.equal(result.ok, true);
+    assert.equal(result.board.calendar.events[0].link || undefined, undefined);
+  }
+});
+
 for (const [description, patch] of [
   ["impossible date", { date: "2030-02-31" }],
   ["non-leap February", { date: "2030-02-29" }],
   ["unsafe link", { link: "javascript:alert(1)" }],
   ["credential-bearing link", { link: "https://user:password@example.com" }],
-  ["missing assessment link", { link: "" }],
   ["unknown assessment mode", { mode: "hybrid" }],
   ["blank assessment name", { label: " " }],
 ]) {

@@ -54,16 +54,21 @@ describe("AssessmentCalendarBoard", () => {
     expect(within(screen.getByTestId(`cell-calendar-${year}-03-07`)).queryByText("MERN")).toBeNull();
   });
 
-  it("does not make legacy or unsafe URLs clickable", () => {
+  it("keeps links optional and does not expose raw or unsafe URLs", () => {
     const now = new Date();
     const date = `${monthPrefix(now.getFullYear(), now.getMonth())}-12`;
     showCalendar([
       { id: "legacy", date, program: "irp", label: "Old entry" },
       { id: "unsafe", date, program: "irp", label: "Unsafe", link: "javascript:alert(1)" },
+      { id: "private-url", date, program: "irp", label: "Safe URL hidden as text", mode: "online", link: "https://example.com/private-url" },
     ]);
     const cell = within(screen.getByTestId(`cell-calendar-${date}`));
-    expect(cell.queryAllByRole("link")).toHaveLength(0);
-    expect(cell.getAllByText("Link pending")).toHaveLength(2);
+    expect(cell.queryAllByRole("link")).toHaveLength(1);
+    expect(cell.getByTestId("link-assessment-private-url")).toHaveProperty("href", "https://example.com/private-url");
+    expect(cell.queryByText("https://example.com/private-url")).toBeNull();
+    expect(cell.getByText("Old entry")).toBeTruthy();
+    expect(cell.getByText("Safe URL hidden as text")).toBeTruthy();
+    expect(screen.queryByText("Link pending")).toBeNull();
   });
 
   it("shows an explicit retry rather than fabricated events when the server fails", () => {

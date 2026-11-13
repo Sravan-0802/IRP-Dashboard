@@ -274,8 +274,8 @@ export function parseProgramBoardBody(body: unknown): { ok: true; board: Program
       return { ok: false, error: prefix + "assessment mode must be Online or Offline" };
     }
     const link = typeof event.link === "string" ? event.link.trim() : "";
-    if ((event.mode !== undefined && !link) || (event.link !== undefined && typeof event.link !== "string")) {
-      return { ok: false, error: prefix + "an assessment link is required" };
+    if (event.link !== undefined && typeof event.link !== "string") {
+      return { ok: false, error: prefix + "assessment link must be text" };
     }
     if (link) {
       try {

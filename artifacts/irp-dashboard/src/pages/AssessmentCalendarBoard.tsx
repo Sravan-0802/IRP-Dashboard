@@ -36,7 +36,7 @@ function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-/** One clickable assessment. Without a safe link it renders as plain text with "Link pending". */
+/** An assessment is clickable only when its saved optional link is safe. */
 function AssessmentChip({ event, compact }: { event: CalendarEvent; compact?: boolean }) {
   const href = safeHttpUrl(event.link);
   const mode = event.mode ? MODE_NAME[event.mode] : null;
@@ -52,7 +52,6 @@ function AssessmentChip({ event, compact }: { event: CalendarEvent; compact?: bo
         <span className="line-clamp-2 break-words">{event.label}</span>
         <span className="mt-0.5 flex flex-wrap items-center gap-1">
           {tag}
-          {!href ? <span className="text-[9px] font-semibold text-[#98a2b3]">Link pending</span> : null}
         </span>
       </>
     );
@@ -60,7 +59,7 @@ function AssessmentChip({ event, compact }: { event: CalendarEvent; compact?: bo
     return href ? (
       <a href={href} target="_blank" rel="noopener noreferrer" title={event.label} data-testid={`link-assessment-${event.id}`} onClick={(e) => e.stopPropagation()} className={cls}>{body}</a>
     ) : (
-      <span title={`${event.label} (link pending)`} data-testid={`text-assessment-${event.id}`} className={`${cls} opacity-80`}>{body}</span>
+      <span title={event.label} data-testid={`text-assessment-${event.id}`} className={`${cls} opacity-80`}>{body}</span>
     );
   }
   return (
@@ -76,9 +75,7 @@ function AssessmentChip({ event, compact }: { event: CalendarEvent; compact?: bo
           <a href={href} target="_blank" rel="noopener noreferrer" data-testid={`link-open-assessment-${event.id}`} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#6941c6] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#5925dc]">
             Open assessment <ExternalLink className="h-3.5 w-3.5" />
           </a>
-        ) : (
-          <p className="mt-2 text-xs font-semibold text-[#b54708]" data-testid={`text-link-pending-${event.id}`}>Link pending. The program team will add it soon.</p>
-        )}
+        ) : null}
       </div>
     </li>
   );

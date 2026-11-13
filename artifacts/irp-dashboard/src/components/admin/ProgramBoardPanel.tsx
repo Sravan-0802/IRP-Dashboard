@@ -23,7 +23,8 @@ function cleanEvents(events: CalendarEvent[]): CalendarEvent[] {
   return events.map((e) => {
     const next: CalendarEvent = { id: e.id, date: e.date.trim(), program: e.program, label: e.label.trim() };
     if (e.mode !== undefined) next.mode = e.mode;
-    if (e.link !== undefined) next.link = e.link.trim();
+    const link = e.link?.trim();
+    if (link) next.link = link;
     return next;
   });
 }

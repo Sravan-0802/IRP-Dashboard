@@ -16,6 +16,31 @@ describe("assessment calendar CSV", () => {
     expect(r.events.map((e) => e.label)).toContain("Mock Assessment, Set A");
     expect(r.events[1]).toMatchObject({ mode: "online", program: "genai" });
   });
+  it("accepts a file and rows with no assessment link", () => {
+    const r = importAssessmentCsv(
+      "Assessment Name,Assessment Date,Assessment Mode\nExam,2030-01-12,Offline\n",
+      2030, 0, id,
+    );
+    expect(r.errors).toEqual([]);
+    expect(r.events[0]).toMatchObject({ label: "Exam", mode: "offline" });
+    expect(r.events[0].link).toBeUndefined();
+  });
+  it("accepts a blank optional assessment link column", () => {
+    const r = importAssessmentCsv(
+      "Assessment Name,Assessment Date,Assessment Mode,Assessment Link\nExam,2030-01-12,Online,\n",
+      2030, 0, id,
+    );
+    expect(r.errors).toEqual([]);
+    expect(r.events[0].link).toBeUndefined();
+  });
+  it("still rejects a provided unsafe assessment link", () => {
+    const r = importAssessmentCsv(
+      "Assessment Name,Assessment Date,Assessment Mode,Assessment Link\nExam,2030-01-12,Online,javascript:alert(1)\n",
+      2030, 0, id,
+    );
+    expect(r.errors).toHaveLength(1);
+    expect(r.errors[0].message).toMatch(/Assessment Link must be/);
+  });
   it("rejects the whole file when any row is invalid", () => {
     const csv = "Assessment Name,Assessment Date,Assessment Mode,Assessment Link\nOk,2030-01-02,Online,https://example.com\n,2030-02-31,Hybrid,javascript:alert(1)\nOut,2030-02-01,Offline,https://example.com\n";
     const r = importAssessmentCsv(csv, 2030, 0, id);

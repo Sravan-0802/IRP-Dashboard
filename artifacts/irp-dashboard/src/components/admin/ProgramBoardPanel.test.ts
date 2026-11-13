@@ -160,6 +160,27 @@ describe("ProgramBoardPanel", () => {
     expect(await screen.findByTestId("text-program-board-saved")).toHaveProperty("textContent", expect.stringContaining("Saved at"));
   });
 
+  it("saves a new assessment when its optional link is blank", async () => {
+    const initial = { ...DEFAULT_PROGRAM_BOARD, updatedAt: "2030-01-01T00:00:00.000Z" };
+    let saved: ProgramBoard | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
+      if (init?.method === "PUT") saved = JSON.parse(String(init.body));
+      if (isCalendarHistoryRequest(_url)) return json([]);
+      return json(saved ? { ...saved, updatedAt: "2030-01-02T00:00:00.000Z" } : initial);
+    }));
+    showPanel();
+    await openCalendar();
+    fireEvent.click(screen.getByTestId("button-add-calendar-assessment"));
+    fireEvent.change(screen.getByLabelText("Assessment name"), { target: { value: "No-link assessment" } });
+    fireEvent.change(screen.getByLabelText("Link (optional)"), { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("button-save-program-board"));
+
+    await waitFor(() => expect(saved?.calendar.events).toHaveLength(1));
+    expect(saved?.calendar.events[0]).toMatchObject({ label: "No-link assessment", mode: "online" });
+    expect(saved?.calendar.events[0].link).toBeUndefined();
+    expect(await screen.findByTestId("text-program-board-saved")).toHaveProperty("textContent", expect.stringContaining("Saved at"));
+  });
+
   it("shows the month comparison and confirms before restoring a revision", async () => {
     const now = new Date();
     const month = monthPrefix(now.getFullYear(), now.getMonth());

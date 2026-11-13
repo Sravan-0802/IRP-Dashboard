@@ -11,8 +11,8 @@ import {
 export const CSV_MAX_BYTES = 512 * 1024;
 export const CSV_MAX_ROWS = 500;
 
-export const REQUIRED_HEADERS = ["Assessment Name", "Assessment Date", "Assessment Mode", "Assessment Link"] as const;
-export const OPTIONAL_HEADERS = ["Program"] as const;
+export const REQUIRED_HEADERS = ["Assessment Name", "Assessment Date", "Assessment Mode"] as const;
+export const OPTIONAL_HEADERS = ["Assessment Link", "Program"] as const;
 
 export const CSV_TEMPLATE = [
   "Assessment Name,Assessment Date,Assessment Mode,Assessment Link,Program",
@@ -120,7 +120,8 @@ export function importAssessmentCsv(
 
   const prefix = `${monthPrefix(year, month)}-`;
   const monthLabel = new Date(year, month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const [iName, iDate, iMode, iLink] = REQUIRED_HEADERS.map(index);
+  const [iName, iDate, iMode] = REQUIRED_HEADERS.map(index);
+  const iLink = index("Assessment Link");
   const iProgram = index("Program");
   const errors: CsvRowError[] = [];
   const events: CalendarEvent[] = [];
@@ -131,7 +132,8 @@ export function importAssessmentCsv(
     const name = get(iName);
     const date = get(iDate);
     const mode = parseMode(get(iMode));
-    const link = safeHttpUrl(get(iLink));
+    const rawLink = get(iLink);
+    const link = rawLink ? safeHttpUrl(rawLink) : null;
     const program = parseProgram(get(iProgram));
     const problems: string[] = [];
     if (cells.length > header.length) problems.push("has more cells than headers");
@@ -140,13 +142,20 @@ export function importAssessmentCsv(
     if (!isIsoDate(date)) problems.push(`Assessment Date "${date}" is not a valid YYYY-MM-DD date`);
     else if (!date.startsWith(prefix)) problems.push(`Assessment Date ${date} is outside ${monthLabel}`);
     if (!mode) problems.push(`Assessment Mode "${get(iMode)}" must be Online or Offline`);
-    if (!link) problems.push("Assessment Link must be a full http:// or https:// URL");
+    if (rawLink && !link) problems.push("Assessment Link must be a full http:// or https:// URL");
     if (!program) problems.push(`Program "${get(iProgram)}" must be MERN, IRP or GenAI`);
     if (problems.length) {
       errors.push({ row, message: problems.join("; ") });
       return;
     }
-    events.push({ id: makeId(), date, label: name, mode: mode!, link: link!, program: program! });
+    events.push({
+      id: makeId(),
+      date,
+      label: name,
+      mode: mode!,
+      ...(link ? { link } : {}),
+      program: program!,
+    });
   });
 
   return errors.length ? { events: [], errors } : { events: events.sort((a, b) => a.date.localeCompare(b.date)), errors };

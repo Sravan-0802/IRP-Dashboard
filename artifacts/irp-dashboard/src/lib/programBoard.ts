@@ -171,21 +171,20 @@ export function monthPrefix(year: number, month: number): string {
 export const PROGRAM_NAME: Record<CalendarProgram, string> = { irp: "MERN", genai: "GenAI" };
 export const MODE_NAME: Record<CalendarMode, string> = { online: "Online", offline: "Offline" };
 
-/** Problems with one calendar entry, used before save. Legacy entries (no mode and no link) are allowed. */
+/** Problems with one calendar entry, used before save. Links are optional. */
 export function calendarEventProblems(event: CalendarEvent): string[] {
   const problems: string[] = [];
   if (!event.label.trim()) problems.push("Assessment name is required");
   else if (event.label.trim().length > 200) problems.push("Assessment name must be 200 characters or fewer");
   if (!isIsoDate(event.date)) problems.push("Date must be a valid YYYY-MM-DD date");
   if (event.program !== "irp" && event.program !== "genai") problems.push("Program must be MERN or GenAI");
-  const legacy = event.mode === undefined && (event.link === undefined || event.link === "");
-  if (!legacy) {
-    if (event.mode !== "online" && event.mode !== "offline") problems.push("Mode must be Online or Offline");
-    if (!safeHttpUrl(event.link)) problems.push("Link must be a full http:// or https:// URL");
+  if (event.mode !== undefined && event.mode !== "online" && event.mode !== "offline") {
+    problems.push("Mode must be Online or Offline");
   }
+  if (event.link?.trim() && !safeHttpUrl(event.link)) problems.push("Link must be a full http:// or https:// URL");
   return problems;
 }
 
 export function isLegacyEvent(event: CalendarEvent): boolean {
-  return !event.mode || !safeHttpUrl(event.link);
+  return event.mode === undefined;
 }

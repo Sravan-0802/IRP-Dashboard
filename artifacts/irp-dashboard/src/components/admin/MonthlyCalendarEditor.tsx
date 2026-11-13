@@ -274,7 +274,7 @@ export function MonthlyCalendarEditor({
           <div>
             <h3 className="text-sm font-extrabold text-[#101828]">Upload {monthLabel} schedule</h3>
             <p className="mt-0.5 max-w-xl text-xs text-[#667085]">
-              One CSV with Assessment Name, Assessment Date (YYYY-MM-DD), Assessment Mode (Online or Offline) and Assessment Link. Program (MERN or GenAI) is optional and defaults to MERN. Every row must fall in {monthLabel}. Max {CSV_MAX_ROWS} rows, 512 KB.
+              One CSV with Assessment Name, Assessment Date (YYYY-MM-DD) and Assessment Mode (Online or Offline). Assessment Link is optional; Program (MERN or GenAI) is optional and defaults to MERN. Every row must fall in {monthLabel}. Max {CSV_MAX_ROWS} rows, 512 KB.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -391,12 +391,12 @@ export function MonthlyCalendarEditor({
                     <option value="genai">GenAI</option>
                   </select>
                 </label>
-                <Input label="Link" placeholder="https://" testId={`input-assessment-link-${event.id}`} value={event.link ?? ""} onChange={(v) => patch(event.id, { link: v === "" && !event.mode ? undefined : v })} />
+                <Input label="Link (optional)" placeholder="https:// (optional)" testId={`input-assessment-link-${event.id}`} value={event.link ?? ""} onChange={(v) => patch(event.id, { link: v })} />
                 <button type="button" data-testid={`button-delete-assessment-${event.id}`} onClick={() => onEvents(events.filter((e) => e.id !== event.id))} className="inline-flex h-9 items-center gap-1 text-xs font-semibold text-[#b42318]">
                   <Trash2 className="h-3.5 w-3.5" /> Delete
                 </button>
                 {legacy && problems.length === 0 ? (
-                  <p className="text-[11px] font-semibold text-[#b54708] sm:col-span-2 lg:col-span-6">Older entry: students see "Link pending" until you set a mode and link.</p>
+                  <p className="text-[11px] font-semibold text-[#b54708] sm:col-span-2 lg:col-span-6">Older entry without a mode. Links are optional; choose Online or Offline when known.</p>
                 ) : null}
                 {problems.length ? (
                   <p className="text-[11px] font-semibold text-[#b42318] sm:col-span-2 lg:col-span-6" data-testid={`text-assessment-problems-${event.id}`}>{problems.join(". ")}.</p>
