@@ -39,6 +39,8 @@ import { IrpClearCards } from "./IrpClearCards";
 import { HumanInterviewResults } from "./HumanInterviewResults";
 import { useHumanInterviewResults } from "@/lib/useHumanInterviewResults";
 import { withHumanInterviewClearance } from "@/lib/humanInterviewClearance";
+import { withTrackHumanInterview, type MernTrackStatus } from "@/lib/trackStatus";
+import { useTrackStatus } from "@/lib/useTrackStatus";
 
 function journeySteps(
   journey: Journey,
@@ -51,6 +53,7 @@ function journeySteps(
   },
   feProjectMinScore?: number | null,
   userId?: string,
+  track?: MernTrackStatus | null,
 ): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
@@ -63,6 +66,7 @@ function journeySteps(
       visibility,
       feProjectMinScore,
       userId,
+      track,
     );
   }
 
@@ -227,6 +231,8 @@ export function DashboardView({
   const level = getLevel(journey.journeyState);
   const { settings } = useVisibilitySettings();
   const { data: humanResults } = useHumanInterviewResults(userId);
+  // Stage results stored in the new tables; null (switch off / not usable) keeps the old logic.
+  const track = useTrackStatus(userId);
   const { minScore: feProjectMinScore } = useFeProjectConfig();
   const { findGrant } = useStudentAccess();
   const humanInterviewGrantUrl =
@@ -266,9 +272,11 @@ export function DashboardView({
   );
   const hasOnlineScores = hasWrittenAssessment(assessments, level);
   const showResultsProcessingBanner = hasOnlineScores && onlineResultsLocked;
-  const baseSteps = journeySteps(journey, assessments, settings, feProjectMinScore, userId);
+  const baseSteps = journeySteps(journey, assessments, settings, feProjectMinScore, userId, track);
   const steps = level === 1 && !journey.isWildcard
-    ? withHumanInterviewClearance(baseSteps, humanResults)
+    ? track
+      ? withTrackHumanInterview(baseSteps, track)
+      : withHumanInterviewClearance(baseSteps, humanResults)
     : baseSteps;
 
   return (

@@ -12,6 +12,7 @@ import registrationBatchesRouter from "./registrationBatches";
 import supportRouter from "./support";
 import humanInterviewsRouter from "./humanInterviews";
 import genaiProjectProgressRouter from "./genaiProjectProgress";
+import trackStatusRouter from "./trackStatus";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(registrationBatchesRouter);
 router.use(supportRouter);
 router.use(humanInterviewsRouter);
 router.use(genaiProjectProgressRouter);
+router.use(trackStatusRouter);
 
 export default router;

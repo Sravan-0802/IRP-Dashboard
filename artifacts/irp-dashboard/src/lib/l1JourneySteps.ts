@@ -11,6 +11,7 @@ import {
 } from "@/lib/assessment";
 import type { JourneyStep } from "@/components/irp/ui";
 import { isJuly26BookingTestUser } from "@/lib/july26BookingTestUsers";
+import { trackOnlineStepStatus, type MernTrackStatus } from "@/lib/trackStatus";
 
 /** L1 cycle without NxtMock AI Interview — FE cleared unlocks Human Interview. */
 const L1_STEPS: Omit<JourneyStep, "status">[] = [
@@ -33,25 +34,37 @@ export function l1HustlerJourneySteps(
   },
   feProjectMinScore?: number | null,
   userId?: string | null,
+  /**
+   * Stored results from the new irp_v2 tables. When given, they decide qualified / not qualified
+   * for Online Assessment and FE Project instead of the raw assessment rows; journey and
+   * visibility rules below are unchanged. Null or omitted = the old logic.
+   */
+  track?: MernTrackStatus | null,
 ): JourneyStep[] {
   const showOnline = visibility?.onlineL1Results !== false;
   const showHuman = visibility?.humanInterviewResults === true;
 
-  const forceOnlineBookingTrack =
-    isJuly26BookingTestUser(userId) && !hasClearedAssessment(assessments, 1);
+  const onlineCleared = track
+    ? track.onlineAssessment === "QUALIFIED"
+    : hasClearedAssessment(assessments, 1);
+  const forceOnlineBookingTrack = isJuly26BookingTestUser(userId) && !onlineCleared;
   const assessmentStatus = forceOnlineBookingTrack
     ? "active"
-    : getAssessmentStepStatus(assessments, 1);
+    : track
+      ? trackOnlineStepStatus(track)
+      : getAssessmentStepStatus(assessments, 1);
   const phase = getPhase(journey.journeyState);
   const state = journey.journeyState;
-  const assessmentCleared = forceOnlineBookingTrack
-    ? false
-    : hasClearedAssessment(assessments, 1);
+  const assessmentCleared = forceOnlineBookingTrack ? false : onlineCleared;
   const feCleared = forceOnlineBookingTrack
     ? false
-    : hasClearedFeProject(assessments, feProjectMinScore);
+    : track
+      ? track.feProject === "QUALIFIED"
+      : hasClearedFeProject(assessments, feProjectMinScore);
   const feAttemptedNotCleared =
-    !forceOnlineBookingTrack && !feCleared && hasAttemptedFeProject(assessments);
+    !forceOnlineBookingTrack &&
+    !feCleared &&
+    (track ? track.feProject === "NOT_QUALIFIED" : hasAttemptedFeProject(assessments));
   const advancedToL2 =
     state.startsWith("L2_") || state.startsWith("L3_") || phase === "PLACED";
 
