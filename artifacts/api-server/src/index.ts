@@ -2,6 +2,7 @@ import "./load-env";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startBigQuerySyncScheduler } from "./lib/sync-bigquery";
+import { startQualificationOutputPushScheduler } from "./lib/pushQualificationStatusToBigQuery";
 import { refreshAssessmentQualificationStatuses } from "./lib/assessmentQualificationStatuses";
 import { refreshGenaiQualificationStatuses } from "./lib/genaiResults";
 
@@ -30,4 +31,5 @@ app.listen(port, (err) => {
     .then(() => logger.info("Assessment qualification statuses refreshed"))
     .catch((err) => logger.error({ err }, "Assessment qualification status refresh failed"));
   startBigQuerySyncScheduler();
+  startQualificationOutputPushScheduler();
 });

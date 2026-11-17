@@ -1,5 +1,3 @@
-import { sql } from "drizzle-orm";
-import { db, pool, academyIrpAssessmentQualificationStatusOutputTable } from "@workspace/db";
 import {
   getBigQueryClient,
   isBigQueryConfigured,
@@ -190,94 +188,24 @@ async function summarizeOutputTable(): Promise<{
   };
 }
 
-const NEON_REPLICA_ENSURE_SQL = `
-CREATE TABLE IF NOT EXISTS academy_irp_2_0_assessment_qualification_status_output (
-  user_id text NOT NULL,
-  assessment_specific_tag text NOT NULL,
-  assessment_title text NOT NULL,
-  qualification_status text NOT NULL,
-  first_seen_at timestamptz,
-  last_synced_at timestamptz,
-  CONSTRAINT academy_irp_qual_status_output_unique UNIQUE (user_id, assessment_specific_tag, assessment_title)
-);
-ALTER TABLE academy_irp_2_0_assessment_qualification_status_output
-  ADD COLUMN IF NOT EXISTS first_seen_at timestamptz;
-ALTER TABLE academy_irp_2_0_assessment_qualification_status_output
-  ADD COLUMN IF NOT EXISTS last_synced_at timestamptz;
+const MERGE_KEY = `
+  T.user_id = S.user_id
+  AND T.assessment_specific_tag = S.assessment_specific_tag
+  AND T.assessment_title = S.assessment_title
 `;
 
-export async function appendFeMainToBigQuery(): Promise<void> {
-  if (!isBigQueryConfigured()) {
-    throw new Error("BigQuery is not configured");
-  }
-  const bq = getBigQueryClient();
-  const target = qualificationOutputTableFq();
-  const [existing] = await bq.query({
-    query: `SELECT COUNT(*) AS n FROM \`${target}\`
-            WHERE REGEXP_CONTAINS(UPPER(COALESCE(assessment_specific_tag, '')), r'FE[-_]PROJECT')`,
-  });
-  if (Number(existing[0]?.n ?? 0) >= 5081) {
-    logger.info({ existingFe: Number(existing[0].n) }, "FE MAIN rows already present; skip append");
-    return;
-  }
-
-  const destination = bq
-    .dataset(QUALIFICATION_OUTPUT_DATASET, { projectId: QUALIFICATION_OUTPUT_PROJECT })
-    .table(QUALIFICATION_OUTPUT_TABLE);
-  const [job] = await bq.createQueryJob({
-    query: zFeMainQualificationQuery(),
-    destination,
-    writeDisposition: "WRITE_APPEND",
-  });
-  await job.getQueryResults();
-}
-
-function toDate(value: unknown): Date | null {
-  if (value == null) return null;
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
-  if (typeof value === "object" && value !== null && "value" in value) {
-    return toDate((value as { value: unknown }).value);
-  }
-  const d = new Date(String(value));
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-export async function replicaQualificationOutputToNeon(): Promise<{ rowCount: number }> {
-  await db.execute(sql.raw(NEON_REPLICA_ENSURE_SQL));
-  const bq = getBigQueryClient();
-  const [rows] = await bq.query({
-    query: `SELECT user_id, assessment_specific_tag, assessment_title, qualification_status,
-                   first_seen_at, last_synced_at
-            FROM \`${qualificationOutputTableFq()}\``,
-  });
-  await pool.query("TRUNCATE academy_irp_2_0_assessment_qualification_status_output");
-  const values = rows.map((row) => ({
-    userId: String(row.user_id ?? ""),
-    assessmentSpecificTag: String(row.assessment_specific_tag ?? ""),
-    assessmentTitle: String(row.assessment_title ?? ""),
-    qualificationStatus: String(row.qualification_status ?? "NOT ATTEMPTED"),
-    firstSeenAt: toDate(row.first_seen_at),
-    lastSyncedAt: toDate(row.last_synced_at),
-  })).filter((row) => row.userId && row.assessmentSpecificTag);
-  for (let i = 0; i < values.length; i += 500) {
-    await db.insert(academyIrpAssessmentQualificationStatusOutputTable).values(values.slice(i, i + 500));
-  }
-  logger.info({ rowCount: values.length }, "Replicated qualification output table into Neon");
-  return { rowCount: values.length };
-}
-
 /**
- * Rebuilds the output table from z_* MAIN Hustler + FE-Project rows,
- * including access-only NOT ATTEMPTED users and any new students, then
- * copies the same snapshot into Neon.
+ * Upserts only user_id, assessment_specific_tag, assessment_title, qualification_status.
+ * Existing extra BigQuery columns are left unchanged. New keys are inserted with
+ * those four fields only.
  */
 export async function pushQualificationStatusToBigQuery(): Promise<{
   rowCount: number;
   emptyStatus: number;
   insertedThisRun: number;
+  updatedThisRun: number;
   byStatus: Array<{ qualification_status: string; n: number }>;
   byAssessment: Array<{ family: string; a_num: string; n: number }>;
-  neonRowCount?: number;
 }> {
   if (!isBigQueryConfigured()) {
     throw new Error("BigQuery is not configured");
@@ -287,16 +215,6 @@ export async function pushQualificationStatusToBigQuery(): Promise<{
   const stagingId = `${QUALIFICATION_OUTPUT_TABLE}_stg`;
   const stagingFq = `${QUALIFICATION_OUTPUT_PROJECT}.${QUALIFICATION_OUTPUT_DATASET}.${stagingId}`;
   const dataset = bq.dataset(QUALIFICATION_OUTPUT_DATASET, { projectId: QUALIFICATION_OUTPUT_PROJECT });
-  const runStartedAt = new Date().toISOString();
-
-  await bq.query({ query: `ALTER TABLE \`${target}\` ADD COLUMN IF NOT EXISTS first_seen_at TIMESTAMP` });
-  await bq.query({ query: `ALTER TABLE \`${target}\` ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP` });
-  await bq.query({
-    query: `UPDATE \`${target}\`
-            SET first_seen_at = COALESCE(first_seen_at, TIMESTAMP '2026-11-11 00:00:00 UTC'),
-                last_synced_at = COALESCE(last_synced_at, TIMESTAMP '2026-11-11 00:00:00 UTC')
-            WHERE first_seen_at IS NULL OR last_synced_at IS NULL`,
-  });
 
   const staging = dataset.table(stagingId);
   const [loadJob] = await bq.createQueryJob({
@@ -306,42 +224,44 @@ export async function pushQualificationStatusToBigQuery(): Promise<{
   });
   await loadJob.getQueryResults();
 
+  const [pending] = await bq.query({
+    query: `SELECT
+        COUNTIF(T.user_id IS NULL) AS to_insert,
+        COUNTIF(T.user_id IS NOT NULL AND T.qualification_status IS DISTINCT FROM S.qualification_status) AS to_update
+      FROM \`${stagingFq}\` S
+      LEFT JOIN \`${target}\` T
+        ON ${MERGE_KEY}`,
+  });
+  const insertedThisRun = Number(pending[0]?.to_insert ?? 0);
+  const updatedThisRun = Number(pending[0]?.to_update ?? 0);
+
   await bq.query({
     query: `
       MERGE \`${target}\` T
       USING \`${stagingFq}\` S
-      ON T.user_id = S.user_id
-         AND T.assessment_specific_tag = S.assessment_specific_tag
-         AND T.assessment_title = S.assessment_title
-      WHEN MATCHED THEN UPDATE SET
-        qualification_status = S.qualification_status,
-        last_synced_at = CURRENT_TIMESTAMP()
+      ON ${MERGE_KEY}
+      WHEN MATCHED AND T.qualification_status IS DISTINCT FROM S.qualification_status THEN
+        UPDATE SET qualification_status = S.qualification_status
       WHEN NOT MATCHED THEN INSERT
-        (user_id, assessment_specific_tag, assessment_title, qualification_status, first_seen_at, last_synced_at)
-        VALUES (S.user_id, S.assessment_specific_tag, S.assessment_title, S.qualification_status,
-                CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())
+        (user_id, assessment_specific_tag, assessment_title, qualification_status)
+        VALUES (S.user_id, S.assessment_specific_tag, S.assessment_title, S.qualification_status)
     `,
   });
 
-  const [inserted] = await bq.query({
-    query: `SELECT COUNT(*) AS n FROM \`${target}\`
-            WHERE first_seen_at >= TIMESTAMP(@runStartedAt)`,
-    params: { runStartedAt },
-  });
-  const insertedThisRun = Number(inserted[0]?.n ?? 0);
   const summary = await summarizeOutputTable();
-  const neon = await replicaQualificationOutputToNeon();
   logger.info(
-    { ...summary, insertedThisRun, neonRowCount: neon.rowCount, table: target },
-    "Upserted qualification output from z_* MAIN and replicated to Neon",
+    { ...summary, insertedThisRun, updatedThisRun, table: target },
+    "Upserted qualification output (4 columns only) from z_* MAIN",
   );
-  return { ...summary, insertedThisRun, neonRowCount: neon.rowCount };
+  return { ...summary, insertedThisRun, updatedThisRun };
 }
 
 export async function runMorningQualificationOutputSync(): Promise<{
   inboundOk: boolean;
   rowCount: number;
   emptyStatus?: number;
+  insertedThisRun?: number;
+  updatedThisRun?: number;
   byStatus?: Array<{ qualification_status: string; n: number }>;
   byAssessment?: Array<{ family: string; a_num: string; n: number }>;
 }> {
@@ -376,8 +296,8 @@ function msUntilNextIstTime(hours: number, minutes: number): number {
 }
 
 /**
- * Replaces the BigQuery qualification output table every day at 05:00 IST
- * from z_* MAIN Hustler and FE-Project tables.
+ * Upserts the four qualification columns every day at 05:00 IST from z_* MAIN
+ * Hustler and FE-Project tables. Extra BigQuery columns are never dropped.
  */
 export function startQualificationOutputPushScheduler(): void {
   if (!isBigQueryConfigured()) {

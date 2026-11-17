@@ -3,6 +3,7 @@ import { db, bigquerySyncStatusTable } from "@workspace/db";
 import { runBigQuerySync } from "../lib/sync-bigquery";
 import { isBigQueryConfigured } from "../lib/bigquery";
 import { checkApiKey } from "../lib/apiKey";
+import { runMorningQualificationOutputSync } from "../lib/pushQualificationStatusToBigQuery";
 
 const router = Router();
 
@@ -47,6 +48,25 @@ router.get("/sync/status", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get sync status");
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/sync/qualification-output — upsert Hustler/FE qualification rows (4 columns)
+router.post("/sync/qualification-output", async (req, res) => {
+  try {
+    if (!checkApiKey(req)) {
+      return void res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!isBigQueryConfigured()) {
+      return void res
+        .status(503)
+        .json({ message: "BigQuery is not configured on the server" });
+    }
+    const result = await runMorningQualificationOutputSync();
+    res.status(result.inboundOk ? 200 : 502).json(result);
+  } catch (err) {
+    req.log.error({ err }, "Manual qualification output sync failed");
     res.status(500).json({ message: "Server error" });
   }
 });
