@@ -457,7 +457,8 @@ export function AssessmentsHub({
         <L1July26MainCallout userId={userId} />
       ) : null}
 
-      {level === 1 ? <RegistrationBatchCallout /> : null}
+      <RegistrationBatchCallout track="mern" />
+      <RegistrationBatchCallout track="genai" />
 
       {level === 1 && (
         <FeMockCallout assessments={assessments} userId={userId} />

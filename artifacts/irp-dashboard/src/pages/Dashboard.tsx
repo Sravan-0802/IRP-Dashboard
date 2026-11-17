@@ -243,14 +243,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
-            {page === "slot" && (
-              <BookSlot
-                level={getLevel(journey.journeyState)}
-                journey={journey}
-                assessments={displayAssessments}
-                userId={userId}
-              />
-            )}
+            {page === "slot" && <BookSlot />}
             {page === "guidelines" && (
               <GuidelineDocs
                 journey={journey}

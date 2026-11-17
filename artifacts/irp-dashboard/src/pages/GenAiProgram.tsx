@@ -30,6 +30,7 @@ import { useProgramBoard } from "@/lib/useProgramBoard";
 import type { GenAiAssessment } from "@/lib/programBoard";
 import { useGenaiProjectSubmission } from "@/lib/useGenaiProjectSubmission";
 import { useGenaiProjectChoices } from "@/lib/useGenaiProjectChoices";
+import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import {
   useGenaiResults,
   type GenaiAssessmentResult,
@@ -148,6 +149,8 @@ export function GenAiProgram() {
           Live classes, assessments, project and interview for your GenAI track.
         </p>
       </div>
+
+      <RegistrationBatchCallout track="genai" />
 
       <GenAiJourney
         assessments={g.assessments}

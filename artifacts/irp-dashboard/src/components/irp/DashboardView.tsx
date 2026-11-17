@@ -34,6 +34,7 @@ import { IrpClearCards } from "./IrpClearCards";
 import { HumanInterviewResults } from "./HumanInterviewResults";
 import { useHumanInterviewResults } from "@/lib/useHumanInterviewResults";
 import { withHumanInterviewClearance } from "@/lib/humanInterviewClearance";
+import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
 
 function journeySteps(
   journey: Journey,
@@ -285,6 +286,8 @@ export function DashboardView({
           </button>
         </div>
       ) : null}
+
+      <RegistrationBatchCallout track="mern" />
 
       {showResultsProcessingBanner ? (
         <div className="flex items-start gap-3 rounded-2xl border border-[rgba(103,65,217,0.18)] bg-[#f3f0ff] px-4 py-3.5 sm:items-center">
