@@ -24,6 +24,7 @@ import { FeedbackSheet } from "@/components/irp/FeedbackSheet";
 import { FeedbackButton } from "@/components/irp/FeedbackButton";
 import { DashboardView } from "@/components/irp/DashboardView";
 import { NocFormCard } from "@/components/irp/NocFormCard";
+import { AssessmentsHub } from "./AssessmentsHub";
 import { BookSlot } from "./BookSlot";
 import { AboutIrp } from "./AboutIrp";
 import { GenAiProgram } from "./GenAiProgram";
@@ -68,6 +69,8 @@ export default function Dashboard() {
   const navigate = (key: PageKey) => {
     if (key === "dashboard") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_DASHBOARD);
+    } else if (key === "assessments") {
+      trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENTS_HUB);
     } else if (key === "slot") {
       trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.NAV_ASSESSMENT_CALENDAR);
     }
@@ -231,6 +234,14 @@ export default function Dashboard() {
             )}
             {page === "genai" && (
               <GenAiProgram />
+            )}
+            {page === "assessments" && (
+              <AssessmentsHub
+                level={getLevel(journey.journeyState)}
+                assessments={displayAssessments}
+                journey={journey}
+                userId={userId}
+              />
             )}
             {page === "slot" && (
               <BookSlot

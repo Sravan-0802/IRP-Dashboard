@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Calendar, ClipboardCheck, FileText, Home, LayoutGrid, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, Home, LayoutGrid, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -10,7 +10,7 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "genai" | "slot" | "guidelines" | "noc" | "home";
+export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "guidelines" | "noc" | "home";
 
 const SECTIONS: {
   title: string;
@@ -26,6 +26,7 @@ const SECTIONS: {
   {
     title: "Assessments",
     items: [
+      { key: "assessments", icon: ClipboardList, label: "Assessments Hub" },
       { key: "slot", icon: Calendar, label: "Assessment Calendar" },
     ],
   },
