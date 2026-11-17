@@ -74,6 +74,16 @@ SELECT 'MERN', 'ASSESSMENT', 'ACADEMY-IRP-2.0_MAIN_L1_HUSTLER-ASSESSMENT_A' || n
 FROM generate_series(1, 10) AS n
 ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
 
+-- The old dashboard's L1 rule is open-ended ("A1 onward 70%"), so every later Hustler tag
+-- (A11, A12 …) that appears in the synced data gets the same 70% criteria automatically.
+INSERT INTO irp_v2.assessment_criteria
+  (track, stage, assessment_specific_tag, criteria_type, qualifying_score_percentage, created_by, reason)
+SELECT DISTINCT 'MERN', 'ASSESSMENT', d.assessment_tag, 'PERCENTAGE', 70,
+       'migration', 'L1 default rule: A1 onward 70% (new tag found in synced data)'
+FROM public.academy_user_assessment_details d
+WHERE d.assessment_tag ~ '^ACADEMY-IRP-2\.0_MAIN_L1_HUSTLER-ASSESSMENT_A[0-9]+$'
+ON CONFLICT (assessment_specific_tag) WHERE valid_until IS NULL DO NOTHING;
+
 -- Old online cycle tags: the dashboard judges them exactly like Hustler sits (70%), not by the
 -- old stored result, so they get the same criteria.
 INSERT INTO irp_v2.assessment_criteria
