@@ -8,6 +8,8 @@ import { useVisibilitySettings } from "@/lib/useVisibilitySettings";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
 
 const TOPIN_GUIDELINES_URL = "https://bit.ly/placement-assessment-guidelines";
+const LOOM_VIDEO_GUIDELINES_URL =
+  "https://drive.google.com/file/d/1GeHrxMWR6Z9o09MtitFwKvEMN_QqnAzz/view?usp=drivesdk";
 const FE_GUIDELINES_URL =
   "https://docs.google.com/document/d/11ppsy40_mCRL5qaeUp_1iO9ygl0j46Ub3elZu6XsPnc/edit?tab=t.0";
 const INTERVIEW_SLOT_GUIDE_URL =
@@ -206,6 +208,29 @@ export function GuidelineDocs({
             </article>
           );
         })}
+        <article className="flex flex-col rounded-2xl border border-[#eaecf0] bg-white p-4">
+          <div className="flex items-start justify-between gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f4f3ff] text-[#6941c6]">
+              <FileText className="h-4 w-4" />
+            </span>
+          </div>
+          <h3 className="mt-3 font-display text-base font-extrabold text-[#101828]">
+            Loom Video Guidelines
+          </h3>
+          <p className="mt-1 flex-1 text-sm text-[#667085]">
+            Guidelines for preparing and submitting your Loom video.
+          </p>
+          <a
+            href={LOOM_VIDEO_GUIDELINES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="link-loom-video-guidelines"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#6941c6] px-3 py-2.5 text-sm font-bold text-white hover:bg-[#5925dc]"
+          >
+            Open guideline doc
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </article>
       </section>
 
       {processOpen ? <InterviewProcess onClose={() => { markRead("interview"); setProcessOpen(false); }} /> : null}
