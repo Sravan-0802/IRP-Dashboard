@@ -28,6 +28,7 @@ import { BookSlot } from "./BookSlot";
 import { AboutIrp } from "./AboutIrp";
 import { GenAiProgram } from "./GenAiProgram";
 import { GuidelineDocs } from "./GuidelineDocs";
+import { VideoResources } from "./VideoResources";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { useDashboardAccess } from "@/lib/usePaymentStatus";
 import { useAcademyUserId } from "@/lib/useAcademyUserId";
@@ -240,6 +241,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
+            {page === "videos" && <VideoResources />}
             {page === "guidelines" && (
               <GuidelineDocs
                 journey={journey}

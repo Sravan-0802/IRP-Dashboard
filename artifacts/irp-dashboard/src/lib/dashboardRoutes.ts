@@ -5,6 +5,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   dashboard: "/",
   genai: "/genai-program",
   slot: "/assessment-calendar",
+  videos: "/video-resources",
   guidelines: "/guideline-docs",
   noc: "/noc-form",
   home: "/home",
@@ -19,6 +20,7 @@ export function pathToPage(path: string): PageKey {
   const clean = path.replace(/\/+$/, "") || "/";
   if (clean === PAGE_PATHS.genai) return "genai";
   if (clean === PAGE_PATHS.slot || clean === LEGACY_ASSESSMENTS_HUB_PATH) return "slot";
+  if (clean === PAGE_PATHS.videos) return "videos";
   if (clean === PAGE_PATHS.guidelines) return "guidelines";
   if (clean === PAGE_PATHS.noc) return "noc";
   if (clean === PAGE_PATHS.home || clean === LEGACY_HOME_PATH) return "home";
