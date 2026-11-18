@@ -32,3 +32,9 @@ Make the Loom submission option available to all dashboard students, without req
 **Why:** The user asked to show the Loom option to all students and show successful submissions versus “inprogress” in admin.
 
 **How to apply:** Show “Submitted” only for a successfully persisted Loom link and “In progress” when no submission exists. This status does not imply a student has started working; no saved draft is required.
+
+On the GenAI Track, a submitted Loom video must use a non-green status; green indicates a stage was passed.
+
+**Why:** The user specified that a submission should not look like a passed stage.
+
+**How to apply:** Keep Loom's submitted state visually distinct from qualified or passed stages.

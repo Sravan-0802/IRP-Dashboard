@@ -334,7 +334,7 @@ function GenAiJourney({
   const projectUnlocked = qualified || !projectLocked;
   const projectsChosen = selectedProjectCount >= 2;
   const projectTone: Tone = !projectUnlocked ? "locked" : projectsChosen || submitted ? "done" : "active";
-  const loomTone: Tone = submitted ? "done" : projectUnlocked ? "active" : "locked";
+  const loomTone: Tone = submitted ? "submitted" : projectUnlocked ? "active" : "locked";
 
   const [coursesOpen, setCoursesOpen] = useState(false);
 
@@ -387,9 +387,9 @@ function GenAiJourney({
       label: "Loom Video Submission",
       Icon: Video,
       tone: loomTone,
-      badge: submitted ? "Submitted" : null,
+      badge: null,
       body:
-        loomTone === "done"
+        loomTone === "submitted"
           ? "Your Loom walkthrough video is submitted."
           : loomTone === "active"
             ? projectsChosen
@@ -412,6 +412,9 @@ function GenAiJourney({
       action: null,
     },
   ];
+  const completedStages = stages.filter(
+    (stage) => stage.tone === "done" || stage.tone === "submitted",
+  ).length;
 
   const header = !qualified
     ? "Qualify in a GenAI assessment to start your GenAI Track stages."
@@ -531,7 +534,7 @@ function GenAiJourney({
           </span>
           <div>
             <p className="text-base font-extrabold text-[#111827]">
-              Your GenAI progress ({stages.filter((stage) => stage.tone === "done").length}/{stages.length} done)
+              Your GenAI progress ({completedStages}/{stages.length} complete)
             </p>
             <p className="text-xs text-[#667085]">Clear each stage to reach your GenAI Human Interview.</p>
           </div>

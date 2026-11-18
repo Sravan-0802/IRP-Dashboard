@@ -6,6 +6,15 @@ import ts from "typescript";
 
 const source = await readFile(new URL("./GenAiProgram.tsx", import.meta.url), "utf8");
 const formSource = await readFile(new URL("../components/GenaiLoomSubmissionForm.tsx", import.meta.url), "utf8");
+const statusPillSource = await readFile(new URL("../components/irp/IrpClearCards.tsx", import.meta.url), "utf8");
+
+test("submitted Loom videos use a distinct non-passed status", () => {
+  assert.match(source, /const loomTone: Tone = submitted \? "submitted"/);
+  assert.match(source, /loomTone === "submitted"\s*\? "Your Loom walkthrough video is submitted\."/);
+  assert.match(source, /stage\.tone === "done" \|\| stage\.tone === "submitted"/);
+  assert.match(statusPillSource, /tone === "submitted" \? "Submitted"/);
+  assert.match(statusPillSource, /bg-\[#f4f3ff\] text-\[#6941c6\]/);
+});
 
 test("all three Kaggle challenge links render directly on their project cards", () => {
   const projectUrls = source.match(/url: "https:\/\/www\.kaggle\.com\/t\/[^"]+"/g) ?? [];

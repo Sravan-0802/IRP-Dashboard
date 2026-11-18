@@ -24,7 +24,7 @@ import {
   type OnlineBadgeStudent,
 } from "./OnlineAssessmentBadge";
 
-export type Tone = "done" | "failed" | "active" | "locked";
+export type Tone = "done" | "submitted" | "failed" | "active" | "locked";
 
 function toneOf(status: JourneyStep["status"]): Tone {
   if (status === "done") return "done";
@@ -112,6 +112,7 @@ function bodyCopy(meta: (typeof STAGE_META)[number], tone: Tone): string {
 
 export const RAIL_DOT: Record<Tone, string> = {
   done: "bg-[#16a34a] text-white shadow-[0_0_0_4px_#dcfce7]",
+  submitted: "bg-[#6941c6] text-white shadow-[0_0_0_4px_#e9d7fe]",
   failed: "bg-[#f97316] text-white shadow-[0_0_0_4px_#ffedd5,0_0_18px_rgba(249,115,22,0.45)]",
   active: "bg-[#2563eb] text-white shadow-[0_0_0_4px_#dbeafe]",
   locked: "bg-[#e4e7ec] text-[#667085] shadow-[0_0_0_4px_#f2f4f7]",
@@ -120,6 +121,7 @@ export const RAIL_DOT: Record<Tone, string> = {
 /** Rail segment leading into a stage, coloured by that stage's state. */
 export const RAIL_SEGMENT: Record<Tone, string> = {
   done: "h-[3px] rounded-full bg-[#16a34a]",
+  submitted: "h-[3px] rounded-full bg-[#6941c6]",
   failed: "h-[3px] rounded-full bg-[linear-gradient(90deg,#16a34a_0%,#f97316_100%)]",
   active: "h-[3px] rounded-full bg-[linear-gradient(90deg,#16a34a_0%,#2563eb_100%)]",
   locked: "h-0 border-t-[3px] border-dashed border-[#d0d5dd]",
@@ -127,6 +129,7 @@ export const RAIL_SEGMENT: Record<Tone, string> = {
 
 export const CARD_SURFACE: Record<Tone, string> = {
   done: "border-[#bbf7d0] bg-[linear-gradient(180deg,#f0fdf4_0%,#ffffff_60%)]",
+  submitted: "border-[#d9d6fe] bg-[linear-gradient(180deg,#f4f3ff_0%,#ffffff_60%)]",
   failed: "border-[#fed7aa] bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_60%)]",
   active: "border-[#bfdbfe] bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_60%)]",
   locked: "border-[#e4e7ec] bg-[linear-gradient(180deg,#f9fafb_0%,#ffffff_60%)]",
@@ -134,6 +137,7 @@ export const CARD_SURFACE: Record<Tone, string> = {
 
 const ILLUSTRATION_TILE: Record<Tone, string> = {
   done: "bg-[linear-gradient(135deg,#dcfce7_0%,#f0fdf4_100%)] text-[#16a34a]",
+  submitted: "bg-[linear-gradient(135deg,#e9d7fe_0%,#f4f3ff_100%)] text-[#6941c6]",
   failed: "bg-[linear-gradient(135deg,#ffedd5_0%,#fff7ed_100%)] text-[#ea580c]",
   active: "bg-[linear-gradient(135deg,#dbeafe_0%,#eff6ff_100%)] text-[#2563eb]",
   locked: "bg-[linear-gradient(135deg,#eaecf0_0%,#f9fafb_100%)] text-[#98a2b3]",
@@ -360,10 +364,12 @@ export function IrpClearCards({
 
 export function StatusPill({ tone }: { tone: Tone }) {
   const label =
-    tone === "done" ? "Completed" : tone === "failed" ? "Not Cleared" : tone === "active" ? "In progress" : "Locked";
+    tone === "done" ? "Completed" : tone === "submitted" ? "Submitted" : tone === "failed" ? "Not Cleared" : tone === "active" ? "In progress" : "Locked";
   const className =
     tone === "done"
       ? "bg-[#ecfdf3] text-[#15803d]"
+      : tone === "submitted"
+        ? "bg-[#f4f3ff] text-[#6941c6]"
       : tone === "failed"
         ? "bg-[#fef2f2] text-[#e11d48]"
         : tone === "active"
