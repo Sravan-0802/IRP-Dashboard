@@ -29,12 +29,15 @@ import { AssessmentResults } from "./AssessmentResults";
 import { FeProjectResults } from "./FeProjectResults";
 import { FeProjectNotClearedNotice } from "./FeProjectNotClearedNotice";
 import { useFeProjectConfig } from "@/lib/useFeProjectConfig";
+import { useStudentAccess } from "@/lib/useStudentAccess";
 import { formatYearOfJoin } from "./OnlineAssessmentBadge";
 import { IrpClearCards } from "./IrpClearCards";
 import { HumanInterviewResults } from "./HumanInterviewResults";
 import { useHumanInterviewResults } from "@/lib/useHumanInterviewResults";
 import { withHumanInterviewClearance } from "@/lib/humanInterviewClearance";
 import { RegistrationBatchCallout } from "./RegistrationBatchCallout";
+import { withTrackHumanInterview, type MernTrackStatus } from "@/lib/trackStatus";
+import { useTrackStatus } from "@/lib/useTrackStatus";
 
 function journeySteps(
   journey: Journey,
@@ -47,6 +50,7 @@ function journeySteps(
   },
   feProjectMinScore?: number | null,
   userId?: string,
+  track?: MernTrackStatus | null,
 ): JourneyStep[] {
   const phase = getPhase(journey.journeyState);
   const level = getLevel(journey.journeyState);
@@ -59,6 +63,7 @@ function journeySteps(
       visibility,
       feProjectMinScore,
       userId,
+      track,
     );
   }
 
@@ -223,7 +228,17 @@ export function DashboardView({
   const level = getLevel(journey.journeyState);
   const { settings } = useVisibilitySettings();
   const { data: humanResults } = useHumanInterviewResults(userId);
+  // Stage results stored in the new tables; null (switch off / not usable) keeps the old logic.
+  const track = useTrackStatus(userId);
   const { minScore: feProjectMinScore } = useFeProjectConfig();
+  const { findGrant } = useStudentAccess();
+  const humanInterviewGrantUrl =
+    findGrant("human_interview", "default")?.url?.trim() ||
+    findGrant("human_interview", "main")?.url?.trim() ||
+    null;
+  const feCleared = hasClearedFeProject(assessments, feProjectMinScore);
+  const humanInterviewReady =
+    feCleared || journey.journeyState === "L1_HUMAN_INTERVIEW";
   const motivation = assessmentMotivation(
     phase,
     days,
@@ -253,9 +268,11 @@ export function DashboardView({
   );
   const hasOnlineScores = hasWrittenAssessment(assessments, level);
   const showResultsProcessingBanner = hasOnlineScores && onlineResultsLocked;
-  const baseSteps = journeySteps(journey, assessments, settings, feProjectMinScore, userId);
+  const baseSteps = journeySteps(journey, assessments, settings, feProjectMinScore, userId, track);
   const steps = level === 1 && !journey.isWildcard
-    ? withHumanInterviewClearance(baseSteps, humanResults)
+    ? track
+      ? withTrackHumanInterview(baseSteps, track)
+      : withHumanInterviewClearance(baseSteps, humanResults)
     : baseSteps;
 
   return (
@@ -336,6 +353,35 @@ export function DashboardView({
           feProjectMinScore={feProjectMinScore}
           userId={userId}
         />
+      ) : null}
+
+      {level === 1 &&
+      !journey.isWildcard &&
+      humanInterviewReady &&
+      humanInterviewGrantUrl ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-[rgba(59,91,219,0.2)] bg-[linear-gradient(120deg,#edf2ff_0%,#f8f7ff_100%)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-semibold text-ink">
+            Your Human Interview link is ready.
+          </span>
+          <a
+            href={humanInterviewGrantUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-pop inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+          >
+            Open Human Interview
+          </a>
+        </div>
+      ) : level === 1 &&
+        !journey.isWildcard &&
+        humanInterviewReady &&
+        !settings.humanInterviewResults &&
+        !humanInterviewGrantUrl ? (
+        <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(103,65,217,0.1)] bg-white px-4 py-3 shadow-soft">
+          <span className="text-sm font-medium text-muted2">
+            Human Interview details are being processed. They will appear here once released.
+          </span>
+        </div>
       ) : null}
 
 

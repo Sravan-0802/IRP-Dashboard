@@ -5,7 +5,9 @@
  * Safety:
  *  - Does nothing unless schema irp_v2 already exists (it is created only by migrations-v2/run.mjs).
  *  - Turn off with env IRP_V2_SYNC=false.
- *  - One transaction: readers see the previous copy until COMMIT; on error it rolls back.
+ *  - One transaction: on error it rolls back and the previous copy stays. While it runs (~15 s) the
+ *    TRUNCATE lock makes readers of irp_v2 wait, so readers use a short timeout and fall back to
+ *    the old tables (see trackStatus.ts).
  *  - Only reads public.*; never changes the old tables. Never throws: failures are logged.
  *  - Must be switched off once the app writes to irp_v2 directly (step 6).
  */

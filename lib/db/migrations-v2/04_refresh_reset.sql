@@ -21,6 +21,9 @@ TRUNCATE
   irp_v2.assessment_registrations,
   irp_v2.support_conversations,
   irp_v2.support_messages,
-  irp_v2.activity_logs,
-  irp_v2.sync_logs
+  irp_v2.activity_logs
 RESTART IDENTITY;
+
+-- sync_logs: drop only the rows copied from public.bigquery_sync_status; keep the history of the
+-- daily 'irp_v2_refresh' runs (each run's check result), which has no old-table counterpart.
+DELETE FROM irp_v2.sync_logs WHERE job_name <> 'irp_v2_refresh';
