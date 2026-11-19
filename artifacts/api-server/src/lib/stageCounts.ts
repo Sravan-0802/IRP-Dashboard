@@ -6,6 +6,7 @@ export type VisibilityKey =
   | "fe_project_results"
   | "ai_mock_results"
   | "human_interview_results"
+  | "genai_human_interview_results"
   | "course_progress";
 
 /** Same org assessment id the student UI uses for 12th July 2026. */
@@ -195,6 +196,28 @@ async function humanInterviewCounts(): Promise<StageCounts> {
   };
 }
 
+async function genaiHumanInterviewCounts(): Promise<StageCounts> {
+  const result = await db.execute(sql`
+    WITH scored AS (
+      SELECT DISTINCT ON (candidate_id) candidate_id, clearance_status
+      FROM genai_human_interview_results
+      WHERE final_score IS NOT NULL AND clearance_status IN ('Cleared', 'Not Cleared')
+      ORDER BY candidate_id, interview_starts_at DESC NULLS LAST, interview_id ASC
+    )
+    SELECT COUNT(*)::int AS attempted,
+      COUNT(*) FILTER (WHERE clearance_status = 'Cleared')::int AS cleared,
+      COUNT(*) FILTER (WHERE clearance_status = 'Not Cleared')::int AS not_cleared
+    FROM scored
+  `);
+  const row = firstRow(result as { rows?: CountRow[] } | CountRow[]);
+  return {
+    scope: "GenAI Human Interview (latest scored attempt, Academy Nexus)",
+    attempted: n(row.attempted),
+    cleared: n(row.cleared),
+    notCleared: n(row.not_cleared),
+  };
+}
+
 async function courseProgressCounts(): Promise<StageCounts> {
   const result = await db.execute(sql`
     WITH per_user AS (
@@ -225,6 +248,7 @@ export async function loadStageCounts(): Promise<Partial<Record<VisibilityKey, S
     ["fe_project_results", feProjectCounts],
     ["ai_mock_results", aiMockCounts],
     ["human_interview_results", humanInterviewCounts],
+    ["genai_human_interview_results", genaiHumanInterviewCounts],
     ["course_progress", courseProgressCounts],
   ];
 

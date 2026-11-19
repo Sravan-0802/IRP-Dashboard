@@ -7,6 +7,7 @@ export const VISIBILITY_KEYS = [
   "fe_project_results",
   "ai_mock_results",
   "human_interview_results",
+  "genai_human_interview_results",
   "course_progress",
 ] as const;
 
@@ -28,6 +29,7 @@ export type VisibilityStageCard = {
     | "feProjectResults"
     | "aiMockResults"
     | "humanInterviewResults"
+    | "genaiHumanInterviewResults"
     | "courseProgress";
   label: string;
   description: string;
@@ -47,6 +49,7 @@ export type VisibilitySettingsResponse = {
   feProjectResults: boolean;
   aiMockResults: boolean;
   humanInterviewResults: boolean;
+  genaiHumanInterviewResults: boolean;
   courseProgress: boolean;
   updatedAt: string | null;
   stages: VisibilityStageCard[];
@@ -61,6 +64,7 @@ const DEFAULT_VISIBLE: VisibilitySettingsMap = {
   fe_project_results: false,
   ai_mock_results: true,
   human_interview_results: false,
+  genai_human_interview_results: false,
   course_progress: true,
 };
 
@@ -70,6 +74,7 @@ const STAGE_SYNC_TABLE: Record<VisibilityKey, string | null> = {
   fe_project_results: "academy_user_assessment_details",
   ai_mock_results: "academy_user_nxtmock_details",
   human_interview_results: "human_interview_results",
+  genai_human_interview_results: "genai_human_interview_results",
   course_progress: "academy_user_course_progress",
 };
 
@@ -104,6 +109,12 @@ const STAGE_META: Record<
     label: "Human Interview stage",
     description:
       "Academy Nexus interview scores and clearance from each student's latest scored attempt. Fetch results, then release or schedule.",
+  },
+  genai_human_interview_results: {
+    camelKey: "genaiHumanInterviewResults",
+    label: "GenAI Human Interview results",
+    description:
+      "Academy Nexus GenAI (irp-gen-ai) interview ratings, remarks and clearance from each student's latest scored attempt. Fetch results, then release or schedule.",
   },
   course_progress: {
     camelKey: "courseProgress",
@@ -188,6 +199,11 @@ export function toResponse(
     humanInterviewResults: isEffectivelyVisible(
       map.human_interview_results,
       releaseAtByKey.human_interview_results ?? null,
+      now,
+    ),
+    genaiHumanInterviewResults: isEffectivelyVisible(
+      map.genai_human_interview_results,
+      releaseAtByKey.genai_human_interview_results ?? null,
       now,
     ),
     courseProgress: isEffectivelyVisible(
@@ -379,6 +395,8 @@ export function parseAdminSettingsBody(raw: unknown): VisibilityUpdatePartial | 
     aiMockResults: "ai_mock_results",
     human_interview_results: "human_interview_results",
     humanInterviewResults: "human_interview_results",
+    genai_human_interview_results: "genai_human_interview_results",
+    genaiHumanInterviewResults: "genai_human_interview_results",
     course_progress: "course_progress",
     courseProgress: "course_progress",
   };
@@ -408,7 +426,7 @@ export function parseAdminSettingsBody(raw: unknown): VisibilityUpdatePartial | 
 
   // Also accept flat `onlineL1ResultsReleaseAt` style
   for (const [k, v] of Object.entries(settings)) {
-    const m = /^(onlineL1Results|feProjectResults|aiMockResults|humanInterviewResults|courseProgress)ReleaseAt$/.exec(
+    const m = /^(onlineL1Results|feProjectResults|aiMockResults|humanInterviewResults|genaiHumanInterviewResults|courseProgress)ReleaseAt$/.exec(
       k,
     );
     if (!m) continue;

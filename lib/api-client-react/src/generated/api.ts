@@ -30,6 +30,7 @@ import type {
   DashboardAnalyticsSummary,
   DeleteL1Registration200,
   DeleteL1RegistrationParams,
+  GenaiHumanInterviewResults,
   GenaiProjectProgressResponse,
   GenaiProjectSubmissionInput,
   GenaiProjectSubmissionResponse,
@@ -857,6 +858,231 @@ export const useSyncHumanInterviewResults = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSyncHumanInterviewResultsMutationOptions(options));
+    }
+
+export const getGetGenaiHumanInterviewResultsUrl = () => {
+
+
+
+
+  return `/api/student/genai-human-interviews`
+}
+
+/**
+ * @summary All IRP GenAI human interview attempts and latest scored result
+ */
+export const getGenaiHumanInterviewResults = async ( options?: RequestInit): Promise<GenaiHumanInterviewResults> => {
+
+  return customFetch<GenaiHumanInterviewResults>(getGetGenaiHumanInterviewResultsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenaiHumanInterviewResultsQueryKey = () => {
+    return [
+    `/api/student/genai-human-interviews`
+    ] as const;
+    }
+
+
+export const getGetGenaiHumanInterviewResultsQueryOptions = <TData = Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenaiHumanInterviewResultsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>> = ({ signal }) => getGenaiHumanInterviewResults({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenaiHumanInterviewResultsQueryResult = NonNullable<Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>>
+export type GetGenaiHumanInterviewResultsQueryError = ErrorType<void>
+
+
+/**
+ * @summary All IRP GenAI human interview attempts and latest scored result
+ */
+
+export function useGetGenaiHumanInterviewResults<TData = Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenaiHumanInterviewResultsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGenaiHumanInterviewSyncStatusUrl = () => {
+
+
+
+
+  return `/api/admin/genai-human-interviews/status`
+}
+
+/**
+ * @summary Academy Nexus GenAI interview sync configuration and last successful refresh
+ */
+export const getGenaiHumanInterviewSyncStatus = async ( options?: RequestInit): Promise<HumanInterviewSyncStatus> => {
+
+  return customFetch<HumanInterviewSyncStatus>(getGetGenaiHumanInterviewSyncStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenaiHumanInterviewSyncStatusQueryKey = () => {
+    return [
+    `/api/admin/genai-human-interviews/status`
+    ] as const;
+    }
+
+
+export const getGetGenaiHumanInterviewSyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenaiHumanInterviewSyncStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>> = ({ signal }) => getGenaiHumanInterviewSyncStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenaiHumanInterviewSyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>>
+export type GetGenaiHumanInterviewSyncStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Academy Nexus GenAI interview sync configuration and last successful refresh
+ */
+
+export function useGetGenaiHumanInterviewSyncStatus<TData = Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenaiHumanInterviewSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenaiHumanInterviewSyncStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSyncGenaiHumanInterviewResultsUrl = () => {
+
+
+
+
+  return `/api/admin/genai-human-interviews/sync`
+}
+
+/**
+ * @summary Fetch all Academy Nexus IRP GenAI interview result pages
+ */
+export const syncGenaiHumanInterviewResults = async ( options?: RequestInit): Promise<HumanInterviewSyncStatus> => {
+
+  return customFetch<HumanInterviewSyncStatus>(getSyncGenaiHumanInterviewResultsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSyncGenaiHumanInterviewResultsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>, TError,void, TContext> => {
+
+const mutationKey = ['syncGenaiHumanInterviewResults'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>, void> = () => {
+
+
+          return  syncGenaiHumanInterviewResults(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncGenaiHumanInterviewResultsMutationResult = NonNullable<Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>>
+
+    export type SyncGenaiHumanInterviewResultsMutationError = ErrorType<void>
+
+    /**
+ * @summary Fetch all Academy Nexus IRP GenAI interview result pages
+ */
+export const useSyncGenaiHumanInterviewResults = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncGenaiHumanInterviewResults>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSyncGenaiHumanInterviewResultsMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

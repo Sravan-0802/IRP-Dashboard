@@ -30,6 +30,8 @@ export * from './dashboardAnalyticsSummary';
 export * from './dayActivity';
 export * from './deleteL1Registration200';
 export * from './deleteL1RegistrationParams';
+export * from './genaiHumanInterviewAttempt';
+export * from './genaiHumanInterviewResults';
 export * from './genaiProjectProgressResponse';
 export * from './genaiProjectProgressStudent';
 export * from './genaiProjectProgressStudentStatus';

@@ -6,6 +6,7 @@ export type VisibilitySettings = {
   feProjectResults: boolean;
   aiMockResults: boolean;
   humanInterviewResults: boolean;
+  genaiHumanInterviewResults: boolean;
   courseProgress: boolean;
   updatedAt: string | null;
 };
@@ -16,6 +17,7 @@ const DEFAULTS: VisibilitySettings = {
   feProjectResults: false,
   aiMockResults: true,
   humanInterviewResults: false,
+  genaiHumanInterviewResults: false,
   courseProgress: true,
   updatedAt: null,
 };
@@ -39,6 +41,7 @@ async function fetchVisibilitySettings(): Promise<VisibilitySettings> {
     feProjectResults: data.feProjectResults ?? false,
     aiMockResults: data.aiMockResults ?? true,
     humanInterviewResults: data.humanInterviewResults ?? false,
+    genaiHumanInterviewResults: data.genaiHumanInterviewResults ?? false,
     courseProgress: data.courseProgress ?? true,
     updatedAt: data.updatedAt ?? null,
   };

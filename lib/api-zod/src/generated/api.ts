@@ -658,6 +658,79 @@ export const SyncHumanInterviewResultsResponse = zod.object({
 
 
 /**
+ * @summary All IRP GenAI human interview attempts and latest scored result
+ */
+export const GetGenaiHumanInterviewResultsResponse = zod.object({
+  "attempts": zod.array(zod.object({
+  "interviewId": zod.string(),
+  "interviewDate": zod.string(),
+  "interviewStartTime": zod.string(),
+  "projectRating": zod.number().nullable(),
+  "projectRemarks": zod.string().nullable(),
+  "conceptRating": zod.number().nullable(),
+  "conceptRemarks": zod.string().nullable(),
+  "dsaRating": zod.number().nullable(),
+  "dsaRemarks": zod.string().nullable(),
+  "communicationRating": zod.number().nullable(),
+  "communicationRemarks": zod.string().nullable(),
+  "finalScore": zod.number().nullable(),
+  "verdictBand": zod.string(),
+  "clearanceStatus": zod.string()
+})),
+  "latestResult": zod.union([zod.object({
+  "interviewId": zod.string(),
+  "interviewDate": zod.string(),
+  "interviewStartTime": zod.string(),
+  "projectRating": zod.number().nullable(),
+  "projectRemarks": zod.string().nullable(),
+  "conceptRating": zod.number().nullable(),
+  "conceptRemarks": zod.string().nullable(),
+  "dsaRating": zod.number().nullable(),
+  "dsaRemarks": zod.string().nullable(),
+  "communicationRating": zod.number().nullable(),
+  "communicationRemarks": zod.string().nullable(),
+  "finalScore": zod.number().nullable(),
+  "verdictBand": zod.string(),
+  "clearanceStatus": zod.string()
+}),zod.null()]),
+  "syncedAt": zod.string().nullable(),
+  "released": zod.boolean()
+})
+
+
+/**
+ * @summary Academy Nexus GenAI interview sync configuration and last successful refresh
+ */
+export const GetGenaiHumanInterviewSyncStatusHeader = zod.object({
+  "x-api-key": zod.string()
+})
+
+export const GetGenaiHumanInterviewSyncStatusResponse = zod.object({
+  "configured": zod.boolean(),
+  "running": zod.boolean(),
+  "syncedAt": zod.string().nullable(),
+  "interviewCount": zod.number(),
+  "studentCount": zod.number()
+})
+
+
+/**
+ * @summary Fetch all Academy Nexus IRP GenAI interview result pages
+ */
+export const SyncGenaiHumanInterviewResultsHeader = zod.object({
+  "x-api-key": zod.string()
+})
+
+export const SyncGenaiHumanInterviewResultsResponse = zod.object({
+  "configured": zod.boolean(),
+  "running": zod.boolean(),
+  "syncedAt": zod.string().nullable(),
+  "interviewCount": zod.number(),
+  "studentCount": zod.number()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

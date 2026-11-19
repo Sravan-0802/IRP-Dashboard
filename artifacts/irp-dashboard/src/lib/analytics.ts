@@ -32,6 +32,9 @@ export const DASHBOARD_ANALYTICS_EVENTS = {
   /** Fresh counter for IRP L1 Mock Assessment Start clicks (25 Jul 2026 window). */
   L1_JULY25_MOCK_START_CLICK: "l1_july25_mock_start_click",
   MAIN_ASSESSMENT_LINK_CLICK: "main_assessment_link_click",
+  /** ₹8,000 referral bar on the MERN and GenAI dashboards. */
+  REFER_BANNER_INVITE_CLICK: "refer_banner_invite_click",
+  REFER_BANNER_DISMISS: "refer_banner_dismiss",
 } as const;
 
 export type DashboardAnalyticsEvent =

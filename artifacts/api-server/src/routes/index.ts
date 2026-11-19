@@ -11,6 +11,7 @@ import accessBatchesRouter from "./accessBatches";
 import registrationBatchesRouter from "./registrationBatches";
 import supportRouter from "./support";
 import humanInterviewsRouter from "./humanInterviews";
+import genaiHumanInterviewsRouter from "./genaiHumanInterviews";
 import genaiProjectProgressRouter from "./genaiProjectProgress";
 import trackStatusRouter from "./trackStatus";
 
@@ -28,6 +29,7 @@ router.use(accessBatchesRouter);
 router.use(registrationBatchesRouter);
 router.use(supportRouter);
 router.use(humanInterviewsRouter);
+router.use(genaiHumanInterviewsRouter);
 router.use(genaiProjectProgressRouter);
 router.use(trackStatusRouter);
 

@@ -22,6 +22,8 @@ const EVENT_LABELS: Record<string, string> = {
   contact_us_click: "Help & Support clicks",
   mock_assessment_link_click: "Mock assessment link clicks (legacy)",
   main_assessment_link_click: "Main assessment link clicks",
+  refer_banner_invite_click: "Referral banner — Invite clicks",
+  refer_banner_dismiss: "Referral banner — dismissed",
 };
 
 const TRACKED_EVENTS = Object.keys(EVENT_LABELS);

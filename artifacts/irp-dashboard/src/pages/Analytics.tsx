@@ -12,6 +12,7 @@ import { L1QualificationPanel } from "@/components/admin/L1QualificationPanel";
 import { CapacityMetricsPanel } from "@/components/admin/CapacityMetricsPanel";
 import { AuthCodeLogsPanel } from "@/components/admin/AuthCodeLogsPanel";
 import { HumanInterviewSyncPanel } from "@/components/admin/HumanInterviewSyncPanel";
+import { GenaiHumanInterviewSyncPanel } from "@/components/admin/GenaiHumanInterviewSyncPanel";
 import { GenaiLoomProgressPanel } from "@/components/admin/GenaiLoomProgressPanel";
 import { GenaiLoomSubmissionsPanel } from "@/components/admin/GenaiLoomSubmissionsPanel";
 
@@ -134,6 +135,7 @@ type VisibilityStage = {
     | "feProjectResults"
     | "aiMockResults"
     | "humanInterviewResults"
+    | "genaiHumanInterviewResults"
     | "courseProgress";
   label: string;
   description: string;
@@ -150,6 +152,7 @@ type VisibilitySettings = {
   feProjectResults: boolean;
   aiMockResults: boolean;
   humanInterviewResults: boolean;
+  genaiHumanInterviewResults?: boolean;
   courseProgress: boolean;
   updatedAt: string | null;
   stages?: VisibilityStage[];
@@ -160,6 +163,7 @@ type VisibilityFlag =
   | "feProjectResults"
   | "aiMockResults"
   | "humanInterviewResults"
+  | "genaiHumanInterviewResults"
   | "courseProgress";
 
 type SupportMessage = {
@@ -1501,6 +1505,7 @@ export default function AnalyticsPage() {
             {activeTab === "visibility" && (
             <div className="space-y-4">
             <HumanInterviewSyncPanel apiKey={apiKey} onSynced={() => void loadVisibility(apiKey)} />
+            <GenaiHumanInterviewSyncPanel apiKey={apiKey} onSynced={() => void loadVisibility(apiKey)} />
             <div className="irp-card p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">

@@ -154,6 +154,9 @@ function Router() {
       <Route path="/guideline-docs">
         <Home />
       </Route>
+      <Route path="/faqs">
+        <Home />
+      </Route>
       <Route path="/noc-form">
         <Home />
       </Route>

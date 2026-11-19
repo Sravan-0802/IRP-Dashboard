@@ -8,6 +8,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   slot: "/assessment-calendar",
   videos: "/video-resources",
   guidelines: "/guideline-docs",
+  faqs: "/faqs",
   noc: "/noc-form",
   home: "/home",
 };
@@ -23,6 +24,7 @@ export function pathToPage(path: string): PageKey {
   if (clean === PAGE_PATHS.slot) return "slot";
   if (clean === PAGE_PATHS.videos) return "videos";
   if (clean === PAGE_PATHS.guidelines) return "guidelines";
+  if (clean === PAGE_PATHS.faqs) return "faqs";
   if (clean === PAGE_PATHS.noc) return "noc";
   if (clean === PAGE_PATHS.home || clean === LEGACY_HOME_PATH) return "home";
   return "dashboard";

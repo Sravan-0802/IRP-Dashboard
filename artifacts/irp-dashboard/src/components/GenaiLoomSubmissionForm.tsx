@@ -103,7 +103,7 @@ export function GenaiLoomSubmissionForm({
         <div className="min-w-0 flex-1">
           <h4 className="font-display text-base font-extrabold text-[#101828]">Loom walkthrough</h4>
           <p
-            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${submission || savedSubmission ? "bg-[#ecfdf3] text-[#067647]" : "bg-[#fff4e5] text-[#93370d]"}`}
+            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${submission || savedSubmission ? "bg-[#fef3c7] text-[#b45309]" : "bg-[#fff4e5] text-[#93370d]"}`}
             data-testid="text-genai-loom-status"
           >
             {submission || savedSubmission
@@ -200,7 +200,7 @@ export function GenaiLoomSubmissionForm({
           </p>
         ) : null}
         {savedForCurrentDraft ? (
-          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#067647]" role="status" aria-live="polite" data-testid="text-genai-loom-saved">
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b45309]" role="status" aria-live="polite" data-testid="text-genai-loom-saved">
             <Check className="h-4 w-4" />
             Successfully submitted. Your Loom walkthrough has been saved.
           </p>

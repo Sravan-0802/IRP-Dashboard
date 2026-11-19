@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Code2,
   ExternalLink,
+  Eye,
   FileText,
   Info,
   Lock,
@@ -22,6 +23,7 @@ import {
   type Tone,
 } from "@/components/irp/IrpClearCards";
 import { GenAiCoursesDialog } from "@/components/irp/LevelCoursesDialog";
+import { ClearCardDialog, type OnlineBadgeStudent } from "@/components/irp/OnlineAssessmentBadge";
 import {
   GenaiLoomSubmissionForm,
   type LoomSubmissionRecord,
@@ -29,6 +31,11 @@ import {
 import { useProgramBoard } from "@/lib/useProgramBoard";
 import type { GenAiAssessment } from "@/lib/programBoard";
 import { useGenaiProjectSubmission } from "@/lib/useGenaiProjectSubmission";
+import { genaiInterviewOutcome, useGenaiHumanInterviewResults } from "@/lib/useGenaiHumanInterviewResults";
+import {
+  GENAI_HUMAN_INTERVIEW_SECTION_ID,
+  GenaiHumanInterviewResults,
+} from "@/components/GenaiHumanInterviewResults";
 import { useGenaiProjectChoices } from "@/lib/useGenaiProjectChoices";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import {
@@ -112,7 +119,7 @@ function openClassLink(link: string, setLocation: (path: string) => void) {
   if (/^https?:\/\//i.test(target)) window.location.assign(target);
 }
 
-export function GenAiProgram() {
+export function GenAiProgram({ student }: { student: OnlineBadgeStudent }) {
   const g = useProgramBoard().genai;
   const results = useGenaiResults();
   const [, setLocation] = useLocation();
@@ -157,6 +164,7 @@ export function GenAiProgram() {
         results={results.assessments}
         selectedProjectCount={projectChoices.selectedProjects.length}
         onTab={setTrackTab}
+        student={student}
       />
       <GenAiAssessments
         assessments={g.assessments}
@@ -168,6 +176,7 @@ export function GenAiProgram() {
         projectChoices={projectChoices}
       />
       {results.interviews.length > 0 ? <GenAiAiInterview interviews={results.interviews} /> : null}
+      <GenaiHumanInterviewResults />
       {SHOW_GENAI_INTERVIEW_PANEL ? <GenAiInterview /> : null}
 
       {g.classTitle ? (
@@ -300,6 +309,8 @@ type GenAiStage = {
   body: string;
   action: { label: string; onClick: () => void } | null;
   onHowToClear?: () => void;
+  /** Opens the IRP Clear Card when the stage is done. */
+  onViewClearCard?: () => void;
 };
 
 function scrollToAssessments() {
@@ -311,11 +322,13 @@ function GenAiJourney({
   results,
   selectedProjectCount,
   onTab,
+  student,
 }: {
   assessments: GenAiAssessment[];
   results: GenaiAssessmentResult[];
   selectedProjectCount: number;
   onTab: (tab: TrackTab) => void;
+  student: OnlineBadgeStudent;
 }) {
   const [, setLocation] = useLocation();
   const { query: submissionQuery } = useGenaiProjectSubmission(true);
@@ -335,8 +348,14 @@ function GenAiJourney({
   const projectsChosen = selectedProjectCount >= 2;
   const projectTone: Tone = !projectUnlocked ? "locked" : projectsChosen || submitted ? "done" : "active";
   const loomTone: Tone = submitted ? "submitted" : projectUnlocked ? "active" : "locked";
+  const { data: interviewResults } = useGenaiHumanInterviewResults();
+  const interviewOutcome = genaiInterviewOutcome(interviewResults);
+  const interviewTone: Tone = interviewOutcome ? (interviewOutcome.cleared ? "done" : "failed") : "locked";
+  const interviewScore =
+    interviewOutcome?.latest.finalScore != null ? ` (${interviewOutcome.latest.finalScore}/100)` : "";
 
   const [coursesOpen, setCoursesOpen] = useState(false);
+  const [viewingClearCard, setViewingClearCard] = useState(false);
 
   function openTab(tab: TrackTab) {
     onTab(tab);
@@ -347,6 +366,7 @@ function GenAiJourney({
     {
       key: "assessments",
       onHowToClear: () => setCoursesOpen(true),
+      onViewClearCard: qualified ? () => setViewingClearCard(true) : undefined,
       label: "Assessments",
       Icon: ClipboardList,
       tone: assessmentTone,
@@ -404,19 +424,35 @@ function GenAiJourney({
       key: "interview",
       label: "Human Interview",
       Icon: Users,
-      tone: "locked",
-      badge: null,
-      body: submitted
-        ? "Your Human Interview opens after your project is evaluated."
-        : "Submit your Loom video to unlock the Human Interview.",
-      action: null,
+      tone: interviewTone,
+      badge: interviewOutcome?.cleared ? "Cleared" : null,
+      body: interviewOutcome
+        ? interviewOutcome.cleared
+          ? `You cleared your GenAI Human Interview${interviewScore}.`
+          : `Your latest GenAI Human Interview was not cleared${interviewScore}.`
+        : submitted
+          ? "Your Human Interview opens after your project is evaluated."
+          : "Submit your Loom video to unlock the Human Interview.",
+      action: interviewOutcome
+        ? {
+            label: "View interview results",
+            onClick: () =>
+              document
+                .getElementById(GENAI_HUMAN_INTERVIEW_SECTION_ID)
+                ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+          }
+        : null,
     },
   ];
   const completedStages = stages.filter(
     (stage) => stage.tone === "done" || stage.tone === "submitted",
   ).length;
 
-  const header = !qualified
+  const header = interviewOutcome
+    ? interviewOutcome.cleared
+      ? "You cleared your GenAI Human Interview. See your interview results below."
+      : "Your latest GenAI Human Interview was not cleared. See your interview results below."
+    : !qualified
     ? "Qualify in a GenAI assessment to start your GenAI Track stages."
     : submitted
       ? "Your Loom video is submitted. Your Human Interview opens after your project is evaluated."
@@ -427,6 +463,12 @@ function GenAiJourney({
   return (
     <section className="overflow-hidden rounded-2xl border border-[#d1e9ff] bg-white shadow-[0_8px_30px_rgba(16,24,40,0.04)]">
       <GenAiCoursesDialog open={coursesOpen} onOpenChange={setCoursesOpen} />
+      <ClearCardDialog
+        open={viewingClearCard}
+        onOpenChange={setViewingClearCard}
+        student={student}
+        themeId="genai"
+      />
       <div className="bg-[linear-gradient(90deg,#eff8ff_0%,#f5faff_42%,#ffffff_100%)] px-4 py-5 sm:px-6">
         <span className="inline-flex items-center rounded-full border border-[#84caff] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#175cd3]">
           GenAI Track
@@ -496,11 +538,37 @@ function GenAiJourney({
                   <Check className="h-3 w-3" />
                   {stage.badge}
                 </p>
+              ) : stage.tone === "submitted" && stage.badge ? (
+                <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-[#fffbeb] px-2 py-0.5 text-[11px] font-bold text-[#b45309]">
+                  {stage.badge}
+                </p>
               ) : null}
               <p className="mt-2 text-sm leading-relaxed text-[#667085]">{stage.body}</p>
 
               <div className="mt-auto pt-4">
-                {stage.action ? (
+                {stage.tone === "done" && stage.onViewClearCard ? (
+                  <span className="mb-2 block rounded-xl bg-[linear-gradient(135deg,#c4b5fd_0%,#93c5fd_100%)] p-px shadow-[0_6px_16px_rgba(105,65,198,0.25)]">
+                    <button
+                      type="button"
+                      onClick={stage.onViewClearCard}
+                      data-testid={`button-genai-clear-card-${stage.key}`}
+                      className="flex w-full items-center justify-center gap-2 rounded-[11px] bg-[linear-gradient(135deg,#6941c6_0%,#7f56d9_100%)] px-3 py-2.5 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View IRP Clear Card
+                    </button>
+                  </span>
+                ) : null}
+                {stage.action && stage.tone === "done" && stage.onViewClearCard ? (
+                  <button
+                    type="button"
+                    onClick={stage.action.onClick}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#d0d5dd] bg-white px-3 py-2 text-sm font-bold text-[#344054] transition-colors hover:bg-[#f9fafb]"
+                  >
+                    {stage.action.label}
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                ) : stage.action ? (
                   <span className="block rounded-xl bg-[linear-gradient(135deg,#c4b5fd_0%,#93c5fd_100%)] p-px shadow-[0_6px_16px_rgba(105,65,198,0.22)]">
                     <button
                       type="button"

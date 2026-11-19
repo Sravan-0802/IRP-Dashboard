@@ -20,12 +20,6 @@ import {
   TrendingUp,
   UserRound,
 } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { IrpCard } from "@/components/irp/ui";
 
 type Level = {
@@ -368,32 +362,6 @@ const L1_ASSESSMENT_SECTIONS = [
   },
 ] as const;
 
-const FAQ = [
-  {
-    q: "Who is IRP for?",
-    a: "IRP (Internship Readiness Program) is built for YOG 2028 and 2029 students who want a structured path from assessments to a paid internship.",
-  },
-  {
-    q: "What is the standard route?",
-    a: "Clear Level 1 (The Hustler), then Level 2 (The Main Character). After L2 you can either take an internship offer or push for Level 3 — Infinite Aura.",
-  },
-  {
-    q: "What is the Wildcard route?",
-    a: "If you believe you are in the top 1%, you can skip L1 and L2 and attempt direct entry to Infinite Aura — provided you clear all four eligibility gates.",
-  },
-  {
-    q: "How do the stipends work?",
-    a: "Internships after Level 2 pay ₹5K–₹15K per month. The Level 3 Infinite Aura cohort unlocks ₹25K+ per month. The exact amount depends on the company and your performance.",
-  },
-  {
-    q: "What happens after each assessment?",
-    a: "Each level has post-assessment rounds: a timed project, an AI mock interview, and a human mock interview. You must clear these to progress.",
-  },
-  {
-    q: "How should I prepare?",
-    a: "Revise your fundamentals, practice on the NxtWave platform daily, finish the pending courses for your level, and keep your coding profiles active.",
-  },
-] as const;
 
 function SectionHeading({
   eyebrow,
@@ -601,31 +569,6 @@ export function AboutIrp() {
             </IrpCard>
           ))}
         </div>
-      </section>
-
-      <section>
-        <SectionHeading
-          eyebrow="Questions"
-          title="Everything you might be wondering."
-        />
-        <IrpCard className="px-5 py-2">
-          <Accordion type="single" collapsible>
-            {FAQ.map((item, i) => (
-              <AccordionItem
-                key={item.q}
-                value={`faq-${i}`}
-                className={i === FAQ.length - 1 ? "border-b-0" : "border-[#eaecf0]"}
-              >
-                <AccordionTrigger className="gap-4 text-left text-sm font-semibold text-[#101828] hover:no-underline">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="pr-8 text-[13px] leading-relaxed text-[#667085]">
-                  {item.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </IrpCard>
       </section>
     </div>
   );

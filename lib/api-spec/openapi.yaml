@@ -230,6 +230,64 @@ paths:
           description: Upstream fetch failed; previous results retained
         "503":
           description: Academy Nexus key is not configured
+  /student/genai-human-interviews:
+    get:
+      operationId: getGenaiHumanInterviewResults
+      tags: [student]
+      summary: All IRP GenAI human interview attempts and latest scored result
+      responses:
+        "200":
+          description: Results for the authenticated Academy UID, respecting release settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenaiHumanInterviewResults"
+        "401":
+          description: Authentication required
+  /admin/genai-human-interviews/status:
+    get:
+      operationId: getGenaiHumanInterviewSyncStatus
+      tags: [analytics]
+      summary: Academy Nexus GenAI interview sync configuration and last successful refresh
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanInterviewSyncStatus"
+        "401":
+          description: Admin key required
+  /admin/genai-human-interviews/sync:
+    post:
+      operationId: syncGenaiHumanInterviewResults
+      tags: [analytics]
+      summary: Fetch all Academy Nexus IRP GenAI interview result pages
+      parameters:
+        - in: header
+          name: x-api-key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All pages persisted atomically
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanInterviewSyncStatus"
+        "401":
+          description: Admin key required
+        "502":
+          description: Upstream fetch failed; previous results retained
+        "503":
+          description: Academy Nexus key is not configured
   /healthz:
     get:
       operationId: healthCheck
@@ -627,6 +685,54 @@ components:
         latestResult:
           anyOf:
             - $ref: "#/components/schemas/HumanInterviewAttempt"
+            - type: "null"
+        syncedAt:
+          type: [string, "null"]
+        released:
+          type: boolean
+    GenaiHumanInterviewAttempt:
+      type: object
+      required: [interviewId, interviewDate, interviewStartTime, projectRating, projectRemarks, conceptRating, conceptRemarks, dsaRating, dsaRemarks, communicationRating, communicationRemarks, finalScore, verdictBand, clearanceStatus]
+      properties:
+        interviewId:
+          type: string
+        interviewDate:
+          type: string
+        interviewStartTime:
+          type: string
+        projectRating:
+          type: [number, "null"]
+        projectRemarks:
+          type: [string, "null"]
+        conceptRating:
+          type: [number, "null"]
+        conceptRemarks:
+          type: [string, "null"]
+        dsaRating:
+          type: [number, "null"]
+        dsaRemarks:
+          type: [string, "null"]
+        communicationRating:
+          type: [number, "null"]
+        communicationRemarks:
+          type: [string, "null"]
+        finalScore:
+          type: [number, "null"]
+        verdictBand:
+          type: string
+        clearanceStatus:
+          type: string
+    GenaiHumanInterviewResults:
+      type: object
+      required: [attempts, latestResult, syncedAt, released]
+      properties:
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenaiHumanInterviewAttempt"
+        latestResult:
+          anyOf:
+            - $ref: "#/components/schemas/GenaiHumanInterviewAttempt"
             - type: "null"
         syncedAt:
           type: [string, "null"]

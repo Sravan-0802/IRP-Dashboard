@@ -1,0 +1,136 @@
+import { useState } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Loader2, Mic, RefreshCw } from "lucide-react";
+import {
+  useGetGenaiHumanInterviewSyncStatus,
+  getGetGenaiHumanInterviewSyncStatusQueryKey,
+  useSyncGenaiHumanInterviewResults,
+  getGetGenaiHumanInterviewResultsQueryKey,
+} from "@workspace/api-client-react";
+
+function errMsg(err: unknown, fallback: string): string {
+  const data = (err as { data?: { error?: string } } | null)?.data;
+  if (data && typeof data.error === "string" && data.error) return data.error;
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+function fmt(iso: string | null): string {
+  if (!iso) return "Never";
+  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** Admin fetch for Academy Nexus template irp-gen-ai — mirrors the MERN (irp-l1) panel. */
+export function GenaiHumanInterviewSyncPanel({ apiKey, onSynced }: { apiKey: string; onSynced?: () => void }) {
+  const qc = useQueryClient();
+  const [message, setMessage] = useState("");
+  const headers = { headers: { "x-api-key": apiKey } };
+  const status = useGetGenaiHumanInterviewSyncStatus({
+    query: {
+      queryKey: [...getGetGenaiHumanInterviewSyncStatusQueryKey(), apiKey],
+      enabled: !!apiKey,
+      staleTime: 30_000,
+      refetchInterval: 5_000,
+      retry: false,
+    },
+    request: headers,
+  });
+  const stats = useQuery({
+    queryKey: ["genai-hi-stats", apiKey],
+    queryFn: async (): Promise<{ cleared: number; notCleared: number; neverCompleted: number; totalStudents: number }> => {
+      const res = await fetch("/api/admin/genai-human-interviews/stats", {
+        headers: { "x-api-key": apiKey },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!apiKey,
+    staleTime: 30_000,
+    refetchInterval: 5_000,
+    retry: false,
+  });
+  const sync = useSyncGenaiHumanInterviewResults({
+    request: headers,
+    mutation: {
+      onMutate: () => setMessage(""),
+      onSuccess: (res) => {
+        qc.setQueryData([...getGetGenaiHumanInterviewSyncStatusQueryKey(), apiKey], res);
+        void qc.invalidateQueries({ queryKey: getGetGenaiHumanInterviewSyncStatusQueryKey() });
+        void qc.invalidateQueries({ queryKey: getGetGenaiHumanInterviewResultsQueryKey() });
+        void qc.invalidateQueries({ queryKey: ["genai-hi-stats", apiKey] });
+        setMessage(
+          `Fetched ${res.interviewCount.toLocaleString()} GenAI interviews for ${res.studentCount.toLocaleString()} students at ${fmt(res.syncedAt)}. Existing release settings are unchanged.`,
+        );
+        onSynced?.();
+      },
+    },
+  });
+
+  const s = status.data;
+  const busy = sync.isPending || !!s?.running;
+  const notConfigured = s && !s.configured;
+
+  return (
+    <div className="irp-card p-5" data-testid="panel-genai-hi-sync">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Mic className="h-4 w-4 text-[#175cd3]" />
+            <h2 className="font-display text-lg font-extrabold text-[#0d1117]">GenAI Human Interview results</h2>
+          </div>
+          <p className="mt-1 text-sm text-[#6e6a8a]">
+            Fetch all IRP GenAI interview attempts (template irp-gen-ai) from Academy Nexus whenever new results are available. Released results appear on the student GenAI Track after their next refresh; fetching does not change release settings.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => sync.mutate()}
+          disabled={!apiKey || busy || !!notConfigured}
+          className="btn-pop inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold"
+          data-testid="button-fetch-genai-hi-results"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {busy ? "Fetching..." : "Fetch latest GenAI results"}
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="status-genai-hi-sync">
+        {status.isLoading || stats.isLoading ? (
+          [0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-[#f2f4f7]" />)
+        ) : (
+          [
+            ["Source", s ? (s.configured ? "Configured" : "Not configured") : "—"],
+            ["Last fetched", s ? fmt(s.syncedAt) : "—"],
+            ["Interviews", s ? s.interviewCount.toLocaleString() : "—"],
+            ["Students", s ? s.studentCount.toLocaleString() : "—"],
+            ["Cleared", stats.data ? stats.data.cleared.toLocaleString() : "—"],
+            ["Not Cleared", stats.data ? stats.data.notCleared.toLocaleString() : "—"],
+          ].map(([k, v]) => (
+            <div key={k} className={`rounded-xl border px-3 py-2 ${k === "Cleared" ? "border-[#abefc6] bg-[#ecfdf3]" : k === "Not Cleared" ? "border-[#fecdca] bg-[#fef3f2]" : "border-[rgba(23,92,211,0.12)] bg-[#f5faff]"}`}>
+              <p className="text-[11px] font-semibold text-[#6e6a8a]">{k}</p>
+              <p className="text-sm font-bold text-[#0d1117]">{v}</p>
+            </div>
+          ))
+        )}
+      </div>
+      <p className="mt-2 text-xs text-[#6e6a8a]">Cleared / Not Cleared count each student once, by their latest scored interview.</p>
+
+      {notConfigured ? (
+        <p className="mt-3 text-sm font-semibold text-[#b54708]">The interview source is not configured on the server.</p>
+      ) : null}
+      {status.isError ? (
+        <p className="mt-3 text-sm font-semibold text-[#b42318]" data-testid="text-genai-hi-status-error">
+          {errMsg(status.error, "Could not load fetch status.")}{" "}
+          <button type="button" className="underline" onClick={() => void status.refetch()}>Retry</button>
+        </p>
+      ) : null}
+      {sync.isError ? (
+        <p className="mt-3 text-sm font-semibold text-[#b42318]" data-testid="text-genai-hi-sync-error">
+          {errMsg(sync.error, "Fetch failed.")}
+        </p>
+      ) : null}
+      {message && !sync.isError ? (
+        <p className="mt-3 text-sm font-semibold text-[#067647]" data-testid="text-genai-hi-sync-success">{message}</p>
+      ) : null}
+    </div>
+  );
+}

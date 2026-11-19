@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, Home, LayoutGrid, PlayCircle, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, HelpCircle, Home, LayoutGrid, PlayCircle, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
@@ -10,7 +10,7 @@ const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "videos" | "guidelines" | "noc" | "home";
+export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "videos" | "guidelines" | "faqs" | "noc" | "home";
 
 const SECTIONS: {
   title: string;
@@ -35,6 +35,7 @@ const SECTIONS: {
     items: [
       { key: "videos", icon: PlayCircle, label: "Video Resources" },
       { key: "guidelines", icon: FileText, label: "Guideline Docs" },
+      { key: "faqs", icon: HelpCircle, label: "FAQs" },
     ],
   },
 ];

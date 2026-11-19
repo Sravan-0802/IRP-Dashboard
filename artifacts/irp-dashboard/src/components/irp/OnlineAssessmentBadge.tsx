@@ -43,7 +43,7 @@ export type OnlineBadgeStudent = {
   yearOfJoin: string | null;
 };
 
-export type BadgeThemeId = "online" | "fe" | "panel";
+export type BadgeThemeId = "online" | "fe" | "panel" | "genai";
 
 type BadgeTheme = {
   id: BadgeThemeId;
@@ -74,6 +74,13 @@ const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
     dialogBody: "You cleared the panel interview. Download this IRP Clear Card to save or share it.",
     fileSlug: "panel",
     template: "irp-poster-panel.jpg?v=3",
+  },
+  genai: {
+    id: "genai",
+    dialogTitle: "GenAI Online Assessment IRP Clear Card",
+    dialogBody: "You qualified in the GenAI online assessment. Download this IRP Clear Card to save or share it.",
+    fileSlug: "genai-online",
+    template: "irp-poster-genai.jpg?v=1",
   },
 };
 

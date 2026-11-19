@@ -61,6 +61,40 @@ export interface HumanInterviewResults {
   released: boolean;
 }
 
+export interface GenaiHumanInterviewAttempt {
+  interviewId: string;
+  interviewDate: string;
+  interviewStartTime: string;
+  /** @nullable */
+  projectRating: number | null;
+  /** @nullable */
+  projectRemarks: string | null;
+  /** @nullable */
+  conceptRating: number | null;
+  /** @nullable */
+  conceptRemarks: string | null;
+  /** @nullable */
+  dsaRating: number | null;
+  /** @nullable */
+  dsaRemarks: string | null;
+  /** @nullable */
+  communicationRating: number | null;
+  /** @nullable */
+  communicationRemarks: string | null;
+  /** @nullable */
+  finalScore: number | null;
+  verdictBand: string;
+  clearanceStatus: string;
+}
+
+export interface GenaiHumanInterviewResults {
+  attempts: GenaiHumanInterviewAttempt[];
+  latestResult: GenaiHumanInterviewAttempt | null;
+  /** @nullable */
+  syncedAt: string | null;
+  released: boolean;
+}
+
 export interface HumanInterviewSyncStatus {
   configured: boolean;
   running: boolean;

@@ -10,7 +10,7 @@ export function isScoredInterview(attempt: InterviewAttempt): boolean {
     (attempt.clearanceStatus === "Cleared" || attempt.clearanceStatus === "Not Cleared");
 }
 
-export function interviewTimestamp(attempt: InterviewAttempt): number {
+export function interviewTimestamp(attempt: Pick<InterviewAttempt, "interviewDate" | "interviewStartTime">): number {
   if (!attempt.interviewDate) return -1;
   const match = attempt.interviewStartTime.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
   let hour = match ? Number(match[1]) : 0;

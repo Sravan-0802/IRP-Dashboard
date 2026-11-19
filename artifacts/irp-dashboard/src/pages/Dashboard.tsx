@@ -30,6 +30,8 @@ import { AboutIrp } from "./AboutIrp";
 import { GenAiProgram } from "./GenAiProgram";
 import { GuidelineDocs } from "./GuidelineDocs";
 import { VideoResources } from "./VideoResources";
+import { Faqs } from "./Faqs";
+import { formatYearOfJoin } from "@/components/irp/OnlineAssessmentBadge";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { useDashboardAccess } from "@/lib/usePaymentStatus";
 import { useAcademyUserId } from "@/lib/useAcademyUserId";
@@ -209,7 +211,16 @@ export default function Dashboard() {
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-16">
           {(page === "dashboard" || page === "genai") && !referBanner.hidden ? (
-            <ReferBanner onInvite={referBanner.hideForSession} onDismiss={referBanner.hideForSession} />
+            <ReferBanner
+              onInvite={() => {
+                trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.REFER_BANNER_INVITE_CLICK);
+                referBanner.hideForSession();
+              }}
+              onDismiss={() => {
+                trackDashboardEvent(DASHBOARD_ANALYTICS_EVENTS.REFER_BANNER_DISMISS);
+                referBanner.hideForSession();
+              }}
+            />
           ) : null}
           <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
             {page === "dashboard" && (
@@ -234,7 +245,15 @@ export default function Dashboard() {
               </div>
             )}
             {page === "genai" && (
-              <GenAiProgram />
+              <GenAiProgram
+                student={{
+                  name: displayStudent.name,
+                  photoUrl: displayStudent.avatar?.trim() ? displayStudent.avatar.trim() : null,
+                  levelLabel: "GenAI Online Assessment",
+                  statusLabel: "Cleared",
+                  yearOfJoin: formatYearOfJoin(displayStudent.yog),
+                }}
+              />
             )}
             {page === "assessments" && (
               <AssessmentsHub
@@ -253,6 +272,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
+            {page === "faqs" && <Faqs />}
             {page === "home" && <AboutIrp />}
           </div>
         </main>
