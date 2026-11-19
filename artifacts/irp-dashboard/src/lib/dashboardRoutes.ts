@@ -1,4 +1,5 @@
 import type { PageKey } from "@/components/irp/Sidebar";
+import { SHOW_FAQS, SHOW_WHAT_TO_STUDY } from "@/lib/featureFlags";
 
 /** URL path for each dashboard tab. These show in the deployed link's address bar. */
 export const PAGE_PATHS: Record<PageKey, string> = {
@@ -8,6 +9,7 @@ export const PAGE_PATHS: Record<PageKey, string> = {
   slot: "/assessment-calendar",
   videos: "/video-resources",
   guidelines: "/guideline-docs",
+  study: "/what-to-study",
   faqs: "/faqs",
   noc: "/noc-form",
   home: "/home",
@@ -24,7 +26,9 @@ export function pathToPage(path: string): PageKey {
   if (clean === PAGE_PATHS.slot) return "slot";
   if (clean === PAGE_PATHS.videos) return "videos";
   if (clean === PAGE_PATHS.guidelines) return "guidelines";
-  if (clean === PAGE_PATHS.faqs) return "faqs";
+  // Hidden tabs fall back to the dashboard, so a direct link shows nothing new.
+  if (clean === PAGE_PATHS.study) return SHOW_WHAT_TO_STUDY ? "study" : "dashboard";
+  if (clean === PAGE_PATHS.faqs) return SHOW_FAQS ? "faqs" : "dashboard";
   if (clean === PAGE_PATHS.noc) return "noc";
   if (clean === PAGE_PATHS.home || clean === LEGACY_HOME_PATH) return "home";
   return "dashboard";

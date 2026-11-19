@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { ArrowRight, Calendar, ClipboardCheck, ClipboardList, FileText, HelpCircle, Home, LayoutGrid, PlayCircle, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, Calendar, ClipboardCheck, ClipboardList, FileText, HelpCircle, Home, LayoutGrid, PlayCircle, Sparkles, Zap } from "lucide-react";
 import { FeedbackButton } from "./FeedbackButton";
 import { cn } from "@/lib/utils";
 import type { Journey } from "@/lib/journey";
 import { levelLabel, getLevel } from "@/lib/journey";
+import { SHOW_FAQS, SHOW_WHAT_TO_STUDY } from "@/lib/featureFlags";
 const LEVEL_COLOR: Record<1 | 2 | 3, string> = {
   1: "#6941c6",
   2: "#dc6803",
   3: "#d92d20",
 };
 
-export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "videos" | "guidelines" | "faqs" | "noc" | "home";
+export type PageKey = "dashboard" | "genai" | "assessments" | "slot" | "videos" | "guidelines" | "study" | "faqs" | "noc" | "home";
 
 const SECTIONS: {
   title: string;
@@ -33,9 +34,10 @@ const SECTIONS: {
   {
     title: "Resource Hub",
     items: [
+      ...(SHOW_WHAT_TO_STUDY ? [{ key: "study" as const, icon: BookOpen, label: "What to Study" }] : []),
       { key: "videos", icon: PlayCircle, label: "Video Resources" },
       { key: "guidelines", icon: FileText, label: "Guideline Docs" },
-      { key: "faqs", icon: HelpCircle, label: "FAQs" },
+      ...(SHOW_FAQS ? [{ key: "faqs" as const, icon: HelpCircle, label: "FAQs" }] : []),
     ],
   },
 ];

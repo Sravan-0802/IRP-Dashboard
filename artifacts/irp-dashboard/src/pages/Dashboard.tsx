@@ -31,6 +31,7 @@ import { GenAiProgram } from "./GenAiProgram";
 import { GuidelineDocs } from "./GuidelineDocs";
 import { VideoResources } from "./VideoResources";
 import { Faqs } from "./Faqs";
+import { WhatToStudy } from "./WhatToStudy";
 import { formatYearOfJoin } from "@/components/irp/OnlineAssessmentBadge";
 import type { SubjectRow } from "@/components/irp/ProgressSummary";
 import { useDashboardAccess } from "@/lib/usePaymentStatus";
@@ -272,6 +273,7 @@ export default function Dashboard() {
                 userId={userId}
               />
             )}
+            {page === "study" && <WhatToStudy journey={journey} />}
             {page === "faqs" && <Faqs />}
             {page === "home" && <AboutIrp />}
           </div>

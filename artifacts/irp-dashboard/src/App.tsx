@@ -154,6 +154,9 @@ function Router() {
       <Route path="/guideline-docs">
         <Home />
       </Route>
+      <Route path="/what-to-study">
+        <Home />
+      </Route>
       <Route path="/faqs">
         <Home />
       </Route>

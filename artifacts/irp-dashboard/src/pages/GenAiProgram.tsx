@@ -31,6 +31,7 @@ import {
 import { useProgramBoard } from "@/lib/useProgramBoard";
 import type { GenAiAssessment } from "@/lib/programBoard";
 import { useGenaiProjectSubmission } from "@/lib/useGenaiProjectSubmission";
+import { SHOW_GENAI_CLEAR_CARD } from "@/lib/featureFlags";
 import { genaiInterviewOutcome, useGenaiHumanInterviewResults } from "@/lib/useGenaiHumanInterviewResults";
 import {
   GENAI_HUMAN_INTERVIEW_SECTION_ID,
@@ -366,7 +367,7 @@ function GenAiJourney({
     {
       key: "assessments",
       onHowToClear: () => setCoursesOpen(true),
-      onViewClearCard: qualified ? () => setViewingClearCard(true) : undefined,
+      onViewClearCard: SHOW_GENAI_CLEAR_CARD && qualified ? () => setViewingClearCard(true) : undefined,
       label: "Assessments",
       Icon: ClipboardList,
       tone: assessmentTone,

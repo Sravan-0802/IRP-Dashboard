@@ -1,6 +1,5 @@
-/** Google Form for payment concerns. */
-export const PAYMENT_CONCERNS_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSclDxqCDijga_6ZGUTtnNvWZ7q6sX7t5AQW7u6C1wvJHPXzXQ/viewform";
+/** Academy payment concerns form for IRP dashboard users without access. */
+export const PAYMENT_CONCERNS_FORM_URL = "https://forms.ccbp.in/form/acad-payment-concerns/?source=IRP";
 
 export function PaymentRequired() {
   return (
