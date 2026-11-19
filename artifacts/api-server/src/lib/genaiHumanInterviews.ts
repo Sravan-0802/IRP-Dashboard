@@ -3,6 +3,7 @@ import { eq, count, countDistinct, sql } from "drizzle-orm";
 import { interviewTimestamp } from "./humanInterviewData";
 import { fetchGenaiNexusInterviews, summarizeGenaiInterviews, type GenaiInterviewAttempt } from "./genaiHumanInterviewData";
 import { isNexusConfigured } from "./humanInterviews";
+import { ensureGenaiHumanInterviewSchema } from "./genaiHumanInterviewSchema";
 
 export const GENAI_HUMAN_INTERVIEW_SYNC_TABLE = "genai_human_interview_results";
 // Separate lock from the MERN (irp-l1) sync so both can run independently.
@@ -10,6 +11,7 @@ const GENAI_SYNC_LOCK_ID = 731240992;
 let activeSync: Promise<void> | null = null;
 
 export async function getGenaiHumanInterviewSyncStatus() {
+  await ensureGenaiHumanInterviewSchema();
   const [status, counts] = await Promise.all([
     db.select().from(bigquerySyncStatusTable)
       .where(eq(bigquerySyncStatusTable.tableName, GENAI_HUMAN_INTERVIEW_SYNC_TABLE)).limit(1),
@@ -35,6 +37,7 @@ export function syncGenaiHumanInterviews(): Promise<void> {
 async function performSync(): Promise<void> {
   const apiKey = process.env.STUDENT_PORTAL_API_KEY?.trim();
   if (!apiKey) throw new Error("Academy Nexus key is not configured");
+  await ensureGenaiHumanInterviewSchema();
   const started = Date.now();
   // Cross-process lock prevents overlapping fetches from overwriting a newer snapshot.
   const lock = await pool.connect();
@@ -71,6 +74,7 @@ async function performSync(): Promise<void> {
 }
 
 export async function getGenaiHumanInterviewsForUser(candidateId: string) {
+  await ensureGenaiHumanInterviewSchema();
   const [rows, status] = await Promise.all([
     db.select().from(genaiHumanInterviewResultsTable)
       .where(eq(genaiHumanInterviewResultsTable.candidateId, candidateId)),
@@ -85,6 +89,7 @@ export async function getGenaiHumanInterviewsForUser(candidateId: string) {
 
 /** Per student, by the latest scored attempt (same rule the student dashboard uses). */
 export async function getGenaiHumanInterviewStats() {
+  await ensureGenaiHumanInterviewSchema();
   const result = await db.execute(sql`
     WITH scored AS (
       SELECT DISTINCT ON (candidate_id) candidate_id, clearance_status

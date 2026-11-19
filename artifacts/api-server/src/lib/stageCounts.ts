@@ -1,5 +1,6 @@
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { ensureGenaiHumanInterviewSchema } from "./genaiHumanInterviewSchema";
 
 export type VisibilityKey =
   | "online_l1_results"
@@ -197,6 +198,7 @@ async function humanInterviewCounts(): Promise<StageCounts> {
 }
 
 async function genaiHumanInterviewCounts(): Promise<StageCounts> {
+  await ensureGenaiHumanInterviewSchema();
   const result = await db.execute(sql`
     WITH scored AS (
       SELECT DISTINCT ON (candidate_id) candidate_id, clearance_status
