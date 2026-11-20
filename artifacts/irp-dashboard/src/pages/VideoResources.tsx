@@ -1,12 +1,9 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Play } from "lucide-react";
 import {
-  INSTAGRAM_PROFILE_URL,
   VIDEO_FILTERS,
   VIDEO_RESOURCES,
-  YOUTUBE_CHANNEL_URL,
   showSection,
-  youtubeThumbnailUrl,
   type VideoFilter,
   type VideoResource,
 } from "@/lib/videoResources";
@@ -20,14 +17,6 @@ export function VideoResources() {
 
   const howto = useMemo(
     () => VIDEO_RESOURCES.filter((item) => item.filter === "howto"),
-    [],
-  );
-  const youtube = useMemo(
-    () => VIDEO_RESOURCES.filter((item) => item.filter === "youtube"),
-    [],
-  );
-  const instagram = useMemo(
-    () => VIDEO_RESOURCES.filter((item) => item.filter === "instagram"),
     [],
   );
   const mentorship = useMemo(
@@ -46,7 +35,7 @@ export function VideoResources() {
           Video Resources
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-[#667085]">
-          How-to guides, YouTube videos, Instagram reels and mentorship sessions, all in one place.
+          How-to guides and mentorship sessions, all in one place.
         </p>
       </div>
 
@@ -88,54 +77,6 @@ export function VideoResources() {
           <div className="space-y-3">
             {howto.map((item) => (
               <HowToCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {showSection(filter, "youtube") ? (
-        <section className="space-y-3" aria-labelledby="youtube-heading">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="youtube-heading" className="font-display text-lg font-extrabold text-[#101828]">
-              YouTube videos
-            </h2>
-            <a
-              href={YOUTUBE_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc]"
-            >
-              Open our YouTube channel
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-            </a>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {youtube.map((item) => (
-              <YouTubeCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {showSection(filter, "instagram") ? (
-        <section className="space-y-3" aria-labelledby="instagram-heading">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="instagram-heading" className="font-display text-lg font-extrabold text-[#101828]">
-              Instagram reels
-            </h2>
-            <a
-              href={INSTAGRAM_PROFILE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc]"
-            >
-              Open our Instagram
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-            </a>
-          </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {instagram.map((item) => (
-              <InstagramCard key={item.id} item={item} />
             ))}
           </div>
         </section>
@@ -216,64 +157,6 @@ function HowToCard({ item }: { item: VideoResource }) {
         </div>
       </div>
     </article>
-  );
-}
-
-function YouTubeCard({ item }: { item: VideoResource }) {
-  const thumb = item.youtubeId ? youtubeThumbnailUrl(item.youtubeId) : null;
-  return (
-    <button
-      type="button"
-      onClick={() => openExternal(item.url)}
-      className="overflow-hidden rounded-2xl border border-[#eaecf0] bg-white text-left transition-colors hover:border-[#d0d5dd] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/40"
-      data-testid={`youtube-card-${item.id}`}
-    >
-      <div className="relative aspect-video bg-[#101828]">
-        {thumb ? (
-          <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
-        ) : null}
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ff0000] text-white shadow">
-            <Play className="h-5 w-5 fill-current" aria-hidden />
-          </span>
-        </span>
-        {item.format === "short" ? (
-          <span className="absolute bottom-2 right-2 rounded bg-[#101828]/90 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            Short
-          </span>
-        ) : null}
-      </div>
-      <div className="p-3.5">
-        <p className="line-clamp-2 text-sm font-bold text-[#101828]">{item.title}</p>
-        <p className="mt-1 text-xs font-medium text-[#667085]">Watch on YouTube</p>
-      </div>
-    </button>
-  );
-}
-
-function InstagramCard({ item }: { item: VideoResource }) {
-  return (
-    <button
-      type="button"
-      onClick={() => openExternal(item.url)}
-      className="overflow-hidden rounded-2xl border border-[#eaecf0] bg-white text-left transition-colors hover:border-[#d0d5dd] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/40"
-      data-testid={`instagram-card-${item.id}`}
-    >
-      <div className="relative aspect-[3/4] bg-[linear-gradient(145deg,#7f56d9_0%,#f670c7_55%,#fd853a_100%)]">
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#101828] shadow">
-            <Play className="h-5 w-5 fill-current" aria-hidden />
-          </span>
-        </span>
-        <span className="absolute left-2 top-2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#344054]">
-          {item.format === "post" ? "Post" : "Reel"}
-        </span>
-      </div>
-      <div className="p-3">
-        <p className="line-clamp-2 text-sm font-bold text-[#101828]">{item.title}</p>
-        <p className="mt-1 text-xs font-medium text-[#667085]">Watch on Instagram</p>
-      </div>
-    </button>
   );
 }
 
