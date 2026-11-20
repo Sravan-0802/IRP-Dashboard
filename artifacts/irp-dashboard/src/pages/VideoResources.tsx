@@ -135,6 +135,14 @@ function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string
       resourceId: item.id,
       sessionId,
     });
+    // Drive's embedded controls are oversized/cropped on phones. Let the
+    // browser use Drive's own responsive player there instead of scaling UI.
+    const useMobilePlayer =
+      window.matchMedia?.("(max-width: 767px), (max-height: 500px)").matches ?? false;
+    if (streamUrl && useMobilePlayer) {
+      openExternal(streamUrl);
+      return;
+    }
     if (streamUrl) {
       setOpen(true);
       return;
@@ -295,7 +303,7 @@ function VideoPopup({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] box-border flex items-center justify-center bg-black/65 p-4 sm:p-6"
+      className="fixed inset-0 z-[200] box-border flex items-center justify-center bg-black/65 p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -304,39 +312,45 @@ function VideoPopup({
     >
       <div
         className="box-border flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-[#101828] shadow-xl"
-        style={{ maxHeight: "min(88dvh, 100%)" }}
+        style={{ maxHeight: "min(92dvh, 100%)" }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-3 sm:px-4">
-          <h2 className="min-w-0 flex-1 truncate font-display text-sm font-bold text-white sm:text-base">
+          <h2 className="min-w-0 flex-1 font-display text-sm font-bold leading-5 text-white sm:text-base">
             {title}
           </h2>
           <button
             type="button"
             onClick={handleClose}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/20"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-full bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/20"
             data-testid={`${testId}-close`}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
             Close
           </button>
         </div>
-        <div className="min-h-0 overflow-y-auto bg-black">
-          <iframe
-            title={title}
-            src={streamUrl}
-            className="block aspect-video max-h-[65dvh] w-full border-0"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            data-testid={`${testId}-video`}
-          />
-            <div className="px-4 py-3 text-center text-sm text-white/80">
+        <div className="flex min-h-0 flex-col bg-black">
+          <div
+            className="relative mx-auto aspect-video w-full shrink-0 overflow-hidden"
+            style={{ maxWidth: "min(100%, calc((92dvh - 144px) * 16 / 9))" }}
+            data-testid={`${testId}-player`}
+          >
+            <iframe
+              title={title}
+              src={streamUrl}
+              className="absolute inset-0 block h-full w-full border-0"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              data-testid={`${testId}-video`}
+            />
+          </div>
+            <div className="shrink-0 px-3 py-2 text-center text-xs text-white/80 sm:text-sm">
               Trouble playing?{" "}
               <a
                 href={originalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-[#c3b5fd] underline"
+                className="inline-flex min-h-11 items-center font-semibold text-[#c3b5fd] underline"
               >
                 Open in a new tab
               </a>
