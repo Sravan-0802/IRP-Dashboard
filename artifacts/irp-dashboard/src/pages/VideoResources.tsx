@@ -4,7 +4,7 @@ import { ArrowUpRight, Play, X } from "lucide-react";
 import {
   VIDEO_FILTERS,
   VIDEO_RESOURCES,
-  driveStreamUrl,
+  drivePreviewUrl,
   showSection,
   type VideoFilter,
   type VideoResource,
@@ -17,21 +17,6 @@ import {
 
 function openExternal(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function secondsFromVideo(video: HTMLVideoElement | null): {
-  watchSeconds: number | null;
-  durationSeconds: number | null;
-} {
-  if (!video) return { watchSeconds: null, durationSeconds: null };
-  const watchSeconds = Number.isFinite(video.currentTime)
-    ? Math.max(0, Math.floor(video.currentTime))
-    : null;
-  const durationSeconds =
-    Number.isFinite(video.duration) && video.duration > 0
-      ? Math.max(0, Math.floor(video.duration))
-      : null;
-  return { watchSeconds, durationSeconds };
 }
 
 export function VideoResources() {
@@ -142,7 +127,7 @@ export function VideoResources() {
 
 function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string }) {
   const [open, setOpen] = useState(false);
-  const streamUrl = driveStreamUrl(item.url);
+  const streamUrl = drivePreviewUrl(item.url);
 
   function startPlayback() {
     trackVideoResourceEvent({
@@ -230,6 +215,7 @@ function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string
           resourceId={item.id}
           sessionId={sessionId}
           streamUrl={streamUrl}
+          originalUrl={item.url}
           onClose={() => setOpen(false)}
           testId={`howto-popup-${item.id}`}
         />
@@ -256,6 +242,7 @@ function VideoPopup({
   resourceId,
   sessionId,
   streamUrl,
+  originalUrl,
   onClose,
   testId,
 }: {
@@ -263,48 +250,34 @@ function VideoPopup({
   resourceId: string;
   sessionId: string;
   streamUrl: string;
+  originalUrl: string;
   onClose: () => void;
   testId: string;
 }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const [loadError, setLoadError] = useState(false);
-  const lastProgressAtRef = useRef(0);
-
-  function emit(
-    eventType:
-      | typeof VIDEO_RESOURCE_EVENTS.PLAY
-      | typeof VIDEO_RESOURCE_EVENTS.PAUSE
-      | typeof VIDEO_RESOURCE_EVENTS.PROGRESS
-      | typeof VIDEO_RESOURCE_EVENTS.ENDED
-      | typeof VIDEO_RESOURCE_EVENTS.CLOSE,
-  ) {
-    const { watchSeconds, durationSeconds } = secondsFromVideo(videoRef.current);
-    trackVideoResourceEvent({
-      eventType,
-      resourceId,
-      sessionId,
-      watchSeconds,
-      durationSeconds,
-    });
-  }
 
   function handleClose() {
-    emit(VIDEO_RESOURCE_EVENTS.CLOSE);
+    // Google Drive's cross-origin player does not expose playback progress.
+    trackVideoResourceEvent({
+      eventType: VIDEO_RESOURCE_EVENTS.CLOSE,
+      resourceId,
+      sessionId,
+      watchSeconds: null,
+      durationSeconds: null,
+    });
     onCloseRef.current();
   }
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        const { watchSeconds, durationSeconds } = secondsFromVideo(videoRef.current);
         trackVideoResourceEvent({
           eventType: VIDEO_RESOURCE_EVENTS.CLOSE,
           resourceId,
           sessionId,
-          watchSeconds,
-          durationSeconds,
+          watchSeconds: null,
+          durationSeconds: null,
         });
         onCloseRef.current();
       }
@@ -317,13 +290,6 @@ function VideoPopup({
       document.body.style.overflow = previous;
     };
   }, [resourceId, sessionId]);
-
-  function tryPlay(video: HTMLVideoElement) {
-    video.muted = false;
-    void video.play().catch(() => {
-      // Autoplay with sound can be blocked; native controls still work.
-    });
-  }
 
   if (typeof document === "undefined") return null;
 
@@ -355,12 +321,19 @@ function VideoPopup({
             Close
           </button>
         </div>
-        <div className="bg-black p-0">
-          {loadError ? (
-            <div className="px-4 py-8 text-center text-sm text-white/80">
-              Could not load the video.{" "}
+        <div className="min-h-0 overflow-y-auto bg-black">
+          <iframe
+            title={title}
+            src={streamUrl}
+            className="block aspect-video max-h-[65dvh] w-full border-0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            data-testid={`${testId}-video`}
+          />
+            <div className="px-4 py-3 text-center text-sm text-white/80">
+              Trouble playing?{" "}
               <a
-                href={streamUrl}
+                href={originalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-[#c3b5fd] underline"
@@ -368,33 +341,6 @@ function VideoPopup({
                 Open in a new tab
               </a>
             </div>
-          ) : (
-            <video
-              ref={videoRef}
-              key={streamUrl}
-              className="block max-h-[min(75dvh,720px)] w-full bg-black"
-              controls
-              playsInline
-              preload="auto"
-              controlsList="nodownload"
-              data-testid={`${testId}-video`}
-              src={streamUrl}
-              onLoadedData={(event) => tryPlay(event.currentTarget)}
-              onPlay={() => emit(VIDEO_RESOURCE_EVENTS.PLAY)}
-              onPause={() => {
-                const video = videoRef.current;
-                if (video && !video.ended) emit(VIDEO_RESOURCE_EVENTS.PAUSE);
-              }}
-              onTimeUpdate={() => {
-                const now = Date.now();
-                if (now - lastProgressAtRef.current < 15_000) return;
-                lastProgressAtRef.current = now;
-                emit(VIDEO_RESOURCE_EVENTS.PROGRESS);
-              }}
-              onEnded={() => emit(VIDEO_RESOURCE_EVENTS.ENDED)}
-              onError={() => setLoadError(true)}
-            />
-          )}
         </div>
       </div>
     </div>,
