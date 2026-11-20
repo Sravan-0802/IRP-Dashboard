@@ -17,6 +17,34 @@ export type VideoResource = {
   durationLabel?: string;
 };
 
+export const LOOM_VIDEO_GUIDELINES_URL =
+  "https://drive.google.com/file/d/12CnEaVZ9m2Fwr13DRj_AdNyDnek4lrA4/view";
+
+/** Extract Google Drive file id from a /file/d/... link. */
+export function driveFileId(url: string): string | null {
+  return /\/file\/d\/([^/]+)/.exec(url)?.[1] ?? null;
+}
+
+/** Google Drive /view links → embeddable /preview URL for in-page playback. */
+export function drivePreviewUrl(url: string): string | null {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/file/d/${id}/preview` : null;
+}
+
+/**
+ * App stream path for the Loom guide. Served by the API media proxy because Drive
+ * sets Cross-Origin-Resource-Policy: same-site and blocks direct <video> loads.
+ */
+export const LOOM_GUIDE_STREAM_PATH = "/api/media/loom-guidelines";
+
+/** Stream URL for native HTML5 video controls (proxied for Drive-hosted guides). */
+export function driveStreamUrl(url: string): string | null {
+  const id = driveFileId(url);
+  if (!id) return null;
+  if (id === "12CnEaVZ9m2Fwr13DRj_AdNyDnek4lrA4") return LOOM_GUIDE_STREAM_PATH;
+  return `https://drive.usercontent.google.com/download?id=${id}&export=download`;
+}
+
 export const VIDEO_FILTERS: { id: VideoFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "howto", label: "How-to guides" },
@@ -32,8 +60,8 @@ export const VIDEO_RESOURCES: VideoResource[] = [
     title: "How to submit your Loom video",
     description:
       "Step-by-step walkthrough of recording your Loom video and submitting the link correctly.",
-    url: "https://drive.google.com/file/d/12CnEaVZ9m2Fwr13DRj_AdNyDnek4lrA4/view",
-    durationLabel: "1:30",
+    url: LOOM_VIDEO_GUIDELINES_URL,
+    durationLabel: "1:39",
   },
   {
     id: "aaa-1",

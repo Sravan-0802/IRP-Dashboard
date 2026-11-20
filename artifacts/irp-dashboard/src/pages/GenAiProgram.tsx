@@ -45,6 +45,7 @@ import {
   type GenaiAssessmentStatus,
   type GenaiInterviewResult,
 } from "@/lib/useGenaiResults";
+import { LOOM_VIDEO_GUIDELINES_URL } from "@/lib/videoResources";
 
 const JOIN_LEAD_MS = 15 * 60 * 1000;
 const SHOW_GENAI_INTERVIEW_PANEL = false;
@@ -590,6 +591,18 @@ function GenAiJourney({
                     Locked
                   </button>
                 )}
+                {stage.key === "loom" ? (
+                  <a
+                    href={LOOM_VIDEO_GUIDELINES_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-loom-video-guidelines"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1 text-sm font-semibold text-[#6941c6] hover:text-[#5925dc]"
+                  >
+                    Loom Video Guidelines
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  </a>
+                ) : null}
               </div>
             </article>
           ))}

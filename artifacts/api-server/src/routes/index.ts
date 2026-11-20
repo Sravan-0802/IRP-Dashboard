@@ -14,10 +14,12 @@ import humanInterviewsRouter from "./humanInterviews";
 import genaiHumanInterviewsRouter from "./genaiHumanInterviews";
 import genaiProjectProgressRouter from "./genaiProjectProgress";
 import trackStatusRouter from "./trackStatus";
+import mediaRouter from "./media";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(mediaRouter);
 router.use(studentRouter);
 router.use(journeyRouter);
 router.use(authRouter);
