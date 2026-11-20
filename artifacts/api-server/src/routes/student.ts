@@ -47,6 +47,10 @@ import { getGenAiTrainingPopup } from "../lib/genAiTrainingPopup";
 import { getGenaiResultsForUser } from "../lib/genaiResults";
 import { getProgramBoard } from "../lib/programBoard";
 import {
+  insertVideoResourceEvent,
+  isVideoResourceEventType,
+} from "../lib/videoResourceEvents";
+import {
   canRegisterForL1July12,
   canRegisterForL1July26,
   L1_AVAILABILITY_VALUES,
@@ -846,6 +850,59 @@ router.post("/student/analytics/event", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+router.post("/student/video-resource-events", async (req, res) => {
+  try {
+    const userId = await resolveAcademyUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const eventType =
+      typeof req.body?.eventType === "string" ? req.body.eventType.trim() : "";
+    if (!isVideoResourceEventType(eventType)) {
+      res.status(400).json({ error: "Invalid event type" });
+      return;
+    }
+
+    const resourceId =
+      typeof req.body?.resourceId === "string" && req.body.resourceId.trim()
+        ? req.body.resourceId.trim().slice(0, 120)
+        : null;
+    const sessionId =
+      typeof req.body?.sessionId === "string" && req.body.sessionId.trim()
+        ? req.body.sessionId.trim().slice(0, 80)
+        : null;
+
+    const watchSeconds = parseOptionalNonNegativeInt(req.body?.watchSeconds);
+    const durationSeconds = parseOptionalNonNegativeInt(req.body?.durationSeconds);
+
+    const student = await getStudentForUser(userId);
+
+    await insertVideoResourceEvent({
+      academyUserId: userId,
+      studentId: student?.id ?? null,
+      resourceId,
+      eventType,
+      watchSeconds,
+      durationSeconds,
+      sessionId,
+    });
+
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to log video resource event");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+function parseOptionalNonNegativeInt(raw: unknown): number | null {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.min(Math.floor(n), 24 * 60 * 60);
+}
 
 function parseRegistrationCycle(raw: unknown): number {
   const n = Number(raw);

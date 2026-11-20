@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -244,6 +244,31 @@ export const dashboardAnalyticsEventsTable = pgTable("dashboard_analytics_events
   eventType: text("event_type").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Video Resources engagement (page open, filter, watch/play/pause/ended/close,
+ * mentorship opens). Lives in public (legacy) schema alongside
+ * dashboard_analytics_events; richer than click-only analytics.
+ */
+export const videoResourceEventsTable = pgTable(
+  "video_resource_events",
+  {
+    id: serial("id").primaryKey(),
+    academyUserId: text("academy_user_id").notNull(),
+    studentId: integer("student_id").references(() => studentsTable.id),
+    resourceId: text("resource_id"),
+    eventType: text("event_type").notNull(),
+    watchSeconds: integer("watch_seconds"),
+    durationSeconds: integer("duration_seconds"),
+    sessionId: text("session_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("video_resource_events_user_idx").on(t.academyUserId),
+    index("video_resource_events_type_time_idx").on(t.eventType, t.createdAt),
+    index("video_resource_events_session_idx").on(t.sessionId),
+  ],
+);
 
 /**
  * Mirror of BigQuery `academy_users_basic_details_for_pocs` — the single source

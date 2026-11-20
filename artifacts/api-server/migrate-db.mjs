@@ -25,6 +25,7 @@ const TABLES = [
   "support_conversations",
   "contact_us_messages",
   "dashboard_analytics_events",
+  "video_resource_events",
   "dashboard_feedback",
   "forms_auth_tokens",
   "slot_bookings",

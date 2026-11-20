@@ -9,13 +9,41 @@ import {
   type VideoFilter,
   type VideoResource,
 } from "@/lib/videoResources";
+import {
+  VIDEO_RESOURCE_EVENTS,
+  createVideoResourceSessionId,
+  trackVideoResourceEvent,
+} from "@/lib/videoResourceAnalytics";
 
 function openExternal(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+function secondsFromVideo(video: HTMLVideoElement | null): {
+  watchSeconds: number | null;
+  durationSeconds: number | null;
+} {
+  if (!video) return { watchSeconds: null, durationSeconds: null };
+  const watchSeconds = Number.isFinite(video.currentTime)
+    ? Math.max(0, Math.floor(video.currentTime))
+    : null;
+  const durationSeconds =
+    Number.isFinite(video.duration) && video.duration > 0
+      ? Math.max(0, Math.floor(video.duration))
+      : null;
+  return { watchSeconds, durationSeconds };
+}
+
 export function VideoResources() {
   const [filter, setFilter] = useState<VideoFilter>("all");
+  const sessionIdRef = useRef(createVideoResourceSessionId());
+
+  useEffect(() => {
+    trackVideoResourceEvent({
+      eventType: VIDEO_RESOURCE_EVENTS.PAGE_OPEN,
+      sessionId: sessionIdRef.current,
+    });
+  }, []);
 
   const howto = useMemo(
     () => VIDEO_RESOURCES.filter((item) => item.filter === "howto"),
@@ -25,6 +53,15 @@ export function VideoResources() {
     () => VIDEO_RESOURCES.filter((item) => item.filter === "mentorship"),
     [],
   );
+
+  function onFilterChange(next: VideoFilter) {
+    setFilter(next);
+    trackVideoResourceEvent({
+      eventType: VIDEO_RESOURCE_EVENTS.FILTER_CHANGE,
+      resourceId: next,
+      sessionId: sessionIdRef.current,
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -54,7 +91,7 @@ export function VideoResources() {
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => setFilter(tab.id)}
+              onClick={() => onFilterChange(tab.id)}
               className={
                 active
                   ? "rounded-full bg-[#101828] px-3.5 py-1.5 text-sm font-semibold text-white"
@@ -78,7 +115,7 @@ export function VideoResources() {
           </div>
           <div className="space-y-3">
             {howto.map((item) => (
-              <HowToCard key={item.id} item={item} />
+              <HowToCard key={item.id} item={item} sessionId={sessionIdRef.current} />
             ))}
           </div>
         </section>
@@ -94,7 +131,7 @@ export function VideoResources() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {mentorship.map((item) => (
-              <MentorshipCard key={item.id} item={item} />
+              <MentorshipCard key={item.id} item={item} sessionId={sessionIdRef.current} />
             ))}
           </div>
         </section>
@@ -103,11 +140,16 @@ export function VideoResources() {
   );
 }
 
-function HowToCard({ item }: { item: VideoResource }) {
+function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string }) {
   const [open, setOpen] = useState(false);
   const streamUrl = driveStreamUrl(item.url);
 
   function startPlayback() {
+    trackVideoResourceEvent({
+      eventType: VIDEO_RESOURCE_EVENTS.WATCH_CLICK,
+      resourceId: item.id,
+      sessionId,
+    });
     if (streamUrl) {
       setOpen(true);
       return;
@@ -185,6 +227,8 @@ function HowToCard({ item }: { item: VideoResource }) {
       {open && streamUrl ? (
         <VideoPopup
           title={item.title}
+          resourceId={item.id}
+          sessionId={sessionId}
           streamUrl={streamUrl}
           onClose={() => setOpen(false)}
           testId={`howto-popup-${item.id}`}
@@ -209,21 +253,61 @@ function LoomTitleHighlight({ title }: { title: string }) {
 
 function VideoPopup({
   title,
+  resourceId,
+  sessionId,
   streamUrl,
   onClose,
   testId,
 }: {
   title: string;
+  resourceId: string;
+  sessionId: string;
   streamUrl: string;
   onClose: () => void;
   testId: string;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [loadError, setLoadError] = useState(false);
+  const lastProgressAtRef = useRef(0);
+
+  function emit(
+    eventType:
+      | typeof VIDEO_RESOURCE_EVENTS.PLAY
+      | typeof VIDEO_RESOURCE_EVENTS.PAUSE
+      | typeof VIDEO_RESOURCE_EVENTS.PROGRESS
+      | typeof VIDEO_RESOURCE_EVENTS.ENDED
+      | typeof VIDEO_RESOURCE_EVENTS.CLOSE,
+  ) {
+    const { watchSeconds, durationSeconds } = secondsFromVideo(videoRef.current);
+    trackVideoResourceEvent({
+      eventType,
+      resourceId,
+      sessionId,
+      watchSeconds,
+      durationSeconds,
+    });
+  }
+
+  function handleClose() {
+    emit(VIDEO_RESOURCE_EVENTS.CLOSE);
+    onCloseRef.current();
+  }
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        const { watchSeconds, durationSeconds } = secondsFromVideo(videoRef.current);
+        trackVideoResourceEvent({
+          eventType: VIDEO_RESOURCE_EVENTS.CLOSE,
+          resourceId,
+          sessionId,
+          watchSeconds,
+          durationSeconds,
+        });
+        onCloseRef.current();
+      }
     }
     window.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
@@ -232,7 +316,7 @@ function VideoPopup({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
     };
-  }, [onClose]);
+  }, [resourceId, sessionId]);
 
   function tryPlay(video: HTMLVideoElement) {
     video.muted = false;
@@ -250,7 +334,7 @@ function VideoPopup({
       aria-modal="true"
       aria-label={title}
       data-testid={testId}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="box-border flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-[#101828] shadow-xl"
@@ -263,7 +347,7 @@ function VideoPopup({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/20"
             data-testid={`${testId}-close`}
           >
@@ -296,6 +380,18 @@ function VideoPopup({
               data-testid={`${testId}-video`}
               src={streamUrl}
               onLoadedData={(event) => tryPlay(event.currentTarget)}
+              onPlay={() => emit(VIDEO_RESOURCE_EVENTS.PLAY)}
+              onPause={() => {
+                const video = videoRef.current;
+                if (video && !video.ended) emit(VIDEO_RESOURCE_EVENTS.PAUSE);
+              }}
+              onTimeUpdate={() => {
+                const now = Date.now();
+                if (now - lastProgressAtRef.current < 15_000) return;
+                lastProgressAtRef.current = now;
+                emit(VIDEO_RESOURCE_EVENTS.PROGRESS);
+              }}
+              onEnded={() => emit(VIDEO_RESOURCE_EVENTS.ENDED)}
               onError={() => setLoadError(true)}
             />
           )}
@@ -306,7 +402,13 @@ function VideoPopup({
   );
 }
 
-function MentorshipCard({ item }: { item: VideoResource }) {
+function MentorshipCard({
+  item,
+  sessionId,
+}: {
+  item: VideoResource;
+  sessionId: string;
+}) {
   return (
     <article className="flex flex-col rounded-2xl border border-[#eaecf0] bg-white p-4">
       <span className="inline-flex w-fit rounded-md bg-[#f4f3ff] px-2 py-1 text-[10px] font-bold tracking-wide text-[#6941c6]">
@@ -316,7 +418,14 @@ function MentorshipCard({ item }: { item: VideoResource }) {
       <p className="mt-1 flex-1 text-sm text-[#667085]">{item.description}</p>
       <button
         type="button"
-        onClick={() => openExternal(item.url)}
+        onClick={() => {
+          trackVideoResourceEvent({
+            eventType: VIDEO_RESOURCE_EVENTS.MENTORSHIP_OPEN,
+            resourceId: item.id,
+            sessionId,
+          });
+          openExternal(item.url);
+        }}
         className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#6941c6] px-3 py-2.5 text-sm font-bold text-white hover:bg-[#5925dc]"
         data-testid={`mentorship-open-${item.id}`}
       >
