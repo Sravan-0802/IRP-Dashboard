@@ -4,7 +4,7 @@ import { ArrowUpRight, Play, X } from "lucide-react";
 import {
   VIDEO_FILTERS,
   VIDEO_RESOURCES,
-  drivePreviewUrl,
+  driveStreamUrl,
   showSection,
   type VideoFilter,
   type VideoResource,
@@ -127,7 +127,7 @@ export function VideoResources() {
 
 function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string }) {
   const [open, setOpen] = useState(false);
-  const streamUrl = drivePreviewUrl(item.url);
+  const streamUrl = driveStreamUrl(item.url);
 
   function startPlayback() {
     trackVideoResourceEvent({
@@ -135,14 +135,6 @@ function HowToCard({ item, sessionId }: { item: VideoResource; sessionId: string
       resourceId: item.id,
       sessionId,
     });
-    // Drive's embedded controls are oversized/cropped on phones. Let the
-    // browser use Drive's own responsive player there instead of scaling UI.
-    const useMobilePlayer =
-      window.matchMedia?.("(max-width: 767px), (max-height: 500px)").matches ?? false;
-    if (streamUrl && useMobilePlayer) {
-      openExternal(streamUrl);
-      return;
-    }
     if (streamUrl) {
       setOpen(true);
       return;
@@ -263,17 +255,23 @@ function VideoPopup({
   testId: string;
 }) {
   const onCloseRef = useRef(onClose);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const lastProgressAt = useRef(0);
+  const [loadError, setLoadError] = useState(false);
   onCloseRef.current = onClose;
 
-  function handleClose() {
-    // Google Drive's cross-origin player does not expose playback progress.
+  function emit(eventType: typeof VIDEO_RESOURCE_EVENTS[keyof typeof VIDEO_RESOURCE_EVENTS]) {
+    const video = videoRef.current;
     trackVideoResourceEvent({
-      eventType: VIDEO_RESOURCE_EVENTS.CLOSE,
-      resourceId,
-      sessionId,
-      watchSeconds: null,
-      durationSeconds: null,
+      eventType, resourceId, sessionId,
+      watchSeconds: video && Number.isFinite(video.currentTime) ? Math.floor(video.currentTime) : null,
+      durationSeconds: video && Number.isFinite(video.duration) ? Math.floor(video.duration) : null,
     });
+  }
+
+  function handleClose() {
+    emit(VIDEO_RESOURCE_EVENTS.CLOSE);
+    videoRef.current?.pause();
     onCloseRef.current();
   }
 
@@ -335,15 +333,40 @@ function VideoPopup({
             style={{ maxWidth: "min(100%, calc((92dvh - 144px) * 16 / 9))" }}
             data-testid={`${testId}-player`}
           >
-            <iframe
-              title={title}
+            <video
+              ref={videoRef}
+              aria-label={title}
               src={streamUrl}
-              className="absolute inset-0 block h-full w-full border-0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
+              className="absolute inset-0 block h-full w-full bg-black object-contain"
+              controls
+              playsInline
+              autoPlay
+              preload="metadata"
               data-testid={`${testId}-video`}
+              onError={() => setLoadError(true)}
+              onLoadedData={() => setLoadError(false)}
+              onPlay={() => emit(VIDEO_RESOURCE_EVENTS.PLAY)}
+              onPause={() => {
+                if (!videoRef.current?.ended) emit(VIDEO_RESOURCE_EVENTS.PAUSE);
+              }}
+              onEnded={() => emit(VIDEO_RESOURCE_EVENTS.ENDED)}
+              onTimeUpdate={() => {
+                if (Date.now() - lastProgressAt.current >= 15_000) {
+                  lastProgressAt.current = Date.now();
+                  emit(VIDEO_RESOURCE_EVENTS.PROGRESS);
+                }
+              }}
             />
           </div>
+            {loadError ? (
+              <p role="alert" className="px-3 pt-3 text-center text-sm text-white">
+                Could not load the video.{" "}
+                <button type="button" className="min-h-11 px-2 font-semibold underline" onClick={() => {
+                  setLoadError(false);
+                  videoRef.current?.load();
+                }}>Retry</button>
+              </p>
+            ) : null}
             <div className="shrink-0 px-3 py-2 text-center text-xs text-white/80 sm:text-sm">
               Trouble playing?{" "}
               <a

@@ -1,11 +1,11 @@
 ---
 name: Drive tutorial playback
-description: Why the Loom tutorial uses Google's embedded player instead of native video through the API.
+description: Native in-page playback requires bounded range delivery; full-file transfers and scaled Google embeds previously failed.
 ---
 
-Use Google Drive's preview player for the Loom tutorial without duplicating the media into application storage; open it directly for narrow or short mobile screens.
+Keep Loom tutorial playback inside the website on both phones and desktops, without keeping a separate stored media copy.
 
-**Why:** Production testing showed the approximately 80 MB tutorial succeeded for small byte ranges but failed with HTTP 500 for full transfers through the app proxy. The user asked about embedding without storage. Google's cross-origin iframe controls were also oversized/cropped on mobile, especially when scaled to fit the modal. The exact underlying transfer limit was not established.
+**Why:** The user explicitly approved in-page mobile playback after rejecting oversized/cropped Google iframe controls and the workaround of opening a separate tab. Earlier production tests showed small byte ranges succeeded while full transfers of the approximately 80 MB video failed with HTTP 500. The exact infrastructure limit was not established.
 
-**How to apply:** Keep an unscaled Drive preview iframe in the desktop modal. On narrow or short screens, open the Drive preview URL in a new tab so Drive owns its responsive player. Keep the original file page as the in-modal fallback. Track opening and closing only; do not invent playback progress for the cross-origin player.
+**How to apply:** Use the native browser video player with bounded byte-range delivery from Drive. Never restore unbounded full-file proxy responses, scale Google's controls, or silently redirect phone playback into another tab. Retain a direct original-file fallback. Verify actual playback across chunks and seeking, not just the poster or a passing small-range request. Development mobile playback and seeking succeeded with bounded delivery; that does not by itself verify production.
 

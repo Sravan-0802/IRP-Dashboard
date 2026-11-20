@@ -1,63 +1,51 @@
 import { Router, type IRouter } from "express";
+import { boundedMediaRange, fetchLoomRange } from "../lib/mediaRanges";
 
 /**
  * Public media proxy. Google Drive sets Cross-Origin-Resource-Policy: same-site on
  * direct MP4 downloads, so browsers block <video src="https://drive...">.
  * Proxying through our API keeps native play / volume / seek controls working.
  */
-const LOOM_GUIDE_DRIVE_ID = "12CnEaVZ9m2Fwr13DRj_AdNyDnek4lrA4";
-const LOOM_GUIDE_SOURCE = `https://drive.usercontent.google.com/download?id=${LOOM_GUIDE_DRIVE_ID}&export=download`;
-
 const router: IRouter = Router();
 
-router.get("/media/loom-guidelines", async (req, res) => {
+router.get("/media/loom-guidelines", async (req, res): Promise<void> => {
+  const range = boundedMediaRange(req.method === "HEAD" ? "bytes=0-0" : req.headers.range);
+  if (!range) {
+    res.status(416).end();
+    return;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const cancel = () => controller.abort();
+  res.once("close", cancel);
   try {
-    const headers: Record<string, string> = {
-      "User-Agent": "IRP-Dashboard/1.0",
-    };
-    const range = typeof req.headers.range === "string" ? req.headers.range : null;
-    if (range) headers.Range = range;
-
-    const upstream = await fetch(LOOM_GUIDE_SOURCE, { headers, redirect: "follow" });
-    if (!upstream.ok && upstream.status !== 206) {
-      res.status(upstream.status).json({ error: "Failed to fetch Loom guide video" });
-      return;
-    }
-
-    res.status(upstream.status);
-    const contentType = upstream.headers.get("content-type") || "video/mp4";
-    res.setHeader("Content-Type", contentType);
+    const chunk = await fetchLoomRange(range, controller.signal);
     res.setHeader("Accept-Ranges", "bytes");
-    res.setHeader("Cache-Control", "public, max-age=3600");
-    const contentLength = upstream.headers.get("content-length");
-    if (contentLength) res.setHeader("Content-Length", contentLength);
-    const contentRange = upstream.headers.get("content-range");
-    if (contentRange) res.setHeader("Content-Range", contentRange);
-
-    if (!upstream.body) {
-      res.end();
+    if (chunk.status === 416) {
+      if (chunk.contentRange) res.setHeader("Content-Range", chunk.contentRange);
+      res.status(416).end();
       return;
     }
-
-    const reader = upstream.body.getReader();
-    res.on("close", () => {
-      void reader.cancel().catch(() => undefined);
-    });
-
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (!res.write(Buffer.from(value))) {
-        await new Promise<void>((resolve) => res.once("drain", resolve));
-      }
-    }
-    res.end();
-  } catch {
-    if (!res.headersSent) {
-      res.status(502).json({ error: "Failed to stream Loom guide video" });
+    res.setHeader("Content-Type", chunk.type);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    if (req.method === "HEAD") {
+      res.setHeader("Content-Length", chunk.total);
+      res.status(200).end();
     } else {
+      res.setHeader("Content-Range", chunk.contentRange);
+      res.setHeader("Content-Length", chunk.body.length);
+      res.status(206);
+      res.write(chunk.body);
       res.end();
     }
+  } catch (err) {
+    if (!res.destroyed) {
+      req.log.error({ err, range }, "Loom video chunk request failed");
+      res.status(502).json({ error: "Failed to stream Loom guide video" });
+    }
+  } finally {
+    clearTimeout(timeout);
+    res.off("close", cancel);
   }
 });
 

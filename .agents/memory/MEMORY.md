@@ -19,7 +19,7 @@
 - [IRP NOC form requirement](irp-noc-form.md) — every IRP student, across tracks, must submit the internship NOC before profile progression.
 - [Unified qualification status table](unified-qualification-status-table.md) — compact rows cover L1 Hustler and FE Project with family-plus-assessment tags and latest-attempt status.
 - [GenAI projects and Loom](genai-project-reference.md) — supplied RAG catalogue, screenshot exceptions, and all-student Loom availability/status rules.
-- [Drive tutorial playback](drive-tutorial-playback.md) — use Google's preview iframe; production full-video proxy transfers failed despite working small ranges.
+- [Drive tutorial playback](drive-tutorial-playback.md) — keep mobile playback in-page; native video needs bounded ranges, not full-file transfers or scaled Google embeds.
 - [GenAI choice persistence scope](genai-choice-persistence.md) — project choices are browser-local preferences, not submission records; cross-device sync is separate scope.
 - [Dashboard status policy](dashboard-status-policy.md) — only IRP ELIGIBLE, LP ACTIVE, and product ACTIVE determine admission, plus admin `dashboard-access-override` grants; payment, assessment rows, and legacy `manual-access-grant` rows do not.
 - [BigQuery sync verification](bigquery-sync-verification.md) — report per-table freshness honestly; no running warehouse job does not prove a bulk sync is idle.
