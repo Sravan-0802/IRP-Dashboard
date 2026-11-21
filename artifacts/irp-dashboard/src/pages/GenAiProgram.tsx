@@ -39,6 +39,7 @@ import {
 } from "@/components/GenaiHumanInterviewResults";
 import { useGenaiProjectChoices } from "@/lib/useGenaiProjectChoices";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
+import { GenaiAssessmentAccess } from "@/components/irp/GenaiAssessmentAccess";
 import {
   useGenaiResults,
   type GenaiAssessmentResult,
@@ -160,6 +161,7 @@ export function GenAiProgram({ student }: { student: OnlineBadgeStudent }) {
       </div>
 
       <RegistrationBatchCallout track="genai" />
+      <GenaiAssessmentAccess />
 
       <GenAiJourney
         assessments={g.assessments}

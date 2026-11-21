@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
+import { GenaiAssessmentAccess } from "@/components/irp/GenaiAssessmentAccess";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
@@ -448,6 +449,7 @@ export function AssessmentsHub({
       </div>
 
       <ScheduledAccessCallouts />
+      <GenaiAssessmentAccess />
 
       {level === 1 && (hasOnlineMockGrant || onJuly25MockAllowlist) ? (
         <L1July25MockCallout userId={userId} />

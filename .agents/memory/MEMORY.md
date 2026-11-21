@@ -27,4 +27,4 @@
 - [Node 20 UI test runtime](jsdom-node20-compat.md) — latest jsdom pulls Undici 8, whose zstd stream API is missing here; use jsdom 26 with Vitest.
 - [Referral banner source fidelity](referral-banner-source.md) — preserve the supplied GitHub design and gift image; do not recreate the banner or substitute a library icon.
 - [OpenAPI UUID compatibility](openapi-uuid-validation.md) — use UUID patterns; current Orval emits unsupported Zod 4 syntax for UUID format against Zod 3.
-- [Assessment calendar policy](assessment-calendar-policy.md) — admin-managed monthly schedules belong only in Assessment Calendar; preserve results, practice, registration and submissions.
+- [Assessment calendar policy](assessment-calendar-policy.md) — general schedules stay in Calendar; assigned GenAI mock/main grants also belong in Assessment Hub and GenAI dashboard.
