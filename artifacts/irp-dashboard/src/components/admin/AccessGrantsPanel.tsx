@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CalendarClock,
   Check,
+  Copy,
   Download,
   KeyRound,
   Link2,
@@ -245,6 +246,8 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
+  const [draftMessage, setDraftMessage] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<AccessBatchDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -272,6 +275,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
 
   function resetWizard() {
     setWizardStep(1);
+    setDraftMessage("");
     setName("");
     setStage("online_assessment");
     setLinkKind("mock");
@@ -318,6 +322,52 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
       setError(err instanceof Error ? err.message : "Could not load batch detail");
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function duplicateBatch(batch: AccessBatchSummary) {
+    if (duplicatingId != null) return;
+    setDuplicatingId(batch.id);
+    setError("");
+    setDraftMessage("");
+    try {
+      const res = await fetch(`/api/admin/access-batches/${batch.id}`, {
+        headers: { "x-api-key": apiKey.trim() },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error ?? "Failed to load batch");
+      const source = (body as { batch?: AccessBatchDetail }).batch;
+      if (!source) throw new Error("Batch details were missing");
+      const copiedStage = STAGE_GROUPS.flatMap((group) => group.stages)
+        .find((value) => value === source.stage);
+      if (!copiedStage) throw new Error("This grant type cannot be duplicated");
+
+      const needsMockMain = stageNeedsMockMain(copiedStage);
+      const copiedKind = needsMockMain
+        ? source.linkKind === "main" ? "main" : "mock"
+        : "default";
+      const copiedName = source.name || `Batch #${source.id}`;
+      setName(`${copiedName} (copy)`);
+      setStage(copiedStage);
+      setLinkKind(copiedKind);
+      setUrl(source.url);
+      setStartsLocal(isoToDatetimeLocal(source.startsAt));
+      setExpiresLocal(isoToDatetimeLocal(source.expiresAt));
+      setUidsText(source.academyUserIds.join("\n"));
+      setCsvName("");
+      setWizardStep(1);
+      setExpandedId(null);
+      setDetail(null);
+      setDraftMessage(
+        `Draft copied from “${copiedName}” with ${source.academyUserIds.length.toLocaleString()} students. Nothing is created until you review and save the grant.`,
+      );
+      window.setTimeout(() => {
+        document.getElementById("access-grant-wizard")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      }, 0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not duplicate grant");
+    } finally {
+      setDuplicatingId(null);
     }
   }
 
@@ -434,7 +484,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
   return (
     <div className="space-y-6">
       {/* ── Create wizard ───────────────────────────────────────────── */}
-      <div className="irp-card p-5">
+      <div className="irp-card scroll-mt-4 p-5" id="access-grant-wizard">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="mb-1 flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-[#6741d9]" />
@@ -455,6 +505,11 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
         {error ? (
           <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+          </p>
+        ) : null}
+        {draftMessage ? (
+          <p role="status" data-testid="duplicate-draft-message" className="mb-3 rounded-lg border border-[#d9d6fe] bg-[#f4f3ff] px-3 py-2 text-sm text-[#42307d]">
+            {draftMessage}
           </p>
         ) : null}
 
@@ -816,6 +871,18 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                         </button>
                       </td>
                       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={duplicatingId != null}
+                            data-testid={`button-duplicate-access-batch-${b.id}`}
+                            aria-label={`Duplicate ${b.name || `Batch #${b.id}`}`}
+                            onClick={() => void duplicateBatch(b)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-[#d9d6fe] bg-white px-2 py-1 text-xs font-bold text-[#6741d9] disabled:opacity-50"
+                          >
+                            {duplicatingId === b.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Copy className="h-3 w-3" />}
+                            Duplicate
+                          </button>
                         <button
                           type="button"
                           onClick={() => void removeBatch(b.id)}
@@ -824,6 +891,7 @@ export function AccessGrantsPanel({ apiKey }: { apiKey: string }) {
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </button>
+                        </div>
                       </td>
                     </tr>
                     {expandedId === b.id ? (
