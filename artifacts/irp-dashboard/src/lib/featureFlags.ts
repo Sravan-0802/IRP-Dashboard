@@ -10,4 +10,4 @@ export const SHOW_WHAT_TO_STUDY = false;
 export const SHOW_FAQS = false;
 
 /** "View IRP Clear Card" on the GenAI Track Assessments stage. */
-export const SHOW_GENAI_CLEAR_CARD = false;
+export const SHOW_GENAI_CLEAR_CARD = true;
