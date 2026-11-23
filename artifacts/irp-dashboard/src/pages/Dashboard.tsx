@@ -41,6 +41,7 @@ import { useGenAiTrainingPopup } from "@/lib/useGenAiTrainingPopup";
 import { useGenAiTrainingConfig } from "@/lib/useGenAiTrainingConfig";
 import { isGenaiAssessmentLabel } from "@/lib/registrationBatchDisplay";
 import { ReferBanner, useReferBanner } from "@/components/irp/ReferBanner";
+import { AssessmentAccessGrants } from "@/components/irp/AssessmentAccessGrants";
 
 const EMPTY_ASSESSMENTS: AssessmentResult[] = [];
 
@@ -225,20 +226,23 @@ export default function Dashboard() {
           ) : null}
           <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
             {page === "dashboard" && (
-              <DashboardView
-                journey={journey}
-                firstName={firstName}
-                days={countdown.days}
-                examDateLabel={L1_JULY12_EXAM_DATE_LABEL}
-                progress={progressProps}
-                assessments={displayAssessments}
-                userId={userId}
-                studentName={displayStudent.name}
-                studentPhotoUrl={displayStudent.avatar?.trim() ? displayStudent.avatar.trim() : null}
-                studentYog={displayStudent.yog}
-                onSwitchToStandard={openSwitchToStandard}
-                onOpenAssessmentCalendar={() => navigate("slot")}
-              />
+              <div className="space-y-5">
+                <AssessmentAccessGrants track="mern" />
+                <DashboardView
+                  journey={journey}
+                  firstName={firstName}
+                  days={countdown.days}
+                  examDateLabel={L1_JULY12_EXAM_DATE_LABEL}
+                  progress={progressProps}
+                  assessments={displayAssessments}
+                  userId={userId}
+                  studentName={displayStudent.name}
+                  studentPhotoUrl={displayStudent.avatar?.trim() ? displayStudent.avatar.trim() : null}
+                  studentYog={displayStudent.yog}
+                  onSwitchToStandard={openSwitchToStandard}
+                  onOpenAssessmentCalendar={() => navigate("slot")}
+                />
+              </div>
             )}
             {page === "noc" && (
               <div className="mx-auto max-w-5xl">

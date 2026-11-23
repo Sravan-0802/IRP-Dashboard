@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { ScheduledAccessCallouts } from "@/components/irp/ScheduledAccessCallouts";
-import { GenaiAssessmentAccess } from "@/components/irp/GenaiAssessmentAccess";
+import { AssessmentAccessGrants } from "@/components/irp/AssessmentAccessGrants";
 import { ClipboardList, FlaskConical, Trophy, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import type { AssessmentResult } from "@workspace/api-client-react";
 import { IrpCard, Pill } from "@/components/irp/ui";
@@ -44,8 +43,6 @@ import { FeMockCallout } from "@/components/irp/FeMockCallout";
 import { FeProjectCallout } from "@/components/irp/FeProjectCallout";
 import { RegistrationBatchCallout } from "@/components/irp/RegistrationBatchCallout";
 import { isInL1July25MockAllowlist } from "@/lib/l1July25MockAllowlist";
-import { L1July25MockCallout } from "@/components/irp/L1July25MockCallout";
-import { L1July26MainCallout } from "@/components/irp/L1July26MainCallout";
 import { useStudentAccess } from "@/lib/useStudentAccess";
 import { formatRegistrationBatchDate, useRegistrationBatch } from "@/lib/useRegistrationBatch";
 
@@ -448,16 +445,7 @@ export function AssessmentsHub({
         </p>
       </div>
 
-      <ScheduledAccessCallouts />
-      <GenaiAssessmentAccess />
-
-      {level === 1 && (hasOnlineMockGrant || onJuly25MockAllowlist) ? (
-        <L1July25MockCallout userId={userId} />
-      ) : null}
-
-      {level === 1 && (hasOnlineMainGrant || onJuly25MockAllowlist) ? (
-        <L1July26MainCallout userId={userId} />
-      ) : null}
+      <AssessmentAccessGrants track="all" />
 
       <RegistrationBatchCallout track="mern" />
       <RegistrationBatchCallout track="genai" />
