@@ -41,6 +41,8 @@ export type OnlineBadgeStudent = {
   levelLabel: string;
   statusLabel: string;
   yearOfJoin: string | null;
+  /** Graduation year (YOG), shown on cards whose template reads YEAR OF GRADUATION. */
+  graduationYear?: string | null;
 };
 
 export type BadgeThemeId = "online" | "fe" | "panel" | "genai";
@@ -51,6 +53,8 @@ type BadgeTheme = {
   dialogBody: string;
   fileSlug: string;
   template: string;
+  /** Which year the template's second field asks for. */
+  yearField: "join" | "graduation";
 };
 
 const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
@@ -59,21 +63,24 @@ const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
     dialogTitle: "Online Assessment IRP Clear Card",
     dialogBody: "You qualified in the IRP online assessment. Download this IRP Clear Card to save or share it.",
     fileSlug: "online",
-    template: "irp-poster-online.jpg?v=3",
+    template: "irp-poster-online.jpg?v=4",
+    yearField: "graduation",
   },
   fe: {
     id: "fe",
     dialogTitle: "FE Project IRP Clear Card",
     dialogBody: "You cleared the FE Project. Download this IRP Clear Card to save or share it.",
     fileSlug: "fe",
-    template: "irp-poster-fe.jpg?v=3",
+    template: "irp-poster-fe.jpg?v=4",
+    yearField: "graduation",
   },
   panel: {
     id: "panel",
     dialogTitle: "Panel Interview IRP Clear Card",
     dialogBody: "You cleared the panel interview. Download this IRP Clear Card to save or share it.",
     fileSlug: "panel",
-    template: "irp-poster-panel.jpg?v=3",
+    template: "irp-poster-panel.jpg?v=4",
+    yearField: "graduation",
   },
   genai: {
     id: "genai",
@@ -81,6 +88,7 @@ const BADGE_THEMES: Record<BadgeThemeId, BadgeTheme> = {
     dialogBody: "You qualified in the GenAI online assessment. Download this IRP Clear Card to save or share it.",
     fileSlug: "genai-online",
     template: "irp-poster-genai.jpg?v=1",
+    yearField: "join",
   },
 };
 
@@ -177,35 +185,19 @@ function fitFont(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
   return font;
 }
 
-/** Copy a clean row from the same poster over the online artwork's sample name and year. */
-function coverOnlinePlaceholders(ctx: CanvasRenderingContext2D, template: CanvasImageSource) {
-  const stamp = (x: number, y: number, w: number, h: number, srcY: number) => {
-    ctx.drawImage(template, x, srcY, w, 1, x, y, w, h);
-  };
-  stamp(610, 778, 150, 39, 776);
-  stamp(755, 742, 176, 76, 744);
-  stamp(610, 866, 310, 31, 862);
-  stamp(700, 906, 241, 55, 908);
-  // The orange "282 PX" note sits on the badge edge. Replace it with the badge color beside it.
-  ctx.drawImage(template, 928, 475, 1, 265, 932, 475, 34, 265);
-}
-
 function drawPoster(
   ctx: CanvasRenderingContext2D,
   student: OnlineBadgeStudent,
   template: HTMLImageElement | null,
   photo: CanvasImageSource | null,
-  themeId: BadgeThemeId,
+  theme: BadgeTheme,
 ) {
   ctx.clearRect(0, 0, POSTER, POSTER);
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, POSTER, POSTER);
-  ctx.imageSmoothingEnabled = false;
-  if (template) {
-    ctx.drawImage(template, 0, 0, POSTER, POSTER);
-    if (themeId === "online") coverOnlinePlaceholders(ctx, template);
-  }
   ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  if (template) ctx.drawImage(template, 0, 0, POSTER, POSTER);
 
   if (photo) {
     const sw = photo instanceof HTMLImageElement ? photo.naturalWidth : photo.width;
@@ -238,9 +230,10 @@ function drawPoster(
   ctx.font = fitFont(ctx, name, TEXT_MAX);
   ctx.fillText(name, NAME_X, NAME_Y);
 
-  if (student.yearOfJoin) {
-    ctx.font = fitFont(ctx, student.yearOfJoin, TEXT_MAX);
-    ctx.fillText(student.yearOfJoin, NAME_X, YEAR_Y);
+  const year = theme.yearField === "graduation" ? student.graduationYear : student.yearOfJoin;
+  if (year) {
+    ctx.font = fitFont(ctx, year, TEXT_MAX);
+    ctx.fillText(year, NAME_X, YEAR_Y);
   }
 }
 
@@ -257,7 +250,7 @@ async function paintPoster(
     loadImage(asset(theme.template)),
     loadProfilePhoto(student.photoUrl),
   ]);
-  drawPoster(ctx, student, template, photo, theme.id);
+  drawPoster(ctx, student, template, photo, theme);
 }
 
 export async function downloadOnlineAssessmentBadge(
@@ -281,7 +274,7 @@ export async function downloadOnlineAssessmentBadge(
 
 function PosterCanvas({ student, theme }: { student: OnlineBadgeStudent; theme: BadgeTheme }) {
   const [node, setNode] = useState<HTMLCanvasElement | null>(null);
-  const { name, photoUrl, levelLabel, statusLabel, yearOfJoin } = student;
+  const { name, photoUrl, levelLabel, statusLabel, yearOfJoin, graduationYear } = student;
 
   useEffect(() => {
     if (!node) return;
@@ -290,7 +283,7 @@ function PosterCanvas({ student, theme }: { student: OnlineBadgeStudent; theme: 
     node.height = POSTER;
     const ctx = node.getContext("2d");
     if (!ctx) return;
-    void paintPoster(ctx, { name, photoUrl, levelLabel, statusLabel, yearOfJoin }, theme).then(() => {
+    void paintPoster(ctx, { name, photoUrl, levelLabel, statusLabel, yearOfJoin, graduationYear }, theme).then(() => {
       if (cancel) {
         return;
       }
@@ -298,7 +291,7 @@ function PosterCanvas({ student, theme }: { student: OnlineBadgeStudent; theme: 
     return () => {
       cancel = true;
     };
-  }, [node, name, photoUrl, levelLabel, statusLabel, yearOfJoin, theme]);
+  }, [node, name, photoUrl, levelLabel, statusLabel, yearOfJoin, graduationYear, theme]);
 
   return <canvas ref={setNode} className="h-auto w-full rounded-md" />;
 }
