@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-react";
@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "./pages/Dashboard";
 import { ReferBanner } from "@/components/irp/ReferBanner";
+import { ClearCardDialog, type BadgeThemeId } from "@/components/irp/OnlineAssessmentBadge";
 import Analytics from "./pages/Analytics";
 import Onboarding from "./pages/Onboarding";
 import PaymentRequired from "./pages/PaymentRequired";
@@ -128,12 +129,54 @@ function ReferBannerPreview() {
   );
 }
 
+const SAMPLE_CLEAR_CARD_STUDENT = {
+  name: "Sample Student",
+  photoUrl: null,
+  levelLabel: "L1 Hustler",
+  statusLabel: "Cleared",
+  yearOfJoin: "B.TECH 3RD YEAR – 2026",
+  graduationYear: "2028",
+};
+
+function ClearCardPreview() {
+  const [themeId, setThemeId] = useState<BadgeThemeId>("genai");
+  const [open, setOpen] = useState(true);
+  const themes: BadgeThemeId[] = ["genai", "online", "fe", "panel"];
+  return (
+    <div className="min-h-[100dvh] bg-[#f9fafb] p-6">
+      <h1 className="font-display text-2xl font-extrabold text-ink">Clear Card preview</h1>
+      <p className="mt-1 text-sm text-[#667085]">Dev-only. Pick a theme to open the dialog with a sample student.</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {themes.map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              setThemeId(id);
+              setOpen(true);
+            }}
+            className="rounded-lg border border-[#d0d5dd] bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-[#f2f4f7]"
+          >
+            {id}
+          </button>
+        ))}
+      </div>
+      <ClearCardDialog open={open} onOpenChange={setOpen} student={SAMPLE_CLEAR_CARD_STUDENT} themeId={themeId} />
+    </div>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       {import.meta.env.DEV ? (
         <Route path="/refer-preview">
           <ReferBannerPreview />
+        </Route>
+      ) : null}
+      {import.meta.env.DEV ? (
+        <Route path="/clear-card-preview">
+          <ClearCardPreview />
         </Route>
       ) : null}
       <Route path="/analytics">

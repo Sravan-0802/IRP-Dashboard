@@ -325,6 +325,7 @@ export function DashboardView({
             levelLabel: "L1 Hustler",
             statusLabel: "Cleared",
             yearOfJoin: formatYearOfJoin(studentYog),
+            graduationYear: studentYog ? String(studentYog) : null,
           }}
         />
       ) : (
